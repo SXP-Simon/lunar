@@ -87,6 +87,21 @@ Rito 主入口 `@ritojs/core` 用于平台中立功能。`@ritojs/core/web` 依�
 
 Expo 原生程序包均通过 `pnpm exec expo install` 安装，由 Expo 选择与 SDK 57 匹配的版本。
 
+### 3.4 产品界面
+
+| 程序包 | 版本 | 用途 |
+|---|---|---|
+| `heroui-native` | `1.0.8` | Android 与 iOS 产品界面组件 |
+| `uniwind` | `1.11.0` | React Native Tailwind CSS 运行环境 |
+| `tailwindcss` | `4.3.3` | 主题变量和原子样式 |
+| `tailwind-variants` | `3.2.2` | 组件变体组合 |
+| `tailwind-merge` | `3.4.0` | 样式类合并 |
+| `@gorhom/bottom-sheet` | `5.2.9` | 目录、阅读设置和菜单面板 |
+
+应用根布局使用 `GestureHandlerRootView` 包裹 `HeroUINativeProvider`。Provider 开启系统字体缩放，并把正文与输入框的最大缩放倍数设为 `1.6`。`src/global.css` 依次载入 Tailwind CSS、Uniwind 和 HeroUI Native 样式，Metro 通过 `withUniwindConfig` 处理 CSS 和类型生成。
+
+业务代码统一采用 `heroui-native/<component-name>` 细分入口。ESLint 限制 `heroui-native` 根入口导入，保持按组件加载。HeroUI Native 负责书架、目录、设置、弹层和反馈组件；阅读正文继续由 RN Skia Canvas 绘制。首版平台为 Android 与 iOS，Web 仅服务开发预览。
+
 ## 4. 总体架构
 
 ```text
@@ -491,7 +506,10 @@ CREATE TABLE bookmarks (
 ```bash
 pnpm exec expo install @shopify/react-native-skia
 pnpm exec expo install expo-document-picker expo-file-system expo-sqlite expo-crypto expo-keep-awake
+pnpm exec expo install react-native-svg expo-blur
 pnpm add @ritojs/core@0.13.0 --save-exact
+pnpm add heroui-native@1.0.8 uniwind@1.11.0 tailwindcss@4.3.3 --save-exact
+pnpm add tailwind-variants@3.2.2 tailwind-merge@3.4.0 @gorhom/bottom-sheet@5.2.9 --save-exact
 pnpm add zustand zod
 pnpm exec expo install --check
 ```
@@ -524,5 +542,9 @@ Rito 的锁定版本、完整性摘要和许可证进入开源组件清单。依
 12. [React Native Skia Paragraph 文档](https://shopify.github.io/react-native-skia/docs/text/paragraph/)
 13. [React Native Skia Text 文档](https://shopify.github.io/react-native-skia/docs/text/text/)
 14. [React Native Skia Images 文档](https://shopify.github.io/react-native-skia/docs/images/)
+15. [HeroUI Native 入门文档](https://heroui.com/en/docs/native/getting-started)
+16. [HeroUI Native Quick Start](https://heroui.com/en/docs/native/getting-started/quick-start)
+17. [HeroUI Native Provider](https://heroui.com/en/docs/native/getting-started/provider)
+18. [Uniwind Quickstart](https://docs.uniwind.dev/quickstart)
 
 Lunar 首版以 Rito `0.13.0` 负责平台中立分页，以 React Native Skia `2.6.2` 负责原生 Canvas 和 GPU 绘制。阶段零负责验证字体测量一致性、DisplayList 命令完整性、章节分页响应、内存释放和许可条件，验证通过后再扩展书库与完整阅读功能。

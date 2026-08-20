@@ -6,4 +6,20 @@ module.exports = defineConfig([
   {
     ignores: ['coverage/**', 'dist/**'],
   },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'heroui-native',
+              message: 'Use heroui-native granular exports to preserve bundle optimization.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
