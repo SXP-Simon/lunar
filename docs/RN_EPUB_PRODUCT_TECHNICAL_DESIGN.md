@@ -51,12 +51,12 @@ Lunar 精确固定 `0.13.0`，并把全部 Rito 调用限制在 `src/reader/rito
 
 | 类别 | 技术 | 版本基线 | 用途 |
 |---|---|---|---|
-| 应用框架 | Expo SDK | 57.0.12 | 原生项目、模块管理、开发构建与发布 |
+| 应用框架 | Expo SDK | 57.0.14 | 原生项目、模块管理、开发构建与发布 |
 | 移动框架 | React Native | 0.86.2 | Android 与 iOS 应用主体 |
 | 界面框架 | React | 19.2.3 | 产品界面与状态组合 |
 | 开发语言 | TypeScript | 6.0，Strict 模式 | 应用、阅读内核和数据模型 |
 | JavaScript 引擎 | Hermes | Expo SDK 57 默认配置 | Rito 与应用逻辑执行 |
-| 导航 | Expo Router | 57.0.12 | 文件式路由和原生 Stack |
+| 导航 | Expo Router | 57.0.14 | 文件式路由和原生 Stack |
 | 包管理 | pnpm | 10 | 依赖管理 |
 
 Expo SDK 57 对应 React Native 0.86、React 19.2.3、React Native Web 0.21 和 Node.js 22.13 以上版本。系统基线为 Android 7 以上与 iOS 16.4 以上。
