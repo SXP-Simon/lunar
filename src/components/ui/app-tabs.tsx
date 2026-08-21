@@ -19,6 +19,8 @@ type TabButtonProps = TabTriggerSlotProps & {
   type: 'library' | 'settings';
 };
 
+export const AppTabBarHeight = 58;
+
 export default function AppTabs() {
   return (
     <Tabs style={styles.tabs}>
@@ -77,7 +79,7 @@ function TabBar({ style, ...props }: TabListProps) {
       style={[
         styles.tabBar,
         {
-          height: 58 + insets.bottom,
+          height: AppTabBarHeight + insets.bottom,
           paddingBottom: insets.bottom,
           borderTopColor: theme.border,
         },
@@ -115,7 +117,7 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    height: 58,
+    height: AppTabBarHeight,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
