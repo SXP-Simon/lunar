@@ -6,6 +6,24 @@
   "build": {
     "development": {
       "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "LUNAR_ANDROID_COMPACT_DEV_BUILD": "true",
+        "LUNAR_ANDROID_ABIS": "arm64-v8a"
+      },
+      "android": {
+        "gradleCommand": ":app:assembleDebugOptimized"
+      }
+    },
+    "development-emulator": {
+      "extends": "development",
+      "env": {
+        "LUNAR_ANDROID_COMPACT_DEV_BUILD": "true",
+        "LUNAR_ANDROID_ABIS": "x86_64"
+      }
+    },
+    "development-universal": {
+      "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
