@@ -1,10 +1,11 @@
 import { SymbolView } from 'expo-symbols';
+import { Button } from 'heroui-native/button';
+import { useThemeColor } from 'heroui-native/hooks';
 import { SearchField } from 'heroui-native/search-field';
 import { useMemo, useState } from 'react';
 import {
   FlatList,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -72,37 +73,10 @@ const BOOKS: LibraryBook[] = [
   },
 ];
 
-function AddBookTile() {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="添加书籍"
-      style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}>
-      <View
-        style={[
-          styles.addCover,
-          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-        ]}>
-        <View style={[styles.addIcon, { backgroundColor: theme.surface }]}>
-          <SymbolView
-            name={{ ios: 'plus', android: 'add', web: 'add' }}
-            size={27}
-            tintColor={theme.textSecondary}
-          />
-        </View>
-        <Text style={[styles.addHint, { color: theme.textSecondary }]}>导入 EPUB</Text>
-      </View>
-      <Text numberOfLines={1} style={[styles.bookName, { color: theme.text }]}>添加书籍</Text>
-      <Text style={[styles.bookAuthor, { color: theme.textSecondary }]}>从本机选择</Text>
-    </Pressable>
-  );
-}
-
 export default function LibraryScreen() {
   const [query, setQuery] = useState('');
   const theme = useTheme();
+  const importIconColor = useThemeColor('accent-foreground');
   const books = useMemo(() => {
     const keyword = query.trim().toLocaleLowerCase();
     if (!keyword) return BOOKS;
@@ -117,17 +91,31 @@ export default function LibraryScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View style={styles.page}>
           <View style={styles.searchArea}>
-            <SearchField value={query} onChange={setQuery}>
+            <SearchField className="flex-1" value={query} onChange={setQuery}>
               <SearchField.Group className="h-9 rounded-3xl bg-field shadow-field">
                 <SearchField.SearchIcon iconProps={{ size: 20, color: theme.textSecondary }} />
                 <SearchField.Input
                   placeholder="搜索书名或作者"
                   accessibilityLabel="搜索书架"
+                  className="ios:focus:outline-transparent android:focus:border-transparent"
                   style={styles.searchInput}
                 />
                 <SearchField.ClearButton accessibilityLabel="清空搜索" />
               </SearchField.Group>
             </SearchField>
+            <Button
+              accessibilityLabel="导入 EPUB"
+              className="h-9 rounded-full"
+              hitSlop={4}
+              isIconOnly
+              size="sm"
+              variant="primary">
+              <SymbolView
+                name={{ ios: 'plus', android: 'add', web: 'add' }}
+                size={19}
+                tintColor={importIconColor}
+              />
+            </Button>
           </View>
 
           <FlatList
@@ -139,7 +127,6 @@ export default function LibraryScreen() {
             columnWrapperStyle={styles.row}
             contentContainerStyle={styles.grid}
             renderItem={({ item }) => <BookCard book={item} />}
-            ListFooterComponent={!query ? <AddBookTile /> : null}
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <Text style={[styles.emptyTitle, { color: theme.text }]}>没有找到相关书籍</Text>
@@ -167,6 +154,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   searchArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.one,
     paddingBottom: Spacing.two,
@@ -189,47 +179,6 @@ const styles = StyleSheet.create({
   },
   row: {
     alignItems: 'flex-start',
-  },
-  tile: {
-    width: '33.3333%',
-    paddingHorizontal: 6,
-    marginBottom: Spacing.four,
-  },
-  tilePressed: {
-    opacity: 0.72,
-    transform: [{ scale: 0.985 }],
-  },
-  addCover: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 4,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderStyle: 'dashed',
-    gap: 11,
-  },
-  addIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addHint: {
-    fontSize: 10,
-    letterSpacing: 0.5,
-  },
-  bookName: {
-    marginTop: 7,
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '600',
-  },
-  bookAuthor: {
-    marginTop: 1,
-    fontSize: 10,
-    lineHeight: 14,
   },
   emptyState: {
     alignItems: 'center',
