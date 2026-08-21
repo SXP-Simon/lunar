@@ -19,7 +19,7 @@ type TabButtonProps = TabTriggerSlotProps & {
   type: 'library' | 'settings';
 };
 
-export const AppTabBarHeight = 58;
+const AppTabBarHeight = 58;
 
 export default function AppTabs() {
   return (
@@ -107,7 +107,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 20,
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderTopWidth: StyleSheet.hairlineWidth,
