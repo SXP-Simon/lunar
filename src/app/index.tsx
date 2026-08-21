@@ -118,12 +118,12 @@ export default function LibraryScreen() {
         <View style={styles.page}>
           <View style={styles.searchArea}>
             <SearchField value={query} onChange={setQuery}>
-              <SearchField.Group className="h-12 rounded-2xl bg-field shadow-field">
+              <SearchField.Group className="h-9 rounded-3xl bg-field shadow-field">
                 <SearchField.SearchIcon iconProps={{ size: 20, color: theme.textSecondary }} />
                 <SearchField.Input
                   placeholder="搜索书名或作者"
                   accessibilityLabel="搜索书架"
-                  className="text-base"
+                  style={styles.searchInput}
                 />
                 <SearchField.ClearButton accessibilityLabel="清空搜索" />
               </SearchField.Group>
@@ -168,11 +168,23 @@ const styles = StyleSheet.create({
   },
   searchArea: {
     paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.three,
+    paddingTop: Spacing.one,
+    paddingBottom: Spacing.two,
+  },
+  searchInput: {
+    height: 36,
+    minHeight: 36,
+    borderRadius: 18,
+    paddingTop: 0,
+    paddingBottom: 0,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   grid: {
     paddingHorizontal: 10,
+    paddingTop: Spacing.two,
     paddingBottom: Platform.OS === 'web' ? 112 : BottomTabInset + Spacing.four,
   },
   row: {
