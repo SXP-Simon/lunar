@@ -1,3 +1,29 @@
-# Expo HAS CHANGED
+# Lunar Agent 地图
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
+> 本文件负责定位。进入具体任务后，仅阅读对应专题文档。
+
+## 项目基线
+
+[MUST] 项目采用 Expo SDK 57、React Native、TypeScript、Expo Router、HeroUI Native 与 Uniwind。
+
+[MUST] Expo 相关变更以 [Expo SDK 57 版本文档](https://docs.expo.dev/versions/v57.0.0/) 为依据。
+
+[MUST] 产品范围与阅读内核设计以 [RN_EPUB_PRODUCT_TECHNICAL_DESIGN.md](RN_EPUB_PRODUCT_TECHNICAL_DESIGN.md) 为依据。
+
+## 文档索引
+
+| 任务范围 | 必读文档 |
+| --- | --- |
+| 目录职责、模块边界、依赖方向 | [代码分层约束](docs/architecture.md) |
+| HeroUI Native、自定义原子组件 | [界面组件约束](docs/ui.md) |
+| 业务界面、业务组件与 Hooks | [业务包约束](docs/features.md) |
+| Rito、Skia、分页与阅读会话 | [阅读内核约束](docs/reader.md) |
+| 浅色主题、深色主题与语义颜色 | [主题约束](docs/theme.md) |
+
+## 阅读顺序
+
+[MUST] 每项任务先依据本文件确认所属层级，再阅读对应专题文档。
+
+[MUST] 跨层变更同时遵守全部相关专题文档。
+
+[MUST] 专题规则与根文档存在差异时，以范围更具体的专题规则为准。
