@@ -4,8 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Uniwind, useUniwind } from 'uniwind';
 
-import { Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Fonts, MaxContentWidth, Spacing, useTheme } from '@/hooks/use-theme';
 
 export default function SettingsScreen() {
   const { theme: currentTheme } = useUniwind();

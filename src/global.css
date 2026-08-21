@@ -4,56 +4,82 @@
 
 @source '../node_modules/heroui-native/lib';
 
-@layer theme {
-  @variant light {
-    --background: hsl(43 38% 95%);
-    --foreground: hsl(72 7% 14%);
-    --surface: hsl(43 45% 99%);
-    --surface-foreground: hsl(72 7% 14%);
-    --surface-secondary: hsl(42 24% 92%);
-    --surface-secondary-foreground: hsl(72 7% 20%);
-    --default: hsl(42 24% 92%);
-    --default-foreground: hsl(72 7% 20%);
-    --muted: hsl(72 4% 46%);
-    --accent: hsl(16 54% 43%);
-    --accent-foreground: hsl(43 45% 99%);
-    --field-background: hsl(43 45% 99%);
-    --field-foreground: hsl(72 7% 14%);
-    --field-placeholder: hsl(72 4% 46%);
-    --field-border: hsl(39 19% 83%);
-    --separator: hsl(39 19% 83%);
-    --border: hsl(39 19% 83%);
-    --focus: hsl(16 54% 43%);
-  }
+@theme static {
+  --color-brand-50: hsl(0 0% 100%);
+  --color-brand-100: hsl(0 0% 96%);
+  --color-brand-200: hsl(0 0% 90%);
+  --color-brand-300: hsl(0 0% 80%);
+  --color-brand-400: hsl(0 0% 64%);
+  --color-brand-500: hsl(0 0% 48%);
+  --color-brand-600: hsl(0 0% 36%);
+  --color-brand-700: hsl(0 0% 26%);
+  --color-brand-800: hsl(0 0% 16%);
+  --color-brand-900: hsl(0 0% 8%);
+  --color-brand-950: hsl(0 0% 0%);
 
-  @variant dark {
-    --background: hsl(80 7% 8%);
-    --foreground: hsl(43 29% 93%);
-    --surface: hsl(75 6% 12%);
-    --surface-foreground: hsl(43 29% 93%);
-    --surface-secondary: hsl(72 6% 16%);
-    --surface-secondary-foreground: hsl(43 29% 90%);
-    --default: hsl(72 6% 16%);
-    --default-foreground: hsl(43 29% 90%);
-    --muted: hsl(66 5% 64%);
-    --accent: hsl(17 66% 64%);
-    --accent-foreground: hsl(80 7% 8%);
-    --field-background: hsl(75 6% 12%);
-    --field-foreground: hsl(43 29% 93%);
-    --field-placeholder: hsl(66 5% 64%);
-    --field-border: hsl(70 6% 21%);
-    --separator: hsl(70 6% 21%);
-    --border: hsl(70 6% 21%);
-    --focus: hsl(17 66% 64%);
-  }
-}
-
-:root {
   --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
+    Spline Sans, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
     Segoe UI Symbol, Noto Color Emoji;
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+@layer theme {
+  @variant light {
+    --background: var(--color-brand-100);
+    --foreground: var(--color-brand-950);
+    --surface: var(--color-brand-50);
+    --surface-foreground: var(--color-brand-950);
+    --surface-secondary: var(--color-brand-200);
+    --surface-secondary-foreground: var(--color-brand-900);
+    --surface-tertiary: var(--color-brand-300);
+    --surface-tertiary-foreground: var(--color-brand-950);
+    --overlay: var(--color-brand-50);
+    --overlay-foreground: var(--color-brand-950);
+    --muted: var(--color-brand-600);
+    --default: var(--color-brand-200);
+    --default-foreground: var(--color-brand-900);
+    --accent: var(--color-brand-950);
+    --accent-foreground: var(--color-brand-50);
+    --field-background: var(--color-brand-50);
+    --field-foreground: var(--color-brand-950);
+    --field-placeholder: var(--color-brand-500);
+    --field-border: var(--color-brand-300);
+    --segment: var(--color-brand-50);
+    --segment-foreground: var(--color-brand-950);
+    --border: var(--color-brand-300);
+    --separator: var(--color-brand-300);
+    --focus: var(--color-brand-700);
+    --link: var(--color-brand-900);
+  }
+
+  @variant dark {
+    --background: var(--color-brand-950);
+    --foreground: var(--color-brand-50);
+    --surface: var(--color-brand-900);
+    --surface-foreground: var(--color-brand-50);
+    --surface-secondary: var(--color-brand-800);
+    --surface-secondary-foreground: var(--color-brand-50);
+    --surface-tertiary: var(--color-brand-700);
+    --surface-tertiary-foreground: var(--color-brand-50);
+    --overlay: var(--color-brand-900);
+    --overlay-foreground: var(--color-brand-50);
+    --muted: var(--color-brand-400);
+    --default: var(--color-brand-800);
+    --default-foreground: var(--color-brand-50);
+    --accent: var(--color-brand-50);
+    --accent-foreground: var(--color-brand-950);
+    --field-background: var(--color-brand-900);
+    --field-foreground: var(--color-brand-50);
+    --field-placeholder: var(--color-brand-400);
+    --field-border: var(--color-brand-700);
+    --segment: var(--color-brand-800);
+    --segment-foreground: var(--color-brand-50);
+    --border: var(--color-brand-800);
+    --separator: var(--color-brand-800);
+    --focus: var(--color-brand-300);
+    --link: var(--color-brand-50);
+  }
 }

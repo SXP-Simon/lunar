@@ -80,7 +80,6 @@ function TabBar({ style, ...props }: TabListProps) {
           height: 58 + insets.bottom,
           paddingBottom: insets.bottom,
           borderTopColor: theme.border,
-          backgroundColor: theme.tabBar,
         },
         style,
       ]}>

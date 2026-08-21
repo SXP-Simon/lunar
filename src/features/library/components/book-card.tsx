@@ -1,7 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Fonts, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Fonts, Spacing, useTheme } from '@/hooks/use-theme';
 
 export type LibraryBook = {
   id: string;

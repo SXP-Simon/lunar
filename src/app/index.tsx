@@ -11,9 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BottomTabInset, Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import { BookCard, type LibraryBook } from '@/features/library/components/book-card';
-import { useTheme } from '@/hooks/use-theme';
+import { BottomTabInset, Fonts, MaxContentWidth, Spacing, useTheme } from '@/hooks/use-theme';
 
 const BOOKS: LibraryBook[] = [
   {
