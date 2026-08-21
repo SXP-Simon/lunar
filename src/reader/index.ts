@@ -1,2 +1,7 @@
 export * from './contracts';
-export type { ReaderRuntime, ReaderSnapshotListener } from './runtime';
+export { inspectReaderBook } from './rito/rito-adapter';
+export {
+  ReaderPublicationLoader,
+  type ReaderRuntime,
+  type ReaderSnapshotListener,
+} from './runtime';

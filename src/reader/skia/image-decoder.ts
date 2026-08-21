@@ -1,9 +1,10 @@
-import type { ImageDecoder, ImageDimensions } from '@ritojs/core';
 import type { SkImage } from '@shopify/react-native-skia';
 
-export interface SkiaImageAsset extends ImageDimensions {
+import type { ReaderImageDecoder, ReaderImageDimensions } from '../contracts';
+
+export interface SkiaImageAsset extends ReaderImageDimensions {
   readonly image: SkImage;
   readonly byteLength: number;
 }
 
-export type SkiaImageDecoder = ImageDecoder<SkiaImageAsset>;
+export type SkiaImageDecoder = ReaderImageDecoder<SkiaImageAsset>;

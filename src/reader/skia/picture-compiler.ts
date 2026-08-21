@@ -1,6 +1,6 @@
-import type { DisplayList } from '@ritojs/core';
 import type { SkPicture } from '@shopify/react-native-skia';
 
+import type { ReaderDisplayList } from '../contracts';
 import type { SkiaDisplayListRenderOptions } from './display-list-renderer';
 
 export interface CompiledReaderPicture {
@@ -11,7 +11,7 @@ export interface CompiledReaderPicture {
 
 export interface PictureCompiler {
   compile(
-    displayList: DisplayList,
+    displayList: ReaderDisplayList,
     options: SkiaDisplayListRenderOptions,
   ): CompiledReaderPicture;
   dispose(picture: CompiledReaderPicture): void;

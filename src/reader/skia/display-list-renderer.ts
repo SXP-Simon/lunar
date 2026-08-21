@@ -1,21 +1,26 @@
-import type { DisplayList, DisplayListRenderer, ImageAssetResolver } from '@ritojs/core';
 import type { SkCanvas } from '@shopify/react-native-skia';
 
+import type { ReaderDisplayList } from '../contracts';
 import type { SkiaImageAsset } from './image-decoder';
 
 export interface SkiaDisplayListRenderOptions {
   readonly pixelRatio: number;
-  readonly images: ImageAssetResolver<SkiaImageAsset>;
+  readonly images: {
+    resolveImage(source: string): SkiaImageAsset | undefined;
+  };
 }
 
-export type LunarSkiaDisplayListRenderer = DisplayListRenderer<
-  SkCanvas,
-  SkiaDisplayListRenderOptions
->;
+export interface LunarSkiaDisplayListRenderer {
+  render(
+    displayList: ReaderDisplayList,
+    canvas: SkCanvas,
+    options?: SkiaDisplayListRenderOptions,
+  ): void;
+}
 
 export interface SkiaDisplayListCompiler {
   render(
-    displayList: DisplayList,
+    displayList: ReaderDisplayList,
     canvas: SkCanvas,
     options: SkiaDisplayListRenderOptions,
   ): void;
