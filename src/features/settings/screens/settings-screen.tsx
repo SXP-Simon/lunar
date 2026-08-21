@@ -1,16 +1,23 @@
-import { useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Uniwind, useUniwind } from 'uniwind';
 
-import { AppearancePreviewSheet } from './components/appearance-preview-sheet';
-import { SettingRow } from './components/setting-row';
-import { SettingSection } from './components/setting-section';
+import { AppearancePreviewSheet } from '../components/appearance-preview-sheet';
+import { SettingRow } from '../components/setting-row';
+import { SettingSection } from '../components/setting-section';
 
 export function SettingsScreen() {
   const { theme } = useUniwind();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const isDark = theme === 'dark';
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => setIsPreviewOpen(false);
+    }, []),
+  );
 
   const handleThemeChange = (isSelected: boolean) => {
     Uniwind.setTheme(isSelected ? 'dark' : 'light');
