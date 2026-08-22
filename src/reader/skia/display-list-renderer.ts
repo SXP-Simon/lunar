@@ -1,15 +1,12 @@
 import {
   BlurStyle,
   ClipOp,
-  FontSlant,
-  FontWidth,
   PaintStyle,
   Skia,
   StrokeCap,
   type SkCanvas,
   type SkPaint,
   type SkRect,
-  type SkTextStyle,
 } from '@shopify/react-native-skia';
 
 import type {
@@ -129,7 +126,7 @@ function renderCommand(
       drawBlock(canvas, command.rect, command.paint, command.borderBox, state);
       return;
     case 'paintText':
-      drawText(canvas, command.text, command.rect, command.paint, command.lineHeightPx, state);
+      drawText(canvas, command.text, command.rect, command.paint, state);
       return;
     case 'paintRuby':
       drawRuby(canvas, command.text, command.rect, command.paint, state);
@@ -261,48 +258,33 @@ function drawText(
   text: string,
   rect: ReaderRect,
   paint: ReaderRunPaint,
-  lineHeightPx: number | undefined,
   state: RenderState,
 ): void {
   drawInlineBox(canvas, rect, paint, state.alpha);
 
+  const font = state.options.fonts.resolveFont(paint.font);
+  const baselineY = rect.y - font.getMetrics().ascent;
+  for (const shadow of paint.textShadow ?? []) {
+    const shadowPaint = createPaint(shadow.color, state.alpha);
+    const filter = shadow.blur > 0
+      ? Skia.MaskFilter.MakeBlur(BlurStyle.Normal, Math.max(0.01, shadow.blur / 2), true)
+      : undefined;
+    if (filter) {
+      shadowPaint.setMaskFilter(filter);
+    }
+    canvas.drawText(
+      text,
+      rect.x + shadow.offsetX,
+      baselineY + shadow.offsetY,
+      shadowPaint,
+      font,
+    );
+    filter?.dispose();
+    shadowPaint.dispose();
+  }
+
   const foreground = createPaint(paint.color, state.alpha);
-  const provider = state.options.fonts.getParagraphProvider(paint.font.family);
-  const paragraphStyle = { maxLines: 1 } as const;
-  const builder = provider
-    ? Skia.ParagraphBuilder.Make(paragraphStyle, provider)
-    : Skia.ParagraphBuilder.Make(paragraphStyle);
-  const textStyle: SkTextStyle = {
-    color: toColor(paint.color),
-    fontFamilies: getPrimaryFontFamilies(paint.font.family),
-    fontSize: paint.font.sizePx,
-    fontStyle: {
-      weight: paint.font.weight,
-      width: FontWidth.Normal,
-      slant: paint.font.style === 'italic' ? FontSlant.Italic : FontSlant.Upright,
-    },
-  };
-  if (paint.letterSpacingPx !== undefined) {
-    textStyle.letterSpacing = paint.letterSpacingPx;
-  }
-  if (paint.wordSpacingPx !== undefined) {
-    textStyle.wordSpacing = paint.wordSpacingPx;
-  }
-  if (lineHeightPx !== undefined && paint.font.sizePx > 0) {
-    textStyle.heightMultiplier = lineHeightPx / paint.font.sizePx;
-  }
-  if (paint.textShadow) {
-    textStyle.shadows = paint.textShadow.map((shadow) => ({
-      color: toColor(shadow.color),
-      offset: { x: shadow.offsetX, y: shadow.offsetY },
-      blurRadius: shadow.blur,
-    }));
-  }
-  builder.pushStyle(textStyle, foreground).addText(text).pop();
-  const paragraph = builder.build();
-  paragraph.layout(Math.max(rect.width + paint.font.sizePx * 2, 1));
-  paragraph.paint(canvas, rect.x, rect.y);
-  paragraph.dispose();
+  canvas.drawText(text, rect.x, baselineY, foreground, font);
   foreground.dispose();
 
   if (paint.decoration) {
@@ -333,7 +315,6 @@ function drawRuby(
     text,
     { ...rect, x: rect.x + Math.max(0, (rect.width - measured) / 2), width: measured },
     { ...paint, backgroundColor: undefined, border: undefined, padding: undefined },
-    undefined,
     state,
   );
 }
@@ -568,14 +549,6 @@ function toColor(value: string) {
   } catch {
     return Skia.Color('transparent');
   }
-}
-
-function getPrimaryFontFamilies(value: string): string[] {
-  const families = value
-    .split(',')
-    .map((family) => family.trim().replace(/^['"]|['"]$/g, ''))
-    .filter(Boolean);
-  return families.length > 0 ? families : ['sans-serif'];
 }
 
 function clampAlpha(value: number): number {
