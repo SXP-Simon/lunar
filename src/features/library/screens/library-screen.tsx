@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BookCard, type LibraryBook } from '@/features/library/components/book-card';
 import { BottomTabInset, Fonts, MaxContentWidth, Spacing, useTheme } from '@/hooks/use-theme';
-import { listLibraryBooks, pickAndImportEpub } from '@/services';
+import { listLibraryBooks, pickAndImportEpub } from '../services/library-service';
 
 const COVER_PALETTES: readonly LibraryBook['cover'][] = [
   {

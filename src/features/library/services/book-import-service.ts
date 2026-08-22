@@ -1,9 +1,10 @@
-import type { BookRepository, LibraryBookRecord } from '../db';
 import {
   inspectReaderBookAssets,
   type ReaderBookInspection,
-} from '../reader';
+} from '../../../reader';
 
+import type { LibraryBookRecord } from '../domain/library-book';
+import type { BookRepository } from '../repositories/book-repository';
 import type { BookFileService, ManagedBookFile } from './book-file-service';
 
 export const CURRENT_BOOK_METADATA_VERSION = 2;

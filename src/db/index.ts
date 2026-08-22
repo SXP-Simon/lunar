@@ -1,3 +1,2 @@
-export * from './book-repository';
 export * from './database';
-export * from './schema';
+export * from './migrations';

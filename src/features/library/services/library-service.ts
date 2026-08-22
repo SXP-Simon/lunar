@@ -1,11 +1,10 @@
-import {
-  openLunarDatabase,
-  SQLiteBookRepository,
-  type LibraryBookRecord,
-} from '../db';
+import { openLunarDatabase } from '../../../db';
+
+import type { LibraryBookRecord } from '../domain/library-book';
+import { ExpoBookFileService } from '../infrastructure/expo-book-file-service';
+import { pickEpub } from '../infrastructure/epub-picker';
+import { SQLiteBookRepository } from '../repositories/sqlite-book-repository';
 import { BookImportService } from './book-import-service';
-import { pickEpub } from './epub-picker';
-import { ExpoBookFileService } from './expo-book-file-service';
 
 export async function pickAndImportEpub(): Promise<LibraryBookRecord | undefined> {
   const picked = await pickEpub();

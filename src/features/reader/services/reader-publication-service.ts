@@ -3,9 +3,8 @@ import {
   type LoadedReaderPublication,
   type LoadReaderPublicationOptions,
   type ReaderImageDimensions,
-} from '../reader';
-import type { LibraryBookRecord } from '../db';
-import type { BookFileService } from './book-file-service';
+} from '../../../reader';
+import type { BookFileService, LibraryBookRecord } from '../../library';
 
 export type LoadManagedPublicationOptions<
   TImage extends ReaderImageDimensions = ReaderImageDimensions,

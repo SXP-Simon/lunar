@@ -8,13 +8,15 @@
 
 [MUST] `src/components/providers` 仅承载应用级 Provider。
 
-[MUST] `src/features/<feature>` 承载单一业务域的界面、业务组件、Hooks 与局部类型。
+[MUST] `src/features/<feature>` 承载单一业务域的界面、业务组件、Hooks、领域类型、仓储、业务服务与专属设备适配器。
 
 [MUST] `src/reader` 仅承载 EPUB 阅读内核及其公开契约。
 
-[MUST] `src/services` 承载设备能力、文件访问及跨业务服务。
+[MUST] `src/db` 仅承载数据库连接、初始化、结构迁移与事务基础能力。
 
-[MUST] `src/db` 承载数据库结构、迁移与持久化访问。
+[MUST] 具有业务语义的数据库查询与行数据映射归属对应业务包的仓储目录。
+
+[MUST] 单一业务使用的文件访问与设备能力实现归属对应业务包的基础设施目录。
 
 [MUST] `src/stores` 仅承载跨页面共享的应用状态。
 
@@ -22,10 +24,14 @@
 
 [MUST] `src/app` 通过 `src/features` 组合业务界面。
 
-[MUST] `src/features` 可以依赖 `src/components/ui`、`src/services`、`src/stores` 与 `src/reader` 的公开入口。
+[MUST] `src/features` 可以依赖 `src/components/ui`、`src/db`、`src/stores` 与 `src/reader` 的公开入口。
 
-[MUST] `src/components/ui` 保持业务无关，且隔离 `src/features`、`src/stores`、`src/services` 与 `src/reader`。
+[MUST] 业务包之间仅通过各自公开入口共享领域类型与能力契约。
+
+[MUST] `src/components/ui` 保持业务无关，且隔离 `src/features`、`src/db`、`src/stores` 与 `src/reader`。
 
 [MUST] `src/reader` 保持界面无关，且隔离 `src/app`、`src/features` 与 `src/components/ui`。
+
+[MUST] `src/db` 保持业务无关，且隔离 `src/app`、`src/features`、`src/components/ui` 与 `src/reader`。
 
 [MUST] 跨层引用使用各层公开入口，内部文件仅供所属层使用。

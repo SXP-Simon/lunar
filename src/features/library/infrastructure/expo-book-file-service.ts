@@ -5,7 +5,7 @@ import type {
   BookFileService,
   ManagedBookCover,
   ManagedBookFile,
-} from './book-file-service';
+} from '../services/book-file-service';
 
 const EPUB_FILE_NAME = 'book.epub';
 const MAX_EPUB_ARCHIVE_BYTES = 100 * 1024 * 1024;

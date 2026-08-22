@@ -1,31 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-export interface LibraryBookRecord {
-  readonly id: string;
-  readonly title: string;
-  readonly author?: string;
-  readonly language?: string;
-  readonly epubIdentifier: string;
-  readonly publisher?: string;
-  readonly description?: string;
-  readonly fileUri: string;
-  readonly fileName: string;
-  readonly fileSize: number;
-  readonly sha256: string;
-  readonly coverUri?: string;
-  readonly metadataVersion: number;
-  readonly addedAt: number;
-  readonly lastOpenedAt?: number;
-  readonly updatedAt: number;
-}
-
-export interface BookRepository {
-  save(book: LibraryBookRecord): Promise<void>;
-  findById(id: string): Promise<LibraryBookRecord | undefined>;
-  findBySha256(sha256: string): Promise<LibraryBookRecord | undefined>;
-  list(): Promise<readonly LibraryBookRecord[]>;
-  remove(id: string): Promise<void>;
-}
+import type { LibraryBookRecord } from '../domain/library-book';
+import type { BookRepository } from './book-repository';
 
 interface BookRow {
   readonly id: string;

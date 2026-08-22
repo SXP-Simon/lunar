@@ -276,8 +276,12 @@ lunar/
     app/                              Expo Router 页面
     components/                       通用产品组件
     features/
-      library/                        书库、导入与书籍详情
-      reader/                         阅读页面、工具栏与设置面板
+      library/                        书库、导入、仓储与文件适配器
+        domain/                       书籍领域类型
+        repositories/                 仓储接口与 SQLite 实现
+        services/                     导入与书库业务服务
+        infrastructure/               Expo 文件与文档选择适配器
+      reader/                         阅读页面、工具栏、设置面板与出版物加载
       settings/                       应用设置
     reader/
       runtime/
@@ -300,8 +304,7 @@ lunar/
       contracts/
         reader.ts                     Lunar 阅读内核公开类型
         errors.ts                     固定错误代码
-    db/                               SQLite migration 与 repository
-    services/                         文件、导入与书库服务
+    db/                               SQLite 连接、初始化与 migration
     stores/                           Zustand stores
   tests/
     fixtures/                         具有测试许可的 EPUB 样本

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DATABASE_MIGRATIONS } from '../../src/db/schema';
+import { DATABASE_MIGRATIONS } from '../../src/db/migrations';
 
 describe('database schema', () => {
   it('creates metadata, reading state, and bookmark storage', () => {

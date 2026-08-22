@@ -3,12 +3,13 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
 
-import type { BookRepository, LibraryBookRecord } from '../../src/db/book-repository';
-import { BookImportService } from '../../src/services/book-import-service';
+import type { LibraryBookRecord } from '../../src/features/library/domain/library-book';
+import type { BookRepository } from '../../src/features/library/repositories/book-repository';
+import { BookImportService } from '../../src/features/library/services/book-import-service';
 import type {
   BookFileService,
   ManagedBookFile,
-} from '../../src/services/book-file-service';
+} from '../../src/features/library/services/book-file-service';
 
 const fixtureDirectory = resolve('tests/fixtures');
 const fixtureName = readdirSync(fixtureDirectory).find((name) => name.endsWith('.epub'));

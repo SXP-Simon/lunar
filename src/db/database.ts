@@ -1,6 +1,6 @@
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 
-import { DATABASE_MIGRATIONS, LUNAR_DATABASE_NAME } from './schema';
+import { DATABASE_MIGRATIONS, LUNAR_DATABASE_NAME } from './migrations';
 
 interface UserVersionRow {
   readonly user_version: number;
