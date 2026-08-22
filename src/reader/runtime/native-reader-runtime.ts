@@ -7,13 +7,13 @@ import type {
   ReaderRenderFrame,
   ReaderSnapshot,
 } from '../contracts';
-import { LunarSkiaFontRegistry } from '../skia/font-registry';
-import { SkiaImageCache } from '../skia/image-decoder';
+import { LunarSkiaFontRegistry } from '../skia/fonts/font-registry';
+import { SkiaImageCache } from '../skia/images/image-decoder';
 import {
   SkiaPictureCompiler,
   type CompiledReaderPicture,
-} from '../skia/picture-compiler';
-import { LunarSkiaTextMeasurer } from '../skia/text-measurer';
+} from '../skia/rendering/picture-compiler';
+import { LunarSkiaTextMeasurer } from '../skia/text/text-measurer';
 import { FrameCache } from './frame-cache';
 import { ReaderPublicationLoader } from './publication-loader';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
@@ -211,8 +211,8 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private async preparePicture(spreadIndex: number, operation: number): Promise<void> {
     const publication = this.publication;
     const imageCache = this.imageCache;
-    const fontRegistry = this.fontRegistry;
-    if (!publication || !imageCache || !fontRegistry) {
+    const textMeasurer = this.textMeasurer;
+    if (!publication || !imageCache || !textMeasurer) {
       throw new Error('The reader resources are unavailable.');
     }
     const key = { revisionId: this.snapshot.revisionId, spreadIndex };
@@ -228,7 +228,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const picture = this.pictureCompiler.compile(frame.displayList, {
       pixelRatio: 1,
       images: imageCache,
-      fonts: fontRegistry,
+      paragraphs: textMeasurer.paragraphs,
     });
     this.pictures.set(key, picture);
   }

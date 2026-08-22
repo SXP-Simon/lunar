@@ -4,11 +4,16 @@ import type {
   ReaderMeasurePaint,
   ReaderTextMeasurer,
   ReaderTextMetrics,
-} from '../contracts';
-import type { LunarSkiaFontRegistry } from './font-registry';
+} from '../../contracts';
+import type { LunarSkiaFontRegistry } from '../fonts/font-registry';
+import {
+  LunarSkiaParagraphFactory,
+  type SkiaParagraphFactory,
+} from './paragraph-factory';
 
 export interface SkiaTextMeasurer extends ReaderTextMeasurer, ReaderFontMetricsProvider {
   readonly fontResolver: LunarSkiaFontRegistry;
+  readonly paragraphs: SkiaParagraphFactory;
   clearCache(): void;
   dispose(): void;
 }
@@ -21,7 +26,10 @@ export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
   private readonly metricsCache = new Map<string, ReaderFontMetrics>();
   private disposed = false;
 
-  constructor(readonly fontResolver: LunarSkiaFontRegistry) {}
+  constructor(
+    readonly fontResolver: LunarSkiaFontRegistry,
+    readonly paragraphs: SkiaParagraphFactory = new LunarSkiaParagraphFactory(fontResolver),
+  ) {}
 
   measureText(text: string, paint: ReaderMeasurePaint): ReaderTextMetrics {
     this.assertActive();
@@ -31,7 +39,7 @@ export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
       return cached;
     }
 
-    const shaped = this.fontResolver.measureShapedText(text, paint);
+    const shaped = this.paragraphs.measureShapedText(text, paint);
     const metrics = {
       width: shaped.width,
       height: paint.font.sizePx,

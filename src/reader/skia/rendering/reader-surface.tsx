@@ -1,8 +1,8 @@
 import { Canvas, Picture } from '@shopify/react-native-skia';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import type { ReaderSnapshot } from '../contracts';
-import type { LunarReaderRuntime } from '../runtime/native-reader-runtime';
+import type { ReaderSnapshot } from '../../contracts';
+import type { LunarReaderRuntime } from '../../runtime/native-reader-runtime';
 
 export interface ReaderSurfaceProps {
   readonly runtime: LunarReaderRuntime;

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 
 import { findLibraryBookById, type LibraryBookRecord } from '@/features/library';
 import {
+  createReaderTypographyKey,
+  DEFAULT_READER_TYPOGRAPHY,
   type ReaderOpenResult,
   type ReaderTheme,
   type ReaderViewport,
@@ -68,7 +70,14 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
     if (!currentBook || !viewport || viewport.width < 1 || viewport.height < 1) {
       return;
     }
-    const nextLayoutKey = `${currentBook.id}:${viewport.width}:${viewport.height}:${theme}`;
+    const nextLayoutKey = [
+      currentBook.id,
+      viewport.width,
+      viewport.height,
+      viewport.pixelRatio,
+      theme,
+      createReaderTypographyKey(DEFAULT_READER_TYPOGRAPHY),
+    ].join(':');
     if (layoutKey.current === nextLayoutKey) {
       return;
     }
@@ -76,13 +85,7 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
 
     const layout = {
       viewport,
-      typography: {
-        fontSize: 18,
-        lineHeight: 1.65,
-        marginHorizontal: 24,
-        marginVertical: 36,
-        spreadMode: 'single' as const,
-      },
+      typography: DEFAULT_READER_TYPOGRAPHY,
       theme,
     };
     if (activeBookId.current === currentBook.id && runtime.getSnapshot().phase === 'ready') {

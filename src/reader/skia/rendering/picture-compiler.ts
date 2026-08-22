@@ -1,6 +1,6 @@
 import { Skia, type SkPicture } from '@shopify/react-native-skia';
 
-import type { ReaderDisplayList } from '../contracts';
+import type { ReaderDisplayList } from '../../contracts';
 import type { SkiaDisplayListRenderOptions } from './display-list-renderer';
 import { SkiaDisplayListRenderer } from './display-list-renderer';
 

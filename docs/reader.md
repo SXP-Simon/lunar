@@ -16,11 +16,21 @@
 
 [MUST] `contracts` 仅定义阅读内核公开类型与固定错误契约。
 
+[MUST] `typography` 仅负责排版默认值、输入规范化与版面标识生成，保持平台无关。
+
 [MUST] `runtime` 仅负责阅读会话、版面修订、分页调度与资源生命周期。
 
 [MUST] `rito` 仅负责 Rito 适配、版面配置转换与阅读位置处理。
 
 [MUST] `skia` 仅负责文字测量、字体、图片、绘制命令与画面编译。
+
+[MUST] `skia/fonts` 管理字体注册、字体匹配与原生字体资源生命周期。
+
+[MUST] `skia/text` 管理 Paragraph 创建、字形塑造与文字测量。
+
+[MUST] `skia/images` 管理图片解码与图片缓存。
+
+[MUST] `skia/rendering` 管理 DisplayList 执行、Picture 编译与 Canvas 表面。
 
 [MUST] `interaction` 仅负责命中检测与当前页可访问性语义。
 

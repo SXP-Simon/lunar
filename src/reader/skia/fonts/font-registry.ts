@@ -5,8 +5,6 @@ import {
   type FontStyle,
   type SkFont,
   type SkFontMgr,
-  type SkParagraph,
-  type SkTextStyle,
   type SkTypeface,
   type SkTypefaceFontProvider,
 } from '@shopify/react-native-skia';
@@ -14,13 +12,14 @@ import {
 import type {
   ReaderFontRegistry,
   ReaderFontShorthand,
-  ReaderMeasurePaint,
-  ReaderTextShadow,
-} from '../contracts';
+} from '../../contracts';
 
 export interface SkiaFontRegistry extends ReaderFontRegistry {
   readonly systemFontManager: SkFontMgr;
   readonly bookFontProvider: SkTypefaceFontProvider;
+  getFontFamilies(family: string): readonly string[];
+  getParagraphProvider(family: string): SkTypefaceFontProvider | undefined;
+  resolveFont(font: ReaderFontShorthand): SkFont;
   dispose(): void;
 }
 
@@ -50,9 +49,15 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
   }
 
   hasBookFamily(family: string): boolean {
-    return getFontFamilies(family).some((candidate) =>
+    this.assertActive();
+    return this.getFontFamilies(family).some((candidate) =>
       this.bookFamilies.has(normalizeFamily(candidate)),
     );
+  }
+
+  getFontFamilies(family: string): readonly string[] {
+    this.assertActive();
+    return splitFontFamilies(family);
   }
 
   getParagraphProvider(family: string): SkTypefaceFontProvider | undefined {
@@ -72,7 +77,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
       width: FontWidth.Normal,
       slant: font.style === 'italic' ? FontSlant.Italic : FontSlant.Upright,
     };
-    const families = getFontFamilies(font.family);
+    const families = this.getFontFamilies(font.family);
     const customFamily = families.find((family) =>
       this.bookFamilies.has(normalizeFamily(family)),
     );
@@ -82,72 +87,6 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     const skFont = Skia.Font(typeface, font.sizePx);
     this.fonts.set(key, skFont);
     return skFont;
-  }
-
-  measureShapedText(text: string, paint: ReaderMeasurePaint) {
-    const paragraph = this.createParagraph(text, paint);
-    try {
-      paragraph.layout(SINGLE_LINE_LAYOUT_WIDTH);
-      return {
-        width: paragraph.getLongestLine(),
-        height: paragraph.getHeight(),
-      };
-    } finally {
-      paragraph.dispose();
-    }
-  }
-
-  createParagraph(
-    text: string,
-    paint: ReaderMeasurePaint,
-    options: {
-      readonly color?: string;
-      readonly alpha?: number;
-      readonly textShadow?: readonly ReaderTextShadow[];
-    } = {},
-  ): SkParagraph {
-    this.assertActive();
-    const families = getFontFamilies(paint.font.family);
-    const provider = families.some((family) =>
-      this.bookFamilies.has(normalizeFamily(family)),
-    )
-      ? this.bookFontProvider
-      : undefined;
-    const builder = provider
-      ? Skia.ParagraphBuilder.Make({}, provider)
-      : Skia.ParagraphBuilder.Make({});
-    const style: SkTextStyle = {
-      color: colorWithAlpha(options.color ?? '#000000', options.alpha ?? 1),
-      fontFamilies: families.length > 0 ? families : ['sans-serif'],
-      fontSize: paint.font.sizePx,
-      fontStyle: {
-        weight: paint.font.weight,
-        width: FontWidth.Normal,
-        slant:
-          paint.font.style === 'italic'
-            ? FontSlant.Italic
-            : FontSlant.Upright,
-      },
-      letterSpacing: paint.letterSpacingPx ?? 0,
-      wordSpacing: paint.wordSpacingPx ?? 0,
-      locale: 'zh-Hans',
-      ...(options.textShadow
-        ? {
-            shadows: options.textShadow.map((shadow) => ({
-              color: colorWithAlpha(shadow.color, options.alpha ?? 1),
-              offset: { x: shadow.offsetX, y: shadow.offsetY },
-              blurRadius: shadow.blur,
-            })),
-          }
-        : {}),
-    };
-
-    try {
-      builder.pushStyle(style).addText(text).pop();
-      return builder.build();
-    } finally {
-      builder.reset();
-    }
   }
 
   dispose(): void {
@@ -173,16 +112,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
   }
 }
 
-const SINGLE_LINE_LAYOUT_WIDTH = 100_000;
-
-function colorWithAlpha(value: string, alpha: number) {
-  const color = Skia.Color(value);
-  const resolved = new Float32Array(color);
-  resolved[3] = (resolved[3] ?? 1) * Math.min(1, Math.max(0, alpha));
-  return resolved;
-}
-
-function getFontFamilies(value: string): string[] {
+export function splitFontFamilies(value: string): string[] {
   return value
     .split(',')
     .map((family) => family.trim().replace(/^['"]|['"]$/g, ''))

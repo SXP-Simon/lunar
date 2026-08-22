@@ -18,16 +18,19 @@ import type {
   ReaderRect,
   ReaderRunBorderEdge,
   ReaderRunPaint,
-} from '../contracts';
-import type { LunarSkiaFontRegistry } from './font-registry';
-import type { SkiaImageAsset } from './image-decoder';
+} from '../../contracts';
+import type { SkiaImageAsset } from '../images/image-decoder';
+import {
+  SINGLE_LINE_LAYOUT_WIDTH,
+  type SkiaParagraphFactory,
+} from '../text/paragraph-factory';
 
 export interface SkiaDisplayListRenderOptions {
   readonly pixelRatio: number;
   readonly images: {
     resolveImage(source: string): SkiaImageAsset | undefined;
   };
-  readonly fonts: LunarSkiaFontRegistry;
+  readonly paragraphs: SkiaParagraphFactory;
 }
 
 export interface LunarSkiaDisplayListRenderer {
@@ -55,7 +58,7 @@ export class SkiaDisplayListRenderer
     options?: SkiaDisplayListRenderOptions,
   ): void {
     if (!options) {
-      throw new Error('Skia display-list rendering requires image and font resources.');
+      throw new Error('Skia display-list rendering requires image and text resources.');
     }
 
     const state: RenderState = { alpha: 1, alphaStack: [1], options };
@@ -261,7 +264,7 @@ function drawText(
   state: RenderState,
 ): void {
   drawInlineBox(canvas, rect, paint, state.alpha);
-  const paragraph = state.options.fonts.createParagraph(text, paint, {
+  const paragraph = state.options.paragraphs.createParagraph(text, paint, {
     color: paint.color,
     alpha: state.alpha,
     textShadow: paint.textShadow,
@@ -295,7 +298,7 @@ function drawRuby(
   paint: ReaderRunPaint,
   state: RenderState,
 ): void {
-  const measured = state.options.fonts.measureShapedText(text, paint).width;
+  const measured = state.options.paragraphs.measureShapedText(text, paint).width;
   drawText(
     canvas,
     text,
@@ -304,8 +307,6 @@ function drawRuby(
     state,
   );
 }
-
-const SINGLE_LINE_LAYOUT_WIDTH = 100_000;
 
 function drawInlineBox(
   canvas: SkCanvas,

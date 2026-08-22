@@ -139,8 +139,10 @@ ReaderRuntime
 |---|---|
 | `ReaderRuntime` | 管理打开、分页、版面修订、导航、资源释放和错误状态 |
 | `RitoAdapter` | 封装 Rito 公开接口和少量 advanced 接口，隔离版本变化 |
+| `ReaderTypography` | 定义平台无关的排版参数、默认值、输入规范化与版面标识 |
 | `SkiaTextMeasurer` | 将 Rito `MeasurePaint` 转换为 Skia 字体与段落测量 |
 | `SkiaFontRegistry` | 从 EPUB 字体字节创建 Typeface，并按书籍生命周期释放 |
+| `SkiaParagraphFactory` | 统一创建测量与绘制共用的 Skia Paragraph |
 | `LunarFontResolver` | 组合系统字体管理器、内置字体和书籍字体，形成一致的 Typeface 匹配结果 |
 | `SkiaImageDecoder` | 从图片字节创建 `SkImage`，返回尺寸并管理释放 |
 | `SkiaDisplayListRenderer` | 将全部 `DrawCommand` 转换为 Skia Canvas 操作 |
@@ -284,6 +286,15 @@ lunar/
       reader/                         阅读页面、工具栏、设置面板与出版物加载
       settings/                       应用设置
     reader/
+      contracts/
+        reader.ts                    阅读会话与位置契约
+        typography.ts                阅读主题、视口与排版契约
+        loading.ts                   资源、DisplayList 与出版物契约
+        errors.ts                    固定错误代码
+      typography/
+        defaults.ts                  阅读排版默认值
+        normalize.ts                 排版输入规范化
+        typography-key.ts            排版标识生成
       runtime/
         reader-runtime.ts             会话、修订、分页和资源生命周期
         pagination-scheduler.ts       章节增量分页调度
@@ -293,17 +304,20 @@ lunar/
         layout-config.ts              Lunar 设置到 Rito 配置的转换
         locator.ts                    阅读位置解析与保存
       skia/
-        display-list-renderer.ts      DrawCommand 穷尽执行器
-        text-measurer.ts              Skia 文字测量与缓存
-        font-registry.ts              系统、内置和书内字体
-        image-decoder.ts              图片解码与缓存
-        picture-compiler.ts           DisplayList 到 SkPicture
+        fonts/
+          font-registry.ts            系统字体与书内字体资源
+        text/
+          paragraph-factory.ts        Paragraph 创建与字形塑造
+          text-measurer.ts            Skia 文字测量与缓存
+        images/
+          image-decoder.ts            图片解码与缓存
+        rendering/
+          display-list-renderer.ts    DrawCommand 穷尽执行器
+          picture-compiler.ts         DisplayList 到 SkPicture
+          reader-surface.tsx          Canvas 与 Picture 表面
       interaction/
         hit-testing.ts                点击、链接和图片命中
         semantics.ts                  当前页可访问性数据
-      contracts/
-        reader.ts                     Lunar 阅读内核公开类型
-        errors.ts                     固定错误代码
     db/                               SQLite 连接、初始化与 migration
     stores/                           Zustand stores
   tests/

@@ -9,9 +9,11 @@ import type {
   ReaderLayoutRequest,
   ReaderRenderPalette,
 } from '../contracts';
+import { normalizeReaderTypography } from '../typography';
 
 export function createRitoLayoutConfig(request: ReaderLayoutRequest): LayoutConfig {
-  const { typography, viewport } = request;
+  const typography = normalizeReaderTypography(request.typography);
+  const { viewport } = request;
 
   return createLayoutConfig({
     width: viewport.width,

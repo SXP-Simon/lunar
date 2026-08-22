@@ -4,7 +4,7 @@ import type {
   ReaderImageDecoder,
   ReaderImageDimensions,
   ReaderImageResource,
-} from '../contracts';
+} from '../../contracts';
 
 export interface SkiaImageAsset extends ReaderImageDimensions {
   readonly image: SkImage;
