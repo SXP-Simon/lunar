@@ -30,46 +30,63 @@ export function BookCard({ book, onPress }: BookCardProps) {
       accessibilityLabel={`打开《${book.title}》`}
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-      <View
-        style={[
-          styles.cover,
-          {
-            backgroundColor: book.cover.background,
-            shadowColor: book.cover.background,
-          },
-        ]}>
-        <View style={[styles.coverRule, { backgroundColor: book.cover.accent }]} />
-        <Text style={[styles.coverAuthor, { color: book.cover.foreground }]}>
-          {book.author}
-        </Text>
-        <Text style={[styles.coverMark, { color: book.cover.accent }]}>{book.cover.mark}</Text>
-        <View style={[styles.coverFooter, { borderTopColor: book.cover.accent }]}>
-          <Text style={[styles.coverTitle, { color: book.cover.foreground }]} numberOfLines={2}>
+      {({ pressed }) => (
+        <>
+          <View
+            style={[
+              styles.cover,
+              {
+                backgroundColor: book.cover.background,
+                shadowColor: book.cover.background,
+              },
+            ]}>
+            <View style={[styles.coverRule, { backgroundColor: book.cover.accent }]} />
+            <Text style={[styles.coverAuthor, { color: book.cover.foreground }]}>
+              {book.author}
+            </Text>
+            <Text style={[styles.coverMark, { color: book.cover.accent }]}>
+              {book.cover.mark}
+            </Text>
+            <View style={[styles.coverFooter, { borderTopColor: book.cover.accent }]}>
+              <Text
+                style={[styles.coverTitle, { color: book.cover.foreground }]}
+                numberOfLines={2}>
+                {book.title}
+              </Text>
+            </View>
+            {book.cover.imageUri && (
+              <Image
+                accessible={false}
+                cachePolicy="disk"
+                contentFit="cover"
+                recyclingKey={book.id}
+                source={book.cover.imageUri}
+                style={styles.coverImage}
+                transition={120}
+              />
+            )}
+            {pressed && (
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.coverPressedOverlay,
+                  { backgroundColor: theme.text },
+                ]}
+              />
+            )}
+          </View>
+
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[styles.bookName, { color: theme.text }]}>
             {book.title}
           </Text>
-        </View>
-        {book.cover.imageUri && (
-          <Image
-            accessible={false}
-            cachePolicy="disk"
-            contentFit="cover"
-            recyclingKey={book.id}
-            source={book.cover.imageUri}
-            style={styles.coverImage}
-            transition={120}
-          />
-        )}
-      </View>
-
-      <Text
-        numberOfLines={1}
-        ellipsizeMode="tail"
-        style={[styles.bookName, { color: theme.text }]}>
-        {book.title}
-      </Text>
-      <Text numberOfLines={1} style={[styles.bookAuthor, { color: theme.textSecondary }]}>
-        {book.author}
-      </Text>
+          <Text numberOfLines={1} style={[styles.bookAuthor, { color: theme.textSecondary }]}>
+            {book.author}
+          </Text>
+        </>
+      )}
     </Pressable>
   );
 }
@@ -81,7 +98,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.four,
   },
   cardPressed: {
-    opacity: 0.72,
     transform: [{ scale: 0.985 }],
   },
   cover: {
@@ -105,6 +121,11 @@ const styles = StyleSheet.create({
   coverImage: {
     position: 'absolute',
     inset: 0,
+  },
+  coverPressedOverlay: {
+    position: 'absolute',
+    inset: 0,
+    opacity: 0.12,
   },
   coverAuthor: {
     alignSelf: 'flex-end',
