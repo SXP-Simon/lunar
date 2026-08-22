@@ -36,6 +36,7 @@ import type {
   ReaderImageDecoder,
   ReaderImageDimensions,
   ReaderLayoutParameters,
+  ReaderPublicationView,
   ReaderRenderFrame,
   ReaderTextMeasurer,
   ReaderTocEntry,
@@ -82,6 +83,7 @@ export interface RitoPaginationContext {
   readonly metadata: ReaderBookMetadata;
   readonly toc: readonly ReaderTocEntry[];
   paginateNextChapter(): RitoChapterPagination;
+  buildPreview(chapterTimings: readonly ReaderChapterTiming[]): ReaderPublicationView;
   buildPublication(chapterTimings: readonly ReaderChapterTiming[]): LoadedReaderPublication;
   close(): void;
 }
@@ -217,6 +219,13 @@ class RitoPaginationContextImplementation<TImage extends ReaderImageDimensions>
     return { pageCount: result.pages.length, done: result.done };
   }
 
+  buildPreview(
+    chapterTimings: readonly ReaderChapterTiming[],
+  ): ReaderPublicationView {
+    this.assertOpen();
+    return this.createPublicationView(chapterTimings);
+  }
+
   buildPublication(
     chapterTimings: readonly ReaderChapterTiming[],
   ): LoadedReaderPublication {
@@ -225,14 +234,26 @@ class RitoPaginationContextImplementation<TImage extends ReaderImageDimensions>
       throw new Error('The pagination context has already produced a publication.');
     }
 
+    const view = this.createPublicationView(chapterTimings);
+
+    this.publicationBuilt = true;
+    return new RitoLoadedPublication(
+      view,
+      this.document,
+      this.decodedImages,
+      this.imageDecoder,
+      this.fontRegistry,
+    );
+  }
+
+  private createPublicationView(
+    chapterTimings: readonly ReaderChapterTiming[],
+  ): ReaderPublicationView {
     const result = this.session.getResult();
     const chapterStartPages = new Set(
       Array.from(result.chapterMap.values(), (range) => range.startPage),
     );
     const spreads = createRitoSpreads(result.pages, this.layout, chapterStartPages);
-    const frames = spreads.map((spread) =>
-      toReaderFrame(spread, this.layout, this.displayListOptions),
-    );
     const chapters = Array.from(result.chapterMap, ([spineIdref, range]) => ({
       spineIdref,
       startPage: range.startPage,
@@ -246,20 +267,18 @@ class RitoPaginationContextImplementation<TImage extends ReaderImageDimensions>
       spreads,
     );
 
-    this.publicationBuilt = true;
-    return new RitoLoadedPublication(
+    return new RitoPublicationView(
       this.metadata,
       this.toc,
       this.layoutParameters,
       result.pages.length,
       chapters,
       chapterTimings,
-      frames,
+      spreads,
       tocTargets,
       this.document,
-      this.decodedImages,
-      this.imageDecoder,
-      this.fontRegistry,
+      this.layout,
+      this.displayListOptions,
     );
   }
 
@@ -283,12 +302,10 @@ class RitoPaginationContextImplementation<TImage extends ReaderImageDimensions>
   }
 }
 
-class RitoLoadedPublication<TImage extends ReaderImageDimensions>
-  implements LoadedReaderPublication
-{
+class RitoPublicationView implements ReaderPublicationView {
   readonly totalSpreads: number;
 
-  private closed = false;
+  private readonly frames = new Map<number, ReaderRenderFrame>();
   private readonly imageResolver: (source: string) => Uint8Array | undefined;
 
   constructor(
@@ -298,36 +315,90 @@ class RitoLoadedPublication<TImage extends ReaderImageDimensions>
     readonly totalPages: number,
     readonly chapters: readonly ReaderChapterRange[],
     readonly chapterTimings: readonly ReaderChapterTiming[],
-    private readonly frames: readonly ReaderRenderFrame[],
+    private readonly spreads: readonly Spread[],
     private readonly tocTargets: ReadonlyMap<string, number>,
-    private readonly document: EpubDocument,
-    private readonly decodedImages: ReadonlyMap<string, TImage>,
-    private readonly imageDecoder?: ReaderImageDecoder<TImage>,
-    private readonly fontRegistry?: ReaderFontRegistry,
+    document: EpubDocument,
+    private readonly ritoLayout: LayoutConfig,
+    private readonly displayListOptions: DisplayListOptions,
   ) {
-    this.totalSpreads = frames.length;
+    this.totalSpreads = spreads.length;
     this.imageResolver = createReaderImageResolver(document.images);
   }
 
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined {
-    if (this.closed) {
+    const cached = this.frames.get(spreadIndex);
+    if (cached) {
+      return cached;
+    }
+    const spread = this.spreads[spreadIndex];
+    if (!spread) {
       return undefined;
     }
-    return this.frames[spreadIndex];
+    const frame = toReaderFrame(spread, this.ritoLayout, this.displayListOptions);
+    this.frames.set(spreadIndex, frame);
+    return frame;
   }
 
   getImage(source: string): Uint8Array | undefined {
-    if (this.closed) {
-      return undefined;
-    }
     return this.imageResolver(source);
   }
 
   resolveToc(href: string): number | undefined {
-    if (this.closed) {
-      return undefined;
-    }
     return this.tocTargets.get(href) ?? this.tocTargets.get(decodeHref(href));
+  }
+}
+
+class RitoLoadedPublication<TImage extends ReaderImageDimensions>
+  implements LoadedReaderPublication
+{
+  private closed = false;
+
+  constructor(
+    private readonly view: ReaderPublicationView,
+    private readonly document: EpubDocument,
+    private readonly decodedImages: ReadonlyMap<string, TImage>,
+    private readonly imageDecoder?: ReaderImageDecoder<TImage>,
+    private readonly fontRegistry?: ReaderFontRegistry,
+  ) {}
+
+  get metadata() {
+    return this.view.metadata;
+  }
+
+  get toc() {
+    return this.view.toc;
+  }
+
+  get layout() {
+    return this.view.layout;
+  }
+
+  get totalPages() {
+    return this.view.totalPages;
+  }
+
+  get totalSpreads() {
+    return this.view.totalSpreads;
+  }
+
+  get chapters() {
+    return this.view.chapters;
+  }
+
+  get chapterTimings() {
+    return this.view.chapterTimings;
+  }
+
+  getFrame(spreadIndex: number): ReaderRenderFrame | undefined {
+    return this.closed ? undefined : this.view.getFrame(spreadIndex);
+  }
+
+  getImage(source: string): Uint8Array | undefined {
+    return this.closed ? undefined : this.view.getImage(source);
+  }
+
+  resolveToc(href: string): number | undefined {
+    return this.closed ? undefined : this.view.resolveToc(href);
   }
 
   close(): void {

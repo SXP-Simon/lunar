@@ -77,6 +77,7 @@ export interface ReaderSnapshot {
   readonly revisionId: number;
   readonly spreadIndex: number;
   readonly totalSpreads?: number;
+  readonly paginationComplete?: boolean;
   readonly position?: ReaderPosition;
   readonly errorMessage?: string;
 }

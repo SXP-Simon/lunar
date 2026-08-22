@@ -86,8 +86,13 @@ describe('Rito adapter', () => {
 
   it('paginates the fixture and loads display lists with rendering parameters', async () => {
     const disposeImage = vi.fn();
+    const paginationEvents: string[] = [];
+    let firstPreviewSpreads = 0;
+    let latestPreviewSpreads = 0;
     const loader = new ReaderPublicationLoader({
-      yieldAfterChapter: vi.fn(async () => undefined),
+      yieldAfterChapter: vi.fn(async () => {
+        paginationEvents.push('yield');
+      }),
     });
     const publication = await loader.load({
       data: readFixture(),
@@ -112,10 +117,30 @@ describe('Rito adapter', () => {
         }),
         dispose: disposeImage,
       },
+      lineBreaking: 'greedy',
+      onPublicationUpdated: (preview) => {
+        paginationEvents.push('publication-update');
+        latestPreviewSpreads = preview.totalSpreads;
+        if (firstPreviewSpreads > 0) {
+          return;
+        }
+        firstPreviewSpreads = preview.totalSpreads;
+        expect(preview.totalPages).toBeGreaterThan(0);
+        expect(preview.getFrame(0)).toBeDefined();
+        expect(preview.chapterTimings).toHaveLength(1);
+      },
     });
 
     const firstFrame = publication.getFrame(0);
     expect(publication.totalPages).toBeGreaterThan(100);
+    expect(firstPreviewSpreads).toBeGreaterThan(0);
+    expect(firstPreviewSpreads).toBeLessThan(publication.totalSpreads);
+    expect(latestPreviewSpreads).toBe(publication.totalSpreads);
+    expect(paginationEvents[0]).toBe('publication-update');
+    expect(
+      paginationEvents.filter((event) => event === 'publication-update').length,
+    ).toBeGreaterThan(1);
+    expect(paginationEvents).toContain('yield');
     expect(publication.totalSpreads).toBe(publication.totalPages);
     expect(publication.chapters).toHaveLength(20);
     expect(publication.chapterTimings).toHaveLength(20);

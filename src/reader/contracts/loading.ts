@@ -297,7 +297,7 @@ export interface ReaderRenderFrame {
   readonly displayList: ReaderDisplayList;
 }
 
-export interface LoadedReaderPublication {
+export interface ReaderPublicationView {
   readonly metadata: ReaderBookMetadata;
   readonly toc: readonly ReaderTocEntry[];
   readonly layout: ReaderLayoutParameters;
@@ -308,6 +308,9 @@ export interface LoadedReaderPublication {
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined;
   getImage(source: string): Uint8Array | undefined;
   resolveToc(href: string): number | undefined;
+}
+
+export interface LoadedReaderPublication extends ReaderPublicationView {
   close(): void;
 }
 
@@ -323,4 +326,7 @@ export interface LoadReaderPublicationOptions<
   readonly lineBreaking?: 'greedy' | 'optimal';
   readonly signal?: AbortSignal;
   readonly onChapterPaginated?: (timing: ReaderChapterTiming) => void;
+  readonly onPublicationUpdated?: (
+    publication: ReaderPublicationView,
+  ) => void | Promise<void>;
 }

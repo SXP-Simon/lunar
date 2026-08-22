@@ -4,6 +4,7 @@ import type {
   ReaderOpenRequest,
   ReaderOpenResult,
   ReaderPosition,
+  ReaderPublicationView,
   ReaderRenderFrame,
   ReaderSnapshot,
 } from '../contracts';
@@ -32,7 +33,8 @@ export class LunarReaderRuntime implements ReaderRuntime {
     (picture) => this.pictureCompiler.dispose(picture),
   );
   private readonly pictureCompiler = new SkiaPictureCompiler();
-  private publication?: LoadedReaderPublication;
+  private publication?: ReaderPublicationView;
+  private publicationOwner?: LoadedReaderPublication;
   private fontRegistry?: LunarSkiaFontRegistry;
   private textMeasurer?: LunarSkiaTextMeasurer;
   private imageCache?: SkiaImageCache;
@@ -40,6 +42,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private data?: ArrayBuffer;
   private operation = 0;
   private abortController?: AbortController;
+  private paginationComplete = false;
 
   constructor(
     private readonly loadData: ReaderBookDataLoader,
@@ -171,6 +174,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.fontRegistry = fontRegistry;
     this.textMeasurer = textMeasurer;
     this.emit({ ...this.snapshot, phase });
+    let firstFrameReady = false;
 
     const publication = await this.publicationLoader.load({
       data,
@@ -178,11 +182,34 @@ export class LunarReaderRuntime implements ReaderRuntime {
       fontRegistry,
       textMeasurer,
       signal: this.abortController?.signal,
-      lineBreaking: 'optimal',
+      lineBreaking: 'greedy',
+      onPublicationUpdated: async (preview) => {
+        this.assertCurrent(operation);
+        this.publication = preview;
+        this.paginationComplete = false;
+        this.imageCache ??= new SkiaImageCache({
+          getBytes: (source) => preview.getImage(source),
+        });
+        if (!firstFrameReady) {
+          firstFrameReady = true;
+          await this.preparePicture(0, operation);
+          this.assertCurrent(operation);
+          this.emit(this.createReadySnapshot(0));
+          void this.warmAdjacentPictures(0, operation);
+          return;
+        }
+
+        const current = clampSpread(this.snapshot.spreadIndex, preview.totalSpreads);
+        this.emit(this.createReadySnapshot(current));
+      },
     });
     this.assertCurrent(operation);
     this.publication = publication;
-    this.imageCache = new SkiaImageCache({ getBytes: (source) => publication.getImage(source) });
+    this.publicationOwner = publication;
+    this.paginationComplete = true;
+    this.imageCache ??= new SkiaImageCache({
+      getBytes: (source) => publication.getImage(source),
+    });
 
     const target = progressionToSpread(progression, publication.totalSpreads);
     await this.preparePicture(target, operation);
@@ -266,6 +293,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
       revisionId: this.snapshot.revisionId,
       spreadIndex,
       totalSpreads: publication.totalSpreads,
+      paginationComplete: this.paginationComplete,
       position,
     };
   }
@@ -308,8 +336,10 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.imageCache = undefined;
     this.textMeasurer?.dispose();
     this.textMeasurer = undefined;
-    this.publication?.close();
+    this.publicationOwner?.close();
+    this.publicationOwner = undefined;
     this.publication = undefined;
+    this.paginationComplete = false;
     this.fontRegistry = undefined;
   }
 

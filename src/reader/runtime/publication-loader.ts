@@ -49,7 +49,6 @@ export class ReaderPublicationLoader {
       const timings: ReaderChapterTiming[] = [];
       let done = false;
       let chapterIndex = 0;
-
       while (!done) {
         throwIfAborted(options.signal);
         const startedAt = performance.now();
@@ -63,6 +62,11 @@ export class ReaderPublicationLoader {
         options.onChapterPaginated?.(timing);
         done = chapter.done;
         chapterIndex += 1;
+
+        if (chapter.pageCount > 0) {
+          await options.onPublicationUpdated?.(context.buildPreview(timings));
+          throwIfAborted(options.signal);
+        }
 
         if (!done) {
           await this.scheduler.yieldAfterChapter(options.signal);
