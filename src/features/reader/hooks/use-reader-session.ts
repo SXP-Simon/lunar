@@ -39,13 +39,6 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const currentBook = book?.id === bookId ? book : undefined;
   const currentOpenResult = openResult?.bookId === bookId ? openResult.result : undefined;
-  const settledSnapshot = currentOpenResult?.snapshot;
-  const visibleSnapshot =
-    settledSnapshot?.revisionId === snapshot.revisionId &&
-    settledSnapshot.paginationComplete === true &&
-    snapshot.paginationComplete !== true
-      ? settledSnapshot
-      : snapshot;
 
   useEffect(() => {
     let active = true;
@@ -120,12 +113,12 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
 
   return {
     runtime,
-    snapshot: visibleSnapshot,
+    snapshot,
     book: currentBook,
     metadata: currentOpenResult?.metadata,
     toc: currentOpenResult?.toc ?? [],
     errorMessage:
       (bookError?.bookId === bookId ? bookError.message : undefined) ??
-      visibleSnapshot.errorMessage,
+      snapshot.errorMessage,
   };
 }

@@ -182,18 +182,6 @@ export class LunarReaderRuntime implements ReaderRuntime {
       textMeasurer,
       signal: this.abortController?.signal,
       lineBreaking: 'greedy',
-      onPreviewReady: async (preview) => {
-        this.assertCurrent(operation);
-        this.publication = preview;
-        this.paginationComplete = false;
-        this.imageCache ??= new SkiaImageCache({
-          getBytes: (source) => preview.getImage(source),
-        });
-        await this.preparePicture(0, operation);
-        this.assertCurrent(operation);
-        this.emit(this.createReadySnapshot(0));
-        void this.warmAdjacentPictures(0, operation);
-      },
     });
     this.assertCurrent(operation);
     this.publication = publication;

@@ -32,6 +32,8 @@ export class ReaderPublicationLoader {
     try {
       throwIfAborted(options.signal);
       const layout = createRitoLayoutConfig(options.layout);
+      await this.scheduler.yieldBeforePagination?.(options.signal);
+      throwIfAborted(options.signal);
       context = await openRitoPaginationContext({
         data: options.data,
         layout,
@@ -49,9 +51,12 @@ export class ReaderPublicationLoader {
       const timings: ReaderChapterTiming[] = [];
       let done = false;
       let chapterIndex = 0;
-      let previewPublished = false;
       while (!done) {
         throwIfAborted(options.signal);
+        if (chapterIndex === 0) {
+          await this.scheduler.yieldBeforePagination?.(options.signal);
+          throwIfAborted(options.signal);
+        }
         const startedAt = performance.now();
         const chapter = context.paginateNextChapter();
         const timing: ReaderChapterTiming = {
@@ -63,12 +68,6 @@ export class ReaderPublicationLoader {
         options.onChapterPaginated?.(timing);
         done = chapter.done;
         chapterIndex += 1;
-
-        if (chapter.pageCount > 0 && !previewPublished) {
-          previewPublished = true;
-          await options.onPreviewReady?.(context.buildPreview(timings));
-          throwIfAborted(options.signal);
-        }
 
         if (!done) {
           await this.scheduler.yieldAfterChapter(options.signal);
