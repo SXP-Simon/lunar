@@ -268,7 +268,10 @@ function drawText(
 
   const foreground = createPaint(paint.color, state.alpha);
   const provider = state.options.fonts.getParagraphProvider(paint.font.family);
-  const builder = Skia.ParagraphBuilder.Make({ maxLines: 1 }, provider);
+  const paragraphStyle = { maxLines: 1 } as const;
+  const builder = provider
+    ? Skia.ParagraphBuilder.Make(paragraphStyle, provider)
+    : Skia.ParagraphBuilder.Make(paragraphStyle);
   const textStyle: SkTextStyle = {
     color: toColor(paint.color),
     fontFamilies: getPrimaryFontFamilies(paint.font.family),
@@ -278,21 +281,28 @@ function drawText(
       width: FontWidth.Normal,
       slant: paint.font.style === 'italic' ? FontSlant.Italic : FontSlant.Upright,
     },
-    letterSpacing: paint.letterSpacingPx,
-    wordSpacing: paint.wordSpacingPx,
-    heightMultiplier: lineHeightPx ? lineHeightPx / paint.font.sizePx : undefined,
-    shadows: paint.textShadow?.map((shadow) => ({
+  };
+  if (paint.letterSpacingPx !== undefined) {
+    textStyle.letterSpacing = paint.letterSpacingPx;
+  }
+  if (paint.wordSpacingPx !== undefined) {
+    textStyle.wordSpacing = paint.wordSpacingPx;
+  }
+  if (lineHeightPx !== undefined && paint.font.sizePx > 0) {
+    textStyle.heightMultiplier = lineHeightPx / paint.font.sizePx;
+  }
+  if (paint.textShadow) {
+    textStyle.shadows = paint.textShadow.map((shadow) => ({
       color: toColor(shadow.color),
       offset: { x: shadow.offsetX, y: shadow.offsetY },
       blurRadius: shadow.blur,
-    })),
-  };
+    }));
+  }
   builder.pushStyle(textStyle, foreground).addText(text).pop();
   const paragraph = builder.build();
   paragraph.layout(Math.max(rect.width + paint.font.sizePx * 2, 1));
   paragraph.paint(canvas, rect.x, rect.y);
   paragraph.dispose();
-  builder.dispose();
   foreground.dispose();
 
   if (paint.decoration) {

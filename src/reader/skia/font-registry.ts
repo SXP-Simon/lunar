@@ -73,8 +73,6 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     const family = customFamily ?? families[0] ?? 'sans-serif';
     const typeface = manager.matchFamilyStyle(family, style);
     const skFont = Skia.Font(typeface, font.sizePx);
-    skFont.setSubpixel(true);
-    skFont.setLinearMetrics(true);
     this.fonts.set(key, skFont);
     return skFont;
   }
@@ -93,7 +91,6 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     }
     this.typefaces.length = 0;
     this.bookFontProvider.dispose();
-    this.systemFontManager.dispose();
   }
 
   private assertActive(): void {
