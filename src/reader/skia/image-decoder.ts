@@ -69,19 +69,32 @@ export class SkiaImageCache {
   }
 
   async preload(sources: readonly string[]): Promise<void> {
+    let loadedCount = 0;
+    let missingCount = 0;
     for (const source of new Set(sources)) {
       if (this.entries.has(source)) {
         this.resolveImage(source);
+        loadedCount += 1;
         continue;
       }
       const bytes = this.getBytes(source);
       if (!bytes) {
+        missingCount += 1;
         continue;
       }
       const asset = await this.decoder.decode({ href: source, bytes });
       this.entries.set(source, asset);
       this.totalBytes += asset.byteLength;
+      loadedCount += 1;
       this.evictOverflow(source);
+    }
+    if (sources.length > 0) {
+      console.info('[LunarReaderDiagnostic] Skia image preload completed.', {
+        requestedCount: new Set(sources).size,
+        loadedCount,
+        missingCount,
+        cacheEntryCount: this.entries.size,
+      });
     }
   }
 

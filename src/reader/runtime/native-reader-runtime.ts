@@ -125,15 +125,35 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.showSpread(this.snapshot.spreadIndex - 1);
   }
 
-  getCurrentPicture(): CompiledReaderPicture | undefined {
-    return this.pictures.get({
-      revisionId: this.snapshot.revisionId,
-      spreadIndex: this.snapshot.spreadIndex,
+  getCurrentPicture(
+    revisionId = this.snapshot.revisionId,
+    spreadIndex = this.snapshot.spreadIndex,
+  ): CompiledReaderPicture | undefined {
+    const picture = this.pictures.get({
+      revisionId,
+      spreadIndex,
     });
+    if (!picture) {
+      console.warn('[LunarReaderDiagnostic] Current picture is missing.', {
+        revisionId,
+        spreadIndex,
+        cacheSize: this.pictures.size,
+        hasPublication: Boolean(this.publication),
+      });
+    }
+    return picture;
   }
 
-  getCurrentFrame(): ReaderRenderFrame | undefined {
-    return this.publication?.getFrame(this.snapshot.spreadIndex);
+  getCurrentFrame(spreadIndex = this.snapshot.spreadIndex): ReaderRenderFrame | undefined {
+    const frame = this.publication?.getFrame(spreadIndex);
+    if (!frame) {
+      console.warn('[LunarReaderDiagnostic] Current frame is missing.', {
+        revisionId: this.snapshot.revisionId,
+        spreadIndex,
+        hasPublication: Boolean(this.publication),
+      });
+    }
+    return frame;
   }
 
   getBackgroundColor(): string {
@@ -223,12 +243,31 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (!frame) {
       throw new RangeError(`Spread ${spreadIndex} is outside the publication.`);
     }
+    const commandCounts = countCommands(frame.displayList.commands);
+    console.info('[LunarReaderDiagnostic] Preparing reader frame.', {
+      revisionId: this.snapshot.revisionId,
+      spreadIndex,
+      pageIndices: frame.pageIndices,
+      frameSize: { width: frame.width, height: frame.height },
+      commandCount: frame.displayList.commands.length,
+      commandCounts,
+      textCharacterCount: countTextCharacters(frame.displayList.commands),
+      visibleTextCommandCount: countVisibleTextCommands(frame),
+      imageSourceCount: frame.imageSources.length,
+      commandGeometry: summarizeCommandGeometry(frame.displayList.commands),
+    });
     await imageCache.preload(frame.imageSources);
     this.assertCurrent(operation);
     const picture = this.pictureCompiler.compile(frame.displayList, {
       pixelRatio: 1,
       images: imageCache,
       fonts: fontRegistry,
+    });
+    console.info('[LunarReaderDiagnostic] Skia picture compiled.', {
+      revisionId: this.snapshot.revisionId,
+      spreadIndex,
+      width: picture.width,
+      height: picture.height,
     });
     this.pictures.set(key, picture);
   }
@@ -303,6 +342,14 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   private releaseResources(): void {
+    console.info('[LunarReaderDiagnostic] Releasing reader resources.', {
+      phase: this.snapshot.phase,
+      revisionId: this.snapshot.revisionId,
+      spreadIndex: this.snapshot.spreadIndex,
+      operation: this.operation,
+      cacheSize: this.pictures.size,
+      hasPublication: Boolean(this.publication),
+    });
     this.pictures.clear();
     this.imageCache?.clear();
     this.imageCache = undefined;
@@ -319,6 +366,64 @@ export class LunarReaderRuntime implements ReaderRuntime {
       listener(snapshot);
     }
   }
+}
+
+function countCommands(
+  commands: ReaderRenderFrame['displayList']['commands'],
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const command of commands) {
+    counts[command.kind] = (counts[command.kind] ?? 0) + 1;
+  }
+  return counts;
+}
+
+function countTextCharacters(
+  commands: ReaderRenderFrame['displayList']['commands'],
+): number {
+  return commands.reduce(
+    (count, command) =>
+      command.kind === 'paintText' || command.kind === 'paintRuby'
+        ? count + Array.from(command.text).length
+        : count,
+    0,
+  );
+}
+
+function countVisibleTextCommands(frame: ReaderRenderFrame): number {
+  return frame.displayList.commands.filter(
+    (command) =>
+      (command.kind === 'paintText' || command.kind === 'paintRuby') &&
+      command.rect.x < frame.width &&
+      command.rect.y < frame.height &&
+      command.rect.x + command.rect.width > 0 &&
+      command.rect.y + command.rect.height > 0,
+  ).length;
+}
+
+function summarizeCommandGeometry(
+  commands: ReaderRenderFrame['displayList']['commands'],
+) {
+  return commands
+    .filter(
+      (command) =>
+        command.kind === 'clipRect' ||
+        command.kind === 'paintImage' ||
+        command.kind === 'paintText' ||
+        command.kind === 'paintRuby',
+    )
+    .slice(0, 24)
+    .map((command) => ({
+      kind: command.kind,
+      rect: command.rect,
+      ...(command.kind === 'paintText' || command.kind === 'paintRuby'
+        ? {
+            color: command.paint.color,
+            fontFamily: command.paint.font.family,
+            fontSize: command.paint.font.sizePx,
+          }
+        : {}),
+    }));
 }
 
 function progressionToSpread(progression: number, totalSpreads: number): number {
