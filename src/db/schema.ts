@@ -52,4 +52,11 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       'CREATE INDEX IF NOT EXISTS bookmarks_book_id_index ON bookmarks(book_id)',
     ],
   },
+  {
+    version: 2,
+    name: 'track_imported_metadata_version',
+    statements: [
+      'ALTER TABLE books ADD COLUMN metadata_version INTEGER NOT NULL DEFAULT 1',
+    ],
+  },
 ];

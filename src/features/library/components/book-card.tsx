@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Fonts, Spacing, useTheme } from '@/hooks/use-theme';
@@ -7,6 +8,7 @@ export type LibraryBook = {
   title: string;
   author: string;
   cover: {
+    imageUri?: string;
     background: string;
     accent: string;
     foreground: string;
@@ -46,6 +48,17 @@ export function BookCard({ book, onPress }: BookCardProps) {
             {book.title}
           </Text>
         </View>
+        {book.cover.imageUri && (
+          <Image
+            accessible={false}
+            cachePolicy="disk"
+            contentFit="cover"
+            recyclingKey={book.id}
+            source={book.cover.imageUri}
+            style={styles.coverImage}
+            transition={120}
+          />
+        )}
       </View>
 
       <Text
@@ -88,6 +101,10 @@ const styles = StyleSheet.create({
     top: 0,
     width: 5,
     height: '100%',
+  },
+  coverImage: {
+    position: 'absolute',
+    inset: 0,
   },
   coverAuthor: {
     alignSelf: 'flex-end',

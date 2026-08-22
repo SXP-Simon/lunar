@@ -7,6 +7,7 @@ import {
   LUNAR_ZIP_LIMITS,
   RITO_VERSION,
   inspectReaderBook,
+  inspectReaderBookAssets,
   loadRitoDocument,
 } from '../../src/reader/rito/rito-adapter';
 import { ReaderPublicationLoader } from '../../src/reader/runtime/publication-loader';
@@ -42,12 +43,31 @@ describe('Rito adapter', () => {
   it('extracts metadata from the licensed EPUB fixture', () => {
     const metadata = inspectReaderBook(readFixture());
 
-    expect(metadata).toEqual({
+    expect(metadata).toMatchObject({
       title: '我买下了与她的每周密会～以五千圆为借口，共度两人时光～ 第三卷',
       creator: '羽田宇佐',
       language: 'zh',
       identifier: 'calibre:23961',
+      publisher: '富士见文库',
     });
+    expect(metadata.description).toContain('暑假结束后');
+  });
+
+  it('extracts the cover referenced by the first spine document', () => {
+    const inspection = inspectReaderBookAssets(readFixture());
+
+    expect(inspection.cover).toMatchObject({
+      source: 'Images/193982.jpg',
+      mediaType: 'image/jpeg',
+      fileExtension: 'jpg',
+    });
+    expect(inspection.cover?.bytes.byteLength).toBeGreaterThan(100_000);
+    expect(
+      readEncodedImageDimensions({
+        href: inspection.cover?.source ?? '',
+        bytes: inspection.cover?.bytes ?? new Uint8Array(),
+      }),
+    ).toEqual({ width: 1384, height: 2048 });
   });
 
   it('reads intrinsic dimensions for every image in the EPUB fixture', () => {

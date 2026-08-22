@@ -1,9 +1,14 @@
 import type { BookRepository, LibraryBookRecord } from '../db';
-import { inspectReaderBook, type ReaderBookMetadata } from '../reader';
+import {
+  inspectReaderBookAssets,
+  type ReaderBookInspection,
+} from '../reader';
 
 import type { BookFileService, ManagedBookFile } from './book-file-service';
 
-export type EpubInspector = (data: ArrayBuffer) => ReaderBookMetadata;
+export const CURRENT_BOOK_METADATA_VERSION = 2;
+
+export type EpubInspector = (data: ArrayBuffer) => ReaderBookInspection;
 
 export interface BookImportServiceOptions {
   readonly files: BookFileService;
@@ -21,7 +26,7 @@ export class BookImportService {
   constructor(options: BookImportServiceOptions) {
     this.files = options.files;
     this.books = options.books;
-    this.inspectEpub = options.inspectEpub ?? inspectReaderBook;
+    this.inspectEpub = options.inspectEpub ?? inspectReaderBookAssets;
     this.now = options.now ?? Date.now;
   }
 
@@ -30,9 +35,18 @@ export class BookImportService {
     const previous = await this.books.findBySha256(managedFile.sha256);
 
     try {
-      const metadata = this.inspectEpub(await this.files.readBook(managedFile));
+      const inspection = this.inspectEpub(await this.files.readBook(managedFile));
+      const coverUri = inspection.cover
+        ? await this.files.saveCover(managedFile, inspection.cover)
+        : previous?.coverUri;
       const timestamp = this.now();
-      const book = toLibraryBook(managedFile, metadata, timestamp, previous);
+      const book = toLibraryBook(
+        managedFile,
+        inspection,
+        coverUri,
+        timestamp,
+        previous,
+      );
       await this.books.save(book);
       return book;
     } catch (error) {
@@ -42,27 +56,64 @@ export class BookImportService {
       throw error;
     }
   }
+
+  async ensureMetadata(book: LibraryBookRecord): Promise<LibraryBookRecord> {
+    if (book.metadataVersion >= CURRENT_BOOK_METADATA_VERSION) {
+      return book;
+    }
+
+    const managedFile = toManagedBookFile(book);
+    const inspection = this.inspectEpub(await this.files.readBook(managedFile));
+    const coverUri = inspection.cover
+      ? await this.files.saveCover(managedFile, inspection.cover)
+      : book.coverUri;
+    const updated: LibraryBookRecord = {
+      ...book,
+      publisher: inspection.metadata.publisher ?? book.publisher,
+      description: inspection.metadata.description ?? book.description,
+      coverUri,
+      metadataVersion: CURRENT_BOOK_METADATA_VERSION,
+      updatedAt: this.now(),
+    };
+    await this.books.save(updated);
+    return updated;
+  }
 }
 
 function toLibraryBook(
   file: ManagedBookFile,
-  metadata: ReaderBookMetadata,
+  inspection: ReaderBookInspection,
+  coverUri: string | undefined,
   timestamp: number,
   previous?: LibraryBookRecord,
 ): LibraryBookRecord {
+  const { metadata } = inspection;
   return {
     id: previous?.id ?? file.bookId,
     title: metadata.title,
     author: metadata.creator,
     language: metadata.language,
     epubIdentifier: metadata.identifier,
+    publisher: metadata.publisher,
+    description: metadata.description,
     fileUri: file.uri,
     fileName: file.fileName,
     fileSize: file.fileSize,
     sha256: file.sha256,
-    coverUri: previous?.coverUri,
+    coverUri,
+    metadataVersion: CURRENT_BOOK_METADATA_VERSION,
     addedAt: previous?.addedAt ?? timestamp,
     lastOpenedAt: previous?.lastOpenedAt,
     updatedAt: timestamp,
+  };
+}
+
+function toManagedBookFile(book: LibraryBookRecord): ManagedBookFile {
+  return {
+    bookId: book.id,
+    uri: book.fileUri,
+    fileName: book.fileName,
+    fileSize: book.fileSize,
+    sha256: book.sha256,
   };
 }

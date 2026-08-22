@@ -26,6 +26,7 @@ describe('BookImportService', () => {
     const files: BookFileService = {
       importEpub: vi.fn(async () => managedFile),
       readBook: vi.fn(async () => data),
+      saveCover: vi.fn(async () => 'file:///documents/books/fixture-sha256/cover.jpg'),
       removeBook: vi.fn(async () => undefined),
     };
     const books = new MemoryBookRepository();
@@ -43,11 +44,23 @@ describe('BookImportService', () => {
       author: '羽田宇佐',
       language: 'zh',
       epubIdentifier: 'calibre:23961',
+      publisher: '富士见文库',
+      description: expect.stringContaining('暑假结束后'),
+      coverUri: 'file:///documents/books/fixture-sha256/cover.jpg',
+      metadataVersion: 2,
       fileSize: data.byteLength,
       addedAt: 1_777_777,
       updatedAt: 1_777_777,
     });
     await expect(books.findBySha256('fixture-sha256')).resolves.toEqual(book);
+    expect(files.saveCover).toHaveBeenCalledWith(
+      managedFile,
+      expect.objectContaining({
+        source: 'Images/193982.jpg',
+        mediaType: 'image/jpeg',
+        fileExtension: 'jpg',
+      }),
+    );
     expect(files.removeBook).not.toHaveBeenCalled();
   });
 
@@ -62,6 +75,7 @@ describe('BookImportService', () => {
     const files: BookFileService = {
       importEpub: vi.fn(async () => managedFile),
       readBook: vi.fn(async () => new ArrayBuffer(0)),
+      saveCover: vi.fn(async () => 'file:///unused-cover.jpg'),
       removeBook: vi.fn(async () => undefined),
     };
     const importer = new BookImportService({
@@ -71,6 +85,42 @@ describe('BookImportService', () => {
 
     await expect(importer.import('file:///cache/invalid.epub', 'invalid.epub')).rejects.toThrow();
     expect(files.removeBook).toHaveBeenCalledWith(managedFile);
+  });
+
+  it('adds a cover to a book imported by an earlier app version', async () => {
+    const data = readFixture();
+    const existing: LibraryBookRecord = {
+      id: 'existing-book',
+      title: '旧记录',
+      epubIdentifier: 'existing-id',
+      fileUri: 'file:///documents/books/existing-book/book.epub',
+      fileName: fixtureName!,
+      fileSize: data.byteLength,
+      sha256: 'existing-book',
+      metadataVersion: 1,
+      addedAt: 100,
+      updatedAt: 100,
+    };
+    const files: BookFileService = {
+      importEpub: vi.fn(async () => {
+        throw new Error('Unused in this test.');
+      }),
+      readBook: vi.fn(async () => data),
+      saveCover: vi.fn(async () => 'file:///documents/books/existing-book/cover.jpg'),
+      removeBook: vi.fn(async () => undefined),
+    };
+    const books = new MemoryBookRepository();
+    await books.save(existing);
+    const importer = new BookImportService({ files, books, now: () => 200 });
+
+    const hydrated = await importer.ensureMetadata(existing);
+
+    expect(hydrated.coverUri).toBe('file:///documents/books/existing-book/cover.jpg');
+    expect(hydrated.publisher).toBe('富士见文库');
+    expect(hydrated.description).toContain('暑假结束后');
+    expect(hydrated.metadataVersion).toBe(2);
+    expect(hydrated.updatedAt).toBe(200);
+    await expect(books.findById(existing.id)).resolves.toEqual(hydrated);
   });
 });
 

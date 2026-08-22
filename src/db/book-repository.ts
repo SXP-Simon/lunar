@@ -13,6 +13,7 @@ export interface LibraryBookRecord {
   readonly fileSize: number;
   readonly sha256: string;
   readonly coverUri?: string;
+  readonly metadataVersion: number;
   readonly addedAt: number;
   readonly lastOpenedAt?: number;
   readonly updatedAt: number;
@@ -39,6 +40,7 @@ interface BookRow {
   readonly file_size: number;
   readonly sha256: string;
   readonly cover_uri: string | null;
+  readonly metadata_version: number;
   readonly added_at: number;
   readonly last_opened_at: number | null;
   readonly updated_at: number;
@@ -51,9 +53,9 @@ export class SQLiteBookRepository implements BookRepository {
     await this.database.runAsync(
       `INSERT INTO books (
         id, title, author, language, epub_identifier, publisher, description,
-        file_uri, file_name, file_size, sha256, cover_uri, added_at,
+        file_uri, file_name, file_size, sha256, cover_uri, metadata_version, added_at,
         last_opened_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(sha256) DO UPDATE SET
         title = excluded.title,
         author = excluded.author,
@@ -65,6 +67,7 @@ export class SQLiteBookRepository implements BookRepository {
         file_name = excluded.file_name,
         file_size = excluded.file_size,
         cover_uri = excluded.cover_uri,
+        metadata_version = excluded.metadata_version,
         updated_at = excluded.updated_at`,
       book.id,
       book.title,
@@ -78,6 +81,7 @@ export class SQLiteBookRepository implements BookRepository {
       book.fileSize,
       book.sha256,
       book.coverUri ?? null,
+      book.metadataVersion,
       book.addedAt,
       book.lastOpenedAt ?? null,
       book.updatedAt,
@@ -126,6 +130,7 @@ function fromBookRow(row: BookRow): LibraryBookRecord {
     fileSize: row.file_size,
     sha256: row.sha256,
     coverUri: row.cover_uri ?? undefined,
+    metadataVersion: row.metadata_version,
     addedAt: row.added_at,
     lastOpenedAt: row.last_opened_at ?? undefined,
     updatedAt: row.updated_at,

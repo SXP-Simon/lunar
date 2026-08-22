@@ -48,6 +48,20 @@ export interface ReaderBookMetadata {
   readonly language: string;
   readonly identifier: string;
   readonly creator?: string;
+  readonly publisher?: string;
+  readonly description?: string;
+}
+
+export interface ReaderCoverAsset {
+  readonly source: string;
+  readonly mediaType: string;
+  readonly fileExtension: string;
+  readonly bytes: Uint8Array;
+}
+
+export interface ReaderBookInspection {
+  readonly metadata: ReaderBookMetadata;
+  readonly cover?: ReaderCoverAsset;
 }
 
 export interface ReaderOpenRequest {

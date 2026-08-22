@@ -198,6 +198,7 @@ function toLibraryBook(record: Awaited<ReturnType<typeof listLibraryBooks>>[numb
     author: record.author ?? '未知作者',
     cover: {
       ...palette,
+      imageUri: record.coverUri,
       mark: Array.from(record.title.trim())[0] ?? '书',
     },
   };

@@ -28,7 +28,19 @@ export async function pickAndImportEpub(): Promise<LibraryBookRecord | undefined
 export async function listLibraryBooks(): Promise<readonly LibraryBookRecord[]> {
   const database = await openLunarDatabase();
   try {
-    return await new SQLiteBookRepository(database).list();
+    const books = new SQLiteBookRepository(database);
+    const files = new ExpoBookFileService();
+    const importer = new BookImportService({ files, books });
+    const records = await books.list();
+    const hydrated: LibraryBookRecord[] = [];
+    for (const record of records) {
+      try {
+        hydrated.push(await importer.ensureMetadata(record));
+      } catch {
+        hydrated.push(record);
+      }
+    }
+    return hydrated;
   } finally {
     await database.closeAsync();
   }

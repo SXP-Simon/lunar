@@ -1,7 +1,11 @@
 import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
 
-import type { BookFileService, ManagedBookFile } from './book-file-service';
+import type {
+  BookFileService,
+  ManagedBookCover,
+  ManagedBookFile,
+} from './book-file-service';
 
 const EPUB_FILE_NAME = 'book.epub';
 const MAX_EPUB_ARCHIVE_BYTES = 100 * 1024 * 1024;
@@ -24,7 +28,7 @@ export class ExpoBookFileService implements BookFileService {
     }
 
     const sha256 = bytesToHex(
-      await digest(CryptoDigestAlgorithm.SHA256, data),
+      await digest(CryptoDigestAlgorithm.SHA256, new Uint8Array(data)),
     );
     const bookId = sha256;
     const booksDirectory = new Directory(Paths.document, 'books');
@@ -54,6 +58,14 @@ export class ExpoBookFileService implements BookFileService {
     return file.arrayBuffer();
   }
 
+  async saveCover(book: ManagedBookFile, cover: ManagedBookCover): Promise<string> {
+    const extension = sanitizeCoverExtension(cover.fileExtension);
+    const target = new File(new File(book.uri).parentDirectory, `cover.${extension}`);
+    target.create({ intermediates: true, overwrite: true });
+    target.write(cover.bytes);
+    return target.uri;
+  }
+
   async removeBook(book: ManagedBookFile): Promise<void> {
     const directory = new File(book.uri).parentDirectory;
     if (directory.exists) {
@@ -70,4 +82,11 @@ function assertEpubFileName(fileName: string): void {
 
 function bytesToHex(value: ArrayBuffer): string {
   return Array.from(new Uint8Array(value), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function sanitizeCoverExtension(extension: string): string {
+  const normalized = extension.toLocaleLowerCase().replace(/[^a-z\d]/g, '');
+  return /^(?:avif|bmp|gif|ico|img|jpg|png|svg|tif|tiff|webp)$/.test(normalized)
+    ? normalized
+    : 'img';
 }

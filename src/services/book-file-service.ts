@@ -6,8 +6,14 @@ export interface ManagedBookFile {
   readonly sha256: string;
 }
 
+export interface ManagedBookCover {
+  readonly bytes: Uint8Array;
+  readonly fileExtension: string;
+}
+
 export interface BookFileService {
   importEpub(sourceUri: string, fileName: string): Promise<ManagedBookFile>;
   readBook(book: ManagedBookFile): Promise<ArrayBuffer>;
+  saveCover(book: ManagedBookFile, cover: ManagedBookCover): Promise<string>;
   removeBook(book: ManagedBookFile): Promise<void>;
 }
