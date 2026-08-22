@@ -49,6 +49,7 @@ export class ReaderPublicationLoader {
       const timings: ReaderChapterTiming[] = [];
       let done = false;
       let chapterIndex = 0;
+      let previewPublished = false;
       while (!done) {
         throwIfAborted(options.signal);
         const startedAt = performance.now();
@@ -63,8 +64,9 @@ export class ReaderPublicationLoader {
         done = chapter.done;
         chapterIndex += 1;
 
-        if (chapter.pageCount > 0) {
-          await options.onPublicationUpdated?.(context.buildPreview(timings));
+        if (chapter.pageCount > 0 && !previewPublished) {
+          previewPublished = true;
+          await options.onPreviewReady?.(context.buildPreview(timings));
           throwIfAborted(options.signal);
         }
 

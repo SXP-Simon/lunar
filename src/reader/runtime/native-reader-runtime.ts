@@ -174,7 +174,6 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.fontRegistry = fontRegistry;
     this.textMeasurer = textMeasurer;
     this.emit({ ...this.snapshot, phase });
-    let firstFrameReady = false;
 
     const publication = await this.publicationLoader.load({
       data,
@@ -183,24 +182,17 @@ export class LunarReaderRuntime implements ReaderRuntime {
       textMeasurer,
       signal: this.abortController?.signal,
       lineBreaking: 'greedy',
-      onPublicationUpdated: async (preview) => {
+      onPreviewReady: async (preview) => {
         this.assertCurrent(operation);
         this.publication = preview;
         this.paginationComplete = false;
         this.imageCache ??= new SkiaImageCache({
           getBytes: (source) => preview.getImage(source),
         });
-        if (!firstFrameReady) {
-          firstFrameReady = true;
-          await this.preparePicture(0, operation);
-          this.assertCurrent(operation);
-          this.emit(this.createReadySnapshot(0));
-          void this.warmAdjacentPictures(0, operation);
-          return;
-        }
-
-        const current = clampSpread(this.snapshot.spreadIndex, preview.totalSpreads);
-        this.emit(this.createReadySnapshot(current));
+        await this.preparePicture(0, operation);
+        this.assertCurrent(operation);
+        this.emit(this.createReadySnapshot(0));
+        void this.warmAdjacentPictures(0, operation);
       },
     });
     this.assertCurrent(operation);

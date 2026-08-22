@@ -326,7 +326,7 @@ export interface LoadReaderPublicationOptions<
   readonly lineBreaking?: 'greedy' | 'optimal';
   readonly signal?: AbortSignal;
   readonly onChapterPaginated?: (timing: ReaderChapterTiming) => void;
-  readonly onPublicationUpdated?: (
+  readonly onPreviewReady?: (
     publication: ReaderPublicationView,
   ) => void | Promise<void>;
 }
