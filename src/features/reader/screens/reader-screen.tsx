@@ -1,0 +1,136 @@
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Spinner } from 'heroui-native/spinner';
+import { useCallback, useMemo, useState } from 'react';
+import { PixelRatio, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { useUniwind } from 'uniwind';
+
+import type { ReaderViewport } from '@/reader';
+import { ReaderSurface } from '@/reader/native';
+import { ReaderControls } from '../components/reader-controls';
+import { ReaderTocSheet } from '../components/reader-toc-sheet';
+import { useReaderSession } from '../hooks/use-reader-session';
+
+export default function ReaderScreen() {
+  const { bookId } = useLocalSearchParams<{ bookId: string }>();
+  const router = useRouter();
+  const { theme } = useUniwind();
+  const [viewport, setViewport] = useState<ReaderViewport>();
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [tocOpen, setTocOpen] = useState(false);
+  const readerTheme = theme === 'dark' ? 'dark' : 'light';
+  const session = useReaderSession({
+    bookId: bookId ?? '',
+    viewport,
+    theme: readerTheme,
+  });
+  const isReady = session.snapshot.phase === 'ready';
+  const canvasBackground = isReady
+    ? session.runtime.getBackgroundColor()
+    : readerTheme === 'dark'
+      ? '#151515'
+      : '#FAF9F6';
+
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setViewport((current) => {
+      const next = {
+        width: Math.round(width),
+        height: Math.round(height),
+        pixelRatio: PixelRatio.get(),
+      };
+      return current?.width === next.width && current.height === next.height
+        ? current
+        : next;
+    });
+  }, []);
+
+  const handleReadingPress = useCallback(
+    (x: number) => {
+      if (!viewport || !isReady) {
+        return;
+      }
+      if (x < viewport.width * 0.3) {
+        void session.runtime.previous();
+      } else if (x > viewport.width * 0.7) {
+        void session.runtime.next();
+      } else {
+        setControlsVisible((value) => !value);
+      }
+    },
+    [isReady, session.runtime, viewport],
+  );
+
+  const statusText = useMemo(() => {
+    switch (session.snapshot.phase) {
+      case 'opening':
+        return '正在读取 EPUB';
+      case 'paginating':
+        return '正在使用 Rito 分页';
+      case 'reflowing':
+        return '正在更新版面';
+      default:
+        return '正在准备阅读页面';
+    }
+  }, [session.snapshot.phase]);
+
+  return (
+    <View onLayout={handleLayout} style={[styles.screen, { backgroundColor: canvasBackground }]}>
+      <ReaderSurface
+        runtime={session.runtime}
+        snapshot={session.snapshot}
+        style={StyleSheet.absoluteFill}
+      />
+      <Pressable
+        accessibilityLabel="阅读页面"
+        accessibilityRole="adjustable"
+        accessibilityValue={{
+          min: 1,
+          max: session.snapshot.totalSpreads ?? 1,
+          now: session.snapshot.spreadIndex + 1,
+          text: `第 ${session.snapshot.spreadIndex + 1} 页`,
+        }}
+        onPress={(event) => handleReadingPress(event.nativeEvent.locationX)}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {!isReady && !session.errorMessage && (
+        <View className="absolute inset-0 items-center justify-center gap-4 bg-background">
+          <Spinner color="default" size="lg" />
+          <Text className="text-sm text-muted">{statusText}</Text>
+        </View>
+      )}
+
+      {session.errorMessage && (
+        <View className="absolute inset-0 items-center justify-center gap-3 bg-background px-8">
+          <Text className="text-center text-xl font-semibold text-foreground">阅读器加载失败</Text>
+          <Text className="text-center text-sm leading-6 text-muted">
+            {session.errorMessage}
+          </Text>
+        </View>
+      )}
+
+      {(controlsVisible || Boolean(session.errorMessage)) && (
+        <ReaderControls
+          onBack={() => router.back()}
+          onOpenToc={() => setTocOpen(true)}
+          runtime={session.runtime}
+          snapshot={session.snapshot}
+          title={session.metadata?.title ?? session.book?.title ?? '阅读器'}
+        />
+      )}
+
+      <ReaderTocSheet
+        isOpen={tocOpen}
+        onOpenChange={setTocOpen}
+        runtime={session.runtime}
+        toc={session.toc}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+});

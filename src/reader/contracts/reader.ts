@@ -95,6 +95,7 @@ export interface ReaderSnapshot {
   readonly spreadIndex: number;
   readonly totalSpreads?: number;
   readonly position?: ReaderPosition;
+  readonly errorMessage?: string;
 }
 
 export interface ReaderOpenResult {

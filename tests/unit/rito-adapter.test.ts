@@ -139,10 +139,15 @@ describe('Rito adapter', () => {
     );
     expect(firstFrame?.imageSources.length).toBeGreaterThan(0);
     expect(publication.getImage(firstFrame?.imageSources[0] ?? '')?.byteLength).toBeGreaterThan(0);
+    expect(publication.toc.length).toBeGreaterThan(0);
+    expect(publication.resolveToc(publication.toc[0]!.href)).toEqual(
+      expect.any(Number),
+    );
 
     publication.close();
     expect(disposeImage).toHaveBeenCalledTimes(17);
     expect(publication.getFrame(0)).toBeUndefined();
+    expect(publication.resolveToc(publication.toc[0]!.href)).toBeUndefined();
   });
 });
 

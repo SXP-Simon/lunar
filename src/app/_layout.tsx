@@ -1,13 +1,11 @@
 import '@/global.css';
 
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useUniwind } from 'uniwind';
 
 import { AppProviders } from '@/components/providers/app-providers';
-import AppTabs from '@/components/ui/app-tabs';
-
-export default function TabLayout() {
+export default function RootLayout() {
   const { theme } = useUniwind();
   const isDark = theme === 'dark';
 
@@ -15,7 +13,10 @@ export default function TabLayout() {
     <AppProviders>
       <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
-        <AppTabs />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="reader/[bookId]" />
+        </Stack>
       </ThemeProvider>
     </AppProviders>
   );

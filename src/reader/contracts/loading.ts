@@ -91,7 +91,106 @@ export type ReaderTransform =
   | { readonly kind: 'scale'; readonly sx: number; readonly sy: number }
   | { readonly kind: 'rotate'; readonly rad: number };
 
-export type ReaderPaint = Readonly<Record<string, unknown>>;
+export type ReaderBorderStyle = 'solid' | 'dotted' | 'dashed';
+
+export interface ReaderBorderPaintEdge {
+  readonly color: string;
+  readonly style: ReaderBorderStyle;
+}
+
+export interface ReaderBorderBox {
+  readonly topWidth: number;
+  readonly rightWidth: number;
+  readonly bottomWidth: number;
+  readonly leftWidth: number;
+}
+
+export interface ReaderSpacing {
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly left: number;
+}
+
+export interface ReaderRunBorderEdge {
+  readonly widthPx: number;
+  readonly paint: ReaderBorderPaintEdge;
+}
+
+export interface ReaderRunBorder {
+  readonly top?: ReaderRunBorderEdge;
+  readonly bottom?: ReaderRunBorderEdge;
+  readonly start?: ReaderRunBorderEdge;
+  readonly end?: ReaderRunBorderEdge;
+}
+
+export interface ReaderTextShadow {
+  readonly offsetX: number;
+  readonly offsetY: number;
+  readonly blur: number;
+  readonly color: string;
+}
+
+export interface ReaderBoxShadow extends ReaderTextShadow {
+  readonly spread: number;
+  readonly inset: boolean;
+}
+
+export type ReaderRunDecoration =
+  | {
+      readonly kind: 'underline';
+      readonly y: number;
+      readonly thickness: number;
+      readonly color: string;
+    }
+  | {
+      readonly kind: 'line-through';
+      readonly y: number;
+      readonly thickness: number;
+      readonly color: string;
+    };
+
+export interface ReaderRunPaint extends ReaderMeasurePaint {
+  readonly color: string;
+  readonly backgroundColor?: string;
+  readonly backgroundRadius?: number;
+  readonly textShadow?: readonly ReaderTextShadow[];
+  readonly decoration?: ReaderRunDecoration;
+  readonly padding?: ReaderSpacing;
+  readonly border?: ReaderRunBorder;
+}
+
+export interface ReaderBackgroundPosition {
+  readonly x: ReaderLength;
+  readonly y: ReaderLength;
+}
+
+export interface ReaderBlockPaint {
+  readonly background?: {
+    readonly color?: string;
+    readonly image?: string;
+    readonly size?: 'cover' | 'contain' | 'auto';
+    readonly repeat?: 'repeat' | 'no-repeat';
+    readonly position?: ReaderBackgroundPosition;
+  };
+  readonly border?: {
+    readonly top?: ReaderBorderPaintEdge;
+    readonly right?: ReaderBorderPaintEdge;
+    readonly bottom?: ReaderBorderPaintEdge;
+    readonly left?: ReaderBorderPaintEdge;
+  };
+  readonly radius?: { readonly px?: number; readonly pct?: number };
+  readonly boxShadow?: readonly ReaderBoxShadow[];
+}
+
+export interface ReaderPagePaint {
+  readonly backgroundColor?: string;
+}
+
+export interface ReaderHorizontalRulePaint {
+  readonly color: string;
+  readonly style: ReaderBorderStyle;
+}
 
 export type ReaderDrawCommand =
   | { readonly kind: 'pushState' }
@@ -109,18 +208,18 @@ export type ReaderDrawCommand =
       readonly rect: ReaderRect;
       readonly radius?: { readonly rx: number; readonly ry: number };
     }
-  | { readonly kind: 'paintPage'; readonly rect: ReaderRect; readonly paint: ReaderPaint }
+  | { readonly kind: 'paintPage'; readonly rect: ReaderRect; readonly paint: ReaderPagePaint }
   | {
       readonly kind: 'paintBlock';
       readonly rect: ReaderRect;
-      readonly paint: ReaderPaint;
-      readonly borderBox?: unknown;
+      readonly paint: ReaderBlockPaint;
+      readonly borderBox?: ReaderBorderBox;
     }
   | {
       readonly kind: 'paintText';
       readonly text: string;
       readonly rect: ReaderRect;
-      readonly paint: ReaderPaint;
+      readonly paint: ReaderRunPaint;
       readonly lineHeightPx?: number;
       readonly href?: string;
       readonly sourceText?: string;
@@ -130,7 +229,7 @@ export type ReaderDrawCommand =
       readonly kind: 'paintRuby';
       readonly text: string;
       readonly rect: ReaderRect;
-      readonly paint: ReaderPaint;
+      readonly paint: ReaderRunPaint;
     }
   | {
       readonly kind: 'paintImage';
@@ -142,7 +241,7 @@ export type ReaderDrawCommand =
   | {
       readonly kind: 'paintHorizontalRule';
       readonly rect: ReaderRect;
-      readonly paint: ReaderPaint;
+      readonly paint: ReaderHorizontalRulePaint;
     };
 
 export type ReaderDrawCommandKind = ReaderDrawCommand['kind'];
@@ -208,6 +307,7 @@ export interface LoadedReaderPublication {
   readonly chapterTimings: readonly ReaderChapterTiming[];
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined;
   getImage(source: string): Uint8Array | undefined;
+  resolveToc(href: string): number | undefined;
   close(): void;
 }
 

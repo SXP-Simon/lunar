@@ -19,6 +19,7 @@ import {
 import {
   CONTAINER_PATH,
   createZipReader,
+  findPageForTocEntry,
   PaginationSession,
   parseContainer,
 } from '@ritojs/core/advanced';
@@ -237,6 +238,13 @@ class RitoPaginationContextImplementation<TImage extends ReaderImageDimensions>
       startPage: range.startPage,
       endPage: range.endPage,
     } satisfies ReaderChapterRange));
+    const tocTargets = createTocTargetMap(
+      this.document,
+      result.chapterMap,
+      result.anchorMap,
+      result.chapterAnchorMap,
+      spreads,
+    );
 
     this.publicationBuilt = true;
     return new RitoLoadedPublication(
@@ -247,6 +255,7 @@ class RitoPaginationContextImplementation<TImage extends ReaderImageDimensions>
       chapters,
       chapterTimings,
       frames,
+      tocTargets,
       this.document,
       this.decodedImages,
       this.imageDecoder,
@@ -290,6 +299,7 @@ class RitoLoadedPublication<TImage extends ReaderImageDimensions>
     readonly chapters: readonly ReaderChapterRange[],
     readonly chapterTimings: readonly ReaderChapterTiming[],
     private readonly frames: readonly ReaderRenderFrame[],
+    private readonly tocTargets: ReadonlyMap<string, number>,
     private readonly document: EpubDocument,
     private readonly decodedImages: ReadonlyMap<string, TImage>,
     private readonly imageDecoder?: ReaderImageDecoder<TImage>,
@@ -311,6 +321,13 @@ class RitoLoadedPublication<TImage extends ReaderImageDimensions>
       return undefined;
     }
     return this.imageResolver(source);
+  }
+
+  resolveToc(href: string): number | undefined {
+    if (this.closed) {
+      return undefined;
+    }
+    return this.tocTargets.get(href) ?? this.tocTargets.get(decodeHref(href));
   }
 
   close(): void {
@@ -630,10 +647,48 @@ function toReaderDisplayList(displayList: DisplayList): ReaderDisplayList {
   return {
     width: displayList.width,
     height: displayList.height,
-    commands: displayList.commands.map(
-      (command) => ({ ...command }) as unknown as ReaderDrawCommand,
-    ),
+    commands: displayList.commands as readonly ReaderDrawCommand[],
   };
+}
+
+function createTocTargetMap(
+  document: EpubDocument,
+  chapterMap: ReadonlyMap<string, { readonly startPage: number; readonly endPage: number }>,
+  anchorMap: ReadonlyMap<string, number>,
+  chapterAnchorMap: ReadonlyMap<string, ReadonlyMap<string, number>> | undefined,
+  spreads: readonly Spread[],
+): ReadonlyMap<string, number> {
+  const targets = new Map<string, number>();
+  const manifestHrefs = new Map(
+    document.packageDocument.manifest.map((item) => [item.id, item.href] as const),
+  );
+
+  const visit = (entries: readonly TocEntry[]) => {
+    for (const entry of entries) {
+      const pageIndex = findPageForTocEntry(
+        entry,
+        chapterMap,
+        document.packageDocument.spine,
+        manifestHrefs,
+        anchorMap,
+        chapterAnchorMap,
+      );
+      if (pageIndex !== undefined) {
+        const spreadIndex = spreads.findIndex(
+          (spread) =>
+            spread.left?.index === pageIndex || spread.right?.index === pageIndex,
+        );
+        if (spreadIndex >= 0) {
+          targets.set(entry.href, spreadIndex);
+          targets.set(decodeHref(entry.href), spreadIndex);
+        }
+      }
+      visit(entry.children);
+    }
+  };
+
+  visit(document.toc);
+  return targets;
 }
 
 function createReaderImageResolver(

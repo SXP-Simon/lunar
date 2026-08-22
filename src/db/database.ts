@@ -6,7 +6,20 @@ interface UserVersionRow {
   readonly user_version: number;
 }
 
-export async function openLunarDatabase(): Promise<SQLiteDatabase> {
+let databasePromise: Promise<SQLiteDatabase> | undefined;
+
+export function getLunarDatabase(): Promise<SQLiteDatabase> {
+  if (!databasePromise) {
+    databasePromise = initializeLunarDatabase().catch((error: unknown) => {
+      databasePromise = undefined;
+      throw error;
+    });
+  }
+
+  return databasePromise;
+}
+
+async function initializeLunarDatabase(): Promise<SQLiteDatabase> {
   const database = await openDatabaseAsync(LUNAR_DATABASE_NAME);
   await database.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   await migrateDatabase(database);

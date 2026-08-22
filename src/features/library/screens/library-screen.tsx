@@ -1,4 +1,5 @@
 import { SymbolView } from 'expo-symbols';
+import { type Href, useRouter } from 'expo-router';
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
 import { SearchField } from 'heroui-native/search-field';
@@ -52,6 +53,7 @@ const COVER_PALETTES: readonly LibraryBook['cover'][] = [
 ];
 
 export default function LibraryScreen() {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [libraryBooks, setLibraryBooks] = useState<LibraryBook[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
@@ -161,7 +163,12 @@ export default function LibraryScreen() {
             showsVerticalScrollIndicator={false}
             columnWrapperStyle={styles.row}
             contentContainerStyle={styles.grid}
-            renderItem={({ item }) => <BookCard book={item} />}
+            renderItem={({ item }) => (
+              <BookCard
+                book={item}
+                onPress={() => router.push(`/reader/${encodeURIComponent(item.id)}` as Href)}
+              />
+            )}
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 {isLoadingLibrary && <Spinner color="default" size="md" />}
