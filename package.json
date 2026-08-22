@@ -22,6 +22,7 @@
     "expo-image": "~57.0.3",
     "expo-keep-awake": "~57.0.1",
     "expo-linking": "~57.0.6",
+    "expo-modules-core": "57.0.11",
     "expo-router": "~57.0.14",
     "expo-splash-screen": "~57.0.7",
     "expo-sqlite": "~57.0.1",
@@ -44,6 +45,7 @@
     "tailwind-variants": "3.2.2",
     "tailwindcss": "4.3.3",
     "uniwind": "1.11.0",
+    "lunar-reader": "file:modules/lunar-reader",
     "zod": "4.4.3",
     "zustand": "5.0.15"
   },

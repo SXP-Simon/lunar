@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.lunarain_079'
+version = '1.0.0'
+
+android {
+  namespace 'expo.modules.lunarreader'
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+    consumerProguardFiles 'proguard-rules.pro'
+  }
+}
+
+dependencies {
+  implementation 'com.facebook.react:react-android'
+}

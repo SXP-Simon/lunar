@@ -1,0 +1,10 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["LunarReaderModule"],
+    "podspecPath": "ios/LunarReader.podspec"
+  },
+  "android": {
+    "modules": ["expo.modules.lunarreader.LunarReaderModule"]
+  }
+}

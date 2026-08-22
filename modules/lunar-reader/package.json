@@ -1,0 +1,11 @@
+{
+  "name": "lunar-reader",
+  "version": "1.0.0",
+  "description": "Native EPUB archive and typography services for Lunar Reader.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "peerDependencies": {
+    "expo": "*",
+    "react-native": "*"
+  }
+}

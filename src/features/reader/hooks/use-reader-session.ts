@@ -8,7 +8,13 @@ import {
   type ReaderTheme,
   type ReaderViewport,
 } from '@/reader';
-import { LunarReaderRuntime } from '@/reader/native';
+import {
+  LocalPaginationBackend,
+  FallbackPaginationBackend,
+  LunarReaderRuntime,
+  WorkletPaginationBackend,
+} from '@/reader/native';
+import { ReaderPublicationLoader } from '@/reader/runtime';
 import { readReaderBook } from '../infrastructure/expo-reader-book-loader';
 
 export interface ReaderSessionOptions {
@@ -20,7 +26,7 @@ export interface ReaderSessionOptions {
 export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptions) {
   const runtime = useMemo(
     () =>
-      new LunarReaderRuntime((request) => readReaderBook(request.fileUri)),
+      createReaderRuntime(),
     [],
   );
   const [book, setBook] = useState<LibraryBookRecord>();
@@ -121,4 +127,30 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
       (bookError?.bookId === bookId ? bookError.message : undefined) ??
       snapshot.errorMessage,
   };
+}
+
+function createReaderRuntime(): LunarReaderRuntime {
+  const loader = new ReaderPublicationLoader();
+  try {
+    return new LunarReaderRuntime(
+      (request) => readReaderBook(request.fileUri),
+      loader,
+      new FallbackPaginationBackend(
+        new WorkletPaginationBackend(),
+        new LocalPaginationBackend(loader),
+        ({ phase, error }) => {
+          console.warn(
+            `[LunarReaderRuntime] Switched to local pagination during ${phase}.`,
+            error instanceof Error ? error.message : error,
+          );
+        },
+      ),
+    );
+  } catch {
+    return new LunarReaderRuntime(
+      (request) => readReaderBook(request.fileUri),
+      loader,
+      new LocalPaginationBackend(loader),
+    );
+  }
 }

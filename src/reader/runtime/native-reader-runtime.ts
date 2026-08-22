@@ -18,6 +18,10 @@ import { LunarSkiaTextMeasurer } from '../skia/text/text-measurer';
 import { FrameCache } from './frame-cache';
 import { ReaderPublicationLoader } from './publication-loader';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
+import type { ReaderPaginationBackend } from './pagination-backend';
+import { LocalPaginationBackend } from './local-pagination-backend';
+import { createReaderLayoutFingerprint } from './background-runtime-protocol';
+import { RITO_VERSION } from '../rito';
 
 export type ReaderBookDataLoader = (request: ReaderOpenRequest) => Promise<ArrayBuffer>;
 
@@ -47,6 +51,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   constructor(
     private readonly loadData: ReaderBookDataLoader,
     private readonly publicationLoader = new ReaderPublicationLoader(),
+    private readonly paginationBackend: ReaderPaginationBackend = new LocalPaginationBackend(publicationLoader),
   ) {}
 
   getSnapshot(): ReaderSnapshot {
@@ -175,14 +180,24 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.textMeasurer = textMeasurer;
     this.emit({ ...this.snapshot, phase });
 
-    const publication = await this.publicationLoader.load({
+    const backendResult = await this.paginationBackend.open({
       data,
       layout: request,
+      request,
+      revisionId: this.snapshot.revisionId,
+      operationId: operation,
+      cacheKey: createReaderLayoutFingerprint({
+        bookHash: request.bookId,
+        ritoVersion: RITO_VERSION,
+        rendererVersion: 'react-native-skia-2.6.2',
+        layout: request,
+        fontFingerprint: request.typography.fontFamily ?? 'system',
+      }),
+      signal: this.abortController?.signal ?? new AbortController().signal,
       fontRegistry,
       textMeasurer,
-      signal: this.abortController?.signal,
-      lineBreaking: 'greedy',
     });
+    const publication = backendResult.publication;
     this.assertCurrent(operation);
     this.publication = publication;
     this.publicationOwner = publication;
@@ -226,7 +241,10 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (this.pictures.get(key)) {
       return;
     }
-    const frame = publication.getFrame(spreadIndex);
+    let frame = publication.getFrame(spreadIndex);
+    if (!frame) {
+      frame = await this.paginationBackend.getFrame(this.snapshot.revisionId, spreadIndex);
+    }
     if (!frame) {
       throw new RangeError(`Spread ${spreadIndex} is outside the publication.`);
     }
@@ -279,6 +297,9 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   private beginOperation(): number {
+    if (this.operation > 0) {
+      void this.paginationBackend.cancel(this.operation, this.snapshot.revisionId);
+    }
     this.abortController?.abort();
     this.abortController = new AbortController();
     this.operation += 1;
@@ -321,6 +342,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.publication = undefined;
     this.paginationComplete = false;
     this.fontRegistry = undefined;
+    void this.paginationBackend.close();
   }
 
   private emit(snapshot: ReaderSnapshot): void {
