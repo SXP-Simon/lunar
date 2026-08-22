@@ -97,12 +97,7 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
         fileUri: currentBook.fileUri,
         ...layout,
       })
-      .then(async (result) => {
-        setOpenResult({ bookId: currentBook.id, result });
-        if (__DEV__) {
-          await runtime.goToSpread(1);
-        }
-      })
+      .then((result) => setOpenResult({ bookId: currentBook.id, result }))
       .catch(() => undefined);
   }, [currentBook, runtime, theme, viewport]);
 

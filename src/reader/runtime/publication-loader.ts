@@ -60,12 +60,6 @@ export class ReaderPublicationLoader {
           durationMs: performance.now() - startedAt,
         };
         timings.push(timing);
-        console.info('[LunarReaderDiagnostic] Rito chapter paginated.', {
-          chapterIndex: timing.chapterIndex,
-          pageCount: timing.pageCount,
-          durationMs: Math.round(timing.durationMs),
-          done: chapter.done,
-        });
         options.onChapterPaginated?.(timing);
         done = chapter.done;
         chapterIndex += 1;
@@ -75,18 +69,7 @@ export class ReaderPublicationLoader {
         }
       }
 
-      const publication = context.buildPublication(timings);
-      console.info('[LunarReaderDiagnostic] Rito publication built.', {
-        totalPages: publication.totalPages,
-        totalSpreads: publication.totalSpreads,
-        chapterCount: publication.chapters.length,
-        viewport: {
-          width: publication.layout.viewportWidth,
-          height: publication.layout.viewportHeight,
-          pixelRatio: publication.layout.pixelRatio,
-        },
-      });
-      return publication;
+      return context.buildPublication(timings);
     } catch (error) {
       context?.close();
       if (isAbortError(error) || error instanceof LunarReaderError) {

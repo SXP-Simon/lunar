@@ -31,13 +31,9 @@ export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
       return cached;
     }
 
-    const font = this.fontResolver.resolveFont(paint.font);
-    const bounds = font.measureText(text);
+    const shaped = this.fontResolver.measureShapedText(text, paint);
     const metrics = {
-      width:
-        bounds.width +
-        countAsciiSpaces(text) * (paint.wordSpacingPx ?? 0) +
-        Math.max(0, Array.from(text).length - 1) * (paint.letterSpacingPx ?? 0),
+      width: shaped.width,
       height: paint.font.sizePx,
     };
     writeLru(this.textCache, key, metrics, MAX_TEXT_MEASUREMENTS);
@@ -93,16 +89,6 @@ function createTextKey(text: string, paint: ReaderMeasurePaint): string {
 function createFontKey(paint: ReaderMeasurePaint): string {
   const { font } = paint;
   return `${font.family}\0${font.weight}\0${font.style}\0${font.sizePx}`;
-}
-
-function countAsciiSpaces(value: string): number {
-  let count = 0;
-  for (const character of value) {
-    if (character === ' ') {
-      count += 1;
-    }
-  }
-  return count;
 }
 
 function readLru<T>(cache: Map<string, T>, key: string): T | undefined {

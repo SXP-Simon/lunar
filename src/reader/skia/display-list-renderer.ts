@@ -261,31 +261,17 @@ function drawText(
   state: RenderState,
 ): void {
   drawInlineBox(canvas, rect, paint, state.alpha);
-
-  const font = state.options.fonts.resolveFont(paint.font);
-  const baselineY = rect.y - font.getMetrics().ascent;
-  for (const shadow of paint.textShadow ?? []) {
-    const shadowPaint = createPaint(shadow.color, state.alpha);
-    const filter = shadow.blur > 0
-      ? Skia.MaskFilter.MakeBlur(BlurStyle.Normal, Math.max(0.01, shadow.blur / 2), true)
-      : undefined;
-    if (filter) {
-      shadowPaint.setMaskFilter(filter);
-    }
-    canvas.drawText(
-      text,
-      rect.x + shadow.offsetX,
-      baselineY + shadow.offsetY,
-      shadowPaint,
-      font,
-    );
-    filter?.dispose();
-    shadowPaint.dispose();
+  const paragraph = state.options.fonts.createParagraph(text, paint, {
+    color: paint.color,
+    alpha: state.alpha,
+    textShadow: paint.textShadow,
+  });
+  try {
+    paragraph.layout(SINGLE_LINE_LAYOUT_WIDTH);
+    paragraph.paint(canvas, rect.x, rect.y);
+  } finally {
+    paragraph.dispose();
   }
-
-  const foreground = createPaint(paint.color, state.alpha);
-  canvas.drawText(text, rect.x, baselineY, foreground, font);
-  foreground.dispose();
 
   if (paint.decoration) {
     const y = rect.y + paint.decoration.y;
@@ -309,7 +295,7 @@ function drawRuby(
   paint: ReaderRunPaint,
   state: RenderState,
 ): void {
-  const measured = state.options.fonts.resolveFont(paint.font).measureText(text).width;
+  const measured = state.options.fonts.measureShapedText(text, paint).width;
   drawText(
     canvas,
     text,
@@ -318,6 +304,8 @@ function drawRuby(
     state,
   );
 }
+
+const SINGLE_LINE_LAYOUT_WIDTH = 100_000;
 
 function drawInlineBox(
   canvas: SkCanvas,

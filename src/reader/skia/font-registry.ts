@@ -5,11 +5,18 @@ import {
   type FontStyle,
   type SkFont,
   type SkFontMgr,
+  type SkParagraph,
+  type SkTextStyle,
   type SkTypeface,
   type SkTypefaceFontProvider,
 } from '@shopify/react-native-skia';
 
-import type { ReaderFontRegistry, ReaderFontShorthand } from '../contracts';
+import type {
+  ReaderFontRegistry,
+  ReaderFontShorthand,
+  ReaderMeasurePaint,
+  ReaderTextShadow,
+} from '../contracts';
 
 export interface SkiaFontRegistry extends ReaderFontRegistry {
   readonly systemFontManager: SkFontMgr;
@@ -73,19 +80,74 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     const family = customFamily ?? families[0] ?? 'sans-serif';
     const typeface = manager.matchFamilyStyle(family, style);
     const skFont = Skia.Font(typeface, font.sizePx);
-    const metrics = skFont.getMetrics();
-    console.info('[LunarReaderDiagnostic] Skia font resolved.', {
-      requestedFamily: font.family,
-      matchedFamily: family,
-      embedded: Boolean(customFamily),
-      typefaceMatched: Boolean(typeface),
-      sizePx: font.sizePx,
-      weight: font.weight,
-      style: font.style,
-      metricsFinite: [metrics.ascent, metrics.descent, metrics.leading].every(Number.isFinite),
-    });
     this.fonts.set(key, skFont);
     return skFont;
+  }
+
+  measureShapedText(text: string, paint: ReaderMeasurePaint) {
+    const paragraph = this.createParagraph(text, paint);
+    try {
+      paragraph.layout(SINGLE_LINE_LAYOUT_WIDTH);
+      return {
+        width: paragraph.getLongestLine(),
+        height: paragraph.getHeight(),
+      };
+    } finally {
+      paragraph.dispose();
+    }
+  }
+
+  createParagraph(
+    text: string,
+    paint: ReaderMeasurePaint,
+    options: {
+      readonly color?: string;
+      readonly alpha?: number;
+      readonly textShadow?: readonly ReaderTextShadow[];
+    } = {},
+  ): SkParagraph {
+    this.assertActive();
+    const families = getFontFamilies(paint.font.family);
+    const provider = families.some((family) =>
+      this.bookFamilies.has(normalizeFamily(family)),
+    )
+      ? this.bookFontProvider
+      : undefined;
+    const builder = provider
+      ? Skia.ParagraphBuilder.Make({}, provider)
+      : Skia.ParagraphBuilder.Make({});
+    const style: SkTextStyle = {
+      color: colorWithAlpha(options.color ?? '#000000', options.alpha ?? 1),
+      fontFamilies: families.length > 0 ? families : ['sans-serif'],
+      fontSize: paint.font.sizePx,
+      fontStyle: {
+        weight: paint.font.weight,
+        width: FontWidth.Normal,
+        slant:
+          paint.font.style === 'italic'
+            ? FontSlant.Italic
+            : FontSlant.Upright,
+      },
+      letterSpacing: paint.letterSpacingPx ?? 0,
+      wordSpacing: paint.wordSpacingPx ?? 0,
+      locale: 'zh-Hans',
+      ...(options.textShadow
+        ? {
+            shadows: options.textShadow.map((shadow) => ({
+              color: colorWithAlpha(shadow.color, options.alpha ?? 1),
+              offset: { x: shadow.offsetX, y: shadow.offsetY },
+              blurRadius: shadow.blur,
+            })),
+          }
+        : {}),
+    };
+
+    try {
+      builder.pushStyle(style).addText(text).pop();
+      return builder.build();
+    } finally {
+      builder.reset();
+    }
   }
 
   dispose(): void {
@@ -109,6 +171,15 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
       throw new Error('The Skia font registry is disposed.');
     }
   }
+}
+
+const SINGLE_LINE_LAYOUT_WIDTH = 100_000;
+
+function colorWithAlpha(value: string, alpha: number) {
+  const color = Skia.Color(value);
+  const resolved = new Float32Array(color);
+  resolved[3] = (resolved[3] ?? 1) * Math.min(1, Math.max(0, alpha));
+  return resolved;
 }
 
 function getFontFamilies(value: string): string[] {
