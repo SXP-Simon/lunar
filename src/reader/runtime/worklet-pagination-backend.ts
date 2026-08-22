@@ -1,5 +1,8 @@
-import type { WorkletRuntime } from 'react-native-worklets';
-import { createWorkletRuntime, runOnRuntimeAsync } from 'react-native-worklets';
+import {
+  getUIRuntimeHolder,
+  runOnRuntimeAsyncWithId,
+  UIRuntimeId,
+} from 'react-native-worklets';
 import type {
   LoadedReaderPublication,
   ReaderBookMetadata,
@@ -41,7 +44,7 @@ export interface ReaderWorkletOpenRequest {
   readonly revisionId: number;
   /**
    * Development-only escape hatch. Production pagination requires a native
-   * Worker measurement bridge; the current Expo module proxy is main-runtime
+   * Worklet measurement bridge; the ordinary Expo module proxy is main-runtime
    * only.
    */
   readonly allowApproximateMeasurement?: boolean;
@@ -111,12 +114,13 @@ export interface ReaderWorkletCancelRequest {
 }
 
 /**
- * Runtime transport for the native build. The driver is bundled with the
- * Worklets Bundle Mode entry. Native text measurement is required by default;
- * the approximate worker measurer is an explicit development-only option.
+ * Runtime transport for the native build. Expo SDK 57 exposes SharedObject
+ * installation through the UI runtime holder, so native pagination executes
+ * on the UI Worklet Runtime. Native text measurement is required by default;
+ * the approximate measurer is an explicit development-only option.
  */
 export class WorkletPaginationBackend implements ReaderPaginationBackend {
-  private readonly runtime: WorkletRuntime;
+  private readonly runtimeId = UIRuntimeId;
   private readonly cache: ReaderPaginationSnapshotCache;
   private queue: Promise<unknown> = Promise.resolve();
   private publication?: SerializedReaderPublication;
@@ -126,7 +130,6 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
     cache: ReaderPaginationSnapshotCache = new MemoryReaderPaginationSnapshotCache(),
     private readonly allowApproximateMeasurement = false,
   ) {
-    this.runtime = createWorkletRuntime({ name: 'lunar-reader-pagination' });
     this.cache = cache;
   }
 
@@ -152,24 +155,20 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
     try {
       let workerBindings = bindings;
       if (bindings) {
-        // A missing installer is handled by the runtime probe below so the
-        // fallback error identifies the missing SharedObject capability.
-        try {
-          installNativeReaderWorkletRuntime(this.runtime);
-        } catch (error) {
+        const installed = installNativeReaderWorkletRuntime(getUIRuntimeHolder());
+        if (!installed) {
           throw createNativeWorkerUnavailableError(
-            'The native Expo Modules installer rejected the Reader Worker Runtime.',
-            'worker-runtime-install-rejected',
-            error,
+            'The Expo SharedObject bridge could not be installed on the UI Runtime.',
+            'ui-runtime-install-unavailable',
           );
         }
         const probe = await this.enqueue(() =>
-          runOnRuntimeAsync(this.runtime, probeReaderWorkerNativeBridge),
+          runOnRuntimeAsyncWithId(this.runtimeId, probeReaderWorkerNativeBridge),
         );
         if (!probe.available) {
           if (!this.allowApproximateMeasurement) {
             throw createNativeWorkerUnavailableError(
-              'The Worker Runtime does not have Expo SharedObject resolution installed.',
+              'The UI Runtime does not have Expo SharedObject resolution installed.',
               probe.resolver
                 ? 'shared-object-class-present'
                 : probe.sharedObjectClass
@@ -180,7 +179,7 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
           workerBindings = undefined;
         }
       }
-      const result = await this.enqueue(() => runOnRuntimeAsync(this.runtime, openReaderPagination, {
+      const result = await this.enqueue(() => runOnRuntimeAsyncWithId(this.runtimeId, openReaderPagination, {
           request: options.request,
           data: options.data,
           operationId: options.operationId,
@@ -204,7 +203,7 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
 
   async getFrame(revisionId: number, spreadIndex: number): Promise<ReaderRenderFrame | undefined> {
     const result = await this.enqueue(() =>
-      runOnRuntimeAsync(this.runtime, getReaderPaginationFrame, { revisionId, spreadIndex }),
+      runOnRuntimeAsyncWithId(this.runtimeId, getReaderPaginationFrame, { revisionId, spreadIndex }),
     );
     if (!result) {
       throw new Error('The Worklet pagination session did not return a frame.');
@@ -215,12 +214,12 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
 
   async cancel(operationId: number, revisionId: number): Promise<void> {
     await this.enqueue(() =>
-      runOnRuntimeAsync(this.runtime, cancelReaderPagination, { operationId, revisionId }),
+      runOnRuntimeAsyncWithId(this.runtimeId, cancelReaderPagination, { operationId, revisionId }),
     );
   }
 
   async close(): Promise<void> {
-    await this.enqueue(() => runOnRuntimeAsync(this.runtime, closeReaderPagination));
+    await this.enqueue(() => runOnRuntimeAsyncWithId(this.runtimeId, closeReaderPagination));
     this.publication?.close();
     this.publication = undefined;
     this.bindings?.archive.close();
