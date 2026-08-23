@@ -8,16 +8,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
-  Platform,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BookCard, type LibraryBook } from '@/features/library/components/book-card';
-import { BottomTabInset, Fonts, MaxContentWidth, Spacing, useTheme } from '@/hooks/use-theme';
+import { Fonts, MaxContentWidth, Spacing, useTheme } from '@/hooks/use-theme';
 import { listLibraryBooks, pickAndImportEpub } from '../services/library-service';
+
+const AppTabBarHeight = 58;
 
 const COVER_PALETTES: readonly LibraryBook['cover'][] = [
   {
@@ -59,6 +60,7 @@ export default function LibraryScreen() {
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const importIconColor = useThemeColor('accent-foreground');
 
   const loadBooks = useCallback(async () => {
@@ -119,7 +121,15 @@ export default function LibraryScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View
+        style={[
+          styles.safeArea,
+          {
+            paddingTop: insets.top,
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+          },
+        ]}>
         <View style={styles.page}>
           <View style={styles.searchArea}>
             <SearchField className="flex-1" value={query} onChange={setQuery}>
@@ -162,7 +172,10 @@ export default function LibraryScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             columnWrapperStyle={styles.row}
-            contentContainerStyle={styles.grid}
+            contentContainerStyle={[
+              styles.grid,
+              { paddingBottom: AppTabBarHeight + insets.bottom + Spacing.four },
+            ]}
             renderItem={({ item }) => (
               <BookCard
                 book={item}
@@ -188,7 +201,7 @@ export default function LibraryScreen() {
             }
           />
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -250,7 +263,6 @@ const styles = StyleSheet.create({
   grid: {
     paddingHorizontal: 10,
     paddingTop: Spacing.two,
-    paddingBottom: Platform.OS === 'web' ? 112 : BottomTabInset + Spacing.four,
   },
   row: {
     alignItems: 'flex-start',

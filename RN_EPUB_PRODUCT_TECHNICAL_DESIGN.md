@@ -210,7 +210,7 @@ RN Skia 通过 JSI 调用原生 Skia，最终页面由 GPU 绘制。Rito 是 Typ
 
 `PaginationSession` 的公开接口从书脊开头依次处理章节。首次打开可以较早显示第一页；恢复到书籍中后部时，需要等待分页推进到目标章节。Lunar 首版禁止自行修改页码偏移来跳过前置章节。阶段零同时评估版本化 `LayoutSnapshot` 缓存，只有经过 Rito 版本校验和完整性校验的快照才可用于缩短再次打开时间。
 
-`react-native-worklets` 主要服务动画和 UI 侧计算。把 Rito 模块及其书籍状态复制到 worklet 运行环境会增加兼容成本和内存，因此首版禁止把它视作通用 EPUB 后台线程。
+`react-native-worklets` 负责承载阅读计算 Runtime。只有经过 Bundle Mode 构建的阅读分页入口可以在该 Runtime 中运行；Rito 文档、分页会话、字体测量对象和资源索引均在后台 Runtime 内创建，主 Runtime 只接收可复制的出版物索引与页面帧数据。归档与文字测量通过 Expo Modules `SharedObject` 原生状态传入 Worker，普通 `requireNativeModule()` 代理只在主 Runtime 使用。Lunar 原生模块在自定义 Worker Runtime 中安装 Expo 类原型，并在对象传输前执行 `SharedObject.__resolveInWorklet` 探测；安装或探测失败时转入本地分页。动画计算继续使用现有 UI Runtime。
 
 ### 6.2 后台执行门槛
 

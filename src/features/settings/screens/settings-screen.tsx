@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Uniwind, useUniwind } from 'uniwind';
 
 import { AppearancePreviewSheet } from '../components/appearance-preview-sheet';
@@ -10,6 +10,7 @@ import { SettingSection } from '../components/setting-section';
 
 export function SettingsScreen() {
   const { theme } = useUniwind();
+  const insets = useSafeAreaInsets();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const isDark = theme === 'dark';
 
@@ -25,7 +26,13 @@ export function SettingsScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
+      <View
+        className="flex-1"
+        style={{
+          paddingTop: insets.top,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+        }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerClassName="grow px-4 pt-4 pb-32">
@@ -50,7 +57,7 @@ export function SettingsScreen() {
             </SettingSection>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
 
       <AppearancePreviewSheet isOpen={isPreviewOpen} onOpenChange={setIsPreviewOpen} />
     </View>
