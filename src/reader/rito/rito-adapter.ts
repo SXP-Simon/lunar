@@ -135,10 +135,11 @@ export async function openRitoPaginationContext<
       imageDimensions: decodedImages,
       lineBreaking: options.lineBreaking,
     });
-    const metadata = toReaderMetadata(
-      document,
-      readExtendedPackageMetadata(options.data),
-    );
+    // The library import already extracts publisher and description before it
+    // persists a book. Reader opening only consumes the EPUB document's base
+    // metadata, so reopening the archive for these optional OPF fields would
+    // repeat its full ZIP index and inflate work.
+    const metadata = toReaderMetadata(document);
 
     return new RitoPaginationContextImplementation(
       document,

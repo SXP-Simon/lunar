@@ -18,7 +18,7 @@ export interface SkiaTextMeasurer extends ReaderTextMeasurer, ReaderFontMetricsP
   dispose(): void;
 }
 
-const MAX_TEXT_MEASUREMENTS = 4096;
+const MAX_TEXT_MEASUREMENTS = 16_384;
 const MAX_FONT_METRICS = 256;
 
 export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
@@ -34,24 +34,23 @@ export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
   measureText(text: string, paint: ReaderMeasurePaint): ReaderTextMetrics {
     this.assertActive();
     const key = createTextKey(text, paint);
-    const cached = readLru(this.textCache, key);
+    const cached = this.textCache.get(key);
     if (cached) {
       return cached;
     }
 
-    const shaped = this.paragraphs.measureShapedText(text, paint);
     const metrics = {
-      width: shaped.width,
+      width: this.measureWidth(text, paint),
       height: paint.font.sizePx,
     };
-    writeLru(this.textCache, key, metrics, MAX_TEXT_MEASUREMENTS);
+    writeBoundedCache(this.textCache, key, metrics, MAX_TEXT_MEASUREMENTS);
     return metrics;
   }
 
   resolveFontMetrics(paint: ReaderMeasurePaint): ReaderFontMetrics {
     this.assertActive();
     const key = createFontKey(paint);
-    const cached = readLru(this.metricsCache, key);
+    const cached = this.metricsCache.get(key);
     if (cached) {
       return cached;
     }
@@ -66,7 +65,7 @@ export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
         Math.max(0, metrics.descent) +
         Math.max(0, metrics.leading),
     };
-    writeLru(this.metricsCache, key, resolved, MAX_FONT_METRICS);
+    writeBoundedCache(this.metricsCache, key, resolved, MAX_FONT_METRICS);
     return resolved;
   }
 
@@ -88,6 +87,20 @@ export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
       throw new Error('The Skia text measurer is disposed.');
     }
   }
+
+  private measureWidth(text: string, paint: ReaderMeasurePaint): number {
+    const font = this.fontResolver.resolveFont(paint.font);
+    if (hasCustomSpacing(paint) || requiresParagraphShaping(text, font)) {
+      return this.paragraphs.measureShapedText(text, paint).width;
+    }
+
+    // Rito's pagination repeatedly probes differently sized slices while it
+    // searches a line break. Creating a Paragraph for every probe costs far
+    // more than measuring the matching SkFont. Paragraphs stay reserved for
+    // spacing-sensitive runs and for the renderer, where shaping is required
+    // for the final draw command.
+    return font.getTextWidth(text);
+  }
 }
 
 function createTextKey(text: string, paint: ReaderMeasurePaint): string {
@@ -99,17 +112,38 @@ function createFontKey(paint: ReaderMeasurePaint): string {
   return `${font.family}\0${font.weight}\0${font.style}\0${font.sizePx}`;
 }
 
-function readLru<T>(cache: Map<string, T>, key: string): T | undefined {
-  const value = cache.get(key);
-  if (value === undefined) {
-    return undefined;
-  }
-  cache.delete(key);
-  cache.set(key, value);
-  return value;
+function hasCustomSpacing(paint: ReaderMeasurePaint): boolean {
+  return (paint.wordSpacingPx ?? 0) !== 0 || (paint.letterSpacingPx ?? 0) !== 0;
 }
 
-function writeLru<T>(cache: Map<string, T>, key: string, value: T, limit: number): void {
+function requiresParagraphShaping(
+  text: string,
+  font: ReturnType<LunarSkiaFontRegistry['resolveFont']>,
+): boolean {
+  // Paragraph can select a system fallback face for a missing glyph, while a
+  // SkFont has one fixed typeface. Paginating with the latter's .notdef
+  // advance places more text on each line than the Paragraph renderer shows.
+  // Shaped scripts also need Paragraph's HarfBuzz layout, even when every
+  // code point exists in the primary font.
+  return hasComplexScript(text) || font.getGlyphIDs(text).some((glyphId) => glyphId === 0);
+}
+
+function hasComplexScript(text: string): boolean {
+  for (const character of text) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (
+      (codePoint >= 0x0590 && codePoint <= 0x08ff) ||
+      (codePoint >= 0x0900 && codePoint <= 0x0dff) ||
+      (codePoint >= 0x0f00 && codePoint <= 0x109f) ||
+      (codePoint >= 0x1780 && codePoint <= 0x18af)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function writeBoundedCache<T>(cache: Map<string, T>, key: string, value: T, limit: number): void {
   cache.set(key, value);
   while (cache.size > limit) {
     const oldest = cache.keys().next().value;

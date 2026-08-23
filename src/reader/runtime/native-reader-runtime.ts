@@ -8,6 +8,7 @@ import type {
   ReaderRenderFrame,
   ReaderSnapshot,
 } from '../contracts';
+import { createNativeReaderTextMeasurer } from '../native/archive-module';
 import { LunarSkiaFontRegistry } from '../skia/fonts/font-registry';
 import { SkiaImageCache } from '../skia/images/image-decoder';
 import {
@@ -20,6 +21,7 @@ import { ReaderPublicationLoader } from './publication-loader';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
 import type { ReaderPaginationBackend } from './pagination-backend';
 import { LocalPaginationBackend } from './local-pagination-backend';
+import { NativePaginationTextMeasurer } from './native-text-measurer';
 import { createReaderLayoutFingerprint } from './background-runtime-protocol';
 import { RITO_VERSION } from '../rito';
 
@@ -176,6 +178,14 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
     const fontRegistry = new LunarSkiaFontRegistry();
     const textMeasurer = new LunarSkiaTextMeasurer(fontRegistry);
+    const nativeTextMeasurer = createNativeReaderTextMeasurer();
+    const paginationTextMeasurer = nativeTextMeasurer
+      ? new NativePaginationTextMeasurer(
+          nativeTextMeasurer,
+          textMeasurer,
+          (family) => !fontRegistry.hasBookFamily(family),
+        )
+      : textMeasurer;
     this.fontRegistry = fontRegistry;
     this.textMeasurer = textMeasurer;
     this.emit({ ...this.snapshot, phase });
@@ -195,7 +205,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
       }),
       signal: this.abortController?.signal ?? new AbortController().signal,
       fontRegistry,
-      textMeasurer,
+      textMeasurer: paginationTextMeasurer,
     });
     const publication = backendResult.publication;
     this.assertCurrent(operation);
