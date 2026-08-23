@@ -6,8 +6,9 @@ import { useUniwind } from 'uniwind';
 
 import type { ReaderViewport } from '@/reader';
 import { ReaderSurface } from '@/reader/native';
+import { ProgressDrawer } from '../components/bottom-tabs/progress-drawer';
+import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
 import { ReaderControls } from '../components/reader-controls';
-import { ReaderTocSheet } from '../components/reader-toc-sheet';
 import { useReaderSession } from '../hooks/use-reader-session';
 
 export default function ReaderScreen() {
@@ -16,7 +17,8 @@ export default function ReaderScreen() {
   const { theme } = useUniwind();
   const [viewport, setViewport] = useState<ReaderViewport>();
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [tocOpen, setTocOpen] = useState(false);
+  const [isTocOpen, setIsTocOpen] = useState(false);
+  const [isProgressOpen, setIsProgressOpen] = useState(false);
   const readerTheme = theme === 'dark' ? 'dark' : 'light';
   const session = useReaderSession({
     bookId: bookId ?? '',
@@ -59,6 +61,14 @@ export default function ReaderScreen() {
     },
     [isReady, session.runtime, viewport],
   );
+
+  const handleOpenToc = useCallback(() => {
+    setIsTocOpen(true);
+  }, []);
+
+  const handleOpenProgress = useCallback(() => {
+    setIsProgressOpen(true);
+  }, []);
 
   const statusText = useMemo(() => {
     switch (session.snapshot.phase) {
@@ -112,18 +122,23 @@ export default function ReaderScreen() {
       {(controlsVisible || Boolean(session.errorMessage)) && (
         <ReaderControls
           onBack={() => router.back()}
-          onOpenToc={() => setTocOpen(true)}
-          runtime={session.runtime}
-          snapshot={session.snapshot}
+          onOpenToc={handleOpenToc}
+          onOpenProgress={handleOpenProgress}
           title={session.metadata?.title ?? session.book?.title ?? '阅读器'}
         />
       )}
 
-      <ReaderTocSheet
-        isOpen={tocOpen}
-        onOpenChange={setTocOpen}
+      <TocDrawer
+        isOpen={isTocOpen}
+        onOpenChange={setIsTocOpen}
         runtime={session.runtime}
         toc={session.toc}
+      />
+      <ProgressDrawer
+        isOpen={isProgressOpen}
+        onOpenChange={setIsProgressOpen}
+        runtime={session.runtime}
+        snapshot={session.snapshot}
       />
     </View>
   );
