@@ -42,6 +42,7 @@ android {
 
 dependencies {
   implementation 'com.facebook.react:react-android'
+  implementation project(':expo-modules-core')
   implementation project(':react-native-worklets')
   compileOnly 'com.facebook.fbjni:fbjni:0.5.1'
 }

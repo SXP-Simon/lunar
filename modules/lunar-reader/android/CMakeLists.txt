@@ -16,6 +16,7 @@ endif()
 
 find_package(fbjni REQUIRED CONFIG)
 find_package(ReactAndroid REQUIRED CONFIG)
+find_package(expo-modules-core REQUIRED CONFIG)
 find_library(LOG_LIB log)
 
 # Keep the ABI and Folly feature configuration identical to the Worklets and
@@ -49,6 +50,8 @@ target_compile_options(lunarreader PRIVATE
 
 target_include_directories(lunarreader PRIVATE
   "${EXPO_MODULES_CORE_DIR}/android/src/main/cpp"
+  "${EXPO_MODULES_CORE_DIR}/android/src/jsi"
+  "${EXPO_MODULES_CORE_DIR}/common/cpp/JSI"
   "${REACT_NATIVE_WORKLETS_DIR}/Common/cpp"
   "${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni"
 )
@@ -56,6 +59,7 @@ target_include_directories(lunarreader PRIVATE
 target_link_libraries(lunarreader PRIVATE
   ${LOG_LIB}
   fbjni::fbjni
+  expo-modules-core::expo-modules-core
   ReactAndroid::jsi
   ReactAndroid::reactnative
   worklets
