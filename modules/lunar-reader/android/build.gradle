@@ -6,6 +6,11 @@ plugins {
 group = 'com.lunarain_079'
 version = '1.0.0'
 
+def expoModulesCoreProject = project(':expo-modules-core')
+def workletsProject = project(':react-native-worklets')
+def expoModulesCoreDir = expoModulesCoreProject.projectDir.parentFile
+def reactNativeWorkletsDir = workletsProject.projectDir.parentFile
+
 android {
   namespace 'expo.modules.lunarreader'
   defaultConfig {
@@ -18,8 +23,8 @@ android {
         arguments '-DANDROID_STL=c++_shared',
           '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON',
           "-DREACT_NATIVE_DIR=${rootProject.file('../node_modules/react-native').absolutePath}",
-          "-DEXPO_MODULES_CORE_DIR=${rootProject.file('../node_modules/expo-modules-core').absolutePath}",
-          "-DREACT_NATIVE_WORKLETS_DIR=${rootProject.file('../node_modules/react-native-worklets').absolutePath}"
+          "-DEXPO_MODULES_CORE_DIR=${expoModulesCoreDir.absolutePath}",
+          "-DREACT_NATIVE_WORKLETS_DIR=${reactNativeWorkletsDir.absolutePath}"
       }
     }
   }
@@ -35,7 +40,9 @@ android {
   packagingOptions {
     excludes += [
       '**/libc++_shared.so',
+      '**/libexpo-modules-core.so',
       '**/libfbjni.so',
+      '**/libworklets.so',
     ]
   }
 }
@@ -47,14 +54,16 @@ dependencies {
   compileOnly 'com.facebook.fbjni:fbjni:0.5.1'
 }
 
-def workletsProject = findProject(':react-native-worklets')
-if (workletsProject != null) {
-  afterEvaluate {
-    tasks.named('buildCMakeDebug').configure {
-      dependsOn(workletsProject.tasks.named('mergeDebugNativeLibs'))
-    }
-    tasks.named('buildCMakeRelWithDebInfo').configure {
-      dependsOn(workletsProject.tasks.named('mergeReleaseNativeLibs'))
-    }
+evaluationDependsOn(expoModulesCoreProject.path)
+evaluationDependsOn(workletsProject.path)
+
+afterEvaluate {
+  tasks.named('buildCMakeDebug').configure {
+    dependsOn(expoModulesCoreProject.tasks.named('mergeDebugNativeLibs'))
+    dependsOn(workletsProject.tasks.named('mergeDebugNativeLibs'))
+  }
+  tasks.named('buildCMakeRelWithDebInfo').configure {
+    dependsOn(expoModulesCoreProject.tasks.named('mergeReleaseNativeLibs'))
+    dependsOn(workletsProject.tasks.named('mergeReleaseNativeLibs'))
   }
 }
