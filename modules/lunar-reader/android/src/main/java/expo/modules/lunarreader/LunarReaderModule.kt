@@ -7,7 +7,6 @@ import com.facebook.react.bridge.ReactApplicationContext
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.jni.JavaScriptObject
-import expo.modules.kotlin.jni.WorkletRuntimeInstaller
 import expo.modules.kotlin.runtime.WorkletRuntime
 import java.io.File
 import java.io.FileInputStream
@@ -25,6 +24,20 @@ private const val MAX_ENTRY_UNCOMPRESSED_BYTES = 64L * 1024L * 1024L
 private const val MAX_ENTRIES = 5_000
 private const val MAX_COMPRESSION_RATIO = 100L
 private const val READER_FONT_ASSET_PATH = "fonts/LXGWWenKai-Regular.ttf"
+
+/**
+ * Resolves a custom `react-native-worklets` Worker Runtime without treating it
+ * as Expo's UI Runtime holder. The native implementation extracts the
+ * WorkletRuntime HostObject directly and returns its JSI runtime pointer.
+ */
+private object ReaderWorkletRuntimeBridge {
+  init {
+    System.loadLibrary("lunarreader")
+  }
+
+  @JvmStatic
+  external fun resolveWorkerRuntimePointer(runtimeHolder: JavaScriptObject): Long
+}
 
 class LunarReaderModule : Module() {
   private val archives = ConcurrentHashMap<String, ArchiveHandle>()
@@ -115,16 +128,14 @@ class LunarReaderModule : Module() {
   }
 
   /**
-   * Expo SDK 57 only exposes the Worklet installer through the UI-runtime
-   * helper. The same holder conversion yields the raw pointer for a custom
-   * Worklet Runtime, so keep a separate Expo Runtime wrapper for each pointer.
-   * Reflection is limited to Kotlin-internal lifecycle methods; the public
-   * installer and holder conversion remain the source of the native bridge.
+   * Installs Expo SharedObject classes into the dedicated pagination Worker.
+   * The Worker Runtime must be extracted from its HostObject; Expo's
+   * resolveUIRuntimePointer only accepts the distinct UI-holder object.
    */
   private fun installOnReaderWorkletRuntime(runtimeHolder: JavaScriptObject): Boolean {
-    val runtimePointer = WorkletRuntimeInstaller.resolveUIRuntimePointer(runtimeHolder)
-    require(runtimePointer != 0L) {
-      "The Reader Worklet Runtime pointer could not be resolved."
+    val runtimePointer = ReaderWorkletRuntimeBridge.resolveWorkerRuntimePointer(runtimeHolder)
+    if (runtimePointer == 0L) {
+      return false
     }
     if (readerWorkletRuntimes.containsKey(runtimePointer)) {
       return true
