@@ -18,6 +18,11 @@ find_package(fbjni REQUIRED CONFIG)
 find_package(ReactAndroid REQUIRED CONFIG)
 find_library(LOG_LIB log)
 
+# Keep the ABI and Folly feature configuration identical to the Worklets and
+# Expo Modules Core libraries whose C++ types this bridge consumes.
+include("${REACT_NATIVE_DIR}/ReactAndroid/cmake-utils/folly-flags.cmake")
+include("${REACT_NATIVE_DIR}/ReactCommon/cmake-utils/react-native-flags.cmake")
+
 # react-native-worklets is built as an autolinked Android library rather than
 # a Prefab package. This matches Expo Modules Core's own fallback linkage.
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
@@ -33,6 +38,13 @@ set_target_properties(worklets PROPERTIES
 
 add_library(lunarreader SHARED
   src/main/cpp/ReaderWorkletRuntimeBridge.cpp
+)
+
+target_compile_reactnative_options(lunarreader PRIVATE)
+target_compile_options(lunarreader PRIVATE
+  -frtti
+  -fexceptions
+  ${folly_FLAGS}
 )
 
 target_include_directories(lunarreader PRIVATE
