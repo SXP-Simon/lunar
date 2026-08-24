@@ -27,11 +27,22 @@ android {
       path 'CMakeLists.txt'
     }
   }
+  buildFeatures {
+    // Makes Prefab packages from native dependencies available to CMake.
+    prefab true
+  }
+  packagingOptions {
+    excludes += [
+      '**/libc++_shared.so',
+      '**/libfbjni.so',
+    ]
+  }
 }
 
 dependencies {
   implementation 'com.facebook.react:react-android'
   implementation project(':react-native-worklets')
+  compileOnly 'com.facebook.fbjni:fbjni:0.5.1'
 }
 
 def workletsProject = findProject(':react-native-worklets')
