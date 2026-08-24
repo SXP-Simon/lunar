@@ -3,7 +3,6 @@ import {
   buildSpreads,
   collectSpreadImageSources,
   loadEpub,
-  loadFontsWithRegistry,
   loadImagesWithDecoder,
   type DisplayList,
   type DisplayListOptions,
@@ -115,10 +114,6 @@ export async function openRitoPaginationContext<
   let decodedImages: ReadonlyMap<string, TImage> = new Map();
 
   try {
-    if (options.fontRegistry) {
-      await loadFontsWithRegistry(document, options.fontRegistry);
-    }
-
     if (options.imageDecoder) {
       decodedImages = await loadImagesWithDecoder(
         document,

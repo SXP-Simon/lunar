@@ -8,6 +8,7 @@ export { FallbackPaginationBackend } from './runtime/pagination-backend';
 export type { ReaderPaginationBackend } from './runtime/pagination-backend';
 export {
   createNativeReaderArchiveModule,
+  readNativeReaderBuiltinFont,
   createNativeReaderTextMeasurer,
   createNativeReaderWorkletBindings,
   installNativeReaderWorkletRuntime,

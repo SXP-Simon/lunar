@@ -35,7 +35,15 @@
         }
       ],
       "expo-sqlite",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/LXGWWenKai-Regular.ttf"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

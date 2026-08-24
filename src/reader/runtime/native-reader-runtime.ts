@@ -8,7 +8,7 @@ import type {
   ReaderRenderFrame,
   ReaderSnapshot,
 } from '../contracts';
-import { createNativeReaderTextMeasurer } from '../native/archive-module';
+import { readNativeReaderBuiltinFont } from '../native/archive-module';
 import { LunarSkiaFontRegistry } from '../skia/fonts/font-registry';
 import { SkiaImageCache } from '../skia/images/image-decoder';
 import {
@@ -16,12 +16,12 @@ import {
   type CompiledReaderPicture,
 } from '../skia/rendering/picture-compiler';
 import { LunarSkiaTextMeasurer } from '../skia/text/text-measurer';
+import { LUNAR_READER_FONT_FAMILY } from '../typography';
 import { FrameCache } from './frame-cache';
 import { ReaderPublicationLoader } from './publication-loader';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
 import type { ReaderPaginationBackend } from './pagination-backend';
 import { LocalPaginationBackend } from './local-pagination-backend';
-import { NativePaginationTextMeasurer } from './native-text-measurer';
 import { createReaderLayoutFingerprint } from './background-runtime-protocol';
 import { RITO_VERSION } from '../rito';
 
@@ -177,15 +177,8 @@ export class LunarReaderRuntime implements ReaderRuntime {
     }
 
     const fontRegistry = new LunarSkiaFontRegistry();
+    fontRegistry.loadBuiltinFont(readNativeReaderBuiltinFont());
     const textMeasurer = new LunarSkiaTextMeasurer(fontRegistry);
-    const nativeTextMeasurer = createNativeReaderTextMeasurer();
-    const paginationTextMeasurer = nativeTextMeasurer
-      ? new NativePaginationTextMeasurer(
-          nativeTextMeasurer,
-          textMeasurer,
-          (family) => !fontRegistry.hasBookFamily(family),
-        )
-      : textMeasurer;
     this.fontRegistry = fontRegistry;
     this.textMeasurer = textMeasurer;
     this.emit({ ...this.snapshot, phase });
@@ -201,11 +194,11 @@ export class LunarReaderRuntime implements ReaderRuntime {
         ritoVersion: RITO_VERSION,
         rendererVersion: 'react-native-skia-2.6.2',
         layout: request,
-        fontFingerprint: request.typography.fontFamily ?? 'system',
+        fontFingerprint: LUNAR_READER_FONT_FAMILY,
       }),
       signal: this.abortController?.signal ?? new AbortController().signal,
       fontRegistry,
-      textMeasurer: paginationTextMeasurer,
+      textMeasurer,
     });
     const publication = backendResult.publication;
     this.assertCurrent(operation);

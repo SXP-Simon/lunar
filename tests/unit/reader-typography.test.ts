@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createReaderTypographyKey,
+  LUNAR_READER_FONT_FAMILY,
   normalizeReaderTypography,
   type ReaderTypography,
 } from '../../src/reader';
@@ -16,10 +17,10 @@ const typography: ReaderTypography = {
 };
 
 describe('reader typography', () => {
-  it('normalizes the font family before creating a layout key', () => {
-    expect(normalizeReaderTypography(typography).fontFamily).toBe('Source Han Serif');
+  it('uses the bundled reader font before creating a layout key', () => {
+    expect(normalizeReaderTypography(typography).fontFamily).toBe(LUNAR_READER_FONT_FAMILY);
     expect(createReaderTypographyKey(typography)).toBe(
-      '["Source Han Serif",18,1.65,24,36,"single"]',
+      '["LunarWenKai",18,1.65,24,36,"single"]',
     );
   });
 

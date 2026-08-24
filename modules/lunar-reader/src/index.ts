@@ -48,6 +48,7 @@ interface NativeReaderModule {
   readArchiveEntry(handleId: string, path: string): Promise<Uint8Array>;
   hasArchiveEntry(handleId: string, path: string): boolean;
   closeArchive(handleId: string): void;
+  getBuiltinFontBytes(): Uint8Array;
   measureText(request: NativeReaderTextMeasureRequest): {
     readonly width: number;
     readonly height: number;

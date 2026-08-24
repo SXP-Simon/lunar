@@ -1,7 +1,7 @@
 import {
-  getUIRuntimeHolder,
-  runOnRuntimeAsyncWithId,
-  UIRuntimeId,
+  createWorkletRuntime,
+  runOnRuntimeAsync,
+  type WorkletRuntime,
 } from 'react-native-worklets';
 import type {
   LoadedReaderPublication,
@@ -114,13 +114,16 @@ export interface ReaderWorkletCancelRequest {
 }
 
 /**
- * Runtime transport for the native build. Expo SDK 57 exposes SharedObject
- * installation through the UI runtime holder, so native pagination executes
- * on the UI Worklet Runtime. Native text measurement is required by default;
- * the approximate measurer is an explicit development-only option.
+ * Runtime transport for the native build. Rito executes on a dedicated Worker
+ * Runtime backed by a native asynchronous queue. Native text measurement is
+ * resolved inside that Runtime, keeping individual width probes off the RN
+ * and UI threads.
  */
 export class WorkletPaginationBackend implements ReaderPaginationBackend {
-  private readonly runtimeId = UIRuntimeId;
+  private readonly runtime: WorkletRuntime = createWorkletRuntime({
+    name: 'LunarRitoPagination',
+    enableEventLoop: true,
+  });
   private readonly cache: ReaderPaginationSnapshotCache;
   private queue: Promise<unknown> = Promise.resolve();
   private publication?: SerializedReaderPublication;
@@ -155,20 +158,20 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
     try {
       let workerBindings = bindings;
       if (bindings) {
-        const installed = installNativeReaderWorkletRuntime(getUIRuntimeHolder());
+        const installed = installNativeReaderWorkletRuntime(this.runtime as unknown as object);
         if (!installed) {
           throw createNativeWorkerUnavailableError(
-            'The Expo SharedObject bridge could not be installed on the UI Runtime.',
-            'ui-runtime-install-unavailable',
+            'The Expo SharedObject bridge could not be installed on the pagination Worker Runtime.',
+            'worker-runtime-install-unavailable',
           );
         }
         const probe = await this.enqueue(() =>
-          runOnRuntimeAsyncWithId(this.runtimeId, probeReaderWorkerNativeBridge),
+          runOnRuntimeAsync(this.runtime, probeReaderWorkerNativeBridge),
         );
         if (!probe.available) {
           if (!this.allowApproximateMeasurement) {
             throw createNativeWorkerUnavailableError(
-              'The UI Runtime does not have Expo SharedObject resolution installed.',
+              'The pagination Worker Runtime does not have Expo SharedObject resolution installed.',
               probe.resolver
                 ? 'shared-object-class-present'
                 : probe.sharedObjectClass
@@ -179,7 +182,7 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
           workerBindings = undefined;
         }
       }
-      const result = await this.enqueue(() => runOnRuntimeAsyncWithId(this.runtimeId, openReaderPagination, {
+      const result = await this.enqueue(() => runOnRuntimeAsync(this.runtime, openReaderPagination, {
           request: options.request,
           data: options.data,
           operationId: options.operationId,
@@ -203,7 +206,7 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
 
   async getFrame(revisionId: number, spreadIndex: number): Promise<ReaderRenderFrame | undefined> {
     const result = await this.enqueue(() =>
-      runOnRuntimeAsyncWithId(this.runtimeId, getReaderPaginationFrame, { revisionId, spreadIndex }),
+      runOnRuntimeAsync(this.runtime, getReaderPaginationFrame, { revisionId, spreadIndex }),
     );
     if (!result) {
       throw new Error('The Worklet pagination session did not return a frame.');
@@ -214,12 +217,12 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
 
   async cancel(operationId: number, revisionId: number): Promise<void> {
     await this.enqueue(() =>
-      runOnRuntimeAsyncWithId(this.runtimeId, cancelReaderPagination, { operationId, revisionId }),
+      runOnRuntimeAsync(this.runtime, cancelReaderPagination, { operationId, revisionId }),
     );
   }
 
   async close(): Promise<void> {
-    await this.enqueue(() => runOnRuntimeAsyncWithId(this.runtimeId, closeReaderPagination));
+    await this.enqueue(() => runOnRuntimeAsync(this.runtime, closeReaderPagination));
     this.publication?.close();
     this.publication = undefined;
     this.bindings?.archive.close();

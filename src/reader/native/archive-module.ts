@@ -60,6 +60,14 @@ export function createNativeReaderTextMeasurer(): ReaderNativeTextMeasurer | und
   };
 }
 
+export function readNativeReaderBuiltinFont(): Uint8Array {
+  const bytes = LunarReaderNative?.getBuiltinFontBytes();
+  if (!bytes || bytes.byteLength === 0) {
+    throw new Error('The bundled Lunar reader font is unavailable from the native module.');
+  }
+  return bytes;
+}
+
 export interface ReaderNativeWorkletBindings {
   readonly archive: NativeReaderArchiveSharedObject;
   readonly textMeasurer: NativeReaderTextMeasurerSharedObject;

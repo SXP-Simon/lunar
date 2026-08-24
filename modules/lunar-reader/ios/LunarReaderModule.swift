@@ -10,6 +10,30 @@ private let maxEntryUncompressedBytes: UInt64 = 64 * 1024 * 1024
 private let maxEntries = 5_000
 private let maxCompressionRatio: UInt64 = 100
 
+private enum ReaderBuiltinFont {
+  static let fileURL: URL = {
+    guard let url = Bundle.main.url(forResource: "LXGWWenKai-Regular", withExtension: "ttf") else {
+      fatalError("The bundled Lunar reader font is missing from the application bundle.")
+    }
+    return url
+  }()
+
+  static let graphicsFont: CGFont = {
+    guard let provider = CGDataProvider(url: fileURL as CFURL), let font = CGFont(provider) else {
+      fatalError("The bundled Lunar reader font could not be decoded.")
+    }
+    return font
+  }()
+
+  static func make(size: Double) -> CTFont {
+    CTFontCreateWithGraphicsFont(graphicsFont, CGFloat(size), nil, nil)
+  }
+
+  static func bytes() throws -> Data {
+    try Data(contentsOf: fileURL)
+  }
+}
+
 public final class LunarReaderModule: Module {
   private var archives: [String: ArchiveHandle] = [:]
   private var readerWorkletRuntimes: [JavaScriptRuntime] = []
@@ -52,6 +76,10 @@ public final class LunarReaderModule: Module {
       try self.installOnReaderWorkletRuntime(runtimeHolder)
     }
 
+    Function("getBuiltinFontBytes") { () throws -> Data in
+      try ReaderBuiltinFont.bytes()
+    }
+
     AsyncFunction("openArchive") { (uri: String) -> [String: String] in
       let resolved = try Self.resolveFile(uri)
       let archive = try ArchiveHandle(fileURL: resolved.url, deleteOnClose: resolved.temporary)
@@ -76,8 +104,7 @@ public final class LunarReaderModule: Module {
     Function("measureText") { (request: [String: Any]) -> [String: Double] in
       let text = request["text"] as? String ?? ""
       let size = (request["sizePx"] as? NSNumber)?.doubleValue ?? 16
-      let family = request["family"] as? String ?? "Helvetica"
-      let font = createFont(family: family, size: size, weight: request["weight"] as? NSNumber, style: request["style"] as? String)
+      let font = ReaderBuiltinFont.make(size: size)
       let attributes: [NSAttributedString.Key: Any] = [.font: font]
       let width = NSAttributedString(string: text, attributes: attributes).size().width
       return ["width": Double(width), "height": size]
@@ -85,8 +112,7 @@ public final class LunarReaderModule: Module {
 
     Function("resolveFontMetrics") { (request: [String: Any]) -> [String: Double] in
       let size = (request["sizePx"] as? NSNumber)?.doubleValue ?? 16
-      let family = request["family"] as? String ?? "Helvetica"
-      let font = createFont(family: family, size: size, weight: request["weight"] as? NSNumber, style: request["style"] as? String)
+      let font = ReaderBuiltinFont.make(size: size)
       let ascent = Double(CTFontGetAscent(font))
       let descent = Double(CTFontGetDescent(font))
       let leading = Double(max(0, CTFontGetLeading(font)))
@@ -263,21 +289,19 @@ final class ReaderTextMeasurerSharedObject: SharedObject {
   func measureText(_ request: [String: Any]) -> [String: Double] {
     let text = request["text"] as? String ?? ""
     let size = (request["sizePx"] as? NSNumber)?.doubleValue ?? 16
-    let family = request["family"] as? String ?? "Helvetica"
-    let font = createFont(family: family, size: size, weight: request["weight"] as? NSNumber, style: request["style"] as? String)
+    let font = ReaderBuiltinFont.make(size: size)
     let width = NSAttributedString(string: text, attributes: [.font: font]).size().width
     let letterSpacing = (request["letterSpacingPx"] as? NSNumber)?.doubleValue ?? 0
     let wordSpacing = (request["wordSpacingPx"] as? NSNumber)?.doubleValue ?? 0
     return [
-      "width": Double(width) + Double(text.count) * letterSpacing + Double(text.filter { $0 == " " }.count) * wordSpacing,
+      "width": Double(width) + Double(max(0, text.count - 1)) * letterSpacing + Double(text.filter { $0 == " " }.count) * wordSpacing,
       "height": size,
     ]
   }
 
   func resolveFontMetrics(_ request: [String: Any]) -> [String: Double] {
     let size = (request["sizePx"] as? NSNumber)?.doubleValue ?? 16
-    let family = request["family"] as? String ?? "Helvetica"
-    let font = createFont(family: family, size: size, weight: request["weight"] as? NSNumber, style: request["style"] as? String)
+    let font = ReaderBuiltinFont.make(size: size)
     let ascent = Double(CTFontGetAscent(font))
     let descent = Double(CTFontGetDescent(font))
     let leading = Double(max(0, CTFontGetLeading(font)))
@@ -401,17 +425,4 @@ private func readUInt32(_ bytes: [UInt8], _ offset: Int) throws -> UInt32 {
 
 private func readUInt32Unchecked(_ bytes: [UInt8], _ offset: Int) -> UInt32 {
   UInt32(bytes[offset]) | UInt32(bytes[offset + 1]) << 8 | UInt32(bytes[offset + 2]) << 16 | UInt32(bytes[offset + 3]) << 24
-}
-
-private func createFont(family: String, size: Double, weight: NSNumber?, style: String?) -> CTFont {
-  let base = CTFontCreateWithName(family as CFString, CGFloat(size), nil)
-  var traits: CTFontSymbolicTraits = []
-  if style == "italic" {
-    traits.insert(.traitItalic)
-  }
-  if (weight?.intValue ?? 400) >= 600 {
-    traits.insert(.traitBold)
-  }
-  guard !traits.isEmpty else { return base }
-  return CTFontCreateCopyWithSymbolicTraits(base, CGFloat(size), nil, traits) ?? base
 }

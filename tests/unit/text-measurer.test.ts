@@ -24,22 +24,23 @@ const paint: ReaderMeasurePaint = {
 describe('LunarSkiaTextMeasurer', () => {
   it('uses the resolved SkFont for runs without custom spacing', () => {
     const font = {
-      getTextWidth: vi.fn((text: string) => text.length * 9),
-      getGlyphIDs: vi.fn(() => [1]),
+      getGlyphIDs: vi.fn((text: string) => Array.from(text).map((_, index) => index + 1)),
+      getGlyphWidths: vi.fn((glyphs: number[]) => glyphs.map(() => 9)),
       getMetrics: vi.fn(),
     };
     const paragraphs = createParagraphFactory();
     const measurer = createMeasurer(font, paragraphs);
 
     expect(measurer.measureText('日本語', paint)).toEqual({ width: 27, height: 18 });
-    expect(font.getTextWidth).toHaveBeenCalledWith('日本語');
+    expect(font.getGlyphIDs).toHaveBeenCalledWith('日本語');
+    expect(font.getGlyphWidths).toHaveBeenCalledWith([1, 2, 3]);
     expect(paragraphs.measureShapedText).not.toHaveBeenCalled();
   });
 
   it('reuses an exact text measurement without mutating the paragraph factory', () => {
     const font = {
-      getTextWidth: vi.fn(() => 54),
       getGlyphIDs: vi.fn(() => [1]),
+      getGlyphWidths: vi.fn(() => [54]),
       getMetrics: vi.fn(),
     };
     const measurer = createMeasurer(font, createParagraphFactory());
@@ -47,45 +48,45 @@ describe('LunarSkiaTextMeasurer', () => {
     measurer.measureText('同じ本文', paint);
     measurer.measureText('同じ本文', paint);
 
-    expect(font.getTextWidth).toHaveBeenCalledTimes(1);
+    expect(font.getGlyphWidths).toHaveBeenCalledTimes(1);
   });
 
-  it('retains Paragraph shaping for custom character spacing', () => {
+  it('adds custom character spacing without creating a Paragraph', () => {
     const font = {
-      getTextWidth: vi.fn(() => 54),
       getGlyphIDs: vi.fn(() => [1]),
+      getGlyphWidths: vi.fn(() => [54]),
       getMetrics: vi.fn(),
     };
-    const paragraphs = createParagraphFactory({ width: 61, height: 18 });
+    const paragraphs = createParagraphFactory();
     const measurer = createMeasurer(font, paragraphs);
 
     expect(measurer.measureText('間隔付き', { ...paint, letterSpacingPx: 1 })).toEqual({
-      width: 61,
+      width: 57,
       height: 18,
     });
-    expect(font.getTextWidth).not.toHaveBeenCalled();
-    expect(paragraphs.measureShapedText).toHaveBeenCalledTimes(1);
+    expect(font.getGlyphWidths).toHaveBeenCalledWith([1]);
+    expect(paragraphs.measureShapedText).not.toHaveBeenCalled();
   });
 
-  it('uses Paragraph when the resolved SkFont lacks a glyph that Paragraph will fall back to', () => {
+  it('uses the bundled SkFont when the source family lacks a glyph', () => {
     const font = {
-      getTextWidth: vi.fn(() => 36),
       getGlyphIDs: vi.fn(() => [1, 0, 1]),
+      getGlyphWidths: vi.fn(() => [12, 12, 12]),
       getMetrics: vi.fn(),
     };
-    const paragraphs = createParagraphFactory({ width: 54, height: 18 });
+    const paragraphs = createParagraphFactory();
     const measurer = createMeasurer(font, paragraphs);
 
-    expect(measurer.measureText('中文文', paint)).toEqual({ width: 54, height: 18 });
-    expect(font.getTextWidth).not.toHaveBeenCalled();
-    expect(paragraphs.measureShapedText).toHaveBeenCalledTimes(1);
+    expect(measurer.measureText('中文文', paint)).toEqual({ width: 36, height: 18 });
+    expect(font.getGlyphWidths).toHaveBeenCalledWith([1, 0, 1]);
+    expect(paragraphs.measureShapedText).not.toHaveBeenCalled();
   });
 });
 
 function createMeasurer(
   font: {
-    getTextWidth(text: string): number;
     getGlyphIDs(text: string): number[];
+    getGlyphWidths(glyphs: number[]): number[];
     getMetrics(): unknown;
   },
   paragraphs: SkiaParagraphFactory,

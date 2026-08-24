@@ -122,8 +122,8 @@ export async function openReaderPagination(
 
 class WorkletFontRegistry implements ReaderFontRegistry {
   async loadFont(_resource: ReaderFontResource): Promise<void> {
-    // The approximate development mode keeps the bytes in Rito, without
-    // claiming that the Worker can access the Expo font proxy.
+    // The reader forces its bundled font, so EPUB @font-face declarations do
+    // not participate in Worker pagination.
   }
 }
 
@@ -145,7 +145,7 @@ class WorkletTextMeasurer implements ReaderTextMeasurer {
     return {
       width:
         text.length * paint.font.sizePx * 0.55 +
-        (paint.letterSpacingPx ?? 0) * text.length +
+        (paint.letterSpacingPx ?? 0) * Math.max(0, Array.from(text).length - 1) +
         (paint.wordSpacingPx ?? 0) * (text.match(/\s/g)?.length ?? 0),
       height: paint.font.sizePx,
     };

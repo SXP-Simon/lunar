@@ -90,17 +90,23 @@ export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
 
   private measureWidth(text: string, paint: ReaderMeasurePaint): number {
     const font = this.fontResolver.resolveFont(paint.font);
-    if (hasCustomSpacing(paint) || requiresParagraphShaping(text, font)) {
-      return this.paragraphs.measureShapedText(text, paint).width;
-    }
-
-    // Rito's pagination repeatedly probes differently sized slices while it
-    // searches a line break. Creating a Paragraph for every probe costs far
-    // more than measuring the matching SkFont. Paragraphs stay reserved for
-    // spacing-sensitive runs and for the renderer, where shaping is required
-    // for the final draw command.
-    return font.getTextWidth(text);
+    const characters = Array.from(text);
+    const letterSpacing = paint.letterSpacingPx ?? 0;
+    const wordSpacing = paint.wordSpacingPx ?? 0;
+    return (
+      getTextAdvance(font, text) +
+      Math.max(0, characters.length - 1) * letterSpacing +
+      characters.filter((character) => character === ' ').length * wordSpacing
+    );
   }
+}
+
+function getTextAdvance(
+  font: ReturnType<LunarSkiaFontRegistry['resolveFont']>,
+  text: string,
+): number {
+  const glyphs = font.getGlyphIDs(text);
+  return font.getGlyphWidths(glyphs).reduce((width, glyphWidth) => width + glyphWidth, 0);
 }
 
 function createTextKey(text: string, paint: ReaderMeasurePaint): string {
@@ -112,36 +118,6 @@ function createFontKey(paint: ReaderMeasurePaint): string {
   return `${font.family}\0${font.weight}\0${font.style}\0${font.sizePx}`;
 }
 
-function hasCustomSpacing(paint: ReaderMeasurePaint): boolean {
-  return (paint.wordSpacingPx ?? 0) !== 0 || (paint.letterSpacingPx ?? 0) !== 0;
-}
-
-function requiresParagraphShaping(
-  text: string,
-  font: ReturnType<LunarSkiaFontRegistry['resolveFont']>,
-): boolean {
-  // Paragraph can select a system fallback face for a missing glyph, while a
-  // SkFont has one fixed typeface. Paginating with the latter's .notdef
-  // advance places more text on each line than the Paragraph renderer shows.
-  // Shaped scripts also need Paragraph's HarfBuzz layout, even when every
-  // code point exists in the primary font.
-  return hasComplexScript(text) || font.getGlyphIDs(text).some((glyphId) => glyphId === 0);
-}
-
-function hasComplexScript(text: string): boolean {
-  for (const character of text) {
-    const codePoint = character.codePointAt(0) ?? 0;
-    if (
-      (codePoint >= 0x0590 && codePoint <= 0x08ff) ||
-      (codePoint >= 0x0900 && codePoint <= 0x0dff) ||
-      (codePoint >= 0x0f00 && codePoint <= 0x109f) ||
-      (codePoint >= 0x1780 && codePoint <= 0x18af)
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
 
 function writeBoundedCache<T>(cache: Map<string, T>, key: string, value: T, limit: number): void {
   cache.set(key, value);

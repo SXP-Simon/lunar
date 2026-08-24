@@ -1,11 +1,11 @@
 import type { ReaderTypography } from '../contracts';
+import { LUNAR_READER_FONT_FAMILY } from './builtin-font';
 
 export function normalizeReaderTypography(
   typography: ReaderTypography,
 ): ReaderTypography {
-  const fontFamily = typography.fontFamily?.trim();
   return {
-    ...(fontFamily ? { fontFamily } : {}),
+    fontFamily: LUNAR_READER_FONT_FAMILY,
     fontSize: requirePositiveFinite(typography.fontSize, 'fontSize'),
     lineHeight: requirePositiveFinite(typography.lineHeight, 'lineHeight'),
     marginHorizontal: requireNonNegativeFinite(

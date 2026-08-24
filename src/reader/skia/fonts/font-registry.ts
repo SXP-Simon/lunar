@@ -4,7 +4,6 @@ import {
   Skia,
   type FontStyle,
   type SkFont,
-  type SkFontMgr,
   type SkTypeface,
   type SkTypefaceFontProvider,
 } from '@shopify/react-native-skia';
@@ -13,77 +12,75 @@ import type {
   ReaderFontRegistry,
   ReaderFontShorthand,
 } from '../../contracts';
+import { LUNAR_READER_FONT_FAMILY } from '../../typography';
 
 export interface SkiaFontRegistry extends ReaderFontRegistry {
-  readonly systemFontManager: SkFontMgr;
-  readonly bookFontProvider: SkTypefaceFontProvider;
+  readonly readerFontProvider: SkTypefaceFontProvider;
+  loadBuiltinFont(bytes: Uint8Array): void;
   getFontFamilies(family: string): readonly string[];
-  getParagraphProvider(family: string): SkTypefaceFontProvider | undefined;
+  getParagraphProvider(family: string): SkTypefaceFontProvider;
   resolveFont(font: ReaderFontShorthand): SkFont;
   dispose(): void;
 }
 
 export class LunarSkiaFontRegistry implements SkiaFontRegistry {
-  readonly systemFontManager = Skia.FontMgr.System();
-  readonly bookFontProvider = Skia.TypefaceFontProvider.Make();
+  readonly readerFontProvider = Skia.TypefaceFontProvider.Make();
 
-  private readonly bookFamilies = new Set<string>();
   private readonly typefaces: SkTypeface[] = [];
   private readonly fonts = new Map<string, SkFont>();
+  private builtinLoaded = false;
   private disposed = false;
 
-  async loadFont(resource: Parameters<ReaderFontRegistry['loadFont']>[0]): Promise<void> {
+  loadBuiltinFont(bytes: Uint8Array): void {
     this.assertActive();
-    const data = Skia.Data.fromBytes(resource.bytes);
+    if (this.builtinLoaded) {
+      return;
+    }
+    const data = Skia.Data.fromBytes(bytes);
     try {
       const typeface = Skia.Typeface.MakeFreeTypeFaceFromData(data);
       if (!typeface) {
-        throw new Error(`Skia could not decode the embedded font ${resource.src}.`);
+        throw new Error('Skia could not decode the bundled Lunar reader font.');
       }
-      this.bookFontProvider.registerFont(typeface, resource.family);
-      this.bookFamilies.add(normalizeFamily(resource.family));
+      this.readerFontProvider.registerFont(typeface, LUNAR_READER_FONT_FAMILY);
       this.typefaces.push(typeface);
+      this.builtinLoaded = true;
     } finally {
       data.dispose();
     }
   }
 
-  hasBookFamily(family: string): boolean {
-    this.assertActive();
-    return this.getFontFamilies(family).some((candidate) =>
-      this.bookFamilies.has(normalizeFamily(candidate)),
-    );
+  async loadFont(_resource: Parameters<ReaderFontRegistry['loadFont']>[0]): Promise<void> {
+    // Reader layout forces the bundled font. EPUB @font-face declarations are
+    // intentionally ignored so pagination and Skia always share one Typeface.
   }
 
-  getFontFamilies(family: string): readonly string[] {
+  getFontFamilies(_family: string): readonly string[] {
     this.assertActive();
-    return splitFontFamilies(family);
+    return [LUNAR_READER_FONT_FAMILY];
   }
 
-  getParagraphProvider(family: string): SkTypefaceFontProvider | undefined {
-    return this.hasBookFamily(family) ? this.bookFontProvider : undefined;
+  getParagraphProvider(_family: string): SkTypefaceFontProvider {
+    this.assertActive();
+    this.assertBuiltinLoaded();
+    return this.readerFontProvider;
   }
 
   resolveFont(font: ReaderFontShorthand): SkFont {
     this.assertActive();
-    const key = `${font.family}\0${font.weight}\0${font.style}\0${font.sizePx}`;
+    const key = `${font.sizePx}`;
     const cached = this.fonts.get(key);
     if (cached) {
       return cached;
     }
 
     const style: FontStyle = {
-      weight: font.weight,
+      weight: 400,
       width: FontWidth.Normal,
-      slant: font.style === 'italic' ? FontSlant.Italic : FontSlant.Upright,
+      slant: FontSlant.Upright,
     };
-    const families = this.getFontFamilies(font.family);
-    const customFamily = families.find((family) =>
-      this.bookFamilies.has(normalizeFamily(family)),
-    );
-    const manager = customFamily ? this.bookFontProvider : this.systemFontManager;
-    const family = customFamily ?? families[0] ?? 'sans-serif';
-    const typeface = manager.matchFamilyStyle(family, style);
+    this.assertBuiltinLoaded();
+    const typeface = this.readerFontProvider.matchFamilyStyle(LUNAR_READER_FONT_FAMILY, style);
     const skFont = Skia.Font(typeface, font.sizePx);
     this.fonts.set(key, skFont);
     return skFont;
@@ -102,7 +99,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
       typeface.dispose();
     }
     this.typefaces.length = 0;
-    this.bookFontProvider.dispose();
+    this.readerFontProvider.dispose();
   }
 
   private assertActive(): void {
@@ -110,15 +107,10 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
       throw new Error('The Skia font registry is disposed.');
     }
   }
-}
 
-export function splitFontFamilies(value: string): string[] {
-  return value
-    .split(',')
-    .map((family) => family.trim().replace(/^['"]|['"]$/g, ''))
-    .filter(Boolean);
-}
-
-function normalizeFamily(value: string): string {
-  return value.trim().replace(/^['"]|['"]$/g, '').toLocaleLowerCase();
+  private assertBuiltinLoaded(): void {
+    if (!this.builtinLoaded) {
+      throw new Error('The bundled Lunar reader font is unavailable.');
+    }
+  }
 }

@@ -46,12 +46,9 @@ export class LunarSkiaParagraphFactory implements SkiaParagraphFactory {
       fontFamilies: families.length > 0 ? [...families] : ['sans-serif'],
       fontSize: paint.font.sizePx,
       fontStyle: {
-        weight: paint.font.weight,
+        weight: 400,
         width: FontWidth.Normal,
-        slant:
-          paint.font.style === 'italic'
-            ? FontSlant.Italic
-            : FontSlant.Upright,
+        slant: FontSlant.Upright,
       },
       letterSpacing: paint.letterSpacingPx ?? 0,
       wordSpacing: paint.wordSpacingPx ?? 0,

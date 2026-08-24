@@ -69,7 +69,7 @@ Expo SDK 57 对应 React Native 0.86、React 19.2.3、React Native Web 0.21 和 
 | `@shopify/react-native-skia` | Expo SDK 57 推荐版本 `2.6.2` | Canvas、字体、图片、`SkPicture` 和 GPU 绘制 |
 | `react-native-gesture-handler` | Expo 配套版本 | 点击分区、滑动翻页和长按 |
 | `react-native-reanimated` | Expo 配套版本 | 工具栏与翻页动画 |
-| `react-native-worklets` | Expo 配套版本 | 动画侧计算；禁止承载 Rito 全书分页 |
+| `react-native-worklets` | Expo 配套版本 | UI Runtime 承载动画；独立 Worker Runtime 承载 Rito 全书分页 |
 
 Rito 主入口 `@ritojs/core` 用于平台中立功能。`@ritojs/core/web` 依赖 Canvas、`FontFace`、`createImageBitmap` 等浏览器接口，移动端代码禁止导入该入口。`@ritojs/core/advanced` 仅允许出现在 Rito Adapter 内，用于增量分页和命中信息生成。
 
@@ -140,10 +140,10 @@ ReaderRuntime
 | `ReaderRuntime` | 管理打开、分页、版面修订、导航、资源释放和错误状态 |
 | `RitoAdapter` | 封装 Rito 公开接口和少量 advanced 接口，隔离版本变化 |
 | `ReaderTypography` | 定义平台无关的排版参数、默认值、输入规范化与版面标识 |
-| `SkiaTextMeasurer` | 将 Rito `MeasurePaint` 转换为 Skia 字体与段落测量 |
-| `SkiaFontRegistry` | 从 EPUB 字体字节创建 Typeface，并按书籍生命周期释放 |
+| `SkiaTextMeasurer` | 使用内置阅读字体的 `SkFont` 执行本地后备测量 |
+| `SkiaFontRegistry` | 从内置字体字节创建固定 Typeface，并按书籍生命周期释放 |
 | `SkiaParagraphFactory` | 统一创建测量与绘制共用的 Skia Paragraph |
-| `LunarFontResolver` | 组合系统字体管理器、内置字体和书籍字体，形成一致的 Typeface 匹配结果 |
+| `LunarFontResolver` | 为分页与 Skia 绘制提供固定的内置 Typeface |
 | `SkiaImageDecoder` | 从图片字节创建 `SkImage`，返回尺寸并管理释放 |
 | `SkiaDisplayListRenderer` | 将全部 `DrawCommand` 转换为 Skia Canvas 操作 |
 | `FrameCache` | 保存当前页和相邻页的 DisplayList 与 `SkPicture` |
@@ -157,7 +157,7 @@ ReaderRuntime
 1. 文件服务从 `Paths.document/books/<bookId>/book.epub` 创建 `File`。
 2. `File.arrayBuffer()` 读取二进制，保持 `ArrayBuffer` 形式传给 Rito，避免 Base64 字符串。
 3. `loadEpub()` 解析容器、清单、书脊、目录、XHTML 和 CSS。
-4. `SkiaFontRegistry` 注册书内字体，字体准备完成后才允许分页。
+4. 原生模块从应用资源读取内置霞鹜文楷，Skia 从同一份 TTF 字节创建 Typeface。
 5. `SkiaTextMeasurer` 与绘制器共享同一字体管理器和字体匹配规则。
 6. `PaginationSession` 按书脊顺序逐章分页，每完成一章便向事件循环让出执行机会。
 7. Rito 生成 Page、Spread、DisplayList、HitMap 和位置索引。
@@ -187,12 +187,11 @@ ReaderRuntime
 
 分页质量取决于测量结果与绘制结果的一致程度。Lunar 采用以下规则：
 
-1. `LunarFontResolver` 按书籍字体、Lunar 内置字体、系统字体的顺序查找 Typeface，并按缺字范围分段。
+1. 正文固定使用内置霞鹜文楷 Regular，EPUB 字体声明和系统字体不参与正文测量。
 2. 字体族、字重、斜体、字号、字距和词距共同组成测量缓存键。
-3. `SkiaTextMeasurer.measureText()` 使用 Skia Paragraph API 或解析结果中相同 Typeface 的 `SkFont.measureText()`。
-4. 绘制阶段复用相同字体匹配规则，禁止改用 React Native `Text` 测量。
-5. 中文、英文、标点挤压、粗体、斜体、ruby、emoji 和缺字回退均纳入基准图测试。
-6. Android 与 iOS 的系统字体集合不同，默认正文优先使用 Lunar 内置字体；系统字体作为回退。
+3. Worker Runtime 内的原生 SharedObject 使用该 TTF 进行测量；本地后备测量使用同一 Typeface 的 `SkFont.measureText()`。
+4. 绘制阶段复用同一 Typeface，禁止改用 React Native `Text` 测量。
+5. 中文、英文、标点挤压、ruby 与 emoji 纳入基准图测试。
 
 Rito 的 `TextMetrics.height` 表示字号内容高度，行盒高度由 Rito 版面几何决定。Skia Paragraph 的 `heightMultiplier` 仅在其值来自 Rito 行高时设置，避免 Skia 再次改变分页结果。
 
@@ -210,7 +209,7 @@ RN Skia 通过 JSI 调用原生 Skia，最终页面由 GPU 绘制。Rito 是 Typ
 
 `PaginationSession` 的公开接口从书脊开头依次处理章节。首次打开可以较早显示第一页；恢复到书籍中后部时，需要等待分页推进到目标章节。Lunar 首版禁止自行修改页码偏移来跳过前置章节。阶段零同时评估版本化 `LayoutSnapshot` 缓存，只有经过 Rito 版本校验和完整性校验的快照才可用于缩短再次打开时间。
 
-`react-native-worklets` 负责承载阅读计算 Runtime。只有经过 Bundle Mode 构建的阅读分页入口可以在该 Runtime 中运行；Rito 文档、分页会话、字体测量对象和资源索引均在后台 Runtime 内创建，主 Runtime 只接收可复制的出版物索引与页面帧数据。归档与文字测量通过 Expo Modules `SharedObject` 原生状态传入 Worker，普通 `requireNativeModule()` 代理只在主 Runtime 使用。Lunar 原生模块在自定义 Worker Runtime 中安装 Expo 类原型，并在对象传输前执行 `SharedObject.__resolveInWorklet` 探测；安装或探测失败时转入本地分页。动画计算继续使用现有 UI Runtime。
+`react-native-worklets` 的 `createWorkletRuntime()` 创建独立 Worker Runtime。Rito 文档、分页会话、字体测量对象和资源索引均在该原生异步线程内创建与执行，主 Runtime 只接收可复制的出版物索引与页面帧数据。归档与文字测量通过 Expo Modules `SharedObject` 原生状态传入 Worker，普通 `requireNativeModule()` 代理只在主 Runtime 使用。Lunar 原生模块在自定义 Worker Runtime 中安装 Expo 类原型，并在对象传输前执行 `SharedObject.__resolveInWorklet` 探测；安装或探测失败时转入本地分页。动画计算继续使用 UI Runtime。
 
 ### 6.2 后台执行门槛
 
@@ -429,7 +428,7 @@ CREATE TABLE bookmarks (
 
 1. `@ritojs/core@0.13.0` 能在 Hermes 中导入，主入口无 DOM、Canvas 和 `ImageBitmap` 全局依赖。
 2. Expo SDK 57 的 `File.arrayBuffer()` 可将 10 MiB、30 MiB 和 80 MiB EPUB 交给 Rito。
-3. `SkiaTextMeasurer` 和 `SkiaDisplayListRenderer` 支持中文、英文、图片、目录、嵌入字体、ruby 与 emoji。
+3. `SkiaTextMeasurer` 和 `SkiaDisplayListRenderer` 使用内置霞鹜文楷支持中文、英文、图片、目录、ruby 与 emoji。
 4. Rito Web Canvas 和 Lunar Skia 对同一页的基准图差异处于允许范围。
 5. DisplayList 的全部命令均有测试样例和 Skia 映射。
 6. 当前页和相邻页可编译为 `SkPicture`，反复翻页期间帧耗时符合预算。

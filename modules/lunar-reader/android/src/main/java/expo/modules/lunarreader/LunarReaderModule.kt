@@ -24,10 +24,16 @@ private const val MAX_TOTAL_UNCOMPRESSED_BYTES = 250L * 1024L * 1024L
 private const val MAX_ENTRY_UNCOMPRESSED_BYTES = 64L * 1024L * 1024L
 private const val MAX_ENTRIES = 5_000
 private const val MAX_COMPRESSION_RATIO = 100L
+private const val READER_FONT_ASSET_PATH = "fonts/LXGWWenKai-Regular.ttf"
 
 class LunarReaderModule : Module() {
   private val archives = ConcurrentHashMap<String, ArchiveHandle>()
   private val readerWorkletRuntimes = ConcurrentHashMap<Long, WorkletRuntime>()
+  private val readerTypeface: Typeface by lazy {
+    val context = appContext.reactContext
+      ?: throw IllegalStateException("React context is unavailable for the bundled reader font.")
+    Typeface.createFromAsset(context.assets, READER_FONT_ASSET_PATH)
+  }
 
   override fun definition() = ModuleDefinition {
     Name("LunarReader")
@@ -42,13 +48,19 @@ class LunarReaderModule : Module() {
     }
 
     Class("ReaderTextMeasurer", ReaderTextMeasurerSharedObject::class) {
-      Constructor { ReaderTextMeasurerSharedObject() }
+      Constructor { ReaderTextMeasurerSharedObject(readerTypeface) }
       Function("measureText") { self: ReaderTextMeasurerSharedObject, request: Map<String, Any?> -> self.measureText(request) }
       Function("resolveFontMetrics") { self: ReaderTextMeasurerSharedObject, request: Map<String, Any?> -> self.resolveFontMetrics(request) }
     }
 
     Function("installOnReaderWorkletRuntime") { runtimeHolder: JavaScriptObject ->
       installOnReaderWorkletRuntime(runtimeHolder)
+    }
+
+    Function("getBuiltinFontBytes") {
+      val context = appContext.reactContext
+        ?: throw IllegalStateException("React context is unavailable for the bundled reader font.")
+      context.assets.open(READER_FONT_ASSET_PATH).use { input -> input.readBytes() }
     }
 
     AsyncFunction("openArchive") { uri: String ->
@@ -76,7 +88,8 @@ class LunarReaderModule : Module() {
       val text = request["text"] as? String ?: ""
       val letterSpacing = (request["letterSpacingPx"] as? Number)?.toFloat() ?: 0f
       val wordSpacing = (request["wordSpacingPx"] as? Number)?.toFloat() ?: 0f
-      val spacing = (text.length * letterSpacing) + (text.count { it == ' ' } * wordSpacing)
+      val characterCount = text.codePointCount(0, text.length)
+      val spacing = (maxOf(0, characterCount - 1) * letterSpacing) + (text.count { it == ' ' } * wordSpacing)
       mapOf("width" to (paint.measureText(text) + spacing), "height" to requestSize(request))
     }
 
@@ -148,13 +161,9 @@ class LunarReaderModule : Module() {
     archives[handleId] ?: throw IllegalStateException("The EPUB archive handle is closed.")
 
   private fun createPaint(request: Map<String, Any?>): Paint {
-    val family = request["family"] as? String ?: "sans-serif"
-    val weight = (request["weight"] as? Number)?.toInt() ?: Typeface.NORMAL
-    val style = if (request["style"] == "italic") Typeface.ITALIC else Typeface.NORMAL
-    val typefaceStyle = if (weight >= 600) style or Typeface.BOLD else style
     return Paint(Paint.ANTI_ALIAS_FLAG).apply {
       textSize = requestSize(request).toFloat()
-      typeface = Typeface.create(family, typefaceStyle)
+      typeface = readerTypeface
     }
   }
 

@@ -42,13 +42,16 @@ class ReaderArchiveSharedObject(uri: String) : SharedObject() {
   }
 }
 
-class ReaderTextMeasurerSharedObject : SharedObject() {
+class ReaderTextMeasurerSharedObject(
+  private val readerTypeface: Typeface,
+) : SharedObject() {
   fun measureText(request: Map<String, Any?>): Map<String, Double> {
     val paint = createPaint(request)
     val text = request["text"] as? String ?: ""
     val letterSpacing = (request["letterSpacingPx"] as? Number)?.toFloat() ?: 0f
     val wordSpacing = (request["wordSpacingPx"] as? Number)?.toFloat() ?: 0f
-    val spacing = (text.length * letterSpacing) + (text.count { it == ' ' } * wordSpacing)
+    val characterCount = text.codePointCount(0, text.length)
+    val spacing = (maxOf(0, characterCount - 1) * letterSpacing) + (text.count { it == ' ' } * wordSpacing)
     return mapOf(
       "width" to (paint.measureText(text) + spacing).toDouble(),
       "height" to requestSize(request),
@@ -70,13 +73,9 @@ class ReaderTextMeasurerSharedObject : SharedObject() {
   }
 
   private fun createPaint(request: Map<String, Any?>): Paint {
-    val family = request["family"] as? String ?: "sans-serif"
-    val weight = (request["weight"] as? Number)?.toInt() ?: Typeface.NORMAL
-    val style = if (request["style"] == "italic") Typeface.ITALIC else Typeface.NORMAL
-    val typefaceStyle = if (weight >= 600) style or Typeface.BOLD else style
     return Paint(Paint.ANTI_ALIAS_FLAG).apply {
       textSize = requestSize(request).toFloat()
-      typeface = Typeface.create(family, typefaceStyle)
+      typeface = readerTypeface
     }
   }
 
