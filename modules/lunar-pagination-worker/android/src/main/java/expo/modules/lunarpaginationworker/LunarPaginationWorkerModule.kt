@@ -144,9 +144,7 @@ class LunarPaginationWorkerModule : Module() {
       ?: throw IllegalStateException("React context is unavailable for the Reader Worklet Runtime.")
     val runtime = WorkletRuntime(appContext, WeakReference(reactContext))
     try {
-      WorkletRuntime::class.java
-        .getDeclaredMethod("install", Long::class.javaPrimitiveType)
-        .apply { isAccessible = true }
+      resolveWorkletRuntimeMethod("install", java.lang.Long.TYPE)
         .invoke(runtime, runtimePointer)
     } catch (error: InvocationTargetException) {
       deallocateReaderWorkletRuntime(runtime)
@@ -161,12 +159,22 @@ class LunarPaginationWorkerModule : Module() {
 
   private fun deallocateReaderWorkletRuntime(runtime: WorkletRuntime) {
     runCatching {
-      WorkletRuntime::class.java
-        .getDeclaredMethod("deallocate")
-        .apply { isAccessible = true }
+      resolveWorkletRuntimeMethod("deallocate")
         .invoke(runtime)
     }
   }
+
+  private fun resolveWorkletRuntimeMethod(
+    baseName: String,
+    vararg parameterTypes: Class<*>,
+  ): java.lang.reflect.Method =
+    WorkletRuntime::class.java.declaredMethods
+      .firstOrNull { method ->
+        method.name.substringBefore('$') == baseName &&
+          method.parameterTypes.contentEquals(parameterTypes)
+      }
+      ?.apply { isAccessible = true }
+      ?: throw NoSuchMethodException("WorkletRuntime.$baseName is unavailable.")
 
   private fun requireArchive(handleId: String): ArchiveHandle =
     archives[handleId] ?: throw IllegalStateException("The EPUB archive handle is closed.")

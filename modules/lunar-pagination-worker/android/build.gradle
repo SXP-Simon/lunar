@@ -11,6 +11,11 @@ def workletsProject = project(':react-native-worklets')
 def expoModulesCoreDir = expoModulesCoreProject.projectDir.parentFile
 def reactNativeWorkletsDir = workletsProject.projectDir.parentFile
 
+def reactNativeArchitectures() {
+  def value = project.getProperties().get('reactNativeArchitectures')
+  return value ? value.split(',') : ['armeabi-v7a', 'x86', 'x86_64', 'arm64-v8a']
+}
+
 android {
   namespace 'expo.modules.lunarpaginationworker'
   defaultConfig {
@@ -19,7 +24,7 @@ android {
     consumerProguardFiles 'proguard-rules.pro'
     externalNativeBuild {
       cmake {
-        abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+        abiFilters(*reactNativeArchitectures())
         arguments '-DANDROID_STL=c++_shared',
           '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON',
           "-DREACT_NATIVE_DIR=${rootProject.file('../node_modules/react-native').absolutePath}",
@@ -41,8 +46,27 @@ android {
     excludes += [
       '**/libc++_shared.so',
       '**/libexpo-modules-core.so',
+      '**/libfabricjni.so',
       '**/libfbjni.so',
+      '**/libfolly_json.so',
+      '**/libfolly_runtime.so',
+      '**/libglog.so',
+      '**/libhermesvm.so',
+      '**/libjscexecutor.so',
+      '**/libjsi.so',
+      '**/libreactnative.so',
+      '**/libreactnativejni.so',
+      '**/libreact_debug.so',
+      '**/libreact_nativemodule_core.so',
+      '**/libreact_render_componentregistry.so',
+      '**/libreact_render_core.so',
+      '**/libreact_render_debug.so',
+      '**/libreact_render_graphics.so',
+      '**/libreact_render_mapbuffer.so',
+      '**/libreact_utils.so',
+      '**/libruntimeexecutor.so',
       '**/libworklets.so',
+      '**/libyoga.so',
     ]
   }
 }
