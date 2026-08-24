@@ -1,9 +1,7 @@
 import {
   LunarPaginationWorkerNative,
-  type NativeReaderArchiveSharedObject,
   type NativeReaderFontMetricsRequest,
   type NativeReaderTextMeasureRequest,
-  type NativeReaderTextMeasurerSharedObject,
 } from '@modules/lunar-pagination-worker';
 
 import type {
@@ -68,41 +66,7 @@ export function readNativeReaderBuiltinFont(): Uint8Array {
   return bytes;
 }
 
-export interface ReaderNativeWorkletBindings {
-  readonly archive: NativeReaderArchiveSharedObject;
-  readonly textMeasurer: NativeReaderTextMeasurerSharedObject;
-  readonly bookHash: string;
-}
-
 export function installNativeReaderWorkletRuntime(runtimeHolder: object): boolean {
   const installer = LunarPaginationWorkerNative?.installOnReaderWorkletRuntime;
   return installer ? installer(runtimeHolder) : false;
-}
-
-/**
- * Creates native SharedObjects whose methods can be resolved in a Worklets
- * Bundle Runtime. The ordinary Expo module proxy itself must stay on the RN
- * Runtime.
- */
-export function createNativeReaderWorkletBindings(
-  uri: string,
-): ReaderNativeWorkletBindings | undefined {
-  const native = LunarPaginationWorkerNative;
-  const Archive = native?.ReaderArchive;
-  const TextMeasurer = native?.ReaderTextMeasurer;
-  if (!Archive || !TextMeasurer) {
-    return undefined;
-  }
-  let archive: NativeReaderArchiveSharedObject | undefined;
-  try {
-    archive = new Archive(uri);
-    return {
-      archive,
-      textMeasurer: new TextMeasurer(),
-      bookHash: archive.bookHash,
-    };
-  } catch {
-    archive?.close();
-    return undefined;
-  }
 }

@@ -102,12 +102,34 @@ describe('reader background runtime protocol', () => {
     ).rejects.toMatchObject({ name: 'ReaderNativeWorkerUnavailableError' });
   });
 
-  it('reports the missing Expo SharedObject installation before serialization', () => {
+  it('reports missing Lunar JSI bindings before pagination', () => {
     expect(probeReaderWorkerNativeBridge()).toEqual({
-      sharedObjectClass: false,
-      resolver: false,
+      measureText: false,
+      resolveFontMetrics: false,
       available: false,
     });
+  });
+
+  it('detects the module-owned Lunar JSI bindings', () => {
+    const globals = globalThis as {
+      __lunarPaginationWorker?: {
+        measureText(): { width: number; height: number };
+        resolveFontMetrics(): object;
+      };
+    };
+    globals.__lunarPaginationWorker = {
+      measureText: () => ({ width: 0, height: 0 }),
+      resolveFontMetrics: () => ({}),
+    };
+    try {
+      expect(probeReaderWorkerNativeBridge()).toEqual({
+        measureText: true,
+        resolveFontMetrics: true,
+        available: true,
+      });
+    } finally {
+      delete globals.__lunarPaginationWorker;
+    }
   });
 
 });

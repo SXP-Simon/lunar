@@ -17,7 +17,6 @@ import type {
   ReaderWorkletOpenRequest,
   ReaderWorkletOpenResult,
   ReaderWorkletFrameResult,
-  ReaderWorkletTextMeasurer,
 } from './worklet-pagination-backend';
 import { encodedImageDimensionDecoder } from './image-dimension-decoder';
 
@@ -31,26 +30,23 @@ let state: WorkerState | undefined;
 const cancelledOperations = new Set<number>();
 
 export interface ReaderWorkerNativeBridgeProbe {
-  readonly sharedObjectClass: boolean;
-  readonly resolver: boolean;
+  readonly measureText: boolean;
+  readonly resolveFontMetrics: boolean;
   readonly available: boolean;
 }
 
 /**
- * Checks the runtime-local Expo installation before a SharedObject is sent to
- * the Worker. A normal Expo module proxy cannot install these globals in a
- * custom runtime, so this probe prevents a later serializer failure from
- * looking like a pagination crash.
+ * Checks the module-owned JSI HostObject installed directly into this Worker.
  */
 export function probeReaderWorkerNativeBridge(): ReaderWorkerNativeBridgeProbe {
   'worklet';
-  const expo = (globalThis as { expo?: { SharedObject?: { __resolveInWorklet?: unknown } } }).expo;
-  const sharedObjectClass = typeof expo?.SharedObject === 'function';
-  const resolver = typeof expo?.SharedObject?.__resolveInWorklet === 'function';
+  const bridge = getReaderWorkerNativeBridge();
+  const measureText = typeof bridge?.measureText === 'function';
+  const resolveFontMetrics = typeof bridge?.resolveFontMetrics === 'function';
   return {
-    sharedObjectClass,
-    resolver,
-    available: sharedObjectClass && resolver,
+    measureText,
+    resolveFontMetrics,
+    available: measureText && resolveFontMetrics,
   };
 }
 
@@ -58,19 +54,17 @@ export async function openReaderPagination(
   input: ReaderWorkletOpenRequest,
 ): Promise<ReaderWorkletOpenResult> {
   'worklet';
-  if (!input.allowApproximateMeasurement) {
-    if (!input.archive || !input.textMeasurer) {
-      throw createNativeMeasurementUnavailableError();
-    }
+  const nativeBridge = getReaderWorkerNativeBridge();
+  if (!input.allowApproximateMeasurement && !nativeBridge) {
+    throw createNativeMeasurementUnavailableError();
   }
   const fontRegistry = new WorkletFontRegistry();
-  const textMeasurer = new WorkletTextMeasurer(input.textMeasurer);
+  const textMeasurer = new WorkletTextMeasurer(nativeBridge);
   const request: ReaderOpenRequest = input.request;
   cancelledOperations.delete(input.operationId);
   const layout = createRitoLayoutConfig(request);
-  const data = input.archive ? toArrayBuffer(input.archive.readAll()) : input.data;
   const context = await openRitoPaginationContext({
-    data,
+    data: input.data,
     layout,
     layoutParameters: toReaderLayoutParameters(layout, request),
     displayListOptions: createRitoDisplayListOptions(request),
@@ -128,19 +122,16 @@ class WorkletFontRegistry implements ReaderFontRegistry {
 }
 
 class WorkletTextMeasurer implements ReaderTextMeasurer {
-  constructor(private readonly native?: ReaderWorkletTextMeasurer) {}
+  constructor(private readonly native?: ReaderWorkerNativeBridge) {}
 
   measureText(text: string, paint: ReaderMeasurePaint) {
     if (this.native) {
-      return this.native.measureText({
+      return this.native.measureText(
         text,
-        family: paint.font.family,
-        weight: paint.font.weight,
-        style: paint.font.style,
-        sizePx: paint.font.sizePx,
-        letterSpacingPx: paint.letterSpacingPx,
-        wordSpacingPx: paint.wordSpacingPx,
-      });
+        paint.font.sizePx,
+        paint.letterSpacingPx ?? 0,
+        paint.wordSpacingPx ?? 0,
+      );
     }
     return {
       width:
@@ -156,13 +147,29 @@ class WorkletTextMeasurer implements ReaderTextMeasurer {
       const size = paint.font.sizePx;
       return { ascentPx: size, descentPx: 0, lineGapPx: 0, contentHeightPx: size };
     }
-    return this.native.resolveFontMetrics({
-      family: paint.font.family,
-      weight: paint.font.weight,
-      style: paint.font.style,
-      sizePx: paint.font.sizePx,
-    });
+    return this.native.resolveFontMetrics(paint.font.sizePx);
   }
+}
+
+interface ReaderWorkerNativeBridge {
+  measureText(
+    text: string,
+    sizePx: number,
+    letterSpacingPx: number,
+    wordSpacingPx: number,
+  ): { width: number; height: number };
+  resolveFontMetrics(sizePx: number): {
+    ascentPx: number;
+    descentPx: number;
+    lineGapPx: number;
+    contentHeightPx: number;
+  };
+}
+
+function getReaderWorkerNativeBridge(): ReaderWorkerNativeBridge | undefined {
+  'worklet';
+  return (globalThis as { __lunarPaginationWorker?: ReaderWorkerNativeBridge })
+    .__lunarPaginationWorker;
 }
 
 
@@ -238,12 +245,6 @@ function createNativeMeasurementUnavailableError(): Error {
   );
   error.name = 'ReaderNativeWorkerUnavailableError';
   return error;
-}
-
-function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-  return bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength
-    ? bytes.buffer as ArrayBuffer
-    : bytes.slice().buffer as ArrayBuffer;
 }
 
 async function yieldToWorker(): Promise<void> {

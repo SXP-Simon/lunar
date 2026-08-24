@@ -22,27 +22,6 @@ export interface NativeReaderFontMetricsRequest {
   readonly sizePx: number;
 }
 
-export interface NativeReaderArchiveSharedObject {
-  readonly bookHash: string;
-  readAll(): Uint8Array;
-  readEntry(path: string): Uint8Array;
-  hasEntry(path: string): boolean;
-  close(): void;
-}
-
-export interface NativeReaderTextMeasurerSharedObject {
-  measureText(request: NativeReaderTextMeasureRequest): {
-    readonly width: number;
-    readonly height: number;
-  };
-  resolveFontMetrics(request: NativeReaderFontMetricsRequest): {
-    readonly ascentPx: number;
-    readonly descentPx: number;
-    readonly lineGapPx: number;
-    readonly contentHeightPx: number;
-  };
-}
-
 interface NativePaginationWorkerModule {
   openArchive(uri: string): Promise<NativeReaderArchiveOpenResult>;
   readArchiveEntry(handleId: string, path: string): Promise<Uint8Array>;
@@ -60,8 +39,6 @@ interface NativePaginationWorkerModule {
     readonly contentHeightPx: number;
   };
   installOnReaderWorkletRuntime?(runtimeHolder: object): boolean;
-  ReaderArchive?: new (uri: string) => NativeReaderArchiveSharedObject;
-  ReaderTextMeasurer?: new () => NativeReaderTextMeasurerSharedObject;
 }
 
 export const LunarPaginationWorkerNative: NativePaginationWorkerModule | undefined = loadNativeModule();

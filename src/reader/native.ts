@@ -10,8 +10,6 @@ export {
   createNativeReaderArchiveModule,
   readNativeReaderBuiltinFont,
   createNativeReaderTextMeasurer,
-  createNativeReaderWorkletBindings,
   installNativeReaderWorkletRuntime,
-  type ReaderNativeWorkletBindings,
 } from './native/archive-module';
 export { ReaderSurface } from './skia/rendering/reader-surface';

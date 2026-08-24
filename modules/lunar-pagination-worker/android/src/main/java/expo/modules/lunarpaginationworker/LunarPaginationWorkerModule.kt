@@ -3,16 +3,13 @@ package expo.modules.lunarpaginationworker
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.net.Uri
-import com.facebook.react.bridge.ReactApplicationContext
+import expo.modules.core.interfaces.DoNotStrip
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.jni.JavaScriptObject
-import expo.modules.kotlin.runtime.WorkletRuntime
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
-import java.lang.ref.WeakReference
-import java.lang.reflect.InvocationTargetException
 import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -26,9 +23,8 @@ private const val MAX_COMPRESSION_RATIO = 100L
 private const val READER_FONT_ASSET_PATH = "fonts/LXGWWenKai-Regular.ttf"
 
 /**
- * Resolves a custom `react-native-worklets` Worker Runtime without treating it
- * as Expo's UI Runtime holder. The native implementation extracts the
- * WorkletRuntime HostObject directly and returns its JSI runtime pointer.
+ * Installs Lunar's own JSI HostObject directly into a custom Worklets Runtime.
+ * Expo's SharedObject/UI-runtime adapter is intentionally not involved.
  */
 private object PaginationWorkerRuntimeBridge {
   init {
@@ -36,12 +32,14 @@ private object PaginationWorkerRuntimeBridge {
   }
 
   @JvmStatic
-  external fun resolveWorkerRuntimePointer(runtimeHolder: JavaScriptObject): Long
+  external fun installWorkerRuntimeBindings(
+    runtimeHolder: JavaScriptObject,
+    textMeasurer: ReaderWorkerTextMeasurer,
+  ): Long
 }
 
 class LunarPaginationWorkerModule : Module() {
   private val archives = ConcurrentHashMap<String, ArchiveHandle>()
-  private val readerWorkletRuntimes = ConcurrentHashMap<Long, WorkletRuntime>()
   private val readerTypeface: Typeface by lazy {
     val context = appContext.reactContext
       ?: throw IllegalStateException("React context is unavailable for the bundled reader font.")
@@ -50,21 +48,6 @@ class LunarPaginationWorkerModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("LunarPaginationWorker")
-
-    Class("ReaderArchive", ReaderArchiveSharedObject::class) {
-      Constructor { uri: String -> ReaderArchiveSharedObject(uri) }
-      Property("bookHash") { self: ReaderArchiveSharedObject -> self.bookHash }
-      Function("readAll") { self: ReaderArchiveSharedObject -> self.readAll() }
-      Function("readEntry") { self: ReaderArchiveSharedObject, path: String -> self.readEntry(path) }
-      Function("hasEntry") { self: ReaderArchiveSharedObject, path: String -> self.hasEntry(path) }
-      Function("close") { self: ReaderArchiveSharedObject -> self.closeArchive() }
-    }
-
-    Class("ReaderTextMeasurer", ReaderTextMeasurerSharedObject::class) {
-      Constructor { ReaderTextMeasurerSharedObject(readerTypeface) }
-      Function("measureText") { self: ReaderTextMeasurerSharedObject, request: Map<String, Any?> -> self.measureText(request) }
-      Function("resolveFontMetrics") { self: ReaderTextMeasurerSharedObject, request: Map<String, Any?> -> self.resolveFontMetrics(request) }
-    }
 
     Function("installOnReaderWorkletRuntime") { runtimeHolder: JavaScriptObject ->
       installOnReaderWorkletRuntime(runtimeHolder)
@@ -122,59 +105,25 @@ class LunarPaginationWorkerModule : Module() {
     OnDestroy {
       archives.values.forEach(ArchiveHandle::close)
       archives.clear()
-      readerWorkletRuntimes.values.forEach(::deallocateReaderWorkletRuntime)
-      readerWorkletRuntimes.clear()
     }
   }
 
   /**
-   * Installs Expo SharedObject classes into the dedicated pagination Worker.
-   * The Worker Runtime must be extracted from its HostObject; Expo's
-   * resolveUIRuntimePointer only accepts the distinct UI-holder object.
+   * Installs a module-owned JSI HostObject into the pagination Worker. The C++
+   * bridge extracts the Worker Runtime HostObject using Worklets' public C++
+   * API and wraps every JNI call at the HostFunction boundary.
    */
   private fun installOnReaderWorkletRuntime(runtimeHolder: JavaScriptObject): Boolean {
-    val runtimePointer = PaginationWorkerRuntimeBridge.resolveWorkerRuntimePointer(runtimeHolder)
+    val textMeasurer = ReaderWorkerTextMeasurer(readerTypeface)
+    val runtimePointer = PaginationWorkerRuntimeBridge.installWorkerRuntimeBindings(
+      runtimeHolder,
+      textMeasurer,
+    )
     if (runtimePointer == 0L) {
       return false
     }
-    if (readerWorkletRuntimes.containsKey(runtimePointer)) {
-      return true
-    }
-    val reactContext = appContext.reactContext as? ReactApplicationContext
-      ?: throw IllegalStateException("React context is unavailable for the Reader Worklet Runtime.")
-    val runtime = WorkletRuntime(appContext, WeakReference(reactContext))
-    try {
-      resolveWorkletRuntimeMethod("install", java.lang.Long.TYPE)
-        .invoke(runtime, runtimePointer)
-    } catch (error: InvocationTargetException) {
-      deallocateReaderWorkletRuntime(runtime)
-      throw (error.cause ?: error)
-    } catch (error: ReflectiveOperationException) {
-      deallocateReaderWorkletRuntime(runtime)
-      throw IllegalStateException("The Expo Worklet Runtime installer is unavailable.", error)
-    }
-    readerWorkletRuntimes[runtimePointer] = runtime
     return true
   }
-
-  private fun deallocateReaderWorkletRuntime(runtime: WorkletRuntime) {
-    runCatching {
-      resolveWorkletRuntimeMethod("deallocate")
-        .invoke(runtime)
-    }
-  }
-
-  private fun resolveWorkletRuntimeMethod(
-    baseName: String,
-    vararg parameterTypes: Class<*>,
-  ): java.lang.reflect.Method =
-    WorkletRuntime::class.java.declaredMethods
-      .firstOrNull { method ->
-        method.name.substringBefore('$') == baseName &&
-          method.parameterTypes.contentEquals(parameterTypes)
-      }
-      ?.apply { isAccessible = true }
-      ?: throw NoSuchMethodException("WorkletRuntime.$baseName is unavailable.")
 
   private fun requireArchive(handleId: String): ArchiveHandle =
     archives[handleId] ?: throw IllegalStateException("The EPUB archive handle is closed.")
@@ -206,6 +155,46 @@ class LunarPaginationWorkerModule : Module() {
 
   private fun validateArchiveFile(file: File) {
     require(file.isFile && file.length() <= MAX_ARCHIVE_BYTES) { "The EPUB archive exceeds the size limit." }
+  }
+}
+
+/**
+ * Small JNI-facing service retained for the lifetime of its Worker Runtime.
+ * Primitive arrays keep the C++ boundary allocation-light and independent of
+ * Expo Modules' generic Map/SharedObject converters.
+ */
+@DoNotStrip
+class ReaderWorkerTextMeasurer(
+  private val readerTypeface: Typeface,
+) {
+  private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    typeface = readerTypeface
+  }
+  private val fontMetrics = Paint.FontMetrics()
+
+  @DoNotStrip
+  fun measureText(
+    text: String,
+    sizePx: Double,
+    letterSpacingPx: Double,
+    wordSpacingPx: Double,
+  ): DoubleArray {
+    paint.textSize = sizePx.coerceAtLeast(1.0).toFloat()
+    val characterCount = text.codePointCount(0, text.length)
+    val spacing =
+      (maxOf(0, characterCount - 1) * letterSpacingPx) +
+        (text.count { it == ' ' } * wordSpacingPx)
+    return doubleArrayOf(paint.measureText(text).toDouble() + spacing, sizePx)
+  }
+
+  @DoNotStrip
+  fun resolveFontMetrics(sizePx: Double): DoubleArray {
+    paint.textSize = sizePx.coerceAtLeast(1.0).toFloat()
+    paint.getFontMetrics(fontMetrics)
+    val ascent = -fontMetrics.ascent.toDouble().coerceAtLeast(0.0)
+    val descent = fontMetrics.descent.toDouble().coerceAtLeast(0.0)
+    val leading = fontMetrics.leading.toDouble().coerceAtLeast(0.0)
+    return doubleArrayOf(ascent, descent, leading, ascent + descent + leading)
   }
 }
 

@@ -13,9 +13,7 @@ import type {
   ReaderTocEntry,
 } from '../contracts';
 import {
-  createNativeReaderWorkletBindings,
   installNativeReaderWorkletRuntime,
-  type ReaderNativeWorkletBindings,
 } from '../native/archive-module';
 import type { ReaderPaginationBackend, ReaderPaginationBackendOpenOptions, ReaderPaginationBackendResult } from './pagination-backend';
 import {
@@ -48,39 +46,6 @@ export interface ReaderWorkletOpenRequest {
    * only.
    */
   readonly allowApproximateMeasurement?: boolean;
-  readonly archive?: ReaderWorkletArchive;
-  readonly textMeasurer?: ReaderWorkletTextMeasurer;
-}
-
-export interface ReaderWorkletArchive {
-  readAll(): Uint8Array;
-}
-
-export interface ReaderWorkletTextMeasurer {
-  measureText(request: ReaderWorkletTextMeasureRequest): { width: number; height: number };
-  resolveFontMetrics(request: ReaderWorkletFontMetricsRequest): {
-    ascentPx: number;
-    descentPx: number;
-    lineGapPx: number;
-    contentHeightPx: number;
-  };
-}
-
-export interface ReaderWorkletTextMeasureRequest {
-  readonly text: string;
-  readonly family: string;
-  readonly weight: number;
-  readonly style: 'normal' | 'italic';
-  readonly sizePx: number;
-  readonly letterSpacingPx?: number;
-  readonly wordSpacingPx?: number;
-}
-
-export interface ReaderWorkletFontMetricsRequest {
-  readonly family: string;
-  readonly weight: number;
-  readonly style: 'normal' | 'italic';
-  readonly sizePx: number;
 }
 
 export interface ReaderWorkletOpenResult {
@@ -127,7 +92,6 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
   private readonly cache: ReaderPaginationSnapshotCache;
   private queue: Promise<unknown> = Promise.resolve();
   private publication?: SerializedReaderPublication;
-  private bindings?: ReaderNativeWorkletBindings;
 
   constructor(
     cache: ReaderPaginationSnapshotCache = new MemoryReaderPaginationSnapshotCache(),
@@ -143,44 +107,26 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
     // empty Worker state after close or process restart. Keep writing the
     // snapshot for future page-layer caching, while always opening the Worker
     // session until a rehydration protocol exists.
-    const bindings = createNativeReaderWorkletBindings(options.request.fileUri);
-    if (!bindings && !this.allowApproximateMeasurement) {
-      throw createNativeWorkerUnavailableError(
-        'The Expo Reader SharedObject bindings are unavailable.',
-      );
-    }
-    this.bindings = bindings;
-    if (bindings && options.request.bookId !== bindings.bookHash) {
-      bindings.archive.close();
-      this.bindings = undefined;
-      throw new Error('The EPUB file hash does not match the reader book id.');
-    }
     try {
-      let workerBindings = bindings;
-      if (bindings) {
-        const installed = installNativeReaderWorkletRuntime(this.runtime as unknown as object);
-        if (!installed) {
-          throw createNativeWorkerUnavailableError(
-            'The Expo SharedObject bridge could not be installed on the pagination Worker Runtime.',
-            'worker-runtime-install-unavailable',
-          );
-        }
-        const probe = await this.enqueue(() =>
-          runOnRuntimeAsync(this.runtime, probeReaderWorkerNativeBridge),
+      const installed = installNativeReaderWorkletRuntime(this.runtime as unknown as object);
+      if (!installed && !this.allowApproximateMeasurement) {
+        throw createNativeWorkerUnavailableError(
+          'The Lunar JSI bindings could not be installed on the pagination Worker Runtime.',
+          'worker-runtime-install-unavailable',
         );
-        if (!probe.available) {
-          if (!this.allowApproximateMeasurement) {
-            throw createNativeWorkerUnavailableError(
-              'The pagination Worker Runtime does not have Expo SharedObject resolution installed.',
-              probe.resolver
-                ? 'shared-object-class-present'
-                : probe.sharedObjectClass
-                  ? 'shared-object-resolver-missing'
-                  : 'shared-object-class-missing',
-            );
-          }
-          workerBindings = undefined;
-        }
+      }
+      const probe = await this.enqueue(() =>
+        runOnRuntimeAsync(this.runtime, probeReaderWorkerNativeBridge),
+      );
+      if (!probe.available && !this.allowApproximateMeasurement) {
+        throw createNativeWorkerUnavailableError(
+          'The pagination Worker Runtime does not have Lunar native text measurement installed.',
+          probe.measureText
+            ? 'worker-font-metrics-missing'
+            : probe.resolveFontMetrics
+              ? 'worker-text-measurement-missing'
+              : 'worker-native-bindings-missing',
+        );
       }
       const result = await this.enqueue(() => runOnRuntimeAsync(this.runtime, openReaderPagination, {
           request: options.request,
@@ -188,8 +134,6 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
           operationId: options.operationId,
           revisionId: options.revisionId,
           allowApproximateMeasurement: this.allowApproximateMeasurement,
-          archive: workerBindings?.archive,
-          textMeasurer: workerBindings?.textMeasurer,
         }));
       throwIfAborted(options.signal);
       const publication = this.installPublication(result);
@@ -198,8 +142,6 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
       }
       return { publication, operationId: options.operationId, revisionId: options.revisionId };
     } catch (error) {
-      bindings?.archive.close();
-      this.bindings = undefined;
       throw error;
     }
   }
@@ -225,8 +167,6 @@ export class WorkletPaginationBackend implements ReaderPaginationBackend {
     await this.enqueue(() => runOnRuntimeAsync(this.runtime, closeReaderPagination));
     this.publication?.close();
     this.publication = undefined;
-    this.bindings?.archive.close();
-    this.bindings = undefined;
   }
 
   private enqueue<T>(task: () => Promise<T>): Promise<T> {
