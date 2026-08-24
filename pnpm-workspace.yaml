@@ -1,4 +1,10 @@
 minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  # Expo SDK patch packages must remain in the same release set.
+  - '@expo/*'
+  - expo
+  - expo-*
+  - babel-preset-expo
 
 allowBuilds:
   '@shopify/react-native-skia': true
