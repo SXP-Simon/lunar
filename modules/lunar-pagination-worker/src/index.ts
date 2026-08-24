@@ -1,4 +1,4 @@
-import { requireNativeModule } from 'expo-modules-core';
+import { requireNativeModule } from 'expo';
 
 export interface NativeReaderArchiveOpenResult {
   readonly handleId: string;
@@ -43,7 +43,7 @@ export interface NativeReaderTextMeasurerSharedObject {
   };
 }
 
-interface NativeReaderModule {
+interface NativePaginationWorkerModule {
   openArchive(uri: string): Promise<NativeReaderArchiveOpenResult>;
   readArchiveEntry(handleId: string, path: string): Promise<Uint8Array>;
   hasArchiveEntry(handleId: string, path: string): boolean;
@@ -64,11 +64,11 @@ interface NativeReaderModule {
   ReaderTextMeasurer?: new () => NativeReaderTextMeasurerSharedObject;
 }
 
-export const LunarReaderNative: NativeReaderModule | undefined = loadNativeModule();
+export const LunarPaginationWorkerNative: NativePaginationWorkerModule | undefined = loadNativeModule();
 
-function loadNativeModule(): NativeReaderModule | undefined {
+function loadNativeModule(): NativePaginationWorkerModule | undefined {
   try {
-    return requireNativeModule<NativeReaderModule>('LunarReader');
+    return requireNativeModule<NativePaginationWorkerModule>('LunarPaginationWorker');
   } catch {
     return undefined;
   }

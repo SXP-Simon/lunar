@@ -6,7 +6,7 @@
 namespace jni = facebook::jni;
 namespace jsi = facebook::jsi;
 
-namespace expo::lunarreader {
+namespace expo::lunarpaginationworker {
 
 /**
  * `getUIRuntimeHolder()` is a plain object with WorkletRuntimeHolder native
@@ -14,17 +14,17 @@ namespace expo::lunarreader {
  * WorkletRuntime HostObject. The Expo SDK 57 resolver assumes the former and
  * dereferences null when given the latter. Extract the HostObject directly.
  */
-class ReaderWorkletRuntimeBridge
-    : public jni::JavaClass<ReaderWorkletRuntimeBridge> {
+class PaginationWorkerRuntimeBridge
+    : public jni::JavaClass<PaginationWorkerRuntimeBridge> {
  public:
   static auto constexpr kJavaDescriptor =
-      "Lexpo/modules/lunarreader/ReaderWorkletRuntimeBridge;";
+      "Lexpo/modules/lunarpaginationworker/PaginationWorkerRuntimeBridge;";
 
   static void registerNatives() {
     javaClassStatic()->registerNatives({
         makeNativeMethod(
             "resolveWorkerRuntimePointer",
-            ReaderWorkletRuntimeBridge::resolveWorkerRuntimePointer),
+            PaginationWorkerRuntimeBridge::resolveWorkerRuntimePointer),
     });
   }
 
@@ -52,10 +52,10 @@ class ReaderWorkletRuntimeBridge
   }
 };
 
-} // namespace expo::lunarreader
+} // namespace expo::lunarpaginationworker
 
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
   return facebook::jni::initialize(vm, [] {
-    expo::lunarreader::ReaderWorkletRuntimeBridge::registerNatives();
+    expo::lunarpaginationworker::PaginationWorkerRuntimeBridge::registerNatives();
   });
 }

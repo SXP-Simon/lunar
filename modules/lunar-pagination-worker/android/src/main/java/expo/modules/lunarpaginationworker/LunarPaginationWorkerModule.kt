@@ -1,4 +1,4 @@
-package expo.modules.lunarreader
+package expo.modules.lunarpaginationworker
 
 import android.graphics.Paint
 import android.graphics.Typeface
@@ -30,16 +30,16 @@ private const val READER_FONT_ASSET_PATH = "fonts/LXGWWenKai-Regular.ttf"
  * as Expo's UI Runtime holder. The native implementation extracts the
  * WorkletRuntime HostObject directly and returns its JSI runtime pointer.
  */
-private object ReaderWorkletRuntimeBridge {
+private object PaginationWorkerRuntimeBridge {
   init {
-    System.loadLibrary("lunarreader")
+    System.loadLibrary("lunarpaginationworker")
   }
 
   @JvmStatic
   external fun resolveWorkerRuntimePointer(runtimeHolder: JavaScriptObject): Long
 }
 
-class LunarReaderModule : Module() {
+class LunarPaginationWorkerModule : Module() {
   private val archives = ConcurrentHashMap<String, ArchiveHandle>()
   private val readerWorkletRuntimes = ConcurrentHashMap<Long, WorkletRuntime>()
   private val readerTypeface: Typeface by lazy {
@@ -49,7 +49,7 @@ class LunarReaderModule : Module() {
   }
 
   override fun definition() = ModuleDefinition {
-    Name("LunarReader")
+    Name("LunarPaginationWorker")
 
     Class("ReaderArchive", ReaderArchiveSharedObject::class) {
       Constructor { uri: String -> ReaderArchiveSharedObject(uri) }
@@ -133,7 +133,7 @@ class LunarReaderModule : Module() {
    * resolveUIRuntimePointer only accepts the distinct UI-holder object.
    */
   private fun installOnReaderWorkletRuntime(runtimeHolder: JavaScriptObject): Boolean {
-    val runtimePointer = ReaderWorkletRuntimeBridge.resolveWorkerRuntimePointer(runtimeHolder)
+    val runtimePointer = PaginationWorkerRuntimeBridge.resolveWorkerRuntimePointer(runtimeHolder)
     if (runtimePointer == 0L) {
       return false
     }
@@ -187,7 +187,7 @@ class LunarReaderModule : Module() {
       return File(parsed.path ?: uri).also(::validateArchiveFile)
     }
     val context = appContext.reactContext ?: throw IllegalStateException("React context is unavailable.")
-    val temporary = File.createTempFile("lunar-reader-", ".epub", context.cacheDir)
+    val temporary = File.createTempFile("lunar-pagination-worker-", ".epub", context.cacheDir)
     context.contentResolver.openInputStream(parsed).use { input ->
       requireNotNull(input) { "Unable to open EPUB URI." }
       temporary.outputStream().use { output -> input.copyTo(output, 64 * 1024) }
@@ -240,7 +240,7 @@ internal class ArchiveHandle(private val file: File) {
 
   fun close() {
     zip.close()
-    if (file.name.startsWith("lunar-reader-")) file.delete()
+    if (file.name.startsWith("lunar-pagination-worker-")) file.delete()
   }
 }
 

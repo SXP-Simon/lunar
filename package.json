@@ -44,7 +44,6 @@
     "tailwind-variants": "3.2.2",
     "tailwindcss": "4.3.3",
     "uniwind": "1.11.0",
-    "lunar-reader": "file:modules/lunar-reader",
     "zod": "4.4.3",
     "zustand": "5.0.15"
   },

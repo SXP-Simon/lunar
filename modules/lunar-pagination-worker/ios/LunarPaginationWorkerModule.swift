@@ -34,12 +34,12 @@ private enum ReaderBuiltinFont {
   }
 }
 
-public final class LunarReaderModule: Module {
+public final class LunarPaginationWorkerModule: Module {
   private var archives: [String: ArchiveHandle] = [:]
   private var readerWorkletRuntimes: [JavaScriptRuntime] = []
 
   public func definition() -> ModuleDefinition {
-    Name("LunarReader")
+    Name("LunarPaginationWorker")
 
     Class("ReaderArchive", ReaderArchiveSharedObject.self) {
       Constructor { (uri: String) throws in
@@ -178,7 +178,7 @@ public final class LunarReaderModule: Module {
       try validate(url)
       return (url, false)
     }
-    let temporary = FileManager.default.temporaryDirectory.appendingPathComponent("lunar-reader-\(UUID().uuidString).epub")
+    let temporary = FileManager.default.temporaryDirectory.appendingPathComponent("lunar-pagination-worker-\(UUID().uuidString).epub")
     try Data(contentsOf: url).write(to: temporary, options: .atomic)
     try validate(temporary)
     return (temporary, true)
@@ -271,7 +271,7 @@ final class ReaderArchiveSharedObject: SharedObject {
       try validate(url)
       return (url, false)
     }
-    let temporary = FileManager.default.temporaryDirectory.appendingPathComponent("lunar-reader-\(UUID().uuidString).epub")
+    let temporary = FileManager.default.temporaryDirectory.appendingPathComponent("lunar-pagination-worker-\(UUID().uuidString).epub")
     try Data(contentsOf: url).write(to: temporary, options: .atomic)
     try validate(temporary)
     return (temporary, true)

@@ -1,3 +1,6 @@
+packages:
+  - '.'
+
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   # Expo SDK patch packages must remain in the same release set.

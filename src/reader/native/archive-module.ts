@@ -1,10 +1,10 @@
 import {
-  LunarReaderNative,
+  LunarPaginationWorkerNative,
   type NativeReaderArchiveSharedObject,
   type NativeReaderFontMetricsRequest,
   type NativeReaderTextMeasureRequest,
   type NativeReaderTextMeasurerSharedObject,
-} from 'lunar-reader';
+} from '@modules/lunar-pagination-worker';
 
 import type {
   ReaderArchiveHandle,
@@ -15,7 +15,7 @@ import type {
 } from '../contracts';
 
 export function createNativeReaderArchiveModule(): ReaderArchiveModule | undefined {
-  const native = LunarReaderNative;
+  const native = LunarPaginationWorkerNative;
   if (!native) {
     return undefined;
   }
@@ -46,7 +46,7 @@ export function createNativeReaderArchiveModule(): ReaderArchiveModule | undefin
 }
 
 export function createNativeReaderTextMeasurer(): ReaderNativeTextMeasurer | undefined {
-  const native = LunarReaderNative;
+  const native = LunarPaginationWorkerNative;
   if (!native) {
     return undefined;
   }
@@ -61,7 +61,7 @@ export function createNativeReaderTextMeasurer(): ReaderNativeTextMeasurer | und
 }
 
 export function readNativeReaderBuiltinFont(): Uint8Array {
-  const bytes = LunarReaderNative?.getBuiltinFontBytes();
+  const bytes = LunarPaginationWorkerNative?.getBuiltinFontBytes();
   if (!bytes || bytes.byteLength === 0) {
     throw new Error('The bundled Lunar reader font is unavailable from the native module.');
   }
@@ -75,7 +75,7 @@ export interface ReaderNativeWorkletBindings {
 }
 
 export function installNativeReaderWorkletRuntime(runtimeHolder: object): boolean {
-  const installer = LunarReaderNative?.installOnReaderWorkletRuntime;
+  const installer = LunarPaginationWorkerNative?.installOnReaderWorkletRuntime;
   return installer ? installer(runtimeHolder) : false;
 }
 
@@ -87,7 +87,7 @@ export function installNativeReaderWorkletRuntime(runtimeHolder: object): boolea
 export function createNativeReaderWorkletBindings(
   uri: string,
 ): ReaderNativeWorkletBindings | undefined {
-  const native = LunarReaderNative;
+  const native = LunarPaginationWorkerNative;
   const Archive = native?.ReaderArchive;
   const TextMeasurer = native?.ReaderTextMeasurer;
   if (!Archive || !TextMeasurer) {

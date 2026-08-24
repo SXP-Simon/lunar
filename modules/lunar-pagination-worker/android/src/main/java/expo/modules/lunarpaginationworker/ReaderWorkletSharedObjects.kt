@@ -1,4 +1,4 @@
-package expo.modules.lunarreader
+package expo.modules.lunarpaginationworker
 
 import android.graphics.Paint
 import android.graphics.Typeface
