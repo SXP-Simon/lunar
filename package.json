@@ -7,6 +7,7 @@
     "@expo/ui": "~57.0.13",
     "@gorhom/bottom-sheet": "5.2.9",
     "@ritojs/core": "0.13.0",
+    "@ritojs/react-native": "file:modules\\rito-rn",
     "@shopify/react-native-skia": "2.6.2",
     "expo": "~57.0.16",
     "expo-blur": "~57.0.2",

@@ -237,6 +237,8 @@ export type ReaderDrawCommand =
       readonly rect: ReaderRect;
       readonly alt?: string;
       readonly href?: string;
+      /** Optional raster-pixel subregion declared by Rito RITODL1 V1. */
+      readonly sourceRect?: ReaderRect;
     }
   | {
       readonly kind: 'paintHorizontalRule';

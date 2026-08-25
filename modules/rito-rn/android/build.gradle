@@ -1,0 +1,73 @@
+plugins {
+  id 'com.android.library'
+  id 'com.facebook.react'
+}
+
+group = 'com.ritojs.reactnative'
+version = '0.1.0'
+
+def reactNativeArchitectures() {
+  def value = project.getProperties().get('reactNativeArchitectures')
+  return value ? value.split(',') : ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
+}
+
+def rustTargetForAbi = [
+  'armeabi-v7a': 'armv7-linux-androideabi',
+  'arm64-v8a': 'aarch64-linux-android',
+  'x86': 'i686-linux-android',
+  'x86_64': 'x86_64-linux-android',
+]
+
+def ritoFfiSourceDir = providers.gradleProperty('ritoFfiSourceDir')
+  .orElse(providers.environmentVariable('RITO_FFI_SOURCE_DIR'))
+  .orNull
+
+android {
+  namespace 'com.ritojs.reactnative'
+  compileSdk rootProject.ext.compileSdkVersion
+
+  defaultConfig {
+    minSdk rootProject.ext.minSdkVersion
+    consumerProguardFiles 'proguard-rules.pro'
+    externalNativeBuild {
+      cmake {
+        abiFilters(*reactNativeArchitectures())
+        arguments '-DANDROID_STL=c++_shared',
+          "-DREACT_NATIVE_DIR=${rootProject.file('../node_modules/react-native').absolutePath}",
+          "-DRITO_FFI_SOURCE_DIR=${ritoFfiSourceDir ?: ''}",
+          "-DRITO_FFI_LIBRARY_ROOT=${layout.buildDirectory.get().asFile}/rito-ffi"
+      }
+    }
+  }
+  externalNativeBuild {
+    cmake {
+      path 'CMakeLists.txt'
+    }
+  }
+  buildFeatures {
+    prefab true
+  }
+}
+
+rustTargetForAbi.each { abi, target ->
+  def taskName = "buildRitoFfi${abi.replace('-', '_').capitalize()}"
+  tasks.register(taskName, Exec) {
+    onlyIf { ritoFfiSourceDir != null }
+    doFirst {
+      if (ritoFfiSourceDir == null) {
+        throw new GradleException('RITO_FFI_SOURCE_DIR must point to the pinned Rito 1.0.0 checkout.')
+      }
+      executable 'cargo'
+      workingDir ritoFfiSourceDir
+      args 'ndk', '-t', abi, '-o', layout.buildDirectory.dir('rito-ffi').get().asFile.absolutePath,
+        'build', '--release', '--manifest-path', new File(ritoFfiSourceDir, 'crates/rito-ffi/Cargo.toml').absolutePath
+    }
+  }
+  tasks.matching { task -> task.name.startsWith('buildCMake') && task.name.contains(abi) }
+    .configureEach { dependsOn(tasks.named(taskName)) }
+}
+
+dependencies {
+  implementation 'com.facebook.react:react-android'
+  compileOnly 'com.facebook.fbjni:fbjni:0.5.1'
+}

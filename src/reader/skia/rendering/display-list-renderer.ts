@@ -135,7 +135,7 @@ function renderCommand(
       drawRuby(canvas, command.text, command.rect, command.paint, state);
       return;
     case 'paintImage':
-      drawImage(canvas, command.src, command.rect, state);
+      drawImage(canvas, command.src, command.rect, state, command.sourceRect);
       return;
     case 'paintHorizontalRule':
       drawHorizontalRule(canvas, command.rect, command.paint, state.alpha);
@@ -368,6 +368,7 @@ function drawImage(
   source: string,
   rect: ReaderRect,
   state: RenderState,
+  sourceRect?: ReaderRect,
 ): void {
   const asset = state.options.images.resolveImage(source);
   if (!asset) {
@@ -376,7 +377,9 @@ function drawImage(
   const paint = createPaint('#FFFFFF', state.alpha);
   canvas.drawImageRect(
     asset.image,
-    Skia.XYWHRect(0, 0, asset.width, asset.height),
+    sourceRect
+      ? Skia.XYWHRect(sourceRect.x, sourceRect.y, sourceRect.width, sourceRect.height)
+      : Skia.XYWHRect(0, 0, asset.width, asset.height),
     toSkRect(rect),
     paint,
   );
