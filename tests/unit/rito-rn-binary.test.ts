@@ -10,6 +10,11 @@ import { RitoWireError as BinaryRitoWireError } from '../../modules/rito-rn/src/
 import { decodeRitoDisplayList } from '../../modules/rito-rn/src/protocol/display-list';
 import { toReaderV1DisplayList } from '../../src/reader/rito/rito-v1-display-list';
 import { encodeRitoAdjacentRequest } from '../../modules/rito-rn/src/protocol/requests';
+import { encodeRitoBackgroundHandoff, encodeRitoBackgroundRequest, encodeRitoForegroundHandoff } from '../../modules/rito-rn/src/protocol/requests';
+import { decodeRitoBackgroundHandoffAck, decodeRitoForegroundHandoffAck } from '../../modules/rito-rn/src/protocol/handoff';
+import { decodeRitoFootnote, decodeRitoSearchResponse, decodeRitoTextRangeGeometry, encodeRitoSearchRequest, encodeRitoTextRangeRequest } from '../../modules/rito-rn/src/protocol/interaction';
+import { decodeRitoArtifact, decodeRitoResource } from '../../modules/rito-rn/src/protocol/artifact';
+import { decodeRitoPublication } from '../../modules/rito-rn/src/protocol/publication';
 
 describe('Rito React Native binary protocol', () => {
   it('preserves V1 primitive fields in little-endian order', () => {
@@ -112,4 +117,73 @@ describe('Rito React Native binary protocol', () => {
     expect(reader.readU32()).toBe(16);
     reader.expectExhausted();
   });
+
+  it('strictly decodes RITOART1 and nested RITORES1 messages', () => {
+    const display = new RitoBinaryWriter().writeAscii('RITODL1').writeU32(1).writeU32(0).toUint8Array();
+    const artifact = message('RITOART1')
+      .writeU32(2).writeU32(1).writeU64(91n).writeU64(12n).writeU64(44n).writeU32(3).writeU64(7001n)
+      .writeRecord((locator) => locator.writeUtf8('chapter.xhtml').writeU8(0).writeU8(0).writeU8(0).writeU8(0))
+      .writeU32(3).writeU32(7).writeU32(7).writeU32(1).writeU32(7)
+      .writeF64(360).writeF64(640).writeU8(0).writeU8(0).writeU8(0)
+      .writeU32(0).writeU32(1).writeU32(1).writeRecord((record) => record.writeU32(1).writeU32(0).writeBytes(new Uint8Array(32)).writeU64(BigInt(display.byteLength)).writeBytes(display))
+      .writeU32(1).writeRecord((record) => record.writeU32(0).writeUtf8('images/cover.png'))
+      .writeU32(1).writeRecord((record) => record.writeUtf8('Rito Serif').writeUtf8('fonts/serif.woff2').writeUtf8('normal').writeU16(400).writeUtf8('shape-v1').writeU64(8192n))
+      .writeU32(0);
+
+    const decoded = decodeRitoArtifact(finish(artifact));
+    expect(decoded.artifactId).toBe(7001n);
+    expect(decoded.displayList.commandCount).toBe(0);
+    expect(decoded.fonts[0]?.family).toBe('Rito Serif');
+
+    const resource = message('RITORES1').writeU64(7001n).writeU32(0).writeUtf8('images/cover.png').writeUtf8('image/png').writeU64(3n).writeBytes(Uint8Array.from([1, 2, 3])).writeU8(1).writeU32(320).writeU8(1).writeU32(480);
+    expect(decodeRitoResource(finish(resource)).bytes).toEqual(Uint8Array.from([1, 2, 3]));
+  });
+
+  it('strictly decodes publication metadata and nested TOC', () => {
+    const publication = message('RITOPUB1')
+      .writeU32(2).writeU64(91n)
+      .writeRecord((record) => record.writeUtf8('Fixture').writeUtf8('en').writeUtf8('urn:fixture').writeU8(0))
+      .writeU32(1)
+      .writeRecord((record) => record.writeU32(0).writeU8(1).writeU32(0).writeUtf8('chapter').writeUtf8('chapter.xhtml'))
+      .writeU32(1)
+      .writeRecord((record) => record.writeU32(0).writeUtf8('Chapter one').writeU8(0).writeU32(0).writeRecord((locator) => locator.writeUtf8('chapter.xhtml').writeU8(1).writeUtf8('start').writeU8(0).writeU8(0).writeU8(0)).writeU32(0));
+    const decoded = decodeRitoPublication(finish(publication));
+    expect(decoded.metadata.title).toBe('Fixture');
+    expect(decoded.toc[0]?.target.kind).toBe('locator');
+  });
+
+  it('encodes fixed foreground and background handoff contracts', () => {
+    expect(encodeRitoForegroundHandoff({ sessionId: 1n, candidateArtifactId: 3n }).byteLength).toBe(48);
+    expect(encodeRitoBackgroundRequest({ sessionId: 1n, expectedVisibleArtifactId: 2n, maxTopLevelNodesPerQuantum: 8 }).byteLength).toBe(40);
+    expect(encodeRitoBackgroundHandoff({ sessionId: 1n, expectedVisibleArtifactId: 2n, candidateArtifactId: 3n }).byteLength).toBe(44);
+
+    const foregroundAck = message('RITOFGA1').writeU64(4n).writeU32(0).writeU64(0n).writeU64(3n);
+    expect(decodeRitoForegroundHandoffAck(finish(foregroundAck))).toEqual({ intentRequestId: 4n, replacedArtifactId: undefined, visibleArtifactId: 3n });
+    const backgroundAck = message('RITOHOA1').writeU64(4n).writeU64(2n).writeU64(3n);
+    expect(decodeRitoBackgroundHandoffAck(finish(backgroundAck))).toEqual({ intentRequestId: 4n, replacedArtifactId: 2n, visibleArtifactId: 3n });
+  });
+
+  it('encodes and decodes search, text geometry, and footnote contracts', () => {
+    const search = encodeRitoSearchRequest({ sessionId: 1n, artifactId: 2n, query: '章', caseSensitive: true, wholeWord: false, limit: 5 });
+    expect(search.byteLength).toBeGreaterThan(16);
+    const geometry = encodeRitoTextRangeRequest({ sessionId: 1n, artifactId: 2n, pageIndex: 3, start: { blockIndex: 0, lineIndex: 1, runIndex: 2, charIndex: 3 }, end: { blockIndex: 0, lineIndex: 1, runIndex: 2, charIndex: 4 } });
+    expect(geometry.byteLength).toBe(72);
+
+    const searchResponse = message('RITOSRS1').writeU64(2n).writeUtf8('章').writeU8(0).writeU32(4).writeU8(1).writeU32(0);
+    expect(decodeRitoSearchResponse(finish(searchResponse)).scopeComplete).toBe(true);
+    const textResponse = message('RITOTRG1').writeU64(2n).writeU32(3).writeU32(0);
+    expect(decodeRitoTextRangeGeometry(finish(textResponse)).rects).toEqual([]);
+    const footnote = message('RITOFTN1').writeU64(2n).writeUtf8('#n1').writeU32(0).writeUtf8('说明').writeUtf8('<p>说明</p>');
+    expect(decodeRitoFootnote(finish(footnote)).text).toBe('说明');
+  });
 });
+
+function message(magic: string): RitoBinaryWriter {
+  return new RitoBinaryWriter().writeAscii(magic).writeU32(1).writeU64(0n);
+}
+
+function finish(writer: RitoBinaryWriter): Uint8Array {
+  const bytes = writer.toUint8Array();
+  new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setBigUint64(12, BigInt(bytes.byteLength), true);
+  return bytes;
+}

@@ -2,9 +2,10 @@ module.exports = {
   dependency: {
     platforms: {
       android: {
-        sourceDir: './android',
-        packageImportPath: 'import com.ritojs.reactnative.RitoReactNativePackage;',
-        packageInstance: 'new RitoReactNativePackage()',
+        sourceDir: './android-pure-cxx',
+        cxxModuleCMakeListsModuleName: 'rito_react_native',
+        cxxModuleCMakeListsPath: 'CMakeLists.txt',
+        cxxModuleHeaderName: 'NativeRitoReader',
       },
       ios: {
         podspecPath: './ios/RitoReactNative.podspec',

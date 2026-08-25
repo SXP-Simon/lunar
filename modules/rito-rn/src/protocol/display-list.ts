@@ -79,6 +79,7 @@ function readCommand(reader: RitoBinaryReader): RitoDisplayCommand {
         rect: readRect(reader),
         alt: reader.readOption('image alternative', () => reader.readUtf8()),
         href: reader.readOption('image href', () => reader.readUtf8()),
+        sourceRect: reader.readOption('image source rect', () => readRect(reader)),
       };
     case 12:
       return {

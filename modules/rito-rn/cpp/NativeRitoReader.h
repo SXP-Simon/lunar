@@ -1,6 +1,12 @@
 #pragma once
 
+#if __has_include(<react/renderer/components/RitoReactNativeSpec/RitoReactNativeSpecJSI.h>)
+#include <react/renderer/components/RitoReactNativeSpec/RitoReactNativeSpecJSI.h>
+#elif __has_include(<RitoReactNativeSpecJSI.h>)
 #include <RitoReactNativeSpecJSI.h>
+#else
+#error "Rito React Native Codegen C++ specification header is missing."
+#endif
 #include <react/bridging/Bridging.h>
 #include <react/bridging/Promise.h>
 
@@ -37,6 +43,14 @@ using RitoNativePinnedFontFace = NativeRitoReaderNativePinnedFontFace<
     std::string,
     double,
     std::optional<std::string>>;
+
+template <>
+struct Bridging<RitoNativeBufferResult>
+    : NativeRitoReaderNativeBufferResultBridging<RitoNativeBufferResult> {};
+
+template <>
+struct Bridging<RitoNativePinnedFontFace>
+    : NativeRitoReaderNativePinnedFontFaceBridging<RitoNativePinnedFontFace> {};
 
 class NativeRitoReader final
     : public NativeRitoReaderCxxSpec<NativeRitoReader> {
@@ -78,6 +92,19 @@ class NativeRitoReader final
       std::string artifactId,
       double kind,
       std::string href);
+  AsyncPromise<RitoNativeBufferResult> search(
+      jsi::Runtime& runtime,
+      std::string sessionId,
+      jsi::Object request);
+  AsyncPromise<RitoNativeBufferResult> textRangeGeometry(
+      jsi::Runtime& runtime,
+      std::string sessionId,
+      jsi::Object request);
+  AsyncPromise<RitoNativeBufferResult> readFootnote(
+      jsi::Runtime& runtime,
+      std::string sessionId,
+      std::string artifactId,
+      std::string key);
   AsyncPromise<RitoNativeBufferResult> releaseArtifact(
       jsi::Runtime& runtime,
       std::string sessionId,

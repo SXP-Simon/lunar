@@ -40,6 +40,9 @@ export interface Spec extends TurboModule {
     kind: number,
     href: string,
   ): Promise<NativeBufferResult>;
+  search(sessionId: string, request: Object): Promise<NativeBufferResult>;
+  textRangeGeometry(sessionId: string, request: Object): Promise<NativeBufferResult>;
+  readFootnote(sessionId: string, artifactId: string, key: string): Promise<NativeBufferResult>;
   releaseArtifact(sessionId: string, artifactId: string): Promise<NativeBufferResult>;
   dispose(sessionId: string): Promise<NativeBufferResult>;
 }

@@ -189,7 +189,7 @@ ReaderRuntime
 
 1. 正文固定使用内置霞鹜文楷 Regular，EPUB 字体声明和系统字体不参与正文测量。
 2. 字体族、字重、斜体、字号、字距和词距共同组成测量缓存键。
-3. Worker Runtime 内的原生 SharedObject 使用该 TTF 进行测量；本地后备测量使用同一 Typeface 的 `SkFont.measureText()`。
+3. Worker Runtime 内由 Lunar 自有 JSI HostObject 调用该 TTF 的原生测量服务；本地后备测量使用同一 Typeface 的 `SkFont.measureText()`。
 4. 绘制阶段复用同一 Typeface，禁止改用 React Native `Text` 测量。
 5. 中文、英文、标点挤压、ruby 与 emoji 纳入基准图测试。
 
@@ -209,7 +209,7 @@ RN Skia 通过 JSI 调用原生 Skia，最终页面由 GPU 绘制。Rito 是 Typ
 
 `PaginationSession` 的公开接口从书脊开头依次处理章节。首次打开可以较早显示第一页；恢复到书籍中后部时，需要等待分页推进到目标章节。Lunar 首版禁止自行修改页码偏移来跳过前置章节。阶段零同时评估版本化 `LayoutSnapshot` 缓存，只有经过 Rito 版本校验和完整性校验的快照才可用于缩短再次打开时间。
 
-`react-native-worklets` 的 `createWorkletRuntime()` 创建独立 Worker Runtime。Rito 文档、分页会话、字体测量对象和资源索引均在该原生异步线程内创建与执行，主 Runtime 只接收可复制的出版物索引与页面帧数据。归档与文字测量通过 Expo Modules `SharedObject` 原生状态传入 Worker，普通 `requireNativeModule()` 代理只在主 Runtime 使用。Lunar 原生模块在自定义 Worker Runtime 中安装 Expo 类原型，并在对象传输前执行 `SharedObject.__resolveInWorklet` 探测；安装或探测失败时转入本地分页。动画计算继续使用 UI Runtime。
+`react-native-worklets` 的 `createWorkletRuntime()` 创建独立 Worker Runtime。Rito 文档、分页会话、字体测量对象和资源索引均在该原生异步线程内创建与执行，主 Runtime 只接收可复制的出版物索引与页面帧数据。EPUB 字节以 `ArrayBuffer` 传入 Worker；Android 文字测量由 Lunar 原生模块通过 Worklets C++ API 向目标 Runtime 直接安装自有 JSI HostObject，不安装 Expo 类原型，也不跨 Runtime 传输 Expo `SharedObject`。每个 HostFunction 在 JNI 边界把原生异常转换为 JavaScript 错误；安装或探测失败时转入本地分页。Apple 平台在具备同等的直属 JSI 桥以前使用本地后备分页。动画计算继续使用 UI Runtime。
 
 ### 6.2 后台执行门槛
 

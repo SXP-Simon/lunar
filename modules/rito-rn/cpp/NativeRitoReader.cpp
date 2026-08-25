@@ -61,8 +61,8 @@ std::vector<std::uint8_t> copyUint8Array(jsi::Runtime& runtime, const jsi::Objec
   if (!value.isUint8Array(runtime)) {
     throw std::invalid_argument("NativeRitoReader expects a Uint8Array binary argument.");
   }
-  const auto typed = value.getUint8Array(runtime);
-  const auto buffer = typed.buffer(runtime);
+  auto typed = value.getUint8Array(runtime);
+  auto buffer = typed.buffer(runtime);
   const auto offset = typed.byteOffset(runtime);
   const auto length = typed.byteLength(runtime);
   if (length > 64ULL * 1024ULL * 1024ULL) {
@@ -353,6 +353,61 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::readResource(
       const auto status = rito_read_resource_v1(
           session, artifact, kind,
           reinterpret_cast<const std::uint8_t*>(href.data()), href.size(), &output, &error);
+      return ritojs::reactnative::collectRitoResult(status, &output, &error);
+    });
+  } catch (const std::exception& exception) {
+    AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
+    promise.resolve(invalidArgumentResult(exception.what()));
+    return promise;
+  }
+}
+
+AsyncPromise<RitoNativeBufferResult> NativeRitoReader::search(
+    jsi::Runtime& runtime,
+    std::string sessionId,
+    jsi::Object request) {
+  try {
+    const auto id = parseExternalId(sessionId, "sessionId");
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+      return invokeWireRequest(id, request, rito_search_v1);
+    });
+  } catch (const std::exception& exception) {
+    AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
+    promise.resolve(invalidArgumentResult(exception.what()));
+    return promise;
+  }
+}
+
+AsyncPromise<RitoNativeBufferResult> NativeRitoReader::textRangeGeometry(
+    jsi::Runtime& runtime,
+    std::string sessionId,
+    jsi::Object request) {
+  try {
+    const auto id = parseExternalId(sessionId, "sessionId");
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+      return invokeWireRequest(id, request, rito_get_text_range_geometry_v1);
+    });
+  } catch (const std::exception& exception) {
+    AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
+    promise.resolve(invalidArgumentResult(exception.what()));
+    return promise;
+  }
+}
+
+AsyncPromise<RitoNativeBufferResult> NativeRitoReader::readFootnote(
+    jsi::Runtime& runtime,
+    std::string sessionId,
+    std::string artifactId,
+    std::string key) {
+  try {
+    const auto session = parseExternalId(sessionId, "sessionId");
+    const auto artifact = parseExternalId(artifactId, "artifactId");
+    if (key.empty()) throw std::invalid_argument("footnote key must not be empty.");
+    return submitOperation(executor_, runtime, jsInvoker_, [session, artifact, key = std::move(key)] {
+      rito_owned_buffer_v1 output{};
+      rito_owned_buffer_v1 error{};
+      const auto status = rito_read_footnote_v1(
+          session, artifact, reinterpret_cast<const std::uint8_t*>(key.data()), key.size(), &output, &error);
       return ritojs::reactnative::collectRitoResult(status, &output, &error);
     });
   } catch (const std::exception& exception) {

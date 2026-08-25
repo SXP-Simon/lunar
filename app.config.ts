@@ -1,10 +1,7 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const SUPPORTED_ANDROID_ABIS = new Set([
-  'armeabi-v7a',
   'arm64-v8a',
-  'x86',
-  'x86_64',
 ]);
 
 function getAndroidAbis(value: string | undefined): string[] | undefined {
@@ -27,6 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     slug: config.slug ?? 'lunar',
     plugins: [
       ...(config.plugins ?? []),
+      './plugins/with-rito-react-native',
       [
         'expo-build-properties',
         {

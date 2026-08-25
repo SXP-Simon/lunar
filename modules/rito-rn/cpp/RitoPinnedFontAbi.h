@@ -9,6 +9,9 @@
  * the same declaration to crates/rito-ffi/include/rito_ffi.h.
  */
 #ifndef RITO_PINNED_FONT_ROLE_SERIF_V1
+#ifdef __cplusplus
+extern "C" {
+#endif
 #define RITO_PINNED_FONT_ROLE_SERIF_V1 UINT32_C(0)
 #define RITO_PINNED_FONT_ROLE_SANS_SERIF_V1 UINT32_C(1)
 #define RITO_PINNED_FONT_ROLE_MONOSPACE_V1 UINT32_C(2)
@@ -31,4 +34,7 @@ uint32_t rito_open_with_pinned_fonts_v1(
     uint32_t face_count,
     rito_owned_buffer_v1 *artifact_out,
     rito_owned_buffer_v1 *error_out);
+#ifdef __cplusplus
+}
+#endif
 #endif

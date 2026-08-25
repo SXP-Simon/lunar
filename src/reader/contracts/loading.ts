@@ -297,6 +297,41 @@ export interface ReaderRenderFrame {
   readonly height: number;
   readonly imageSources: readonly string[];
   readonly displayList: ReaderDisplayList;
+  readonly hits?: readonly ReaderHitEntry[];
+  readonly semantics?: readonly ReaderSemanticNode[];
+  readonly text?: string;
+}
+
+export interface ReaderHitEntry {
+  readonly pageIndex: number;
+  readonly bounds: ReaderRect;
+  readonly text: string;
+  readonly href?: string;
+  readonly imageSource?: string;
+  readonly imageAlt?: string;
+  readonly footnoteKey?: string;
+  readonly footnotePending?: boolean;
+}
+
+export type ReaderSemanticRole =
+  | 'heading'
+  | 'paragraph'
+  | 'list'
+  | 'listitem'
+  | 'image'
+  | 'link'
+  | 'blockquote'
+  | 'table'
+  | 'generic';
+
+export interface ReaderSemanticNode {
+  readonly role: ReaderSemanticRole;
+  readonly level?: number;
+  readonly label?: string;
+  readonly alt?: string;
+  readonly href?: string;
+  readonly bounds: ReaderRect;
+  readonly children: readonly ReaderSemanticNode[];
 }
 
 export interface ReaderPublicationView {

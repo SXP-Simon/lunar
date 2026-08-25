@@ -75,6 +75,40 @@ export function encodeRitoAdjacentRequest(request: RitoAdjacentRequest): Uint8Ar
   return bytes;
 }
 
+export interface RitoForegroundHandoff {
+  readonly sessionId: bigint;
+  readonly expectedVisibleArtifactId?: bigint;
+  readonly candidateArtifactId: bigint;
+}
+
+export interface RitoBackgroundRequest {
+  readonly sessionId: bigint;
+  readonly expectedVisibleArtifactId: bigint;
+  readonly maxTopLevelNodesPerQuantum: number;
+}
+
+export interface RitoBackgroundHandoff {
+  readonly sessionId: bigint;
+  readonly expectedVisibleArtifactId: bigint;
+  readonly candidateArtifactId: bigint;
+}
+
+export function encodeRitoForegroundHandoff(request: RitoForegroundHandoff): Uint8Array {
+  return finishFixedMessage(new RitoBinaryWriter().writeAscii('RITOFGH1').writeU32(1).writeU64(0n)
+    .writeU64(request.sessionId).writeU32(request.expectedVisibleArtifactId === undefined ? 0 : 1)
+    .writeU64(request.expectedVisibleArtifactId ?? 0n).writeU64(request.candidateArtifactId), 48);
+}
+
+export function encodeRitoBackgroundRequest(request: RitoBackgroundRequest): Uint8Array {
+  return finishFixedMessage(new RitoBinaryWriter().writeAscii('RITOBGQ1').writeU32(1).writeU64(0n)
+    .writeU64(request.sessionId).writeU64(request.expectedVisibleArtifactId).writeU32(request.maxTopLevelNodesPerQuantum), 40);
+}
+
+export function encodeRitoBackgroundHandoff(request: RitoBackgroundHandoff): Uint8Array {
+  return finishFixedMessage(new RitoBinaryWriter().writeAscii('RITOHOF1').writeU32(1).writeU64(0n)
+    .writeU64(request.sessionId).writeU64(request.expectedVisibleArtifactId).writeU64(request.candidateArtifactId), 44);
+}
+
 function createMessage(magic: string): RitoBinaryWriter {
   return new RitoBinaryWriter().writeAscii(magic).writeU32(1).writeU64(0n);
 }
@@ -82,6 +116,12 @@ function createMessage(magic: string): RitoBinaryWriter {
 function finishMessage(writer: RitoBinaryWriter): Uint8Array {
   const bytes = writer.toUint8Array();
   new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setBigUint64(12, BigInt(bytes.byteLength), true);
+  return bytes;
+}
+
+function finishFixedMessage(writer: RitoBinaryWriter, expected: number): Uint8Array {
+  const bytes = finishMessage(writer);
+  if (bytes.byteLength !== expected) throw new RitoWireError(`Rito fixed message must be exactly ${expected} bytes.`);
   return bytes;
 }
 

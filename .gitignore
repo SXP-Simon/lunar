@@ -41,3 +41,5 @@ example
 # generated native folders
 /ios
 /android
+/modules/rito-rn/.tmp-codegen
+/modules/rito-rn/.pure-cxx-test

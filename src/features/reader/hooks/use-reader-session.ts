@@ -12,9 +12,11 @@ import {
   LocalPaginationBackend,
   FallbackPaginationBackend,
   LunarReaderRuntime,
+  RitoNativePaginationBackend,
   WorkletPaginationBackend,
 } from '@/reader/native';
 import { ReaderPublicationLoader } from '@/reader/runtime';
+import { createLunarRitoPinnedFonts, loadBundledLunarFontBytes } from '@/reader/rito/pinned-font';
 import { readReaderBook } from '../infrastructure/expo-reader-book-loader';
 
 export interface ReaderSessionOptions {
@@ -136,11 +138,22 @@ function createReaderRuntime(): LunarReaderRuntime {
       (request) => readReaderBook(request.fileUri),
       loader,
       new FallbackPaginationBackend(
-        new WorkletPaginationBackend(),
-        new LocalPaginationBackend(loader),
+        new RitoNativePaginationBackend({
+          pinnedFonts: () => createLunarRitoPinnedFonts({ loadFontBytes: loadBundledLunarFontBytes }),
+        }),
+        new FallbackPaginationBackend(
+          new WorkletPaginationBackend(),
+          new LocalPaginationBackend(loader),
+          ({ phase, error }) => {
+            console.warn(
+              `[LunarReaderRuntime] Switched to local pagination during ${phase}.`,
+              error instanceof Error ? error.message : error,
+            );
+          },
+        ),
         ({ phase, error }) => {
           console.warn(
-            `[LunarReaderRuntime] Switched to local pagination during ${phase}.`,
+            `[LunarReaderRuntime] Switched from Rito native pagination during ${phase}.`,
             error instanceof Error ? error.message : error,
           );
         },

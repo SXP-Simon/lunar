@@ -5,8 +5,10 @@ export interface ReaderTextPosition {
   readonly charIndex: number;
 }
 
+import type { ReaderHitEntry } from '../contracts';
+
 export interface ReaderHitMap {
-  readonly entries: readonly unknown[];
+  readonly entries: readonly ReaderHitEntry[];
   readonly pageIndex: number;
 }
 

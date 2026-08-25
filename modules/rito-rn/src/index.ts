@@ -12,6 +12,22 @@ export {
   toExternalIdString,
 } from './protocol/binary';
 export { decodeRitoDisplayList } from './protocol/display-list';
+export { decodeRitoArtifact, decodeRitoResource } from './protocol/artifact';
+export { decodeRitoPublication } from './protocol/publication';
+export {
+  decodeRitoFootnote,
+  decodeRitoSearchResponse,
+  decodeRitoTextRangeGeometry,
+  encodeRitoSearchRequest,
+  encodeRitoTextRangeRequest,
+} from './protocol/interaction';
+export type * from './protocol/interaction';
+export {
+  decodeRitoBackgroundAdvance,
+  decodeRitoBackgroundHandoffAck,
+  decodeRitoForegroundHandoffAck,
+} from './protocol/handoff';
+export type * from './protocol/artifact-types';
 export type {
   RitoDisplayCommand,
   RitoDisplayList,
@@ -25,3 +41,4 @@ export {
   type RitoLocator,
   type RitoWorkBudget,
 } from './protocol/requests';
+export { RitoReaderSession, type RitoReaderSessionOptions } from './session';

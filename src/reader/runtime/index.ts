@@ -6,3 +6,4 @@ export * from './reader-runtime';
 export * from './background-runtime-protocol';
 export * from './pagination-backend';
 export * from './pagination-cache';
+export * from './rito-native-pagination-backend';

@@ -105,6 +105,55 @@ export class RitoBinaryReader {
     return value;
   }
 
+  readFixedBytes(length: number, field: string): Uint8Array {
+    if (!Number.isSafeInteger(length) || length < 0) {
+      throw new RitoWireError(`${field} has an invalid byte length.`);
+    }
+    return this.readBytes(length);
+  }
+
+  readBlob(field: string, maximum = 64 * 1024 * 1024): Uint8Array {
+    const length = this.readU64();
+    if (length > BigInt(maximum)) {
+      throw new RitoWireError(`${field} exceeds the byte limit.`);
+    }
+    return this.readBytes(Number(length));
+  }
+
+  readRecord<T>(field: string, decode: (reader: RitoBinaryReader) => T): T {
+    const length = this.readU64();
+    if (length > BigInt(this.remaining)) {
+      throw new RitoWireError(`${field} record exceeds the remaining message bytes.`);
+    }
+    const record = new RitoBinaryReader(this.readBytes(Number(length)));
+    const value = decode(record);
+    record.expectExhausted();
+    return value;
+  }
+
+  readExternalId(field: string): bigint {
+    const value = this.readU64();
+    if (value <= 0n || value > MAX_INT64) {
+      throw new RitoWireError(`${field} must be within 1..=INT64_MAX.`);
+    }
+    return value;
+  }
+
+  readFixedOptionalExternalId(field: string): bigint | undefined {
+    const present = this.readU32();
+    const value = this.readU64();
+    if (present === 0) {
+      if (value !== 0n) {
+        throw new RitoWireError(`${field} has a value while marked absent.`);
+      }
+      return undefined;
+    }
+    if (present !== 1 || value <= 0n || value > MAX_INT64) {
+      throw new RitoWireError(`${field} contains an invalid optional external ID.`);
+    }
+    return value;
+  }
+
   readUtf8(): string {
     const length = this.readU32();
     return textDecoder.decode(this.readBytes(length));

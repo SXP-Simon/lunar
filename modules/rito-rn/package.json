@@ -5,10 +5,11 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "files": [
-    "android",
+    "android-pure-cxx",
     "cpp",
     "ios",
     "specs",
+    "scripts",
     "src",
     "react-native.config.js",
     "package.json"

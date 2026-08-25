@@ -20,7 +20,7 @@ import { LUNAR_READER_FONT_FAMILY } from '../typography';
 import { FrameCache } from './frame-cache';
 import { ReaderPublicationLoader } from './publication-loader';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
-import type { ReaderPaginationBackend } from './pagination-backend';
+import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackend } from './pagination-backend';
 import { LocalPaginationBackend } from './local-pagination-backend';
 import { createReaderLayoutFingerprint } from './background-runtime-protocol';
 import { RITO_VERSION } from '../rito';
@@ -146,6 +146,15 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.publication?.getFrame(spreadIndex);
   }
 
+  getCurrentHitMap(spreadIndex = this.snapshot.spreadIndex) {
+    const frame = this.getCurrentFrame(spreadIndex);
+    return frame?.hits ? { pageIndex: frame.pageIndices[0] ?? spreadIndex, entries: frame.hits } : undefined;
+  }
+
+  getCurrentSemantics(spreadIndex = this.snapshot.spreadIndex) {
+    return this.getCurrentFrame(spreadIndex)?.semantics ?? [];
+  }
+
   getBackgroundColor(): string {
     return this.publication?.layout.palette.backgroundColor ?? '#000000';
   }
@@ -215,6 +224,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const snapshot = this.createReadySnapshot(target);
     this.emit(snapshot);
     void this.warmAdjacentPictures(target, operation);
+    void this.advanceBackground(operation);
     return { metadata: publication.metadata, toc: publication.toc, snapshot };
   }
 
@@ -230,7 +240,25 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const snapshot = this.createReadySnapshot(target);
     this.emit(snapshot);
     void this.warmAdjacentPictures(target, operation);
+    void this.advanceBackground(operation);
     return snapshot;
+  }
+
+  private async advanceBackground(operation: number): Promise<void> {
+    const backend = this.paginationBackend as Partial<ReaderBackgroundPaginationBackend>;
+    if (typeof backend.advanceBackground !== 'function') {
+      return;
+    }
+    for (let quantum = 0; quantum < 32 && operation === this.operation; quantum += 1) {
+      const result = await backend.advanceBackground(64);
+      if (operation !== this.operation || this.abortController?.signal.aborted) {
+        return;
+      }
+      if (isBackgroundComplete(result)) {
+        return;
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
   }
 
   private async preparePicture(spreadIndex: number, operation: number): Promise<void> {
@@ -354,6 +382,14 @@ export class LunarReaderRuntime implements ReaderRuntime {
       listener(snapshot);
     }
   }
+}
+
+function isBackgroundComplete(value: unknown): boolean {
+  if (!value || typeof value !== 'object' || !('state' in value)) {
+    return false;
+  }
+  const state = (value as { state?: unknown }).state;
+  return state === 'complete' || state === 'terminal';
 }
 
 function progressionToSpread(progression: number, totalSpreads: number): number {

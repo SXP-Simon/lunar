@@ -42,6 +42,10 @@ export interface ReaderPaginationBackend {
   close(): Promise<void>;
 }
 
+export interface ReaderBackgroundPaginationBackend extends ReaderPaginationBackend {
+  advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<unknown>;
+}
+
 export interface ReaderPaginationFallbackEvent {
   readonly phase: 'open' | 'get-frame';
   readonly error: unknown;
@@ -102,6 +106,14 @@ export class FallbackPaginationBackend implements ReaderPaginationBackend {
     }
   }
 
+  async advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<unknown> {
+    const active = this.active ?? this.primary;
+    if (isBackgroundBackend(active)) {
+      return active.advanceBackground(maxTopLevelNodesPerQuantum);
+    }
+    return { state: 'terminal' as const };
+  }
+
   async cancel(operationId: number, revisionId: number): Promise<void> {
     await Promise.allSettled([
       this.primary.cancel(operationId, revisionId),
@@ -114,6 +126,10 @@ export class FallbackPaginationBackend implements ReaderPaginationBackend {
     this.active = undefined;
     this.lastOpenOptions = undefined;
   }
+}
+
+function isBackgroundBackend(backend: ReaderPaginationBackend): backend is ReaderBackgroundPaginationBackend {
+  return typeof (backend as Partial<ReaderBackgroundPaginationBackend>).advanceBackground === 'function';
 }
 
 async function closeQuietly(backend: ReaderPaginationBackend): Promise<void> {

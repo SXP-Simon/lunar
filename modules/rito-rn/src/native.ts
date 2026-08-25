@@ -18,16 +18,25 @@ export interface RitoNativeReaderModule {
     publication: Uint8Array,
     request: Uint8Array,
     fonts: readonly RitoNativePinnedFontFace[],
-  ): Promise<Uint8Array>;
-  readPublication(sessionId: bigint): Promise<Uint8Array>;
-  requestArtifact(sessionId: bigint, request: Uint8Array): Promise<Uint8Array>;
-  requestAdjacent(sessionId: bigint, request: Uint8Array): Promise<Uint8Array>;
-  adoptForeground(sessionId: bigint, request: Uint8Array): Promise<Uint8Array>;
-  advanceBackground(sessionId: bigint, request: Uint8Array): Promise<Uint8Array>;
-  adoptBackground(sessionId: bigint, request: Uint8Array): Promise<Uint8Array>;
-  readResource(sessionId: bigint, artifactId: bigint, kind: number, href: string): Promise<Uint8Array>;
-  releaseArtifact(sessionId: bigint, artifactId: bigint): Promise<void>;
-  dispose(sessionId: bigint): Promise<void>;
+  ): Promise<RitoNativeCallResult>;
+  readPublication(sessionId: bigint): Promise<RitoNativeCallResult>;
+  requestArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
+  requestAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
+  adoptForeground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
+  advanceBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
+  adoptBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
+  readResource(sessionId: bigint, artifactId: bigint, kind: number, href: string): Promise<RitoNativeCallResult>;
+  search(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
+  textRangeGeometry(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
+  readFootnote(sessionId: bigint, artifactId: bigint, key: string): Promise<RitoNativeCallResult>;
+  releaseArtifact(sessionId: bigint, artifactId: bigint): Promise<RitoNativeCallResult>;
+  dispose(sessionId: bigint): Promise<RitoNativeCallResult>;
+}
+
+export interface RitoNativeCallResult {
+  readonly status: RitoNativeStatus;
+  readonly data: Uint8Array;
+  readonly error: string;
 }
 
 export function isRitoNativeReaderAvailable(): boolean {
@@ -44,7 +53,7 @@ export function getRitoNativeReaderModule(): RitoNativeReaderModule {
 class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
   constructor(private readonly native: Spec) {}
 
-  async open(publication: Uint8Array, request: Uint8Array, fonts: readonly RitoNativePinnedFontFace[]): Promise<Uint8Array> {
+  async open(publication: Uint8Array, request: Uint8Array, fonts: readonly RitoNativePinnedFontFace[]): Promise<RitoNativeCallResult> {
     return this.unwrap(
       'open',
       this.native.open(
@@ -55,58 +64,67 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
     );
   }
 
-  async readPublication(sessionId: bigint): Promise<Uint8Array> {
+  async readPublication(sessionId: bigint): Promise<RitoNativeCallResult> {
     return this.unwrap('readPublication', this.native.readPublication(toExternalIdString(sessionId)));
   }
 
-  async requestArtifact(sessionId: bigint, request: Uint8Array): Promise<Uint8Array> {
+  async requestArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
     return this.unwrap('requestArtifact', this.native.requestArtifact(toExternalIdString(sessionId), toArrayBuffer(request)));
   }
 
-  async requestAdjacent(sessionId: bigint, request: Uint8Array): Promise<Uint8Array> {
+  async requestAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
     return this.unwrap('requestAdjacent', this.native.requestAdjacent(toExternalIdString(sessionId), toArrayBuffer(request)));
   }
 
-  async adoptForeground(sessionId: bigint, request: Uint8Array): Promise<Uint8Array> {
+  async adoptForeground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
     return this.unwrap('adoptForeground', this.native.adoptForeground(toExternalIdString(sessionId), toArrayBuffer(request)));
   }
 
-  async advanceBackground(sessionId: bigint, request: Uint8Array): Promise<Uint8Array> {
+  async advanceBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
     return this.unwrap('advanceBackground', this.native.advanceBackground(toExternalIdString(sessionId), toArrayBuffer(request)));
   }
 
-  async adoptBackground(sessionId: bigint, request: Uint8Array): Promise<Uint8Array> {
+  async adoptBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
     return this.unwrap('adoptBackground', this.native.adoptBackground(toExternalIdString(sessionId), toArrayBuffer(request)));
   }
 
-  async readResource(sessionId: bigint, artifactId: bigint, kind: number, href: string): Promise<Uint8Array> {
+  async readResource(sessionId: bigint, artifactId: bigint, kind: number, href: string): Promise<RitoNativeCallResult> {
     return this.unwrap(
       'readResource',
       this.native.readResource(toExternalIdString(sessionId), toExternalIdString(artifactId), kind, href),
     );
   }
 
-  async releaseArtifact(sessionId: bigint, artifactId: bigint): Promise<void> {
-    await this.unwrap('releaseArtifact', this.native.releaseArtifact(toExternalIdString(sessionId), toExternalIdString(artifactId)));
+  async search(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
+    return this.unwrap('search', this.native.search(toExternalIdString(sessionId), toArrayBuffer(request)));
   }
 
-  async dispose(sessionId: bigint): Promise<void> {
-    await this.unwrap('dispose', this.native.dispose(toExternalIdString(sessionId)));
+  async textRangeGeometry(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
+    return this.unwrap('textRangeGeometry', this.native.textRangeGeometry(toExternalIdString(sessionId), toArrayBuffer(request)));
   }
 
-  private async unwrap(operation: string, result: Promise<NativeBufferResult>): Promise<Uint8Array> {
+  async readFootnote(sessionId: bigint, artifactId: bigint, key: string): Promise<RitoNativeCallResult> {
+    return this.unwrap('readFootnote', this.native.readFootnote(toExternalIdString(sessionId), toExternalIdString(artifactId), key));
+  }
+
+  async releaseArtifact(sessionId: bigint, artifactId: bigint): Promise<RitoNativeCallResult> {
+    return this.unwrap('releaseArtifact', this.native.releaseArtifact(toExternalIdString(sessionId), toExternalIdString(artifactId)));
+  }
+
+  async dispose(sessionId: bigint): Promise<RitoNativeCallResult> {
+    return this.unwrap('dispose', this.native.dispose(toExternalIdString(sessionId)));
+  }
+
+  private async unwrap(operation: string, result: Promise<NativeBufferResult>): Promise<RitoNativeCallResult> {
     const response = await result;
-    if (response.status !== 0) {
-      throw new RitoNativeError(
-        response.status as RitoNativeStatus,
-        response.error || 'Rito native call failed without a diagnostic.',
-        operation,
-      );
-    }
     if (!(response.data instanceof Uint8Array)) {
       throw new RitoNativeError(4, 'NativeRitoReader returned a non-binary response.', operation);
     }
-    return response.data.slice();
+    return {
+      status: response.status as RitoNativeStatus,
+      data: response.data.slice(),
+      error: response.error,
+    };
   }
 }
 
