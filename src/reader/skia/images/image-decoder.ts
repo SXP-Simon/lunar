@@ -13,6 +13,11 @@ export interface SkiaImageAsset extends ReaderImageDimensions {
 
 export type SkiaImageDecoder = ReaderImageDecoder<SkiaImageAsset>;
 
+export interface SkiaImageLease {
+  readonly sources: readonly string[];
+  release(): void;
+}
+
 export class LunarSkiaImageDecoder implements SkiaImageDecoder {
   async decode(resource: ReaderImageResource): Promise<SkiaImageAsset> {
     const data = Skia.Data.fromBytes(resource.bytes);
@@ -51,6 +56,9 @@ export class SkiaImageCache {
   private readonly maxBytes: number;
   private readonly decoder: SkiaImageDecoder;
   private totalBytes = 0;
+  private readonly references = new Map<string, number>();
+  private readonly loads = new Map<string, Promise<SkiaImageAsset | undefined>>();
+  private disposed = false;
 
   constructor(options: SkiaImageCacheOptions) {
     this.getBytes = options.getBytes;
@@ -68,43 +76,94 @@ export class SkiaImageCache {
     return value;
   }
 
+  /** Preloads images and keeps them alive until the returned lease is released. */
+  async acquire(sources: readonly string[]): Promise<SkiaImageLease> {
+    this.assertActive();
+    const unique = [...new Set(sources)];
+    await this.preload(unique);
+    const owned = unique.filter((source) => this.entries.has(source));
+    for (const source of owned) {
+      this.references.set(source, (this.references.get(source) ?? 0) + 1);
+    }
+    let released = false;
+    return {
+      sources: owned,
+      release: () => {
+        if (released) return;
+        released = true;
+        for (const source of owned) {
+          const count = this.references.get(source) ?? 0;
+          if (count <= 1) this.references.delete(source);
+          else this.references.set(source, count - 1);
+        }
+        this.evictOverflow();
+      },
+    };
+  }
+
   async preload(sources: readonly string[]): Promise<void> {
+    this.assertActive();
     for (const source of new Set(sources)) {
       if (this.entries.has(source)) {
         this.resolveImage(source);
         continue;
       }
-      const bytes = this.getBytes(source);
-      if (!bytes) {
-        continue;
+      let loading = this.loads.get(source);
+      if (!loading) {
+        loading = (async () => {
+          const bytes = this.getBytes(source);
+          if (!bytes) return undefined;
+          return this.decoder.decode({ href: source, bytes });
+        })();
+        this.loads.set(source, loading);
       }
-      const asset = await this.decoder.decode({ href: source, bytes });
-      this.entries.set(source, asset);
-      this.totalBytes += asset.byteLength;
-      this.evictOverflow(source);
+      try {
+        const asset = await loading;
+        if (this.disposed) {
+          if (asset) this.decoder.dispose(asset);
+          throw new Error('The Skia image cache is disposed.');
+        }
+        if (!asset || this.entries.has(source)) continue;
+        this.entries.set(source, asset);
+        this.totalBytes += asset.byteLength;
+        this.evictOverflow(source);
+      } finally {
+        if (this.loads.get(source) === loading) this.loads.delete(source);
+      }
     }
   }
 
   clear(): void {
+    if (this.disposed) return;
     for (const asset of new Set(this.entries.values())) {
       this.decoder.dispose(asset);
     }
     this.entries.clear();
+    this.references.clear();
     this.totalBytes = 0;
   }
 
-  private evictOverflow(protectedSource: string): void {
+  dispose(): void {
+    if (this.disposed) return;
+    this.clear();
+    this.disposed = true;
+  }
+
+  private evictOverflow(protectedSource?: string): void {
+    let skipped = 0;
     while (this.totalBytes > this.maxBytes && this.entries.size > 1) {
       const oldest = this.entries.keys().next().value;
       if (oldest === undefined) {
         return;
       }
-      if (oldest === protectedSource) {
+      if (oldest === protectedSource || (this.references.get(oldest) ?? 0) > 0) {
         const protectedAsset = this.entries.get(oldest);
         this.entries.delete(oldest);
         if (protectedAsset) {
           this.entries.set(oldest, protectedAsset);
         }
+        skipped += 1;
+        if (skipped >= this.entries.size) return;
         continue;
       }
       const asset = this.entries.get(oldest);
@@ -113,6 +172,11 @@ export class SkiaImageCache {
         this.totalBytes -= asset.byteLength;
         this.decoder.dispose(asset);
       }
+      skipped = 0;
     }
+  }
+
+  private assertActive(): void {
+    if (this.disposed) throw new Error('The Skia image cache is disposed.');
   }
 }

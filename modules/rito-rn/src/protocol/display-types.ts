@@ -19,7 +19,7 @@ export type RitoDisplayTransform =
   | { readonly kind: 'scale'; readonly sx: number; readonly sy: number }
   | { readonly kind: 'rotate'; readonly radians: number };
 
-export type RitoBorderStyle = 'solid' | 'dotted' | 'dashed';
+export type RitoBorderStyle = 'none' | 'hidden' | 'dotted' | 'dashed' | 'solid' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset';
 
 export interface RitoBorderPaintEdge {
   readonly color: string;
@@ -64,7 +64,7 @@ export interface RitoBlockPaint {
     readonly color?: string;
     readonly image?: string;
     readonly size?: 'auto' | 'cover' | 'contain';
-    readonly repeat?: 'repeat' | 'no-repeat';
+    readonly repeat?: 'repeat' | 'no-repeat' | 'repeat-x' | 'repeat-y' | 'space' | 'round';
     readonly position?: { readonly x: RitoDisplayLength; readonly y: RitoDisplayLength };
   };
   readonly border?: {
@@ -73,7 +73,7 @@ export interface RitoBlockPaint {
     readonly bottom?: RitoBorderPaintEdge;
     readonly left?: RitoBorderPaintEdge;
   };
-  readonly radius?: { readonly px?: number; readonly pct?: number };
+  readonly radius?: { readonly px?: number; readonly pct?: number; readonly corners?: { readonly topLeft: number; readonly topRight: number; readonly bottomRight: number; readonly bottomLeft: number } };
   readonly boxShadow: readonly {
     readonly offsetX: number;
     readonly offsetY: number;

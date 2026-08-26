@@ -39,6 +39,9 @@ export interface ReaderFontResource {
   readonly bytes: Uint8Array;
   readonly weight?: string;
   readonly style?: string;
+  /** Rito's shape fingerprint lets the registry share immutable faces. */
+  readonly fingerprint?: string;
+  readonly byteLength?: number;
 }
 
 export interface ReaderFontRegistry {
@@ -91,7 +94,7 @@ export type ReaderTransform =
   | { readonly kind: 'scale'; readonly sx: number; readonly sy: number }
   | { readonly kind: 'rotate'; readonly rad: number };
 
-export type ReaderBorderStyle = 'solid' | 'dotted' | 'dashed';
+export type ReaderBorderStyle = 'none' | 'hidden' | 'solid' | 'dotted' | 'dashed' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset';
 
 export interface ReaderBorderPaintEdge {
   readonly color: string;
@@ -170,7 +173,7 @@ export interface ReaderBlockPaint {
     readonly color?: string;
     readonly image?: string;
     readonly size?: 'cover' | 'contain' | 'auto';
-    readonly repeat?: 'repeat' | 'no-repeat';
+    readonly repeat?: 'repeat' | 'no-repeat' | 'repeat-x' | 'repeat-y' | 'space' | 'round';
     readonly position?: ReaderBackgroundPosition;
   };
   readonly border?: {
@@ -179,7 +182,7 @@ export interface ReaderBlockPaint {
     readonly bottom?: ReaderBorderPaintEdge;
     readonly left?: ReaderBorderPaintEdge;
   };
-  readonly radius?: { readonly px?: number; readonly pct?: number };
+  readonly radius?: { readonly px?: number; readonly pct?: number; readonly corners?: { readonly topLeft: number; readonly topRight: number; readonly bottomRight: number; readonly bottomLeft: number } };
   readonly boxShadow?: readonly ReaderBoxShadow[];
 }
 

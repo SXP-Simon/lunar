@@ -44,6 +44,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private fontRegistry?: LunarSkiaFontRegistry;
   private textMeasurer?: LunarSkiaTextMeasurer;
   private imageCache?: SkiaImageCache;
+  private readonly imageLeases = new Map<string, { release(): void }>();
   private request?: ReaderOpenRequest;
   private data?: ArrayBuffer;
   private operation = 0;
@@ -279,14 +280,20 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (!frame) {
       throw new RangeError(`Spread ${spreadIndex} is outside the publication.`);
     }
-    await imageCache.preload(frame.imageSources);
-    this.assertCurrent(operation);
+    const imageLease = await imageCache.acquire(frame.imageSources);
+    try {
+      this.assertCurrent(operation);
+    } catch (error) {
+      imageLease.release();
+      throw error;
+    }
     const picture = this.pictureCompiler.compile(frame.displayList, {
       pixelRatio: 1,
       images: imageCache,
       paragraphs: textMeasurer.paragraphs,
     });
     this.pictures.set(key, picture);
+    this.imageLeases.set(`${key.revisionId}:${key.spreadIndex}`, imageLease);
   }
 
   private async warmAdjacentPictures(spreadIndex: number, operation: number): Promise<void> {
@@ -364,6 +371,8 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
   private releaseResources(): void {
     this.pictures.clear();
+    for (const lease of this.imageLeases.values()) lease.release();
+    this.imageLeases.clear();
     this.imageCache?.clear();
     this.imageCache = undefined;
     this.textMeasurer?.dispose();

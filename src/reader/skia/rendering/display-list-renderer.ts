@@ -170,10 +170,7 @@ function drawBlock(
       rect.width + shadow.spread * 2,
       rect.height + shadow.spread * 2,
     );
-    canvas.drawRRect(
-      Skia.RRectXY(spreadRect, radius.rx + shadow.spread, radius.ry + shadow.spread),
-      shadowPaint,
-    );
+    canvas.drawRRect(toRRect(spreadRect, radius, shadow.spread), shadowPaint);
     filter?.dispose();
     shadowPaint.dispose();
   }
@@ -216,11 +213,13 @@ function drawBackgroundImage(
   const y = rect.y + resolveBackgroundOffset(background.position?.y, rect.height - height, background.size);
 
   canvas.save();
-  canvas.clipRRect(Skia.RRectXY(toSkRect(rect), radius.rx, radius.ry), ClipOp.Intersect, true);
+  canvas.clipRRect(toRRect(toSkRect(rect), radius), ClipOp.Intersect, true);
   const imagePaint = createPaint('#FFFFFF', state.alpha);
   const sourceRect = Skia.XYWHRect(0, 0, asset.width, asset.height);
-  const xLimit = background.repeat === 'repeat' ? rect.x + rect.width : x + width;
-  const yLimit = background.repeat === 'repeat' ? rect.y + rect.height : y + height;
+  const repeatX = background.repeat === 'repeat' || background.repeat === 'repeat-x' || background.repeat === 'space' || background.repeat === 'round';
+  const repeatY = background.repeat === 'repeat' || background.repeat === 'repeat-y' || background.repeat === 'space' || background.repeat === 'round';
+  const xLimit = repeatX ? rect.x + rect.width : x + width;
+  const yLimit = repeatY ? rect.y + rect.height : y + height;
   for (let tileY = y; tileY < yLimit; tileY += Math.max(1, height)) {
     for (let tileX = x; tileX < xLimit; tileX += Math.max(1, width)) {
       canvas.drawImageRect(
@@ -389,7 +388,7 @@ function drawImage(
 function drawHorizontalRule(
   canvas: SkCanvas,
   rect: ReaderRect,
-  paint: { color: string; style: 'solid' | 'dotted' | 'dashed' },
+  paint: { color: string; style: ReaderBorderPaintEdge['style'] },
   alpha: number,
 ): void {
   const width = paint.style === 'dotted' ? rect.height * 0.75 : rect.height;
@@ -416,13 +415,19 @@ function drawBorderLine(
   y2: number,
   alpha: number,
 ): void {
+  if (edge.style === 'none' || edge.style === 'hidden') return;
+  if (edge.style === 'double') {
+    drawBorderLine(canvas, { ...edge, style: 'solid' }, Math.max(1, width / 3), x1, y1, x2, y2, alpha);
+    drawBorderLine(canvas, { ...edge, style: 'solid' }, Math.max(1, width / 3), x1 + (x2 - x1) * 0.05, y1 + (y2 - y1) * 0.05, x2 - (x2 - x1) * 0.05, y2 - (y2 - y1) * 0.05, alpha);
+    return;
+  }
   const paint = createPaint(edge.color, alpha, PaintStyle.Stroke);
   paint.setStrokeWidth(width);
   let effect: ReturnType<typeof Skia.PathEffect.MakeDash> | undefined;
   if (edge.style === 'dotted') {
     effect = Skia.PathEffect.MakeDash([0.001, Math.max(1, width * 1.5)]);
     paint.setStrokeCap(StrokeCap.Round);
-  } else if (edge.style === 'dashed') {
+  } else if (edge.style === 'dashed' || edge.style === 'groove' || edge.style === 'ridge' || edge.style === 'inset' || edge.style === 'outset') {
     effect = Skia.PathEffect.MakeDash([Math.max(1, width * 3), Math.max(1, width * 2)]);
   }
   if (effect) {
@@ -454,11 +459,11 @@ function drawFilledRect(
   rect: ReaderRect,
   color: string,
   alpha: number,
-  radius = { rx: 0, ry: 0 },
+  radius: ResolvedRadius = { rx: 0, ry: 0 },
 ): void {
   const paint = createPaint(color, alpha);
   if (radius.rx > 0 || radius.ry > 0) {
-    canvas.drawRRect(Skia.RRectXY(toSkRect(rect), radius.rx, radius.ry), paint);
+    canvas.drawRRect(toRRect(toSkRect(rect), radius), paint);
   } else {
     canvas.drawRect(toSkRect(rect), paint);
   }
@@ -481,15 +486,35 @@ function createPaint(
 function resolveRadius(
   paint: ReaderBlockPaint,
   rect: ReaderRect,
-): { rx: number; ry: number } {
+): ResolvedRadius {
   if (paint.radius?.pct !== undefined) {
     return {
       rx: (paint.radius.pct / 100) * rect.width,
       ry: (paint.radius.pct / 100) * rect.height,
     };
   }
+  if (paint.radius?.corners) {
+    const corners = paint.radius.corners;
+    const values = [corners.topLeft, corners.topRight, corners.bottomRight, corners.bottomLeft];
+    const max = Math.max(...values);
+    return { rx: max, ry: max, corners };
+  }
   const radius = paint.radius?.px ?? 0;
   return { rx: radius, ry: radius };
+}
+
+interface ResolvedRadius { readonly rx: number; readonly ry: number; readonly corners?: { readonly topLeft: number; readonly topRight: number; readonly bottomRight: number; readonly bottomLeft: number } }
+
+function toRRect(rect: SkRect, radius: ResolvedRadius, spread = 0) {
+  const corners = radius.corners;
+  if (!corners) return Skia.RRectXY(rect, radius.rx + spread, radius.ry + spread);
+  return {
+    rect,
+    topLeft: { x: corners.topLeft + spread, y: corners.topLeft + spread },
+    topRight: { x: corners.topRight + spread, y: corners.topRight + spread },
+    bottomRight: { x: corners.bottomRight + spread, y: corners.bottomRight + spread },
+    bottomLeft: { x: corners.bottomLeft + spread, y: corners.bottomLeft + spread },
+  };
 }
 
 function resolveBackgroundOffset(

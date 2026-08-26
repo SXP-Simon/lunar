@@ -90,6 +90,19 @@ describe('Rito React Native binary protocol', () => {
     });
   });
 
+  it('decodes extended HSL colors without rejecting the DisplayList', () => {
+    const bytes = new RitoBinaryWriter()
+      .writeAscii('RITODL1').writeU32(1).writeU32(1).writeU16(7)
+      .writeF64(0).writeF64(0).writeF64(10).writeF64(10)
+      .writeU8(1).writeU8(2).writeF32(120).writeF32(100).writeF32(50).writeF32(1).writeU8(0)
+      .toUint8Array();
+    expect(decodeRitoDisplayList(bytes).commands[0]).toEqual({
+      kind: 'paint-page',
+      rect: { x: 0, y: 0, width: 10, height: 10 },
+      paint: { backgroundColor: 'rgba(0, 255, 0, 1)' },
+    });
+  });
+
   it('encodes the fixed-size adjacent-page request', () => {
     const bytes = encodeRitoAdjacentRequest({
       sessionId: 1n,

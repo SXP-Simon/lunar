@@ -28,6 +28,9 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
 
   private readonly typefaces: SkTypeface[] = [];
   private readonly fonts = new Map<string, SkFont>();
+  private readonly registrations = new Map<string, Promise<void>>();
+  private readonly registeredLengths = new Map<string, number>();
+  private readonly registeredFamilies = new Set<string>();
   private builtinLoaded = false;
   private disposed = false;
 
@@ -50,14 +53,38 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     }
   }
 
-  async loadFont(_resource: Parameters<ReaderFontRegistry['loadFont']>[0]): Promise<void> {
-    // Reader layout forces the bundled font. EPUB @font-face declarations are
-    // intentionally ignored so pagination and Skia always share one Typeface.
+  async loadFont(resource: Parameters<ReaderFontRegistry['loadFont']>[0]): Promise<void> {
+    this.assertActive();
+    if (!resource.family || resource.bytes.byteLength === 0) {
+      throw new Error('Reader font registration requires a family and bytes.');
+    }
+    if (resource.byteLength !== undefined && resource.byteLength !== resource.bytes.byteLength) {
+      throw new Error(`Font ${resource.family} byte length does not match its declaration.`);
+    }
+    const fingerprint = resource.fingerprint ?? hashBytes(resource.bytes);
+    const key = `${resource.family}|${resource.weight ?? '400'}|${resource.style ?? 'normal'}|${fingerprint}`;
+    const knownLength = this.registeredLengths.get(key);
+    if (knownLength !== undefined && knownLength !== resource.bytes.byteLength) {
+      throw new Error(`Font ${resource.family} has conflicting byte lengths.`);
+    }
+    const existing = this.registrations.get(key);
+    if (existing) {
+      await existing;
+      return;
+    }
+    const operation = this.registerFont(key, resource);
+    this.registrations.set(key, operation);
+    try {
+      await operation;
+    } catch (error) {
+      this.registrations.delete(key);
+      throw error;
+    }
   }
 
-  getFontFamilies(_family: string): readonly string[] {
+  getFontFamilies(family: string): readonly string[] {
     this.assertActive();
-    return [LUNAR_READER_FONT_FAMILY];
+    return this.registeredFamilies.has(family) ? [family, LUNAR_READER_FONT_FAMILY] : [LUNAR_READER_FONT_FAMILY];
   }
 
   getParagraphProvider(_family: string): SkTypefaceFontProvider {
@@ -80,7 +107,8 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
       slant: FontSlant.Upright,
     };
     this.assertBuiltinLoaded();
-    const typeface = this.readerFontProvider.matchFamilyStyle(LUNAR_READER_FONT_FAMILY, style);
+    const family = this.registeredFamilies.has(font.family) ? font.family : LUNAR_READER_FONT_FAMILY;
+    const typeface = this.readerFontProvider.matchFamilyStyle(family, style);
     const skFont = Skia.Font(typeface, font.sizePx);
     this.fonts.set(key, skFont);
     return skFont;
@@ -95,6 +123,9 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
       font.dispose();
     }
     this.fonts.clear();
+    this.registrations.clear();
+    this.registeredLengths.clear();
+    this.registeredFamilies.clear();
     for (const typeface of this.typefaces) {
       typeface.dispose();
     }
@@ -113,4 +144,34 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
       throw new Error('The bundled Lunar reader font is unavailable.');
     }
   }
+
+  private async registerFont(
+    key: string,
+    resource: Parameters<ReaderFontRegistry['loadFont']>[0],
+  ): Promise<void> {
+    this.assertActive();
+    const data = Skia.Data.fromBytes(resource.bytes);
+    let typeface: SkTypeface | undefined;
+    try {
+      typeface = Skia.Typeface.MakeFreeTypeFaceFromData(data) ?? undefined;
+      if (!typeface) {
+        throw new Error(`Skia could not decode reader font ${resource.src}.`);
+      }
+      this.assertActive();
+      this.readerFontProvider.registerFont(typeface, resource.family);
+      this.typefaces.push(typeface);
+      typeface = undefined;
+      this.registeredLengths.set(key, resource.bytes.byteLength);
+      this.registeredFamilies.add(resource.family);
+    } finally {
+      typeface?.dispose();
+      data.dispose();
+    }
+  }
+}
+
+function hashBytes(bytes: Uint8Array): string {
+  let hash = 2166136261;
+  for (const byte of bytes) hash = Math.imul(hash ^ byte, 16777619);
+  return (hash >>> 0).toString(16);
 }

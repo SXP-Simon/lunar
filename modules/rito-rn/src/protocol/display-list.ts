@@ -136,11 +136,7 @@ function readBlockPaint(reader: RitoBinaryReader): RitoBlockPaint {
     image: reader.readOption('background image', () => reader.readUtf8()),
     size: reader.readOption('background size', () => readEnum(reader, ['auto', 'cover', 'contain'] as const, 'background size')),
     repeat: reader.readOption('background repeat', () => {
-      const repeat = readEnum(reader, ['repeat', 'no-repeat', 'repeat-x', 'repeat-y', 'space', 'round'] as const, 'background repeat');
-      if (repeat !== 'repeat' && repeat !== 'no-repeat') {
-        throw new RitoWireError(`RITODL1 background repeat ${repeat} requires an extended Skia renderer.`);
-      }
-      return repeat;
+      return readEnum(reader, ['repeat', 'no-repeat', 'repeat-x', 'repeat-y', 'space', 'round'] as const, 'background repeat');
     }),
     position: reader.readOption('background position', () => ({ x: readLength(reader), y: readLength(reader) })),
   }));
@@ -157,7 +153,14 @@ function readBlockPaint(reader: RitoBinaryReader): RitoBlockPaint {
       case 2:
         return { pct: reader.readF64() };
       case 3:
-        throw new RitoWireError('RITODL1 per-corner block radii require an extended Skia renderer.');
+        return {
+          corners: {
+            topLeft: reader.readF64(),
+            topRight: reader.readF64(),
+            bottomRight: reader.readF64(),
+            bottomLeft: reader.readF64(),
+          },
+        };
       default:
         throw new RitoWireError('RITODL1 contains an unknown block radius type.');
     }
@@ -208,9 +211,6 @@ function readBorderEdge(reader: RitoBinaryReader): RitoBorderPaintEdge {
 
 function readBorderStyle(reader: RitoBinaryReader): RitoBorderPaintEdge['style'] {
   const style = readEnum(reader, BORDER_STYLES, 'border style');
-  if (style !== 'solid' && style !== 'dotted' && style !== 'dashed') {
-    throw new RitoWireError(`RITODL1 border style ${style} requires an extended Skia renderer.`);
-  }
   return style;
 }
 
@@ -224,11 +224,52 @@ function readColor(reader: RitoBinaryReader): string {
   if ((none & 0xf0) !== 0) {
     throw new RitoWireError('RITODL1 color none flags contain unknown bits.');
   }
-  if (space !== 'srgb' || none !== 0) {
-    throw new RitoWireError(`RITODL1 color space ${space} requires an extended Skia renderer.`);
+  return toRgba(space, none & 1 ? 0 : red, none & 2 ? 0 : green, none & 4 ? 0 : blue, none & 8 ? 0 : alpha);
+}
+
+function toRgba(space: typeof COLOR_SPACES[number], c0: number, c1: number, c2: number, alpha: number): string {
+  let red = c0;
+  let green = c1;
+  let blue = c2;
+  if (space === 'hsl') [red, green, blue] = hsl(c0, c1 / 100, c2 / 100);
+  else if (space === 'hwb') [red, green, blue] = hwb(c0, c1 / 100, c2 / 100);
+  else if (space === 'srgb-linear') [red, green, blue] = [linearToSrgb(c0), linearToSrgb(c1), linearToSrgb(c2)];
+  else if (space === 'oklab' || space === 'oklch') {
+    const angle = space === 'oklch' ? c2 * Math.PI / 180 : 0;
+    [red, green, blue] = linearRgbToSrgb(oklabToLinear(c0, space === 'oklch' ? c1 * Math.cos(angle) : c1, space === 'oklch' ? c1 * Math.sin(angle) : c2));
+  } else if (space === 'lab' || space === 'lch') {
+    const angle = space === 'lch' ? c2 * Math.PI / 180 : 0;
+    const xyz = labToXyz(c0, space === 'lch' ? c1 * Math.cos(angle) : c1, space === 'lch' ? c1 * Math.sin(angle) : c2);
+    [red, green, blue] = linearRgbToSrgb(matrix(d50ToD65(xyz), [3.2409699419, -1.5373831776, -0.4986107603, -0.9692436363, 1.8759675015, 0.0415550574, 0.0556300797, -0.2039769589, 1.0569715142]));
+  } else if (space === 'xyz-d65') {
+    [red, green, blue] = linearRgbToSrgb(matrix([c0, c1, c2], [3.2409699419, -1.5373831776, -0.4986107603, -0.9692436363, 1.8759675015, 0.0415550574, 0.0556300797, -0.2039769589, 1.0569715142]));
+  } else if (space === 'xyz-d50') {
+    [red, green, blue] = linearRgbToSrgb(matrix(d50ToD65([c0, c1, c2]), [3.2409699419, -1.5373831776, -0.4986107603, -0.9692436363, 1.8759675015, 0.0415550574, 0.0556300797, -0.2039769589, 1.0569715142]));
+  } else if (space === 'display-p3' || space === 'display-p3-linear') {
+    const linear = space === 'display-p3' ? [srgbToLinear(c0), srgbToLinear(c1), srgbToLinear(c2)] as [number, number, number] : [c0, c1, c2] as [number, number, number];
+    [red, green, blue] = linearRgbToSrgb(matrix(matrix(linear, [0.4865709486, 0.2656676932, 0.1982172852, 0.2289745641, 0.6917385218, 0.0792869141, 0, 0.0451133819, 1.0439443689]), [3.2409699419, -1.5373831776, -0.4986107603, -0.9692436363, 1.8759675015, 0.0415550574, 0.0556300797, -0.2039769589, 1.0569715142]));
   }
   return `rgba(${channel(red)}, ${channel(green)}, ${channel(blue)}, ${clamp(alpha)})`;
 }
+
+function hsl(hue: number, saturation: number, lightness: number): [number, number, number] {
+  const h = ((hue % 360) + 360) % 360 / 360;
+  const s = clamp(saturation); const l = clamp(lightness);
+  if (s === 0) return [l, l, l];
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return [hueChannel(p, q, h + 1 / 3), hueChannel(p, q, h), hueChannel(p, q, h - 1 / 3)];
+}
+function hueChannel(p: number, q: number, value: number): number { let h = value; if (h < 0) h += 1; if (h > 1) h -= 1; if (h < 1 / 6) return p + (q - p) * 6 * h; if (h < 0.5) return q; if (h < 2 / 3) return p + (q - p) * (2 / 3 - h) * 6; return p; }
+function hwb(hue: number, white: number, black: number): [number, number, number] { const w = clamp(white); const b = clamp(black); if (w + b >= 1) { const g = w / (w + b); return [g, g, g]; } const base = hsl(hue, 1, 0.5); const scale = 1 - w - b; return base.map((v) => v * scale + w) as [number, number, number]; }
+function linearToSrgb(value: number): number { const sign = value < 0 ? -1 : 1; const magnitude = Math.abs(value); return sign * (magnitude <= 0.0031308 ? magnitude * 12.92 : 1.055 * Math.pow(magnitude, 1 / 2.4) - 0.055); }
+function srgbToLinear(value: number): number { const magnitude = Math.abs(value); const linear = magnitude <= 0.04045 ? magnitude / 12.92 : Math.pow((magnitude + 0.055) / 1.055, 2.4); return value < 0 ? -linear : linear; }
+function linearRgbToSrgb(value: [number, number, number]): [number, number, number] { return value.map(linearToSrgb) as [number, number, number]; }
+function matrix(value: [number, number, number], m: number[]): [number, number, number] { return [m[0] * value[0] + m[1] * value[1] + m[2] * value[2], m[3] * value[0] + m[4] * value[1] + m[5] * value[2], m[6] * value[0] + m[7] * value[1] + m[8] * value[2]]; }
+function labToXyz(lightness: number, a: number, b: number): [number, number, number] { const f1 = (lightness + 16) / 116; const f0 = f1 + a / 500; const f2 = f1 - b / 200; return [labInverse(f0) * 0.96422, labInverse(f1), labInverse(f2) * 0.82521]; }
+function labInverse(value: number): number { const delta = 6 / 29; return value > delta ? value * value * value : 3 * delta * delta * (value - 4 / 29); }
+function d50ToD65(value: [number, number, number]): [number, number, number] { return matrix(value, [0.9554734215, -0.0230984549, 0.0632592432, -0.0283697093, 1.0099953981, 0.0210414412, 0.0123140149, -0.0205076493, 1.3303659262]); }
+function oklabToLinear(lightness: number, a: number, b: number): [number, number, number] { const l = lightness + 0.3963377774 * a + 0.2158037573 * b; const m = lightness - 0.1055613458 * a - 0.0638541728 * b; const s = lightness - 0.0894841775 * a - 1.2914855480 * b; const l3 = l ** 3; const m3 = m ** 3; const s3 = s ** 3; return [4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3, -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3, -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3]; }
 
 function readRect(reader: RitoBinaryReader): RitoDisplayRect {
   return { x: reader.readF64(), y: reader.readF64(), width: reader.readF64(), height: reader.readF64() };

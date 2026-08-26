@@ -4,6 +4,7 @@ import type {
 import { toReaderV1DisplayList } from '../rito';
 import type { RitoNativePinnedFontFace, RitoArtifact, RitoLayoutRequest, RitoNativeReaderModule } from '../rito/rito-native';
 import type { RitoReaderSession } from '../../../modules/rito-rn/src/session';
+import type { RitoPublication, RitoTocEntry } from '../../../modules/rito-rn/src/protocol/artifact-types';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackendOpenOptions, ReaderPaginationBackendResult } from './pagination-backend';
 
 export interface RitoNativePaginationBackendOptions {
@@ -36,7 +37,7 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
     const { RitoReaderSession } = await import('../../../modules/rito-rn/src/session');
     const opened = await RitoReaderSession.open(new Uint8Array(options.data), request, pinnedFonts, { native: this.config.native });
     const publicationMetadata = await opened.session.readPublication();
-    const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata.metadata, publicationMetadata.toc.map((entry) => ({ label: entry.label, href: entry.target.kind === 'locator' || entry.target.kind === 'missing' ? entry.target.kind === 'locator' ? entry.target.locator.href : entry.target.href : entry.target.href, children: entry.children.map((child) => ({ label: child.label, href: child.target.kind === 'locator' ? child.target.locator.href : child.target.href, children: [] })) })), options.fontRegistry, options.imageDecoder);
+    const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata, options.fontRegistry, options.imageDecoder);
     await publication.prepare(opened.artifact);
     this.session = opened.session;
     this.publication = publication;
@@ -79,11 +80,13 @@ class RitoNativePublication implements LoadedReaderPublication {
   private visibleArtifactId?: bigint;
   private readonly metadataValue: LoadedReaderPublication['metadata'];
   private readonly tocValue: LoadedReaderPublication['toc'];
+  private readonly spine: RitoPublication['spine'];
 
-  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, metadata: LoadedReaderPublication['metadata'], toc: LoadedReaderPublication['toc'], private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
+  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
     this.nextRequestId = first.requestId;
-    this.metadataValue = metadata;
-    this.tocValue = toc;
+    this.metadataValue = publication.metadata;
+    this.tocValue = publication.toc.map(toReaderToc);
+    this.spine = publication.spine;
     this.visibleArtifactId = first.artifactId;
     this.artifacts.set(first.localSpreadIndex, first);
   }
@@ -93,7 +96,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     for (const font of artifact.fonts) {
       if (!this.fonts) break;
       const resource = await this.session.readResource(artifact.artifactId, 1, font.href);
-      await this.fonts.loadFont({ family: font.family, src: font.href, bytes: resource.bytes, weight: String(font.weight), style: font.style });
+      await this.fonts.loadFont({ family: font.family, src: font.href, bytes: resource.bytes, weight: String(font.weight), style: font.style, fingerprint: font.shapeFingerprint, byteLength: Number(font.byteLength) });
     }
     for (const resource of artifact.resources) {
       if (resource.kind !== 'image') continue;
@@ -146,9 +149,26 @@ class RitoNativePublication implements LoadedReaderPublication {
   get layout() { const frame = this.frames.values().next().value as ReaderRenderFrame | undefined; return { viewportWidth: frame?.width ?? 0, viewportHeight: frame?.height ?? 0, pageWidth: frame?.width ?? 0, pageHeight: frame?.height ?? 0, pixelRatio: 1, marginTop: 0, marginRight: 0, marginBottom: 0, marginLeft: 0, spreadMode: 'single' as const, spreadGap: 0, rootFontSize: 16, palette: { backgroundColor: '#000000', foregroundColor: '#ffffff', spreadBodyBackgroundColor: '#000000' } }; }
   get totalPages() { return Math.max(1, [...this.artifacts.values()].reduce((max, artifact) => Math.max(max, artifact.bookPageCount ?? artifact.localPageIndex + 1), 0)); }
   get totalSpreads() { return Math.max(1, this.frames.size); }
-  get chapters() { return []; }
+  get chapters() {
+    return this.spine.map((item) => {
+      const pages = [...this.artifacts.values()].filter((artifact) => artifact.locator.href === item.href || artifact.locator.href.startsWith(`${item.href}#`));
+      if (pages.length === 0) return undefined;
+      const startPage = Math.min(...pages.map((artifact) => artifact.bookPageIndex ?? artifact.localPageIndex));
+      const endPage = Math.max(...pages.map((artifact) => (artifact.bookPageIndex ?? artifact.localPageIndex) + artifact.localPageIndexes.length - 1));
+      return { spineIdref: item.idref, startPage, endPage };
+    }).filter((range): range is { spineIdref: string; startPage: number; endPage: number } => range !== undefined);
+  }
   get chapterTimings() { return []; }
-  resolveToc(_href: string): number | undefined { return undefined; }
+  resolveToc(href: string): number | undefined {
+    const base = href.split('#', 1)[0];
+    const target = findTocTarget(this.tocValue, href, base);
+    const targetBase = target?.split('#', 1)[0] ?? base;
+    const targetAnchor = target?.includes('#') ? target.slice(target.indexOf('#') + 1) : undefined;
+    return [...this.artifacts.values()].find((artifact) =>
+      (artifact.locator.href === targetBase || artifact.locator.href === href) &&
+      (!targetAnchor || artifact.locator.anchorId === targetAnchor),
+    )?.localSpreadIndex;
+  }
 
   private visibleSpreadIndex(): number { for (const [index, artifact] of this.artifacts) if (artifact.artifactId === this.visibleArtifactId) return index; return 0; }
 
@@ -175,6 +195,22 @@ class RitoNativePublication implements LoadedReaderPublication {
     for (const artifact of this.artifacts.values()) await this.session.releaseArtifact(artifact.artifactId).catch(() => undefined);
     await this.session.dispose();
   }
+}
+
+function toReaderToc(entry: RitoTocEntry): import('../contracts').ReaderTocEntry {
+  const target = entry.target.kind === 'locator'
+    ? `${entry.target.locator.href}${entry.target.locator.anchorId ? `#${entry.target.locator.anchorId}` : ''}`
+    : entry.target.href;
+  return { label: entry.label, href: target, children: entry.children.map(toReaderToc) };
+}
+
+function findTocTarget(entries: readonly import('../contracts').ReaderTocEntry[], href: string, base: string): string | undefined {
+  for (const entry of entries) {
+    if (entry.href === href || entry.href === base) return entry.href;
+    const nested = findTocTarget(entry.children, href, base);
+    if (nested) return nested;
+  }
+  return undefined;
 }
 
 function toReaderSemanticNode(node: import('../../../modules/rito-rn/src/protocol/artifact-types').RitoSemanticNode): import('../contracts').ReaderSemanticNode {

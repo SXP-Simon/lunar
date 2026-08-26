@@ -277,7 +277,13 @@ export class RitoReaderSession {
       throw new RitoNativeError(5, 'Background candidate no longer matches the visible artifact.', 'adoptBackground');
     }
     this.foregroundGeneration += 1;
-    const ack = decodeRitoBackgroundHandoffAck(await this.success('adoptBackground', () => this.native.adoptBackground(this.sessionId, encodeRitoBackgroundHandoff(request))));
+    let ack: RitoBackgroundHandoffAck;
+    try {
+      ack = decodeRitoBackgroundHandoffAck(await this.success('adoptBackground', () => this.native.adoptBackground(this.sessionId, encodeRitoBackgroundHandoff(request))));
+    } catch (error) {
+      await this.releaseOrInvalidate(candidate, request.candidateArtifactId);
+      throw error;
+    }
     if (ack.visibleArtifactId !== request.candidateArtifactId) {
       await this.releaseOrInvalidate(candidate, request.candidateArtifactId);
       throw new RitoNativeError(4, 'Background handoff acknowledgement does not match the candidate.', 'adoptBackground');
