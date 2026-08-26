@@ -32,7 +32,7 @@ GPU 绘制提升页面合成、缩放、过渡动画和重复帧播放的效率�
 
 ### 2.2 Rito 版本依据
 
-当前工程使用 `lib/Rito` 提供的 Rito 1.0.0 源码，并通过 `@ritojs/react-native` 连接 Rust FFI。
+当前工程使用 `modules/rito-rn/native/rito` 随模块发布的 Rito 1.0.0 源码，并通过 `@ritojs/react-native` 连接 Rust FFI。源码更新时由 `pnpm run sync:rito-native` 从本地 Rito 副本同步。
 
 | 能力 | Rito 1.0.0 |
 |---|---|
@@ -511,7 +511,7 @@ CREATE TABLE bookmarks (
 5. 书籍、书签和批注默认保存在设备内部，首版没有上传行为。
 6. 删除书籍时先显示确认界面，再清理数据库记录、受管 EPUB、封面和内存资源。
 7. Rito 使用 `AGPL-3.0-only`。开发投入前须确认应用源代码提供方式、商店分发义务、修改源码义务和第三方商用授权。计划采用闭源分发时，应先获得适用的商业许可或版权方书面许可。
-8. Rito 源码由 `lib/Rito` 固定提交提供，升级前检查协议版本、FFI ABI 和原生测试结果。
+8. Rito 源码由 `modules/rito-rn/native/rito` 固定提交提供，升级前检查协议版本、FFI ABI 和原生测试结果。
 
 ## 17. 依赖安装与检查
 

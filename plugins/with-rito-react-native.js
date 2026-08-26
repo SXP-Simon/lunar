@@ -26,10 +26,15 @@ def ritoFfiSourceInput = providers.gradleProperty('ritoFfiSourceDir')
     .orNull
 def ritoFfiSourceDir = ritoFfiSourceInput != null
     ? rootProject.file(ritoFfiSourceInput)
-    : rootProject.file('../lib/Rito')
+    : new File(ritoPackageRoot, 'native/rito')
 def ritoFfiSourceAvailable = ritoFfiSourceDir.isDirectory()
 def ritoFfiOutputDir = layout.buildDirectory.dir('rito-ffi').get().asFile
 def ritoCodegenOutputDir = layout.buildDirectory.dir('rito-codegen').get().asFile
+def ritoFfiTargetDir = new File(ritoFfiSourceDir, 'target')
+def ritoForceRebuild = providers.environmentVariable('RITO_FFI_REBUILD')
+    .map { it == '1' || it.equalsIgnoreCase('true') }
+    .orElse(false)
+    .get()
 
 android {
     defaultConfig {
@@ -44,20 +49,27 @@ android {
     }
 }
 
-tasks.register('buildRitoFfiArm64', Exec) {
-    onlyIf { ritoFfiSourceAvailable }
+tasks.register('buildRitoFfiArm64') {
+    onlyIf { ritoForceRebuild || !ritoFfiSourceAvailable || !new File(ritoFfiOutputDir, 'arm64-v8a/release/librito_ffi.a').exists() }
+    inputs.dir(ritoFfiSourceDir)
+    outputs.file(new File(ritoFfiOutputDir, 'arm64-v8a/release/librito_ffi.a'))
     doFirst {
         if (!ritoFfiSourceAvailable) {
-            throw new GradleException('The local Rito 1.0.0 source is missing. Expected lib/Rito or RITO_FFI_SOURCE_DIR.')
+            throw new GradleException('The bundled Rito 1.0.0 source is missing. Expected modules/rito-rn/native/rito or RITO_FFI_SOURCE_DIR.')
         }
-        executable 'cargo'
-        workingDir ritoFfiSourceDir
-        args 'ndk', '-t', 'arm64-v8a', '-o', ritoFfiOutputDir.absolutePath,
-            'build', '--release', '--manifest-path',
-            new File(ritoFfiSourceDir, 'crates/rito-ffi/Cargo.toml').absolutePath
+        def staticLibrary = new File(ritoFfiTargetDir, 'aarch64-linux-android/release/librito_ffi.a')
+        if (!staticLibrary.exists() || ritoForceRebuild) {
+            project.exec {
+                executable 'cargo'
+                workingDir ritoFfiSourceDir
+                args 'ndk', '-t', 'arm64-v8a', '-o', ritoFfiOutputDir.absolutePath,
+                    'build', '--release', '--target-dir', ritoFfiTargetDir.absolutePath,
+                    '--manifest-path', new File(ritoFfiSourceDir, 'crates/rito-ffi/Cargo.toml').absolutePath
+            }
+        }
     }
     doLast {
-        def staticLibrary = new File(ritoFfiSourceDir, 'target/aarch64-linux-android/release/librito_ffi.a')
+        def staticLibrary = new File(ritoFfiTargetDir, 'aarch64-linux-android/release/librito_ffi.a')
         def destination = new File(ritoFfiOutputDir, 'arm64-v8a/release/librito_ffi.a')
         if (!staticLibrary.exists()) {
             throw new GradleException("Rito FFI static library was not generated: \${staticLibrary}")

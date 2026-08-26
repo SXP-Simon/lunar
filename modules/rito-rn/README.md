@@ -10,7 +10,7 @@
 | --- | --- |
 | TypeScript | 编码和解码 Rito 1.0.0 协议，校验会话、请求和工件身份，提供 `RitoReaderSession`。 |
 | 共享 C++ | 实现 `NativeRitoReader` Turbo Module、串行执行器、返回缓冲区复制与释放，以及 `bigint` 到十进制字符串的转换。 |
-| Rito FFI | 调用 `lib/Rito` 中的 Rust `rito-ffi`，完成 EPUB 打开、排版、资源读取、搜索和交互计算。 |
+| Rito FFI | 调用模块内 `native/rito` 的 Rust `rito-ffi`，完成 EPUB 打开、排版、资源读取、搜索和交互计算。 |
 
 调用关系可以概括为：
 
@@ -47,6 +47,7 @@ ReaderRuntime
 | `cpp` | Android 与 iOS 共用的 Turbo Module、执行器和缓冲区代码。 |
 | `android-pure-cxx` | Android Pure C++ 自动链接使用的 CMake 目标。 |
 | `ios` | CocoaPods 配置和 Objective-C++ Module Provider。 |
+| `native/rito` | Rito 1.0.0 `rito-ffi` 所需的最小 Rust 工作区，包含 `rito-core` 及其依赖 crate。 |
 | `scripts` | Codegen 生成脚本。 |
 
 Android 采用 Pure C++ 自动链接，因此模块没有传统 Android Gradle 子工程，也没有 `android/` 目录。React Native 生成的 `autolinking.cpp` 负责注册 `NativeRitoReader`，CMake 目标负责加入共享 C++ 源码和 Rito 静态库。
@@ -69,29 +70,31 @@ Android 采用 Pure C++ 自动链接，因此模块没有传统 Android Gradle �
 | `cargo-ndk` | 4.1.2 |
 | CMake | 4.0.0 |
 | Android NDK | 27.1.12297006 |
-| Rito 源码 | `lib/Rito`，提交 `3c938c0b70580da484cadfbfa86dd598fb5eec49`，对应 1.0.0 协议和 ABI。 |
+| Rito 源码 | 模块内 `native/rito`，来源为 Rito 1.0.0 提交 `3c938c0b70580da484cadfbfa86dd598fb5eec49`。 |
 
-Android 构建需要将 `RITO_FFI_SOURCE_DIR` 指向 Rito 源码目录：
+Android 构建默认使用模块内 Rust 工作区。源码更新时，可从本地 Rito 副本同步：
 
 ```powershell
-$env:RITO_FFI_SOURCE_DIR = 'D:\front_projects\lunar\lib\Rito'
+pnpm run sync:rito-native
 pnpm exec expo prebuild --platform android --no-install
 cd android
 .\gradlew.bat :app:buildRitoFfiArm64
 .\gradlew.bat :app:generateRitoCodegen :app:generateAutolinkingNewArchitectureFiles
 ```
 
+`native/rito/target` 被忽略但保留在本机。Gradle 检查到其中已有 `librito_ffi.a` 时，会复用该静态库；删除它或设置 `RITO_FFI_REBUILD=1` 后再执行构建，可重新生成。需要使用其他 Rito 副本时，设置 `RITO_FFI_SOURCE_DIR` 覆盖默认目录。
+
 当前应用通过根目录的 `plugins/with-rito-react-native.js` 把 Cargo 任务、Codegen 输出目录、NDK ABI 和 CMake 参数加入 Expo 生成的工程。使用发布到 npm 的程序包时，建议将这部分构建集成随程序包发布，或由宿主项目提供同等的 Expo 配置插件。
 
-仓库内的 Rito Rust 源码固定放在 `lib/Rito`。插件在没有设置
-`RITO_FFI_SOURCE_DIR` 时会自动使用这个目录；设置变量时可传入本机或构建机上的绝对目录。EAS 构建通过
-`scripts/eas-install-rito-toolchain.sh` 安装 Rust 1.95.0 和 `cargo-ndk`，并使用 `.easignore` 只上传 Cargo workspace 所需的 `crates`、`Cargo.toml`、`Cargo.lock` 和工具链文件。
+模块发布内容包含 `native/rito` 的 Rust 源码、Cargo 清单和锁定文件，安装 npm 程序包后可以在宿主工程中编译。EAS 构建通过 `scripts/eas-install-rito-toolchain.sh` 安装 Rust 1.95.0 和 `cargo-ndk`；本机的 `native/rito/target` 仍由 `.gitignore` 和 `.easignore` 排除，远程构建会在构建机上生成新的目标文件。
 
 ## 构建验证记录
 
 | 检查项 | 平台 | 状态 | 记录 |
 | --- | --- | --- | --- |
 | `cargo check --manifest-path crates/rito-ffi/Cargo.toml` | Windows 宿主 | 通过 | Rito FFI Rust 源码检查完成。 |
+| `pnpm run sync:rito-native` | Windows 宿主 | 通过 | 从 `lib/Rito` 同步最小 Rust 工作区到模块目录。 |
+| `:app:buildRitoFfiArm64` 复用已有静态库 | Windows 宿主 | 通过 | 检测到 `native/rito/target` 中的 `librito_ffi.a` 时跳过 Cargo 编译，仅复制到应用构建目录。 |
 | `cargo +1.95.0 ndk -t arm64-v8a build --release -p rito-ffi` | Android `arm64-v8a` | 通过 | 生成 `librito_ffi.a`。 |
 | `pnpm run typecheck` | TypeScript | 通过 | 根项目类型检查完成。 |
 | `pnpm run test` | TypeScript | 通过 | 8 个测试文件，27 项断言全部通过。 |
@@ -143,7 +146,6 @@ cd android
 ## 后续事项
 
 1. 完成 iOS CocoaPods、Rust 静态库、模拟器与真机验证；Android 其他 ABI 仍按后续平台范围另行安排。
-2. 将 `RITO_FFI_SOURCE_DIR` 所需的 Rust 构建任务整理为程序包自带的发布方案，并为 npm 使用场景提供无需修改宿主工程源码的配置方式。
-3. `rito_ffi.h` 当前缺少固定字体导出声明，模块暂时使用 `cpp/RitoPinnedFontAbi.h` 保持 ABI 对接；上游头文件补充后需要移除临时声明。
+2. `rito_ffi.h` 当前缺少固定字体导出声明，模块暂时使用 `cpp/RitoPinnedFontAbi.h` 保持 ABI 对接；上游头文件补充后需要移除临时声明。
 
 完成上述事项后，React Native 侧的会话能力、资源管理和页面交互可以达到 `rito_flutter` 的主要功能范围，Lunar 的 Skia 绘制仍保持在应用层。

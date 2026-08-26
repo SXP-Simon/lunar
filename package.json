@@ -69,6 +69,7 @@
     "styles:generate": "uniwind generate-artifacts --css ./src/global.css --dts ./src/uniwind-types.d.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "sync:rito-native": "node modules/rito-rn/scripts/sync-rito-source.mjs",
     "test:watch": "vitest",
     "check": "pnpm run typecheck && pnpm run test && pnpm run lint",
     "check:expo": "expo install --check"

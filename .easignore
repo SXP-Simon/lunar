@@ -24,11 +24,8 @@ example
 /android
 /modules/rito-rn/.tmp-codegen
 /modules/rito-rn/.pure-cxx-test
+/modules/rito-rn/native/rito/target/
 
-# EAS only needs the Rust workspace used by rito-ffi.
-/lib/Rito/.git/
-/lib/Rito/target/
-/lib/Rito/apps/
-/lib/Rito/packages/
-/lib/Rito/docs/
-/lib/Rito/tools/
+# Rito sources are vendored in the npm module; the local checkout is only
+# needed when running `pnpm run sync:rito-native` before publishing changes.
+/lib/Rito/
