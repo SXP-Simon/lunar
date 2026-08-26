@@ -37,6 +37,11 @@ def ritoForceRebuild = providers.environmentVariable('RITO_FFI_REBUILD')
     .get()
 
 android {
+    externalNativeBuild {
+        cmake {
+            buildStagingDirectory '../../.cxx'
+        }
+    }
     defaultConfig {
         ndk { abiFilters 'arm64-v8a' }
         externalNativeBuild {

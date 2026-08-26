@@ -59,6 +59,7 @@
     "vitest": "3.2.4"
   },
   "scripts": {
+    "postinstall": "node scripts/patch-metro-worklets.mjs",
     "eas-build-pre-install": "bash scripts/eas-install-rito-toolchain.sh",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
