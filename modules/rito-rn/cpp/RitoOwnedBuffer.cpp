@@ -7,7 +7,8 @@
 namespace ritojs::reactnative {
 
 namespace {
-constexpr std::uint64_t kMaximumWireBytes = 64ULL * 1024ULL * 1024ULL;
+// Keep the bridge limit aligned with Rito core's MAX_WIRE_BYTES (256 MiB).
+constexpr std::uint64_t kMaximumWireBytes = 256ULL * 1024ULL * 1024ULL;
 
 std::vector<std::uint8_t> copyBuffer(rito_owned_buffer_v1* buffer, const char* field) {
   if (buffer == nullptr) {

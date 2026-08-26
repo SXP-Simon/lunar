@@ -109,13 +109,19 @@ export class RitoBinaryReader {
     if (!Number.isSafeInteger(length) || length < 0) {
       throw new RitoWireError(`${field} has an invalid byte length.`);
     }
+    const declared = this.readU32();
+    if (declared !== length) {
+      throw new RitoWireError(`${field} must contain ${length} bytes.`);
+    }
     return this.readBytes(length);
   }
 
-  readBlob(field: string, maximum = 64 * 1024 * 1024): Uint8Array {
+  readBlob(field: string, maximum = 256 * 1024 * 1024): Uint8Array {
     const length = this.readU64();
     if (length > BigInt(maximum)) {
-      throw new RitoWireError(`${field} exceeds the byte limit.`);
+      throw new RitoWireError(
+        `${field} exceeds the byte limit: declared ${length.toString()} bytes, maximum ${maximum} bytes, ${this.remaining} bytes remain.`,
+      );
     }
     return this.readBytes(Number(length));
   }

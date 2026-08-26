@@ -7,7 +7,7 @@ import type {
   RitoSemanticNode, RitoSemanticRole, RitoSourcePoint, RitoSourceRange, RitoTextProfile, RitoTextRunOffset,
 } from './artifact-types';
 
-const MAX_WIRE_BYTES = 64 * 1024 * 1024;
+const MAX_WIRE_BYTES = 256 * 1024 * 1024;
 
 export function decodeRitoArtifact(data: Uint8Array): RitoArtifact {
   const reader = openMessage(data, 'RITOART1', MAX_WIRE_BYTES, 'artifact');

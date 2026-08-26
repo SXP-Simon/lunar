@@ -114,7 +114,7 @@ function artifactWire(sessionId: bigint, requestId: bigint, artifactId: bigint):
     .writeU32(4).writeU32(0).writeU32(0).writeU32(1).writeU32(1)
     .writeF64(390).writeF64(844).writeU8(0).writeU8(0).writeU8(0)
     .writeU32(0).writeU32(0).writeU32(0)
-    .writeRecord((displayRecord) => displayRecord.writeU32(1).writeU32(0).writeBytes(new Uint8Array(32)).writeU64(BigInt(display.byteLength)).writeBytes(display))
+    .writeRecord((displayRecord) => displayRecord.writeU32(1).writeU32(0).writeU32(32).writeBytes(new Uint8Array(32)).writeU64(BigInt(display.byteLength)).writeBytes(display))
     .writeU32(0).writeU32(0).writeU32(0);
   return finish(writer);
 }

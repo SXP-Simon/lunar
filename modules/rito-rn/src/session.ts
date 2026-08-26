@@ -45,21 +45,26 @@ export class RitoReaderSession {
   static async open(publication: Uint8Array, request: RitoArtifactRequest, fonts: readonly RitoNativePinnedFontFace[], options: RitoReaderSessionOptions = {}): Promise<{ readonly session: RitoReaderSession; readonly artifact: RitoArtifact }> {
     const native = options.native ?? getRitoNativeReaderModule();
     const session = new RitoReaderSession(request.sessionId, { ...options, native });
-    const response = await native.open(publication, encodeRitoArtifactRequest(request), fonts);
-    let artifact: RitoArtifact;
-    if (response.status === STATUS_EXACT_PENDING) {
-      artifact = await session.requestArtifact({ ...request, requestId: request.requestId + 1n, work: { ...request.work, maxForegroundQuanta: 1 } });
-    } else {
-      if (response.status !== STATUS_OK) throw nativeError(response, 'open');
-      artifact = decodeRitoArtifact(response.data);
-      if (artifact.sessionId !== request.sessionId) throw new RitoNativeError(4, 'Rito open artifact session ID does not match the request.', 'open');
+    try {
+      const response = await native.open(publication, encodeRitoArtifactRequest(request), fonts);
+      let artifact: RitoArtifact;
+      if (response.status === STATUS_EXACT_PENDING) {
+        artifact = await session.requestArtifact({ ...request, requestId: request.requestId + 1n, work: { ...request.work, maxForegroundQuanta: 1 } });
+      } else {
+        if (response.status !== STATUS_OK) throw nativeError(response, 'open');
+        artifact = decodeRitoArtifact(response.data);
+        if (artifact.sessionId !== request.sessionId) throw new RitoNativeError(4, 'Rito open artifact session ID does not match the request.', 'open');
+      }
+      session.rememberArtifact(artifact);
+      await session.adoptForeground({
+        sessionId: request.sessionId,
+        candidateArtifactId: artifact.artifactId,
+      });
+      return { session, artifact };
+    } catch (error) {
+      await native.dispose(request.sessionId).catch(() => undefined);
+      throw error;
     }
-    session.rememberArtifact(artifact);
-    await session.adoptForeground({
-      sessionId: request.sessionId,
-      candidateArtifactId: artifact.artifactId,
-    });
-    return { session, artifact };
   }
 
   async readPublication(): Promise<RitoPublication> {

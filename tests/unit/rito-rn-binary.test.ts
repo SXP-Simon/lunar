@@ -138,7 +138,7 @@ describe('Rito React Native binary protocol', () => {
       .writeRecord((locator) => locator.writeUtf8('chapter.xhtml').writeU8(0).writeU8(0).writeU8(0).writeU8(0))
       .writeU32(3).writeU32(7).writeU32(7).writeU32(1).writeU32(7)
       .writeF64(360).writeF64(640).writeU8(0).writeU8(0).writeU8(0)
-      .writeU32(0).writeU32(1).writeU32(1).writeRecord((record) => record.writeU32(1).writeU32(0).writeBytes(new Uint8Array(32)).writeU64(BigInt(display.byteLength)).writeBytes(display))
+      .writeU32(0).writeU32(1).writeU32(1).writeRecord((record) => record.writeU32(1).writeU32(0).writeU32(32).writeBytes(new Uint8Array(32)).writeU64(BigInt(display.byteLength)).writeBytes(display))
       .writeU32(1).writeRecord((record) => record.writeU32(0).writeUtf8('images/cover.png'))
       .writeU32(1).writeRecord((record) => record.writeUtf8('Rito Serif').writeUtf8('fonts/serif.woff2').writeUtf8('normal').writeU16(400).writeUtf8('shape-v1').writeU64(8192n))
       .writeU32(0);

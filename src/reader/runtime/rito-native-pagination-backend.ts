@@ -137,7 +137,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     if (existing) return;
     const current = this.artifacts.get(this.visibleSpreadIndex());
     if (!current || Math.abs(spreadIndex - current.localSpreadIndex) !== 1) return;
-    const artifact = await this.session.requestAdjacent({ sessionId: current.sessionId, requestId: ++this.nextRequestId, fromArtifactId: current.artifactId, direction: spreadIndex > current.localSpreadIndex ? 'next' : 'previous', work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 64 } });
+    const artifact = await this.session.requestAdjacent({ sessionId: current.sessionId, requestId: ++this.nextRequestId, fromArtifactId: current.artifactId, direction: spreadIndex > current.localSpreadIndex ? 'next' : 'previous', work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 4 } });
     await this.prepare(artifact);
     await this.session.adoptForeground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId, candidateArtifactId: artifact.artifactId });
     this.artifacts.set(artifact.localSpreadIndex, artifact);
@@ -230,5 +230,5 @@ function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutR
   const typography = request.typography;
   const locator = request.restorePosition?.locator;
   const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, marginTop: typography.marginVertical, marginRight: typography.marginHorizontal, marginBottom: typography.marginVertical, marginLeft: typography.marginHorizontal, spreadMode: typography.spreadMode, firstPageAlone: true, spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily };
-  return { sessionId: BigInt(Math.max(1, revisionId)), requestId: BigInt(Math.max(1, operationId)), layout: value, locator: { href: locator?.manifestHref ?? initialHref, anchorId: locator?.sourcePoint ? undefined : undefined, progression: request.restorePosition?.progression }, work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 64 }, textProfile: 'platform-string-runs' };
+  return { sessionId: BigInt(Math.max(1, revisionId)), requestId: BigInt(Math.max(1, operationId)), layout: value, locator: { href: locator?.manifestHref ?? initialHref, anchorId: locator?.sourcePoint ? undefined : undefined, progression: request.restorePosition?.progression }, work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 4 }, textProfile: 'platform-string-runs' };
 }
