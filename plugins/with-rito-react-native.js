@@ -21,9 +21,13 @@ module.exports = function withRitoReactNative(config) {
     const ritoAndroidConfig = `
 // Rito Pure C++ Turbo Module configuration.
 def ritoPackageRoot = file('${ritoPackageRelative}')
-def ritoFfiSourceDir = providers.gradleProperty('ritoFfiSourceDir')
+def ritoFfiSourceInput = providers.gradleProperty('ritoFfiSourceDir')
     .orElse(providers.environmentVariable('RITO_FFI_SOURCE_DIR'))
     .orNull
+def ritoFfiSourceDir = ritoFfiSourceInput != null
+    ? rootProject.file(ritoFfiSourceInput)
+    : rootProject.file('../lib/Rito')
+def ritoFfiSourceAvailable = ritoFfiSourceDir.isDirectory()
 def ritoFfiOutputDir = layout.buildDirectory.dir('rito-ffi').get().asFile
 def ritoCodegenOutputDir = layout.buildDirectory.dir('rito-codegen').get().asFile
 
@@ -32,7 +36,7 @@ android {
         ndk { abiFilters 'arm64-v8a' }
         externalNativeBuild {
             cmake {
-                arguments '-DRITO_FFI_SOURCE_DIR=' + (ritoFfiSourceDir ?: ''),
+                arguments '-DRITO_FFI_SOURCE_DIR=' + (ritoFfiSourceAvailable ? ritoFfiSourceDir.absolutePath.replace('\\\\', '/') : ''),
                     '-DRITO_FFI_LIBRARY_ROOT=' + ritoFfiOutputDir.absolutePath.replace('\\\\', '/'),
                     '-DRITO_CODEGEN_DIR=' + new File(ritoCodegenOutputDir, 'jni').absolutePath.replace('\\\\', '/')
             }
@@ -41,10 +45,10 @@ android {
 }
 
 tasks.register('buildRitoFfiArm64', Exec) {
-    onlyIf { ritoFfiSourceDir != null }
+    onlyIf { ritoFfiSourceAvailable }
     doFirst {
-        if (ritoFfiSourceDir == null) {
-            throw new GradleException('RITO_FFI_SOURCE_DIR must point to the pinned Rito 1.0.0 checkout.')
+        if (!ritoFfiSourceAvailable) {
+            throw new GradleException('The local Rito 1.0.0 source is missing. Expected lib/Rito or RITO_FFI_SOURCE_DIR.')
         }
         executable 'cargo'
         workingDir ritoFfiSourceDir

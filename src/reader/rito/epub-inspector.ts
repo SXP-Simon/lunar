@@ -37,6 +37,38 @@ export function inspectReaderBookAssets(data: ArrayBuffer): ReaderBookInspection
   return { metadata, cover: findCover(entries, manifest, packageXml, packagePath) };
 }
 
+/** Returns the first linear spine document in the EPUB archive. */
+export function discoverReaderInitialSpineHref(data: ArrayBuffer | Uint8Array): string {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const entries = unzipSync(bytes);
+  const container = readText(entries, 'META-INF/container.xml');
+  const packagePath = normalizeArchivePath(
+    attribute(container.match(/<rootfile\b[^>]*full-path=["']([^"']+)["']/i)?.[1]),
+  );
+  const packageXml = readText(entries, packagePath);
+  const packageBase = packagePath.includes('/') ? packagePath.slice(0, packagePath.lastIndexOf('/') + 1) : '';
+  const manifest = new Map<string, { href: string; mediaType: string }>();
+  for (const match of packageXml.matchAll(/<item\b([^>]+)>/gi)) {
+    const attrs = match[1] ?? '';
+    const id = attribute(attrs.match(/\bid=["']([^"']+)["']/i)?.[1]);
+    const href = attribute(attrs.match(/\bhref=["']([^"']+)["']/i)?.[1]);
+    const mediaType = attribute(attrs.match(/\bmedia-type=["']([^"']+)["']/i)?.[1]);
+    manifest.set(id, { href: resolveRelative(packageBase, href), mediaType });
+  }
+  const spineBody = packageXml.match(/<spine\b[^>]*>([\s\S]*?)<\/spine\s*>/i)?.[1] ?? '';
+  const itemrefs = [...spineBody.matchAll(/<itemref\b([^>]+)>/gi)].map((match) => {
+    const attrs = match[1] ?? '';
+    const idref = attribute(attrs.match(/\bidref=["']([^"']+)["']/i)?.[1]);
+    const linear = attrs.match(/\blinear=["']([^"']+)["']/i)?.[1]?.toLowerCase();
+    return { idref, linear };
+  });
+  const firstLinear = itemrefs.find((item) => item.linear !== 'no' && manifest.get(item.idref)?.mediaType.includes('html'));
+  const firstDocument = firstLinear ?? itemrefs.find((item) => manifest.get(item.idref)?.mediaType.includes('html'));
+  const href = firstDocument ? manifest.get(firstDocument.idref)?.href : undefined;
+  if (!href) throw new Error('The EPUB package has no HTML document in its spine.');
+  return href;
+}
+
 interface ManifestItem { readonly id: string; readonly href: string; readonly mediaType: string; readonly properties: string }
 
 function readMetadata(xml: string): ReaderBookMetadata {

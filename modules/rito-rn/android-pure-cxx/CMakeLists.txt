@@ -72,7 +72,10 @@ target_include_directories(rito_react_native PUBLIC
   "${RITO_CODEGEN_DIR}"
   "${RITO_FFI_SOURCE_DIR}/crates/rito-ffi/include"
 )
-target_link_libraries(rito_react_native PRIVATE
+# React Native's ReactNative-application.cmake adds `common_flags` to every
+# autolinked target with the plain signature. Keep this target on the same
+# signature so CMake accepts the additional link invocation.
+target_link_libraries(rito_react_native
   ${LOG_LIB}
   fbjni::fbjni
   ReactAndroid::jsi

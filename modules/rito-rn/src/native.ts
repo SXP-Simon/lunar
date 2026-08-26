@@ -59,8 +59,8 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
     return this.unwrap(
       'open',
       this.native.open(
-        toArrayBuffer(publication),
-        toArrayBuffer(request),
+        toUint8Array(publication),
+        toUint8Array(request),
         fonts.map(toNativePinnedFontFace),
       ),
     );
@@ -71,31 +71,31 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
   }
 
   async requestArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('requestArtifact', this.native.requestArtifact(toExternalIdString(sessionId), toArrayBuffer(request)));
+    return this.unwrap('requestArtifact', this.native.requestArtifact(toExternalIdString(sessionId), toUint8Array(request)));
   }
 
   async requestAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('requestAdjacent', this.native.requestAdjacent(toExternalIdString(sessionId), toArrayBuffer(request)));
+    return this.unwrap('requestAdjacent', this.native.requestAdjacent(toExternalIdString(sessionId), toUint8Array(request)));
   }
 
   async peekAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('peekAdjacent', this.native.peekAdjacent(toExternalIdString(sessionId), toArrayBuffer(request)));
+    return this.unwrap('peekAdjacent', this.native.peekAdjacent(toExternalIdString(sessionId), toUint8Array(request)));
   }
 
   async adoptForeground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('adoptForeground', this.native.adoptForeground(toExternalIdString(sessionId), toArrayBuffer(request)));
+    return this.unwrap('adoptForeground', this.native.adoptForeground(toExternalIdString(sessionId), toUint8Array(request)));
   }
 
   async commitPeekedArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('commitPeekedArtifact', this.native.commitPeekedArtifact(toExternalIdString(sessionId), toArrayBuffer(request)));
+    return this.unwrap('commitPeekedArtifact', this.native.commitPeekedArtifact(toExternalIdString(sessionId), toUint8Array(request)));
   }
 
   async advanceBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('advanceBackground', this.native.advanceBackground(toExternalIdString(sessionId), toArrayBuffer(request)));
+    return this.unwrap('advanceBackground', this.native.advanceBackground(toExternalIdString(sessionId), toUint8Array(request)));
   }
 
   async adoptBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('adoptBackground', this.native.adoptBackground(toExternalIdString(sessionId), toArrayBuffer(request)));
+    return this.unwrap('adoptBackground', this.native.adoptBackground(toExternalIdString(sessionId), toUint8Array(request)));
   }
 
   async readResource(sessionId: bigint, artifactId: bigint, kind: number, href: string): Promise<RitoNativeCallResult> {
@@ -106,11 +106,11 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
   }
 
   async search(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('search', this.native.search(toExternalIdString(sessionId), toArrayBuffer(request)));
+    return this.unwrap('search', this.native.search(toExternalIdString(sessionId), toUint8Array(request)));
   }
 
   async textRangeGeometry(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('textRangeGeometry', this.native.textRangeGeometry(toExternalIdString(sessionId), toArrayBuffer(request)));
+    return this.unwrap('textRangeGeometry', this.native.textRangeGeometry(toExternalIdString(sessionId), toUint8Array(request)));
   }
 
   async readFootnote(sessionId: bigint, artifactId: bigint, key: string): Promise<RitoNativeCallResult> {
@@ -133,7 +133,7 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
     return {
       status: response.status as RitoNativeStatus,
       data: response.data.slice(),
-      error: response.error,
+      error: typeof response.error === 'string' ? response.error : '',
     };
   }
 }
@@ -158,6 +158,9 @@ function toNativeFontRole(role: RitoNativePinnedFontFace['genericRole']): number
   }
 }
 
-function toArrayBuffer(value: Uint8Array): ArrayBuffer {
-  return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
+function toUint8Array(value: Uint8Array): Uint8Array {
+  // The C++ bridge validates binary arguments with JSI's isUint8Array().
+  // Preserve the typed-array object instead of passing an ArrayBuffer, while
+  // retaining any caller-supplied byte offset and length.
+  return value;
 }

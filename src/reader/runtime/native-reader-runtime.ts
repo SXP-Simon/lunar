@@ -344,10 +344,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (operation !== this.operation || (error instanceof Error && error.name === 'AbortError')) {
       return;
     }
+    const diagnostic = error instanceof Error
+      ? `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ''}`
+      : error;
     console.error(
       '[LunarReaderRuntime] Reader operation failed.',
-      error instanceof Error ? error.stack ?? error.message : error,
-      error instanceof Error && 'details' in error ? error.details : undefined,
+      diagnostic,
     );
     this.releaseResources();
     this.emit({

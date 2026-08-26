@@ -19,6 +19,9 @@ namespace {
 using ritojs::reactnative::RitoFfiResult;
 
 constexpr std::uint64_t kMaximumExternalId = 0x7fff'ffff'ffff'ffffULL;
+constexpr std::uint64_t kMaximumPublicationBytes = 512ULL * 1024ULL * 1024ULL;
+constexpr std::uint64_t kMaximumRequestBytes = 16ULL * 1024ULL * 1024ULL;
+constexpr std::uint64_t kMaximumPinnedFontBytes = 64ULL * 1024ULL * 1024ULL;
 
 RitoNativeBufferResult toNativeResult(RitoFfiResult result) {
   return {
@@ -58,7 +61,10 @@ std::uint64_t parseExternalId(const std::string& value, const char* field) {
   return result;
 }
 
-std::vector<std::uint8_t> copyUint8Array(jsi::Runtime& runtime, const jsi::Object& value) {
+std::vector<std::uint8_t> copyUint8Array(
+    jsi::Runtime& runtime,
+    const jsi::Object& value,
+    std::uint64_t maximumBytes = 64ULL * 1024ULL * 1024ULL) {
   if (!value.isUint8Array(runtime)) {
     throw std::invalid_argument("NativeRitoReader expects a Uint8Array binary argument.");
   }
@@ -66,8 +72,8 @@ std::vector<std::uint8_t> copyUint8Array(jsi::Runtime& runtime, const jsi::Objec
   auto buffer = typed.buffer(runtime);
   const auto offset = typed.byteOffset(runtime);
   const auto length = typed.byteLength(runtime);
-  if (length > 64ULL * 1024ULL * 1024ULL) {
-    throw std::invalid_argument("NativeRitoReader binary argument exceeds 64 MiB.");
+  if (length > maximumBytes) {
+    throw std::invalid_argument("NativeRitoReader binary argument exceeds its ABI limit.");
   }
   const auto* data = runtime.data(buffer) + offset;
   return {data, data + length};
@@ -122,7 +128,7 @@ std::vector<OwnedPinnedFontFace> copyPinnedFonts(
       throw std::invalid_argument("Pinned font has an unsupported generic role.");
     }
     copied.push_back({
-        .bytes = copyUint8Array(runtime, face.bytes),
+        .bytes = copyUint8Array(runtime, face.bytes, kMaximumPinnedFontBytes),
         .digest = parseDigest(face.expectedSha256),
         .language = face.language,
         .role = role,
@@ -222,8 +228,8 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::open(
   try {
     return submitOperation(
         executor_, runtime, jsInvoker_,
-        [publication = copyUint8Array(runtime, publication),
-         request = copyUint8Array(runtime, request),
+        [publication = copyUint8Array(runtime, publication, kMaximumPublicationBytes),
+         request = copyUint8Array(runtime, request, kMaximumRequestBytes),
          fonts = copyPinnedFonts(runtime, fonts)]() mutable {
           return invokeOpen(std::move(publication), std::move(request), std::move(fonts));
         });
@@ -258,7 +264,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::requestArtifact(
     jsi::Object request) {
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
-    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request, kMaximumRequestBytes)] {
       return invokeWireRequest(id, request, rito_request_artifact_v1);
     });
   } catch (const std::exception& exception) {
@@ -274,7 +280,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::requestAdjacent(
     jsi::Object request) {
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
-    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request, kMaximumRequestBytes)] {
       return invokeWireRequest(id, request, rito_request_adjacent_v1);
     });
   } catch (const std::exception& exception) {
@@ -290,7 +296,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::peekAdjacent(
     jsi::Object request) {
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
-    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request, kMaximumRequestBytes)] {
       return invokeWireRequest(id, request, rito_peek_adjacent_v1);
     });
   } catch (const std::exception& exception) {
@@ -306,7 +312,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::adoptForeground(
     jsi::Object request) {
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
-    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request, kMaximumRequestBytes)] {
       return invokeWireRequest(id, request, rito_adopt_foreground_candidate_v1);
     });
   } catch (const std::exception& exception) {
@@ -322,7 +328,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::commitPeekedArtifact(
     jsi::Object request) {
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
-    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request, kMaximumRequestBytes)] {
       return invokeWireRequest(id, request, rito_commit_peeked_artifact_v1);
     });
   } catch (const std::exception& exception) {
@@ -338,7 +344,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::advanceBackground(
     jsi::Object request) {
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
-    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request, kMaximumRequestBytes)] {
       return invokeWireRequest(id, request, rito_advance_background_v1);
     });
   } catch (const std::exception& exception) {
@@ -354,7 +360,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::adoptBackground(
     jsi::Object request) {
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
-    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request, kMaximumRequestBytes)] {
       return invokeWireRequest(id, request, rito_adopt_background_candidate_v1);
     });
   } catch (const std::exception& exception) {
@@ -401,7 +407,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::search(
     jsi::Object request) {
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
-    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request, kMaximumRequestBytes)] {
       return invokeWireRequest(id, request, rito_search_v1);
     });
   } catch (const std::exception& exception) {
@@ -417,7 +423,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::textRangeGeometry(
     jsi::Object request) {
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
-    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request, kMaximumRequestBytes)] {
       return invokeWireRequest(id, request, rito_get_text_range_geometry_v1);
     });
   } catch (const std::exception& exception) {

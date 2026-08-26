@@ -83,6 +83,10 @@ cd android
 
 当前应用通过根目录的 `plugins/with-rito-react-native.js` 把 Cargo 任务、Codegen 输出目录、NDK ABI 和 CMake 参数加入 Expo 生成的工程。使用发布到 npm 的程序包时，建议将这部分构建集成随程序包发布，或由宿主项目提供同等的 Expo 配置插件。
 
+仓库内的 Rito Rust 源码固定放在 `lib/Rito`。插件在没有设置
+`RITO_FFI_SOURCE_DIR` 时会自动使用这个目录；设置变量时可传入本机或构建机上的绝对目录。EAS 构建通过
+`scripts/eas-install-rito-toolchain.sh` 安装 Rust 1.95.0 和 `cargo-ndk`，并使用 `.easignore` 只上传 Cargo workspace 所需的 `crates`、`Cargo.toml`、`Cargo.lock` 和工具链文件。
+
 ## 构建验证记录
 
 | 检查项 | 平台 | 状态 | 记录 |

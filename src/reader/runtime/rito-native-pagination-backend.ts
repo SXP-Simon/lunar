@@ -2,6 +2,7 @@ import type {
   LoadedReaderPublication, ReaderFontRegistry, ReaderImageDecoder, ReaderLayoutRequest, ReaderOpenRequest, ReaderRenderFrame,
 } from '../contracts';
 import { toReaderV1DisplayList } from '../rito';
+import { discoverReaderInitialSpineHref } from '../rito/epub-inspector';
 import type { RitoNativePinnedFontFace, RitoArtifact, RitoLayoutRequest, RitoNativeReaderModule } from '../rito/rito-native';
 import type { RitoReaderSession } from '../../../modules/rito-rn/src/session';
 import type { RitoPublication, RitoTocEntry } from '../../../modules/rito-rn/src/protocol/artifact-types';
@@ -16,8 +17,8 @@ export interface RitoNativePaginationBackendOptions {
 /**
  * Rito 1.0 pagination backend. It keeps the native artifact as the source of
  * truth and materializes only the resources referenced by the active artifact.
- * The initial EPUB spine href is supplied by the archive layer because Rito's
- * request contract intentionally requires an explicit locator.
+ * The initial EPUB spine href is resolved from the package document because
+ * Rito's request contract intentionally requires an explicit locator.
  */
 export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBackend {
   private session?: RitoReaderSession;
@@ -29,7 +30,7 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
 
   async open(options: ReaderPaginationBackendOpenOptions): Promise<ReaderPaginationBackendResult> {
     await this.close();
-    const initialHref = this.config.initialHref ?? discoverInitialSpineHref(new Uint8Array(options.data));
+    const initialHref = this.config.initialHref ?? discoverReaderInitialSpineHref(new Uint8Array(options.data));
     const pinnedFonts = typeof this.config.pinnedFonts === 'function'
       ? await this.config.pinnedFonts(new Uint8Array(options.data))
       : this.config.pinnedFonts;
@@ -230,34 +231,4 @@ function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutR
   const locator = request.restorePosition?.locator;
   const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, marginTop: typography.marginVertical, marginRight: typography.marginHorizontal, marginBottom: typography.marginVertical, marginLeft: typography.marginHorizontal, spreadMode: typography.spreadMode, firstPageAlone: true, spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily };
   return { sessionId: BigInt(Math.max(1, revisionId)), requestId: BigInt(Math.max(1, operationId)), layout: value, locator: { href: locator?.manifestHref ?? initialHref, anchorId: locator?.sourcePoint ? undefined : undefined, progression: request.restorePosition?.progression }, work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 64 }, textProfile: 'platform-string-runs' };
-}
-
-function discoverInitialSpineHref(data: Uint8Array): string {
-  const end = findEndOfCentralDirectory(data);
-  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  const directoryOffset = view.getUint32(end + 16, true);
-  const directorySize = view.getUint32(end + 12, true);
-  let offset = directoryOffset;
-  const candidates: string[] = [];
-  while (offset + 46 <= directoryOffset + directorySize && view.getUint32(offset, true) === 0x02014b50) {
-    const flags = view.getUint16(offset + 8, true);
-    const nameLength = view.getUint16(offset + 28, true);
-    const extraLength = view.getUint16(offset + 30, true);
-    const commentLength = view.getUint16(offset + 32, true);
-    const nameBytes = data.subarray(offset + 46, offset + 46 + nameLength);
-    const name = new TextDecoder('utf-8').decode(nameBytes);
-    if ((flags & 0x0800) !== 0 && /\.(?:xhtml?|html?)$/i.test(name) && !name.startsWith('META-INF/')) candidates.push(name);
-    offset += 46 + nameLength + extraLength + commentLength;
-  }
-  const selected = candidates[0];
-  if (!selected) throw new Error('Rito could not find an XHTML spine candidate in the EPUB archive.');
-  return selected;
-}
-
-function findEndOfCentralDirectory(data: Uint8Array): number {
-  const minimum = 22;
-  for (let offset = data.byteLength - minimum; offset >= Math.max(0, data.byteLength - 65_557); offset -= 1) {
-    if (data[offset] === 0x50 && data[offset + 1] === 0x4b && data[offset + 2] === 0x05 && data[offset + 3] === 0x06) return offset;
-  }
-  throw new Error('Rito could not find the EPUB ZIP central directory.');
 }

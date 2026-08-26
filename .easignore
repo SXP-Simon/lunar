@@ -1,0 +1,34 @@
+# Keep this file in sync with the root .gitignore.
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+*.pem
+.env*.local
+*.tsbuildinfo
+example
+/ios
+/android
+/modules/rito-rn/.tmp-codegen
+/modules/rito-rn/.pure-cxx-test
+
+# EAS only needs the Rust workspace used by rito-ffi.
+/lib/Rito/.git/
+/lib/Rito/target/
+/lib/Rito/apps/
+/lib/Rito/packages/
+/lib/Rito/docs/
+/lib/Rito/tools/

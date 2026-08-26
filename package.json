@@ -7,7 +7,7 @@
     "@expo/metro-runtime": "~57.0.13",
     "@expo/ui": "~57.0.13",
     "@gorhom/bottom-sheet": "5.2.9",
-    "@ritojs/react-native": "file:modules\\rito-rn",
+    "@ritojs/react-native": "file:modules/rito-rn",
     "@shopify/react-native-skia": "2.6.2",
     "expo": "~57.0.16",
     "expo-asset": "~57.0.14",
@@ -59,6 +59,7 @@
     "vitest": "3.2.4"
   },
   "scripts": {
+    "eas-build-pre-install": "bash scripts/eas-install-rito-toolchain.sh",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
