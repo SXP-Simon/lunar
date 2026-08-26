@@ -1,4 +1,4 @@
-import { RitoNativeError, type RitoNativeStatus } from './errors';
+import { RitoNativeError, RitoNativeSessionInvalidatedError, type RitoNativeStatus } from './errors';
 import { getRitoNativeReaderModule, type RitoNativeCallResult, type RitoNativePinnedFontFace, type RitoNativeReaderModule } from './native';
 import { decodeRitoArtifact, decodeRitoResource } from './protocol/artifact';
 import { decodeRitoPublication } from './protocol/publication';
@@ -26,8 +26,14 @@ export class RitoReaderSession {
   private readonly peekedArtifacts = new Map<string, RitoArtifact>();
   private readonly artifacts = new Map<bigint, RitoArtifact>();
   private readonly resourceCache = new Map<string, Promise<RitoResource>>();
+  private readonly backgroundCandidates = new Map<bigint, RitoArtifact>();
+  private readonly pendingForeground = new Map<bigint, NavigationToken>();
   private latestForegroundRequestId = 0n;
   private foregroundGeneration = 0;
+  private activeNavigation?: NavigationToken;
+  private invalidation?: RitoNativeSessionInvalidatedError;
+  private disposePromise?: Promise<void>;
+  private backgroundTail: Promise<void> = Promise.resolve();
   private disposed = false;
 
   constructor(readonly sessionId: bigint, options: RitoReaderSessionOptions = {}) {
@@ -56,42 +62,58 @@ export class RitoReaderSession {
     return { session, artifact };
   }
 
-  async readPublication(): Promise<RitoPublication> { return decodeRitoPublication(await this.success('readPublication', () => this.native.readPublication(this.sessionId))); }
+  async readPublication(): Promise<RitoPublication> {
+    const publication = decodeRitoPublication(await this.success('readPublication', () => this.native.readPublication(this.sessionId)));
+    if (publication.sessionId !== this.sessionId) throw new RitoNativeError(4, 'Rito publication identity does not match the session.', 'readPublication');
+    return publication;
+  }
 
   async requestArtifact(request: RitoArtifactRequest): Promise<RitoArtifact> {
     this.assertSession(request.sessionId);
-    this.noteForegroundRequest(request.requestId);
+    const navigation = this.beginNavigation(request.requestId);
     let current = request;
-    for (let index = 0; index < this.maxContinuationQuanta; index += 1) {
-      const result = await this.native.requestArtifact(this.sessionId, encodeRitoArtifactRequest(current));
-      if (result.status === STATUS_EXACT_PENDING) { current = { ...current, requestId: current.requestId + 1n, work: { ...current.work, maxForegroundQuanta: 1 } }; continue; }
-      if (result.status !== STATUS_OK) throw nativeError(result, 'requestArtifact');
-      const artifact = this.decodeCandidate(result.data, current.requestId, 'requestArtifact');
-      if (request.requestId < this.latestForegroundRequestId) {
-        await this.native.releaseArtifact(this.sessionId, artifact.artifactId).catch(() => undefined);
-        throw new RitoNativeError(5, 'Foreground request was superseded by a newer request.', 'requestArtifact');
+    try {
+      for (let index = 0; index < this.maxContinuationQuanta; index += 1) {
+        const result = await this.native.requestArtifact(this.sessionId, encodeRitoArtifactRequest(current));
+        if (result.status === STATUS_EXACT_PENDING) { current = { ...current, requestId: current.requestId + 1n, work: { ...current.work, maxForegroundQuanta: 1 } }; continue; }
+        if (result.status !== STATUS_OK) throw nativeError(result, 'requestArtifact');
+        const artifact = this.decodeCandidate(result.data, current.requestId, 'requestArtifact');
+        if (navigation.superseded) {
+          await this.releaseOrInvalidate(artifact, navigation.requestId);
+          throw navigation.error;
+        }
+        navigation.pendingArtifactId = artifact.artifactId;
+        this.pendingForeground.set(artifact.artifactId, navigation);
+        return artifact;
       }
-      return artifact;
+      throw new RitoNativeError(9, 'Rito exact seek exceeded the continuation limit.', 'requestArtifact');
+    } finally {
+      if (navigation.pendingArtifactId === undefined) this.finishNavigation(navigation);
     }
-    throw new RitoNativeError(9, 'Rito exact seek exceeded the continuation limit.', 'requestArtifact');
   }
 
   async requestAdjacent(request: RitoAdjacentRequest): Promise<RitoArtifact> {
     this.assertSession(request.sessionId);
-    this.noteForegroundRequest(request.requestId);
+    const navigation = this.beginNavigation(request.requestId);
     let current = request;
-    for (let index = 0; index < this.maxContinuationQuanta; index += 1) {
-      const result = await this.native.requestAdjacent(this.sessionId, encodeRitoAdjacentRequest(current));
-      if (result.status === STATUS_ADJACENT_PENDING) { current = { ...current, requestId: current.requestId + 1n, work: { ...current.work, maxForegroundQuanta: 1 } }; continue; }
-      if (result.status !== STATUS_OK) throw nativeError(result, 'requestAdjacent');
-      const artifact = this.decodeCandidate(result.data, current.requestId, 'requestAdjacent');
-      if (request.requestId < this.latestForegroundRequestId) {
-        await this.native.releaseArtifact(this.sessionId, artifact.artifactId).catch(() => undefined);
-        throw new RitoNativeError(5, 'Adjacent request was superseded by a newer request.', 'requestAdjacent');
+    try {
+      for (let index = 0; index < this.maxContinuationQuanta; index += 1) {
+        const result = await this.native.requestAdjacent(this.sessionId, encodeRitoAdjacentRequest(current));
+        if (result.status === STATUS_ADJACENT_PENDING) { current = { ...current, requestId: current.requestId + 1n, work: { ...current.work, maxForegroundQuanta: 1 } }; continue; }
+        if (result.status !== STATUS_OK) throw nativeError(result, 'requestAdjacent');
+        const artifact = this.decodeCandidate(result.data, current.requestId, 'requestAdjacent');
+        if (navigation.superseded) {
+          await this.releaseOrInvalidate(artifact, navigation.requestId);
+          throw navigation.error;
+        }
+        navigation.pendingArtifactId = artifact.artifactId;
+        this.pendingForeground.set(artifact.artifactId, navigation);
+        return artifact;
       }
-      return artifact;
+      throw new RitoNativeError(10, 'Rito adjacent navigation exceeded the continuation limit.', 'requestAdjacent');
+    } finally {
+      if (navigation.pendingArtifactId === undefined) this.finishNavigation(navigation);
     }
-    throw new RitoNativeError(10, 'Rito adjacent navigation exceeded the continuation limit.', 'requestAdjacent');
   }
 
   /**
@@ -102,6 +124,7 @@ export class RitoReaderSession {
   async peekAdjacent(request: RitoAdjacentRequest): Promise<RitoArtifact | undefined> {
     this.assertSession(request.sessionId);
     this.assertArtifact(request.fromArtifactId);
+    if (this.activeNavigation) throw new RitoNativeError(8, 'Neighbor preview must yield to foreground navigation.', 'peekAdjacent');
     const generation = this.foregroundGeneration;
     const result = await this.native.peekAdjacent(
       this.sessionId,
@@ -126,10 +149,32 @@ export class RitoReaderSession {
 
   async adoptForeground(request: RitoForegroundHandoff): Promise<RitoForegroundHandoffAck> {
     this.assertSession(request.sessionId);
+    const navigation = this.pendingForeground.get(request.candidateArtifactId);
+    if (navigation?.superseded) {
+      this.pendingForeground.delete(request.candidateArtifactId);
+      this.finishNavigation(navigation);
+      await this.releaseOrInvalidate({ artifactId: request.candidateArtifactId }, request.candidateArtifactId);
+      throw navigation.error;
+    }
     this.foregroundGeneration += 1;
-    const ack = decodeRitoForegroundHandoffAck(await this.success('adoptForeground', () => this.native.adoptForeground(this.sessionId, encodeRitoForegroundHandoff(request))));
-    if (ack.visibleArtifactId !== request.candidateArtifactId) throw new RitoNativeError(4, 'Foreground handoff acknowledgement does not match the candidate.', 'adoptForeground');
+    let ack: RitoForegroundHandoffAck;
+    try {
+      ack = decodeRitoForegroundHandoffAck(await this.success('adoptForeground', () => this.native.adoptForeground(this.sessionId, encodeRitoForegroundHandoff(request))));
+    } catch (error) {
+      this.pendingForeground.delete(request.candidateArtifactId);
+      if (navigation) this.finishNavigation(navigation);
+      await this.releaseOrInvalidate({ artifactId: request.candidateArtifactId }, request.candidateArtifactId);
+      throw error;
+    }
+    if (ack.visibleArtifactId !== request.candidateArtifactId) {
+      this.pendingForeground.delete(request.candidateArtifactId);
+      if (navigation) this.finishNavigation(navigation);
+      await this.releaseOrInvalidate({ artifactId: request.candidateArtifactId }, request.candidateArtifactId);
+      throw new RitoNativeError(4, 'Foreground handoff acknowledgement does not match the candidate.', 'adoptForeground');
+    }
     this.visibleArtifactId = ack.visibleArtifactId;
+    this.pendingForeground.delete(request.candidateArtifactId);
+    if (navigation) this.finishNavigation(navigation);
     await this.clearPeekedArtifacts(request.candidateArtifactId);
     return ack;
   }
@@ -138,16 +183,23 @@ export class RitoReaderSession {
   async commitPeekedArtifact(request: RitoForegroundHandoff): Promise<RitoForegroundHandoffAck> {
     this.assertSession(request.sessionId);
     this.foregroundGeneration += 1;
-    const ack = decodeRitoForegroundHandoffAck(
-      await this.success(
-        'commitPeekedArtifact',
-        () => this.native.commitPeekedArtifact(this.sessionId, encodeRitoForegroundHandoff(request)),
-      ),
-    );
+    let ack: RitoForegroundHandoffAck;
+    try {
+      ack = decodeRitoForegroundHandoffAck(
+        await this.success(
+          'commitPeekedArtifact',
+          () => this.native.commitPeekedArtifact(this.sessionId, encodeRitoForegroundHandoff(request)),
+        ),
+      );
+    } catch (error) {
+      await this.releaseCachedPeek(request.candidateArtifactId);
+      throw error;
+    }
     if (
       ack.visibleArtifactId !== request.candidateArtifactId ||
       ack.replacedArtifactId !== request.expectedVisibleArtifactId
     ) {
+      await this.releaseCachedPeek(request.candidateArtifactId);
       throw new RitoNativeError(4, 'Peeked foreground acknowledgement does not match the handoff.', 'commitPeekedArtifact');
     }
     this.visibleArtifactId = ack.visibleArtifactId;
@@ -162,16 +214,21 @@ export class RitoReaderSession {
     const key = peekKey(request.fromArtifactId, request.direction);
     const cached = this.peekedArtifacts.get(key);
     if (cached && this.visibleArtifactId === request.fromArtifactId) {
-      await this.commitPeekedArtifact({
-        sessionId: request.sessionId,
-        expectedVisibleArtifactId: request.fromArtifactId,
-        candidateArtifactId: cached.artifactId,
-      });
-      return cached;
+      try {
+        await this.commitPeekedArtifact({
+          sessionId: request.sessionId,
+          expectedVisibleArtifactId: request.fromArtifactId,
+          candidateArtifactId: cached.artifactId,
+        });
+        return cached;
+      } catch (error) {
+        if (error instanceof RitoNativeSessionInvalidatedError) throw error;
+      }
     }
-    if (cached) {
+    const staleCached = this.peekedArtifacts.get(key);
+    if (staleCached) {
       this.peekedArtifacts.delete(key);
-      await this.releaseArtifact(cached.artifactId).catch(() => undefined);
+      await this.releaseArtifact(staleCached.artifactId).catch(() => undefined);
     }
     const artifact = await this.requestAdjacent(request);
     await this.adoptForeground({
@@ -183,21 +240,50 @@ export class RitoReaderSession {
   }
 
   async advanceBackground(request: RitoBackgroundRequest): Promise<RitoBackgroundAdvance> {
+    const run = this.backgroundTail.then(
+      () => this.advanceBackgroundOnce(request),
+      () => this.advanceBackgroundOnce(request),
+    );
+    this.backgroundTail = run.then(() => undefined, () => undefined);
+    return run;
+  }
+
+  private async advanceBackgroundOnce(request: RitoBackgroundRequest): Promise<RitoBackgroundAdvance> {
     this.assertSession(request.sessionId);
+    if (this.activeNavigation) throw new RitoNativeError(8, 'Background pagination must yield to foreground navigation.', 'advanceBackground');
+    const generation = this.foregroundGeneration;
     const advance = decodeRitoBackgroundAdvance(await this.success('advanceBackground', () => this.native.advanceBackground(this.sessionId, encodeRitoBackgroundRequest(request))));
     if (advance.intentRequestId <= 0n || (advance.artifact && advance.artifact.sessionId !== this.sessionId)) {
       throw new RitoNativeError(4, 'Background artifact identity does not match the session.', 'advanceBackground');
     }
-    if (advance.artifact) this.rememberArtifact(advance.artifact);
+    if (advance.artifact) {
+      this.rememberArtifact(advance.artifact);
+      this.backgroundCandidates.set(advance.artifact.artifactId, advance.artifact);
+      if (generation !== this.foregroundGeneration || this.activeNavigation) {
+        await this.releaseOrInvalidate(advance.artifact, advance.intentRequestId);
+        throw new RitoNativeError(5, 'Background candidate was superseded by foreground navigation.', 'advanceBackground');
+      }
+    }
     return advance;
   }
 
   async adoptBackground(request: RitoBackgroundHandoff): Promise<RitoBackgroundHandoffAck> {
     this.assertSession(request.sessionId);
+    if (this.activeNavigation) throw new RitoNativeError(8, 'Background adoption must yield to foreground navigation.', 'adoptBackground');
+    const candidate = this.backgroundCandidates.get(request.candidateArtifactId);
+    if (!candidate) throw new RitoNativeError(1, 'Background candidate is not owned by this session.', 'adoptBackground');
+    if (this.visibleArtifactId !== request.expectedVisibleArtifactId) {
+      await this.releaseOrInvalidate(candidate, request.candidateArtifactId);
+      throw new RitoNativeError(5, 'Background candidate no longer matches the visible artifact.', 'adoptBackground');
+    }
     this.foregroundGeneration += 1;
     const ack = decodeRitoBackgroundHandoffAck(await this.success('adoptBackground', () => this.native.adoptBackground(this.sessionId, encodeRitoBackgroundHandoff(request))));
-    if (ack.visibleArtifactId !== request.candidateArtifactId) throw new RitoNativeError(4, 'Background handoff acknowledgement does not match the candidate.', 'adoptBackground');
+    if (ack.visibleArtifactId !== request.candidateArtifactId) {
+      await this.releaseOrInvalidate(candidate, request.candidateArtifactId);
+      throw new RitoNativeError(4, 'Background handoff acknowledgement does not match the candidate.', 'adoptBackground');
+    }
     this.visibleArtifactId = ack.visibleArtifactId;
+    this.backgroundCandidates.delete(request.candidateArtifactId);
     await this.clearPeekedArtifacts(request.candidateArtifactId);
     return ack;
   }
@@ -235,21 +321,102 @@ export class RitoReaderSession {
   async search(request: RitoSearchRequest): Promise<RitoSearchResponse> { this.assertSession(request.sessionId); this.assertArtifact(request.artifactId); const response = decodeRitoSearchResponse(await this.success('search', () => this.native.search(this.sessionId, encodeRitoSearchRequest(request)))); if (response.artifactId !== request.artifactId || response.query !== request.query) throw new RitoNativeError(4, 'Search response does not match the request.', 'search'); return response; }
   async textRangeGeometry(request: RitoTextRangeRequest): Promise<RitoTextRangeGeometry> { this.assertSession(request.sessionId); this.assertArtifact(request.artifactId); const response = decodeRitoTextRangeGeometry(await this.success('textRangeGeometry', () => this.native.textRangeGeometry(this.sessionId, encodeRitoTextRangeRequest(request)))); if (response.artifactId !== request.artifactId || response.pageIndex !== request.pageIndex) throw new RitoNativeError(4, 'Text geometry response does not match the request.', 'textRangeGeometry'); return response; }
   async readFootnote(artifactId: bigint, key: string): Promise<RitoFootnote> { this.assertArtifact(artifactId); const response = decodeRitoFootnote(await this.success('readFootnote', () => this.native.readFootnote(this.sessionId, artifactId, key))); if (response.artifactId !== artifactId || response.key !== key) throw new RitoNativeError(4, 'Footnote response does not match the request.', 'readFootnote'); return response; }
-  async releaseArtifact(artifactId: bigint): Promise<void> { this.assertArtifact(artifactId); const result = await this.native.releaseArtifact(this.sessionId, artifactId); if (result.status !== STATUS_OK) throw nativeError(result, 'releaseArtifact'); for (const [key, artifact] of this.peekedArtifacts) if (artifact.artifactId === artifactId) this.peekedArtifacts.delete(key); for (const key of this.resourceCache.keys()) if (key.startsWith(`${artifactId.toString()}:`)) this.resourceCache.delete(key); this.artifacts.delete(artifactId); if (this.visibleArtifactId === artifactId) this.visibleArtifactId = undefined; }
-  async dispose(): Promise<void> { if (this.disposed) return; const result = await this.native.dispose(this.sessionId); if (result.status !== STATUS_OK && result.status !== 2) throw nativeError(result, 'dispose'); this.disposed = true; this.visibleArtifactId = undefined; this.peekedArtifacts.clear(); this.resourceCache.clear(); this.artifacts.clear(); }
+  async releaseArtifact(artifactId: bigint): Promise<void> {
+    this.assertArtifact(artifactId);
+    try {
+      const result = await this.native.releaseArtifact(this.sessionId, artifactId);
+      if (result.status !== STATUS_OK && result.status !== 2) throw nativeError(result, 'releaseArtifact');
+    } catch (error) {
+      return this.failClosed(artifactId, error);
+    }
+    this.forgetArtifact(artifactId);
+  }
+
+  async dispose(): Promise<void> {
+    if (this.invalidation) throw this.invalidation;
+    if (this.disposed) return;
+    try {
+      await this.disposeNative();
+    } finally {
+      this.disposed = true;
+      this.visibleArtifactId = undefined;
+      this.peekedArtifacts.clear();
+      this.resourceCache.clear();
+      this.artifacts.clear();
+      this.backgroundCandidates.clear();
+      this.pendingForeground.clear();
+    }
+  }
 
   get currentVisibleArtifactId(): bigint | undefined { return this.visibleArtifactId; }
+  get latestRequestId(): bigint { return this.latestForegroundRequestId; }
+  get nextRequestId(): bigint { if (this.latestForegroundRequestId >= 0x7fff_ffff_ffff_ffffn) throw new RangeError('Rito request ID space is exhausted.'); return this.latestForegroundRequestId + 1n; }
 
   private async success(operation: string, call: () => Promise<RitoNativeCallResult>): Promise<Uint8Array> { const result = await call(); if (result.status !== STATUS_OK) throw nativeError(result, operation); return result.data; }
   private decodeCandidate(data: Uint8Array, requestId: bigint, operation: string): RitoArtifact { const artifact = decodeRitoArtifact(data); if (artifact.sessionId !== this.sessionId || artifact.requestId !== requestId) throw new RitoNativeError(4, 'Rito artifact identity does not match the request.', operation); this.rememberArtifact(artifact); return artifact; }
   private rememberArtifact(artifact: RitoArtifact): void { this.artifacts.set(artifact.artifactId, artifact); }
-  private noteForegroundRequest(requestId: bigint): void {
+  private beginNavigation(requestId: bigint): NavigationToken {
+    this.assertSession(this.sessionId);
     if (requestId <= 0n) throw new RangeError('Rito foreground request ID must be positive.');
+    if (requestId <= this.latestForegroundRequestId) throw new RangeError(`Rito request ID must be greater than ${this.latestForegroundRequestId.toString()}.`);
+    this.latestForegroundRequestId = requestId;
     this.foregroundGeneration += 1;
-    if (requestId > this.latestForegroundRequestId) this.latestForegroundRequestId = requestId;
+    this.activeNavigation && (this.activeNavigation.superseded = true);
+    const navigation = new NavigationToken(requestId, this.latestForegroundRequestId);
+    this.activeNavigation = navigation;
     if (this.peekedArtifacts.size > 0) {
       void this.clearPeekedArtifacts();
     }
+    return navigation;
+  }
+  private finishNavigation(navigation: NavigationToken): void {
+    if (this.activeNavigation === navigation) this.activeNavigation = undefined;
+  }
+  private async releaseOrInvalidate(artifact: Pick<RitoArtifact, 'artifactId'>, requestId: bigint): Promise<void> {
+    try {
+      const result = await this.native.releaseArtifact(this.sessionId, artifact.artifactId);
+      if (result.status !== STATUS_OK && result.status !== 2) throw nativeError(result, 'releaseArtifact');
+      this.forgetArtifact(artifact.artifactId);
+    } catch (error) {
+      return this.failClosed(requestId, error);
+    }
+  }
+  private async failClosed(requestId: bigint, cleanupError: unknown): Promise<never> {
+    if (this.invalidation) throw this.invalidation;
+    this.disposed = true;
+    let disposeError: unknown;
+    try {
+      await this.disposeNative();
+    } catch (error) {
+      disposeError = error;
+    }
+    this.invalidation = new RitoNativeSessionInvalidatedError(requestId, cleanupError, disposeError);
+    this.visibleArtifactId = undefined;
+    this.peekedArtifacts.clear();
+    this.resourceCache.clear();
+    this.artifacts.clear();
+    this.backgroundCandidates.clear();
+    this.pendingForeground.clear();
+    throw this.invalidation;
+  }
+  private async disposeNative(): Promise<void> {
+    if (!this.disposePromise) {
+      this.disposePromise = (async () => {
+        const result = await this.native.dispose(this.sessionId);
+        if (result.status !== STATUS_OK && result.status !== 2) throw nativeError(result, 'dispose');
+      })();
+    }
+    return this.disposePromise;
+  }
+  private forgetArtifact(artifactId: bigint): void {
+    for (const [key, artifact] of this.peekedArtifacts) if (artifact.artifactId === artifactId) this.peekedArtifacts.delete(key);
+    for (const key of this.resourceCache.keys()) if (key.startsWith(`${artifactId.toString()}:`)) this.resourceCache.delete(key);
+    this.artifacts.delete(artifactId);
+    this.backgroundCandidates.delete(artifactId);
+    const navigation = this.pendingForeground.get(artifactId);
+    this.pendingForeground.delete(artifactId);
+    if (navigation) this.finishNavigation(navigation);
+    if (this.visibleArtifactId === artifactId) this.visibleArtifactId = undefined;
   }
   private async clearPeekedArtifacts(keepArtifactId?: bigint): Promise<void> {
     const pending = [...this.peekedArtifacts.values()];
@@ -265,7 +432,17 @@ export class RitoReaderSession {
         .map((artifact) => this.native.releaseArtifact(this.sessionId, artifact.artifactId).catch(() => undefined)),
     );
   }
-  private assertSession(sessionId: bigint): void { if (this.disposed) throw new Error('Rito reader session has been disposed.'); if (sessionId !== this.sessionId) throw new RitoNativeError(1, 'Rito request session ID does not match the session.', 'session'); }
+  private async releaseCachedPeek(artifactId: bigint): Promise<void> {
+    let found = false;
+    for (const [key, artifact] of this.peekedArtifacts) {
+      if (artifact.artifactId === artifactId) {
+        this.peekedArtifacts.delete(key);
+        found = true;
+      }
+    }
+    if (found) await this.releaseOrInvalidate({ artifactId }, artifactId);
+  }
+  private assertSession(sessionId: bigint): void { if (this.invalidation) throw this.invalidation; if (this.disposed) throw new Error('Rito reader session has been disposed.'); if (sessionId !== this.sessionId) throw new RitoNativeError(1, 'Rito request session ID does not match the session.', 'session'); }
   private assertArtifact(artifactId: bigint): void { this.assertSession(this.sessionId); if (artifactId <= 0n) throw new RitoNativeError(1, 'Rito artifact ID must be positive.', 'artifact'); }
 }
 
@@ -278,6 +455,17 @@ function resourceKind(kind: number): RitoResource['kind'] {
   if (kind === 1) return 'font';
   if (kind === 2) return 'stylesheet';
   throw new RangeError('Rito resource kind must be 0, 1, or 2.');
+}
+
+class NavigationToken {
+  superseded = false;
+  pendingArtifactId?: bigint;
+
+  constructor(readonly requestId: bigint, readonly replacementRequestId: bigint) {}
+
+  get error(): RitoNativeError {
+    return new RitoNativeError(5, `Rito navigation request ${this.requestId.toString()} was superseded by ${this.replacementRequestId.toString()}.`, 'request');
+  }
 }
 
 function nativeError(result: RitoNativeCallResult, operation: string): RitoNativeError { return new RitoNativeError(result.status as RitoNativeStatus, result.error || 'Rito native operation failed.', operation); }

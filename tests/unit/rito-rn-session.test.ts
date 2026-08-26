@@ -54,6 +54,30 @@ describe('RitoReaderSession neighbor navigation', () => {
     expect(second).toBe(first);
     expect(calls.filter((operation) => operation === 'readResource')).toHaveLength(1);
   });
+
+  it('keeps background pagination behind an uncommitted foreground candidate', async () => {
+    let adoptionCount = 0;
+    const native = fakeNative((operation) => {
+      if (operation === 'requestAdjacent') return result(artifactWire(1n, 2n, 2n));
+      if (operation === 'adoptForeground') {
+        adoptionCount += 1;
+        return result(foregroundAck(adoptionCount === 1 ? 1n : 2n, adoptionCount === 1 ? undefined : 1n, adoptionCount === 1 ? 1n : 2n));
+      }
+      return result(new Uint8Array());
+    });
+    const session = new RitoReaderSession(1n, { native });
+    await session.adoptForeground({ sessionId: 1n, candidateArtifactId: 1n });
+    const candidate = await session.requestAdjacent({
+      sessionId: 1n,
+      requestId: 2n,
+      fromArtifactId: 1n,
+      direction: 'next',
+      work: { maxTopLevelNodesPerQuantum: 8, maxForegroundQuanta: 1, localPageCap: 8 },
+    });
+    await expect(session.advanceBackground({ sessionId: 1n, expectedVisibleArtifactId: 1n, maxTopLevelNodesPerQuantum: 8 })).rejects.toMatchObject({ status: 8 });
+    await session.adoptForeground({ sessionId: 1n, expectedVisibleArtifactId: 1n, candidateArtifactId: candidate.artifactId });
+    expect(session.currentVisibleArtifactId).toBe(2n);
+  });
 });
 
 function fakeNative(handler: (operation: string) => RitoNativeCallResult): RitoNativeReaderModule {

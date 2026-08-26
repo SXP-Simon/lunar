@@ -24,6 +24,18 @@ export class RitoNativeError extends Error {
   }
 }
 
+export class RitoNativeSessionInvalidatedError extends RitoNativeError {
+  constructor(
+    readonly requestId: bigint,
+    readonly cleanupError: unknown,
+    readonly disposeError?: unknown,
+  ) {
+    const suffix = disposeError === undefined ? '' : ` Session disposal also failed: ${String(disposeError)}`;
+    super(11, `Rito session was invalidated while releasing request ${requestId.toString()}: ${String(cleanupError)}.${suffix}`, 'cleanup');
+    this.name = 'RitoNativeSessionInvalidatedError';
+  }
+}
+
 export class RitoNativeModuleUnavailableError extends Error {
   constructor() {
     super('The NativeRitoReader Turbo Module is unavailable in this build.');

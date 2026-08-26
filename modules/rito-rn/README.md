@@ -90,7 +90,7 @@ cd android
 | `cargo check --manifest-path crates/rito-ffi/Cargo.toml` | Windows 宿主 | 通过 | Rito FFI Rust 源码检查完成。 |
 | `cargo +1.95.0 ndk -t arm64-v8a build --release -p rito-ffi` | Android `arm64-v8a` | 通过 | 生成 `librito_ffi.a`。 |
 | `pnpm run typecheck` | TypeScript | 通过 | 根项目类型检查完成。 |
-| `pnpm run test` | TypeScript | 通过 | 11 个测试文件，40 项断言全部通过。 |
+| `pnpm run test` | TypeScript | 通过 | 11 个测试文件，41 项断言全部通过。 |
 | Expo prebuild | Android | 通过 | Expo 配置插件可以生成原生工程。 |
 | React Native Codegen | Android | 通过 | `RitoReactNativeSpec` 生成成功。 |
 | Pure C++ 自动链接检查 | Android | 通过 | `isPureCxxDependency` 为 `true`，生成的 `autolinking.cpp` 包含 `NativeRitoReader` provider。 |
@@ -123,24 +123,23 @@ cd android
 | 预览工件释放 | 完成 | 新的前台请求会清理旧预览，提交前台或后台工件时会释放其余预览。 |
 | 资源读取去重 | 完成 | 同一工件、类型和资源地址的并发读取共享一个 Promise，工件释放时清理缓存。 |
 | 字体声明检查 | 部分完成 | 读取登记工件的字体资源时校验字节长度；字体注册缓存仍由阅读层负责。 |
-| 前台请求最新优先 | 部分完成 | 会话识别较旧的返回工件并释放，原生队列仍负责请求替换和执行顺序。 |
+| 前台与后台并发控制 | 完成 | 活跃前台请求拥有导航令牌；新请求会标记旧请求，旧候选会释放；后台推进在前台候选提交前暂停；释放失败会使会话进入失效状态。 |
 
 ## 未完成部分
 
 以下事项仍需补充，按优先级排列：
 
-1. 完善前台导航与后台分页的并发控制，包括候选工件淘汰、释放时序和会话失效后的统一处理。
-2. 增加 React Native 侧字体注册缓存，覆盖字体族、字重、字节长度和指纹校验。
-3. 增加图片缓存、租约和内存预算管理，保证页面切换期间的资源仍由可见工件持有。
-4. 补足 DisplayList 的扩展绘制类型，例如更多颜色空间、边框样式、重复贴图方式和四角半径。
-5. 完善出版物适配层，包括目录解析、章节定位、总页数和排版进度数据的应用接口。
-6. 补充搜索结果到阅读界面的高亮、脚注展示和文字选择交互。
-7. 增加协议夹具、原生内存释放、会话销毁、并发请求和设备首帧绘制测试。
+1. 增加 React Native 侧字体注册缓存，覆盖字体族、字重、字节长度和指纹校验。
+2. 增加图片缓存、租约和内存预算管理，保证页面切换期间的资源仍由可见工件持有。
+3. 补足 DisplayList 的扩展绘制类型，例如更多颜色空间、边框样式、重复贴图方式和四角半径。
+4. 完善出版物适配层，包括目录解析、章节定位、总页数和排版进度数据的应用接口。
+5. 补充搜索结果到阅读界面的高亮、脚注展示和文字选择交互。
+6. 增加协议夹具、原生内存释放、会话销毁和设备首帧绘制测试。
 
 ## 后续事项
 
-8. 完成 iOS CocoaPods、Rust 静态库、模拟器与真机验证；Android 其他 ABI 仍按后续平台范围另行安排。
-9. 将 `RITO_FFI_SOURCE_DIR` 所需的 Rust 构建任务整理为程序包自带的发布方案，并为 npm 使用场景提供无需修改宿主工程源码的配置方式。
-10. `rito_ffi.h` 当前缺少固定字体导出声明，模块暂时使用 `cpp/RitoPinnedFontAbi.h` 保持 ABI 对接；上游头文件补充后需要移除临时声明。
+7. 完成 iOS CocoaPods、Rust 静态库、模拟器与真机验证；Android 其他 ABI 仍按后续平台范围另行安排。
+8. 将 `RITO_FFI_SOURCE_DIR` 所需的 Rust 构建任务整理为程序包自带的发布方案，并为 npm 使用场景提供无需修改宿主工程源码的配置方式。
+9. `rito_ffi.h` 当前缺少固定字体导出声明，模块暂时使用 `cpp/RitoPinnedFontAbi.h` 保持 ABI 对接；上游头文件补充后需要移除临时声明。
 
 完成上述事项后，React Native 侧的会话能力、资源管理和页面交互可以达到 `rito_flutter` 的主要功能范围，Lunar 的 Skia 绘制仍保持在应用层。

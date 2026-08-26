@@ -4,7 +4,7 @@ export {
   type RitoNativePinnedFontFace,
   type RitoNativeReaderModule,
 } from './native';
-export { RitoNativeError, RitoNativeModuleUnavailableError, RitoWireError } from './errors';
+export { RitoNativeError, RitoNativeModuleUnavailableError, RitoNativeSessionInvalidatedError, RitoWireError } from './errors';
 export {
   RitoBinaryReader,
   RitoBinaryWriter,
