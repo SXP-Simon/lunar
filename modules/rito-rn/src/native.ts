@@ -22,7 +22,9 @@ export interface RitoNativeReaderModule {
   readPublication(sessionId: bigint): Promise<RitoNativeCallResult>;
   requestArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
   requestAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
+  peekAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
   adoptForeground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
+  commitPeekedArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
   advanceBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
   adoptBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
   readResource(sessionId: bigint, artifactId: bigint, kind: number, href: string): Promise<RitoNativeCallResult>;
@@ -76,8 +78,16 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
     return this.unwrap('requestAdjacent', this.native.requestAdjacent(toExternalIdString(sessionId), toArrayBuffer(request)));
   }
 
+  async peekAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
+    return this.unwrap('peekAdjacent', this.native.peekAdjacent(toExternalIdString(sessionId), toArrayBuffer(request)));
+  }
+
   async adoptForeground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
     return this.unwrap('adoptForeground', this.native.adoptForeground(toExternalIdString(sessionId), toArrayBuffer(request)));
+  }
+
+  async commitPeekedArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
+    return this.unwrap('commitPeekedArtifact', this.native.commitPeekedArtifact(toExternalIdString(sessionId), toArrayBuffer(request)));
   }
 
   async advanceBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {

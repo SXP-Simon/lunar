@@ -40,5 +40,8 @@ export {
   type RitoLayoutRequest,
   type RitoLocator,
   type RitoWorkBudget,
+  type RitoForegroundHandoff,
+  type RitoBackgroundRequest,
+  type RitoBackgroundHandoff,
 } from './protocol/requests';
 export { RitoReaderSession, type RitoReaderSessionOptions } from './session';

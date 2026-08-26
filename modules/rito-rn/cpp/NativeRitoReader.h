@@ -74,7 +74,15 @@ class NativeRitoReader final
       jsi::Runtime& runtime,
       std::string sessionId,
       jsi::Object request);
+  AsyncPromise<RitoNativeBufferResult> peekAdjacent(
+      jsi::Runtime& runtime,
+      std::string sessionId,
+      jsi::Object request);
   AsyncPromise<RitoNativeBufferResult> adoptForeground(
+      jsi::Runtime& runtime,
+      std::string sessionId,
+      jsi::Object request);
+  AsyncPromise<RitoNativeBufferResult> commitPeekedArtifact(
       jsi::Runtime& runtime,
       std::string sessionId,
       jsi::Object request);

@@ -31,7 +31,9 @@ export interface Spec extends TurboModule {
   readPublication(sessionId: string): Promise<NativeBufferResult>;
   requestArtifact(sessionId: string, request: Object): Promise<NativeBufferResult>;
   requestAdjacent(sessionId: string, request: Object): Promise<NativeBufferResult>;
+  peekAdjacent(sessionId: string, request: Object): Promise<NativeBufferResult>;
   adoptForeground(sessionId: string, request: Object): Promise<NativeBufferResult>;
+  commitPeekedArtifact(sessionId: string, request: Object): Promise<NativeBufferResult>;
   advanceBackground(sessionId: string, request: Object): Promise<NativeBufferResult>;
   adoptBackground(sessionId: string, request: Object): Promise<NativeBufferResult>;
   readResource(

@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "RitoOwnedBuffer.h"
+#include "RitoAbiExtensions.h"
 #include "RitoPinnedFontAbi.h"
 
 namespace facebook::react {
@@ -283,6 +284,22 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::requestAdjacent(
   }
 }
 
+AsyncPromise<RitoNativeBufferResult> NativeRitoReader::peekAdjacent(
+    jsi::Runtime& runtime,
+    std::string sessionId,
+    jsi::Object request) {
+  try {
+    const auto id = parseExternalId(sessionId, "sessionId");
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+      return invokeWireRequest(id, request, rito_peek_adjacent_v1);
+    });
+  } catch (const std::exception& exception) {
+    AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
+    promise.resolve(invalidArgumentResult(exception.what()));
+    return promise;
+  }
+}
+
 AsyncPromise<RitoNativeBufferResult> NativeRitoReader::adoptForeground(
     jsi::Runtime& runtime,
     std::string sessionId,
@@ -291,6 +308,22 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::adoptForeground(
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
       return invokeWireRequest(id, request, rito_adopt_foreground_candidate_v1);
+    });
+  } catch (const std::exception& exception) {
+    AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
+    promise.resolve(invalidArgumentResult(exception.what()));
+    return promise;
+  }
+}
+
+AsyncPromise<RitoNativeBufferResult> NativeRitoReader::commitPeekedArtifact(
+    jsi::Runtime& runtime,
+    std::string sessionId,
+    jsi::Object request) {
+  try {
+    const auto id = parseExternalId(sessionId, "sessionId");
+    return submitOperation(executor_, runtime, jsInvoker_, [id, request = copyUint8Array(runtime, request)] {
+      return invokeWireRequest(id, request, rito_commit_peeked_artifact_v1);
     });
   } catch (const std::exception& exception) {
     AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
