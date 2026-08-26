@@ -2,8 +2,8 @@ import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
 
 export type NativePinnedFontFace = {
-  /** JSI Uint8Array or ArrayBuffer carried through Codegen as an object. */
-  readonly bytes: Object;
+  /** Base64-encoded font bytes. Codegen does not preserve typed arrays. */
+  readonly bytes: string;
   readonly expectedSha256: string;
   readonly genericRole: number;
   readonly language?: string;
@@ -24,26 +24,26 @@ export type NativeBufferResult = {
  */
 export interface Spec extends TurboModule {
   open(
-    publication: Object,
-    request: Object,
+    publication: string,
+    request: string,
     fonts: readonly NativePinnedFontFace[],
   ): Promise<NativeBufferResult>;
   readPublication(sessionId: string): Promise<NativeBufferResult>;
-  requestArtifact(sessionId: string, request: Object): Promise<NativeBufferResult>;
-  requestAdjacent(sessionId: string, request: Object): Promise<NativeBufferResult>;
-  peekAdjacent(sessionId: string, request: Object): Promise<NativeBufferResult>;
-  adoptForeground(sessionId: string, request: Object): Promise<NativeBufferResult>;
-  commitPeekedArtifact(sessionId: string, request: Object): Promise<NativeBufferResult>;
-  advanceBackground(sessionId: string, request: Object): Promise<NativeBufferResult>;
-  adoptBackground(sessionId: string, request: Object): Promise<NativeBufferResult>;
+  requestArtifact(sessionId: string, request: string): Promise<NativeBufferResult>;
+  requestAdjacent(sessionId: string, request: string): Promise<NativeBufferResult>;
+  peekAdjacent(sessionId: string, request: string): Promise<NativeBufferResult>;
+  adoptForeground(sessionId: string, request: string): Promise<NativeBufferResult>;
+  commitPeekedArtifact(sessionId: string, request: string): Promise<NativeBufferResult>;
+  advanceBackground(sessionId: string, request: string): Promise<NativeBufferResult>;
+  adoptBackground(sessionId: string, request: string): Promise<NativeBufferResult>;
   readResource(
     sessionId: string,
     artifactId: string,
     kind: number,
     href: string,
   ): Promise<NativeBufferResult>;
-  search(sessionId: string, request: Object): Promise<NativeBufferResult>;
-  textRangeGeometry(sessionId: string, request: Object): Promise<NativeBufferResult>;
+  search(sessionId: string, request: string): Promise<NativeBufferResult>;
+  textRangeGeometry(sessionId: string, request: string): Promise<NativeBufferResult>;
   readFootnote(sessionId: string, artifactId: string, key: string): Promise<NativeBufferResult>;
   releaseArtifact(sessionId: string, artifactId: string): Promise<NativeBufferResult>;
   dispose(sessionId: string): Promise<NativeBufferResult>;

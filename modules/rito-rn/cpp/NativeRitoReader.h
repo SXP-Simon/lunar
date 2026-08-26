@@ -39,7 +39,7 @@ struct Bridging<RitoBinary> {
 using RitoNativeBufferResult =
     NativeRitoReaderNativeBufferResult<double, RitoBinary, std::string>;
 using RitoNativePinnedFontFace = NativeRitoReaderNativePinnedFontFace<
-    jsi::Object,
+    std::string,
     std::string,
     double,
     std::optional<std::string>>;
@@ -60,8 +60,8 @@ class NativeRitoReader final
 
   AsyncPromise<RitoNativeBufferResult> open(
       jsi::Runtime& runtime,
-      jsi::Object publication,
-      jsi::Object request,
+      std::string publication,
+      std::string request,
       std::vector<RitoNativePinnedFontFace> fonts);
   AsyncPromise<RitoNativeBufferResult> readPublication(
       jsi::Runtime& runtime,
@@ -69,31 +69,31 @@ class NativeRitoReader final
   AsyncPromise<RitoNativeBufferResult> requestArtifact(
       jsi::Runtime& runtime,
       std::string sessionId,
-      jsi::Object request);
+      std::string request);
   AsyncPromise<RitoNativeBufferResult> requestAdjacent(
       jsi::Runtime& runtime,
       std::string sessionId,
-      jsi::Object request);
+      std::string request);
   AsyncPromise<RitoNativeBufferResult> peekAdjacent(
       jsi::Runtime& runtime,
       std::string sessionId,
-      jsi::Object request);
+      std::string request);
   AsyncPromise<RitoNativeBufferResult> adoptForeground(
       jsi::Runtime& runtime,
       std::string sessionId,
-      jsi::Object request);
+      std::string request);
   AsyncPromise<RitoNativeBufferResult> commitPeekedArtifact(
       jsi::Runtime& runtime,
       std::string sessionId,
-      jsi::Object request);
+      std::string request);
   AsyncPromise<RitoNativeBufferResult> advanceBackground(
       jsi::Runtime& runtime,
       std::string sessionId,
-      jsi::Object request);
+      std::string request);
   AsyncPromise<RitoNativeBufferResult> adoptBackground(
       jsi::Runtime& runtime,
       std::string sessionId,
-      jsi::Object request);
+      std::string request);
   AsyncPromise<RitoNativeBufferResult> readResource(
       jsi::Runtime& runtime,
       std::string sessionId,
@@ -103,11 +103,11 @@ class NativeRitoReader final
   AsyncPromise<RitoNativeBufferResult> search(
       jsi::Runtime& runtime,
       std::string sessionId,
-      jsi::Object request);
+      std::string request);
   AsyncPromise<RitoNativeBufferResult> textRangeGeometry(
       jsi::Runtime& runtime,
       std::string sessionId,
-      jsi::Object request);
+      std::string request);
   AsyncPromise<RitoNativeBufferResult> readFootnote(
       jsi::Runtime& runtime,
       std::string sessionId,
