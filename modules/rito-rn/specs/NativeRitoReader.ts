@@ -2,7 +2,7 @@ import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
 
 export type NativePinnedFontFace = {
-  /** JSI Uint8Array. Codegen exposes binary values as objects in RN 0.86. */
+  /** JSI Uint8Array or ArrayBuffer carried through Codegen as an object. */
   readonly bytes: Object;
   readonly expectedSha256: string;
   readonly genericRole: number;

@@ -159,8 +159,7 @@ function toNativeFontRole(role: RitoNativePinnedFontFace['genericRole']): number
 }
 
 function toUint8Array(value: Uint8Array): Uint8Array {
-  // The C++ bridge validates binary arguments with JSI's isUint8Array().
-  // Preserve the typed-array object instead of passing an ArrayBuffer, while
-  // retaining any caller-supplied byte offset and length.
+  // Preserve the typed-array view and its byte range. The C++ bridge also
+  // accepts ArrayBuffer values for callers that cannot retain this view.
   return value;
 }
