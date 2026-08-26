@@ -2,7 +2,6 @@ import * as Crypto from 'expo-crypto';
 import { Asset } from 'expo-asset';
 import { File } from 'expo-file-system';
 
-import { readNativeReaderBuiltinFont } from '../native/archive-module';
 import { LUNAR_READER_FONT_FAMILY } from '../typography';
 import type { RitoNativePinnedFontFace } from './rito-native';
 
@@ -10,7 +9,7 @@ import type { RitoNativePinnedFontFace } from './rito-native';
 export async function createLunarRitoPinnedFonts(options: {
   readonly loadFontBytes?: () => Promise<Uint8Array>;
 } = {}): Promise<readonly RitoNativePinnedFontFace[]> {
-  const bytes = options.loadFontBytes ? await options.loadFontBytes() : readNativeReaderBuiltinFont();
+  const bytes = options.loadFontBytes ? await options.loadFontBytes() : await loadBundledLunarFontBytes();
   const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes as unknown as Uint8Array<ArrayBuffer>);
   const expectedSha256 = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('');
   return [{ bytes, expectedSha256, genericRole: 'serif', language: 'und' }];

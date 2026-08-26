@@ -90,7 +90,7 @@ cd android
 | `cargo check --manifest-path crates/rito-ffi/Cargo.toml` | Windows 宿主 | 通过 | Rito FFI Rust 源码检查完成。 |
 | `cargo +1.95.0 ndk -t arm64-v8a build --release -p rito-ffi` | Android `arm64-v8a` | 通过 | 生成 `librito_ffi.a`。 |
 | `pnpm run typecheck` | TypeScript | 通过 | 根项目类型检查完成。 |
-| `pnpm run test` | TypeScript | 通过 | 11 个测试文件，41 项断言全部通过。 |
+| `pnpm run test` | TypeScript | 通过 | 8 个测试文件，27 项断言全部通过。 |
 | Expo prebuild | Android | 通过 | Expo 配置插件可以生成原生工程。 |
 | React Native Codegen | Android | 通过 | `RitoReactNativeSpec` 生成成功。 |
 | Pure C++ 自动链接检查 | Android | 通过 | `isPureCxxDependency` 为 `true`，生成的 `autolinking.cpp` 包含 `NativeRitoReader` provider。 |

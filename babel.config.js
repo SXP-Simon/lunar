@@ -8,7 +8,7 @@ module.exports = function configureBabel(api) {
         {
           bundleMode: true,
           importForwarding: {
-            moduleNames: ['@ritojs/core', '@shopify/react-native-skia'],
+            moduleNames: ['@shopify/react-native-skia'],
             relativePaths: ['src/reader'],
           },
         },

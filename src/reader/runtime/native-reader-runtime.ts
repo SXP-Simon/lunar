@@ -8,7 +8,7 @@ import type {
   ReaderRenderFrame,
   ReaderSnapshot,
 } from '../contracts';
-import { readNativeReaderBuiltinFont } from '../native/archive-module';
+import { loadBundledLunarFontBytes } from '../rito/pinned-font';
 import { LunarSkiaFontRegistry } from '../skia/fonts/font-registry';
 import { SkiaImageCache } from '../skia/images/image-decoder';
 import {
@@ -18,12 +18,8 @@ import {
 import { LunarSkiaTextMeasurer } from '../skia/text/text-measurer';
 import { LUNAR_READER_FONT_FAMILY } from '../typography';
 import { FrameCache } from './frame-cache';
-import { ReaderPublicationLoader } from './publication-loader';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackend } from './pagination-backend';
-import { LocalPaginationBackend } from './local-pagination-backend';
-import { createReaderLayoutFingerprint } from './background-runtime-protocol';
-import { RITO_VERSION } from '../rito';
 
 export type ReaderBookDataLoader = (request: ReaderOpenRequest) => Promise<ArrayBuffer>;
 
@@ -53,8 +49,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
   constructor(
     private readonly loadData: ReaderBookDataLoader,
-    private readonly publicationLoader = new ReaderPublicationLoader(),
-    private readonly paginationBackend: ReaderPaginationBackend = new LocalPaginationBackend(publicationLoader),
+    private readonly paginationBackend: ReaderPaginationBackend,
   ) {}
 
   getSnapshot(): ReaderSnapshot {
@@ -187,7 +182,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     }
 
     const fontRegistry = new LunarSkiaFontRegistry();
-    fontRegistry.loadBuiltinFont(readNativeReaderBuiltinFont());
+    fontRegistry.loadBuiltinFont(await loadBundledLunarFontBytes());
     const textMeasurer = new LunarSkiaTextMeasurer(fontRegistry);
     this.fontRegistry = fontRegistry;
     this.textMeasurer = textMeasurer;
@@ -199,13 +194,6 @@ export class LunarReaderRuntime implements ReaderRuntime {
       request,
       revisionId: this.snapshot.revisionId,
       operationId: operation,
-      cacheKey: createReaderLayoutFingerprint({
-        bookHash: request.bookId,
-        ritoVersion: RITO_VERSION,
-        rendererVersion: 'react-native-skia-2.6.2',
-        layout: request,
-        fontFingerprint: LUNAR_READER_FONT_FAMILY,
-      }),
       signal: this.abortController?.signal ?? new AbortController().signal,
       fontRegistry,
       textMeasurer,

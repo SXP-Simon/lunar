@@ -15,7 +15,7 @@ Lunar 的名称来自 **L**ocal-first, **U**ltra-fast, **N**ext-gen **A**rchive 
 
 ## 2. 技术判断
 
-使用 Rito 分页并由 React Native Skia 绘制具备实现基础，前提是采用 Rito `0.13.0` 提供的平台中立接口，并先完成双平台原型验证。
+使用 Rito 1.0.0 分页并由 React Native Skia 绘制具备实现基础，当前先验证 Android arm64，再补充 iOS 工具链。
 
 GPU 绘制提升页面合成、缩放、过渡动画和重复帧播放的效率。EPUB 解压、XHTML 解析、CSS 计算、文字测量和分页仍属于 CPU 计算。产品性能依赖分页调度、字体测量缓存、图片解码缓存与相邻页预备，不能仅以 GPU 绘制代替这些工作。
 
@@ -23,7 +23,7 @@ GPU 绘制提升页面合成、缩放、过渡动画和重复帧播放的效率�
 
 | 项目 | 判断 | 工程要求 |
 |---|---|---|
-| Rito 分页 | 可采用 | 精确固定 `@ritojs/core@0.13.0`，通过兼容测试后进入功能开发 |
+| Rito 分页 | 可采用 | 通过 `@ritojs/react-native` Turbo Module 调用 Rito 1.0.0 Rust FFI |
 | RN Skia 绘制 | 可采用 | 实现完整的 DisplayList 命令执行器，并与 Rito Web Canvas 生成的基准图比较 |
 | 嵌入字体 | 可采用 | 字体注册、文字测量和绘制共享同一 `LunarFontResolver` |
 | EPUB 图片 | 可采用 | 使用 Skia 解码器按需解码，限制缓存容量 |
@@ -32,18 +32,18 @@ GPU 绘制提升页面合成、缩放、过渡动画和重复帧播放的效率�
 
 ### 2.2 Rito 版本依据
 
-截至 2026-08-20，npm 的 `latest` 标签仍指向 `0.7.1`，`next` 标签指向 `0.13.0`。两个版本对原生 Skia 方案的支持程度不同。
+当前工程使用 `lib/Rito` 提供的 Rito 1.0.0 源码，并通过 `@ritojs/react-native` 连接 Rust FFI。
 
-| 能力 | `0.7.1` | `0.13.0` |
-|---|---|---|
-| 平台中立主入口 | 有限 | 完整公开 |
-| `DisplayList` 与 `DrawCommand` | 未公开 | 公开 |
-| `buildPageDisplayList` 与 `buildSpreadDisplayList` | 未公开 | 公开 |
-| `FontRegistry` 与 `ImageDecoder` | 未公开 | 公开 |
-| 浏览器类型依赖 | 分页资源类型仍引用 `ImageBitmap` | Web 能力隔离在 `@ritojs/core/web` |
-| RN Skia 适配 | 需要维护 Rito 分支 | 可通过公开适配接口实现 |
+| 能力 | Rito 1.0.0 |
+|---|---|
+| 平台中立主入口 | 由 Rust FFI 与 React Native Turbo Module 提供 |
+| `DisplayList` 与 `DrawCommand` | 通过 RITODL1 二进制协议传输 |
+| 页面与 Spread 生成 | 由 Rito Rust 内核完成 |
+| 字体与图片 | 由 React Native Skia 宿主层准备 |
+| 浏览器类型依赖 | Rust FFI 传出平台无关二进制工件 |
+| RN Skia 适配 | 使用 `src/reader/rito` 与 `src/reader/skia` 适配 |
 
-Lunar 精确固定 `0.13.0`，并把全部 Rito 调用限制在 `src/reader/rito`。应用业务代码仅依赖 Lunar 自有的 `ReaderRuntime` 接口。Rito 升级时先运行 EPUB 基准图、位置恢复、字体、图片和内存测试，再更新版本。
+Lunar 固定 Rito 1.0.0 的 FFI 源码，并把 Rito 类型转换限制在 `src/reader/rito` 与 `modules/rito-rn`。应用业务代码仅依赖 Lunar 自有的 `ReaderRuntime` 接口。
 
 ## 3. 技术基线
 
@@ -65,13 +65,13 @@ Expo SDK 57 对应 React Native 0.86、React 19.2.3、React Native Web 0.21 和 
 
 | 程序包 | 版本策略 | 用途 |
 |---|---|---|
-| `@ritojs/core` | 精确固定 `0.13.0` | EPUB 解析、样式计算、分页、DisplayList、位置模型 |
+| `@ritojs/react-native` | 固定 Rito 1.0.0 FFI | EPUB 解析、样式计算、分页、DisplayList、位置模型 |
 | `@shopify/react-native-skia` | Expo SDK 57 推荐版本 `2.6.2` | Canvas、字体、图片、`SkPicture` 和 GPU 绘制 |
 | `react-native-gesture-handler` | Expo 配套版本 | 点击分区、滑动翻页和长按 |
 | `react-native-reanimated` | Expo 配套版本 | 工具栏与翻页动画 |
-| `react-native-worklets` | Expo 配套版本 | UI Runtime 承载动画；独立 Worker Runtime 承载 Rito 全书分页 |
+| `react-native-worklets` | Expo 配套版本 | UI Runtime 承载动画 |
 
-Rito 主入口 `@ritojs/core` 用于平台中立功能。`@ritojs/core/web` 依赖 Canvas、`FontFace`、`createImageBitmap` 等浏览器接口，移动端代码禁止导入该入口。`@ritojs/core/advanced` 仅允许出现在 Rito Adapter 内，用于增量分页和命中信息生成。
+Rito 的平台中立计算由 Rust FFI 完成，React Native 只接收版本化二进制工件和资源。移动端代码通过 `@ritojs/react-native` 访问会话能力。
 
 ### 3.3 本地能力
 
@@ -113,11 +113,10 @@ Expo 原生程序包均通过 `pnpm exec expo install` 安装，由 Expo 选择�
       ▼
 ReaderRuntime
       │
-      ├── Rito Adapter
-      │     ├── loadEpub
-      │     ├── PaginationSession
-      │     ├── buildSpreads
-      │     ├── buildSpreadDisplayList
+      ├── Rito Native Backend
+      │     ├── RitoReaderSession
+      │     ├── RITOREQ1、RITONAV1
+      │     ├── RITOART1、RITODL1
       │     └── locator、HitMap、语义数据
       │
       ├── SkiaFontRegistry 与 SkiaTextMeasurer
@@ -138,7 +137,7 @@ ReaderRuntime
 | 模块 | 职责 |
 |---|---|
 | `ReaderRuntime` | 管理打开、分页、版面修订、导航、资源释放和错误状态 |
-| `RitoAdapter` | 封装 Rito 公开接口和少量 advanced 接口，隔离版本变化 |
+| `RitoNativePaginationBackend` | 封装 Rito 1.0.0 会话、工件和资源生命周期 |
 | `ReaderTypography` | 定义平台无关的排版参数、默认值、输入规范化与版面标识 |
 | `SkiaTextMeasurer` | 使用内置阅读字体的 `SkFont` 执行本地后备测量 |
 | `SkiaFontRegistry` | 从内置字体字节创建固定 Typeface，并按书籍生命周期释放 |
@@ -156,10 +155,10 @@ ReaderRuntime
 
 1. 文件服务从 `Paths.document/books/<bookId>/book.epub` 创建 `File`。
 2. `File.arrayBuffer()` 读取二进制，保持 `ArrayBuffer` 形式传给 Rito，避免 Base64 字符串。
-3. `loadEpub()` 解析容器、清单、书脊、目录、XHTML 和 CSS。
+3. `NativeRitoReader` 将 EPUB 字节交给 Rito 1.0.0 Rust FFI，解析容器、清单、书脊、目录、XHTML 和 CSS。
 4. 原生模块从应用资源读取内置霞鹜文楷，Skia 从同一份 TTF 字节创建 Typeface。
 5. `SkiaTextMeasurer` 与绘制器共享同一字体管理器和字体匹配规则。
-6. `PaginationSession` 按书脊顺序逐章分页，每完成一章便向事件循环让出执行机会。
+6. Rito 会话按请求预算推进分页，每次异步调用只执行一个有限量子。
 7. Rito 生成 Page、Spread、DisplayList、HitMap 和位置索引。
 8. 当前页和相邻页编译为 `SkPicture`，RN Skia Canvas 播放当前帧。
 
@@ -189,7 +188,7 @@ ReaderRuntime
 
 1. 正文固定使用内置霞鹜文楷 Regular，EPUB 字体声明和系统字体不参与正文测量。
 2. 字体族、字重、斜体、字号、字距和词距共同组成测量缓存键。
-3. Worker Runtime 内由 Lunar 自有 JSI HostObject 调用该 TTF 的原生测量服务；本地后备测量使用同一 Typeface 的 `SkFont.measureText()`。
+3. Rito Rust FFI 在原生执行线程内完成排版测量；Skia 绘制阶段使用同一份固定字体字节。
 4. 绘制阶段复用同一 Typeface，禁止改用 React Native `Text` 测量。
 5. 中文、英文、标点挤压、ruby 与 emoji 纳入基准图测试。
 
@@ -207,9 +206,9 @@ Rito 的 `TextMetrics.height` 表示字号内容高度，行盒高度由 Rito �
 
 RN Skia 通过 JSI 调用原生 Skia，最终页面由 GPU 绘制。Rito 是 TypeScript 程序包，默认在 React Native 的 Hermes JavaScript 运行环境中执行。首版采用章节增量分页，并在章节之间向事件循环让出执行机会。
 
-`PaginationSession` 的公开接口从书脊开头依次处理章节。首次打开可以较早显示第一页；恢复到书籍中后部时，需要等待分页推进到目标章节。Lunar 首版禁止自行修改页码偏移来跳过前置章节。阶段零同时评估版本化 `LayoutSnapshot` 缓存，只有经过 Rito 版本校验和完整性校验的快照才可用于缩短再次打开时间。
+Rito 会话按书脊和请求预算推进章节。首次打开与恢复位置均由 Rito 工件和 locator 决定，应用层不自行修改页码偏移。
 
-`react-native-worklets` 的 `createWorkletRuntime()` 创建独立 Worker Runtime。Rito 文档、分页会话、字体测量对象和资源索引均在该原生异步线程内创建与执行，主 Runtime 只接收可复制的出版物索引与页面帧数据。EPUB 字节以 `ArrayBuffer` 传入 Worker；Android 文字测量由 Lunar 原生模块通过 Worklets C++ API 向目标 Runtime 直接安装自有 JSI HostObject，不安装 Expo 类原型，也不跨 Runtime 传输 Expo `SharedObject`。每个 HostFunction 在 JNI 边界把原生异常转换为 JavaScript 错误；安装或探测失败时转入本地分页。Apple 平台在具备同等的直属 JSI 桥以前使用本地后备分页。动画计算继续使用 UI Runtime。
+`NativeRitoReader` 通过 Turbo Module 调用共享 C++ 执行器和 Rito Rust FFI。JavaScript 线程只处理请求编码、响应解码和资源生命周期；动画计算继续使用 UI Runtime。
 
 ### 6.2 后台执行门槛
 
@@ -299,9 +298,8 @@ lunar/
         pagination-scheduler.ts       章节增量分页调度
         frame-cache.ts                DisplayList、HitMap 与 SkPicture 缓存
       rito/
-        rito-adapter.ts               Rito 唯一导入位置
-        layout-config.ts              Lunar 设置到 Rito 配置的转换
-        locator.ts                    阅读位置解析与保存
+        epub-inspector.ts             EPUB 元数据检查
+        rito-native-pagination-backend.ts  Rito 会话、工件和资源适配
       skia/
         fonts/
           font-registry.ts            系统字体与书内字体资源
@@ -326,7 +324,7 @@ lunar/
   docs/
 ```
 
-业务页面禁止导入 `@ritojs/core`。`src/reader/rito/rito-adapter.ts` 是 Rito 版本变化的唯一入口。Skia 命令执行器依赖 Lunar 自有类型和 Rito 公开 `DrawCommand` 类型。
+业务页面禁止导入 `@ritojs/react-native`。`src/reader/rito` 与 `modules/rito-rn` 是 Rito 版本变化的适配边界。Skia 命令执行器依赖 Lunar 自有类型和 RITODL1 解码结果。
 
 ## 11. 本地文件与数据库
 
@@ -426,7 +424,7 @@ CREATE TABLE bookmarks (
 
 阶段零只实现最小阅读页面和必要适配器，验证项目包括：
 
-1. `@ritojs/core@0.13.0` 能在 Hermes 中导入，主入口无 DOM、Canvas 和 `ImageBitmap` 全局依赖。
+1. `@ritojs/react-native` Turbo Module 能在 Hermes 中加载，并完成 Rito 1.0.0 会话创建。
 2. Expo SDK 57 的 `File.arrayBuffer()` 可将 10 MiB、30 MiB 和 80 MiB EPUB 交给 Rito。
 3. `SkiaTextMeasurer` 和 `SkiaDisplayListRenderer` 使用内置霞鹜文楷支持中文、英文、图片、目录、ruby 与 emoji。
 4. Rito Web Canvas 和 Lunar Skia 对同一页的基准图差异处于允许范围。
@@ -506,14 +504,14 @@ CREATE TABLE bookmarks (
 
 ## 16. 安全、兼容性与许可
 
-1. EPUB 一律按外部输入处理。Rito `loadEpub` 配置压缩包大小、解压总量、单项大小、项目数量和压缩比限制。
+1. EPUB 一律按外部输入处理。Rito FFI 与书籍检查器均限制压缩包大小、解压总量、单项大小和项目数量。
 2. 书内脚本、外部资源自动请求、弹窗和任意页面跳转保持关闭。
 3. 外部链接仅允许 `https`，交给系统浏览器前展示域名确认界面。
 4. 日志只记录书籍标识、文件大小、阶段耗时、设备类别和固定错误代码。
 5. 书籍、书签和批注默认保存在设备内部，首版没有上传行为。
 6. 删除书籍时先显示确认界面，再清理数据库记录、受管 EPUB、封面和内存资源。
 7. Rito 使用 `AGPL-3.0-only`。开发投入前须确认应用源代码提供方式、商店分发义务、修改源码义务和第三方商用授权。计划采用闭源分发时，应先获得适用的商业许可或版权方书面许可。
-8. Rito 仓库当前提示该项目仍处于开发期。Lunar 通过精确版本、适配层、基准图和回归测试管理升级影响。
+8. Rito 源码由 `lib/Rito` 固定提交提供，升级前检查协议版本、FFI ABI 和原生测试结果。
 
 ## 17. 依赖安装与检查
 
@@ -523,7 +521,7 @@ CREATE TABLE bookmarks (
 pnpm exec expo install @shopify/react-native-skia
 pnpm exec expo install expo-document-picker expo-file-system expo-sqlite expo-crypto expo-keep-awake
 pnpm exec expo install react-native-svg expo-blur
-pnpm add @ritojs/core@0.13.0 --save-exact
+pnpm add @ritojs/react-native --save-exact
 pnpm add heroui-native@1.0.8 uniwind@1.11.0 tailwindcss@4.3.3 --save-exact
 pnpm add tailwind-variants@3.2.2 tailwind-merge@3.4.0 @gorhom/bottom-sheet@5.2.9 --save-exact
 pnpm add zustand zod
@@ -540,7 +538,7 @@ pnpm exec expo install --check
 pnpm test
 ```
 
-Rito 的锁定版本、完整性摘要和许可证进入开源组件清单。依赖更新工具禁止自动升级 `@ritojs/core` 和 `@shopify/react-native-skia`，这两个程序包须经过人工基准图与真机性能测试。
+Rito 的锁定版本、完整性摘要和许可证进入开源组件清单。依赖更新工具禁止自动替换 `@ritojs/react-native` 和 `@shopify/react-native-skia`，这两个程序包须经过人工基准图与真机性能测试。
 
 ## 18. 资料来源
 
@@ -563,4 +561,4 @@ Rito 的锁定版本、完整性摘要和许可证进入开源组件清单。依
 17. [HeroUI Native Provider](https://heroui.com/en/docs/native/getting-started/provider)
 18. [Uniwind Quickstart](https://docs.uniwind.dev/quickstart)
 
-Lunar 首版以 Rito `0.13.0` 负责平台中立分页，以 React Native Skia `2.6.2` 负责原生 Canvas 和 GPU 绘制。阶段零负责验证字体测量一致性、DisplayList 命令完整性、章节分页响应、内存释放和许可条件，验证通过后再扩展书库与完整阅读功能。
+Lunar 首版以 Rito 1.0.0 负责平台中立分页，以 React Native Skia `2.6.2` 负责原生 Canvas 和 GPU 绘制。阶段零负责验证字体测量一致性、DisplayList 命令完整性、章节分页响应、内存释放和许可条件，验证通过后再扩展书库与完整阅读功能。

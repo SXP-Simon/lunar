@@ -17,7 +17,7 @@ const uniwindConfig = withUniwindConfig(config, {
   dtsFile: './src/uniwind-types.d.ts',
 });
 
-// Worklets Bundle Mode redirects every react-native import to its runtime shim.
+// Bundle mode redirects runtime imports to their runtime shim when required.
 // Uniwind's own component proxy must resolve the real React Native package to
 // avoid a proxy -> shim -> proxy module cycle during native startup.
 const uniwindResolver = uniwindConfig.resolver.resolveRequest;
