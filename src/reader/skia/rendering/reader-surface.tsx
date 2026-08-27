@@ -21,7 +21,7 @@ export interface ReaderSurfaceProps {
 export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTransformChange }: ReaderSurfaceProps) {
   const { ref, size: viewport } = useCanvasSize();
   const compiled = snapshot.phase === 'ready'
-    ? runtime.getCurrentPicture(snapshot.revisionId, snapshot.spreadIndex)
+    ? runtime.getCurrentPicture(snapshot.revisionId, snapshot.spreadIndex, snapshot.renderId)
     : undefined;
   const frame = snapshot.phase === 'ready'
     ? runtime.getCurrentFrame(snapshot.spreadIndex)

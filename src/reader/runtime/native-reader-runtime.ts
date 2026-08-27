@@ -23,6 +23,11 @@ import { readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } f
 
 export type ReaderBookDataLoader = (request: ReaderOpenRequest) => Promise<ArrayBuffer>;
 
+interface RetainedReaderPicture {
+  readonly compiled: CompiledReaderPicture;
+  readonly imageLease: { release(): void };
+}
+
 export class LunarReaderRuntime implements ReaderRuntime {
   private snapshot: ReaderSnapshot = {
     phase: 'idle',
@@ -30,9 +35,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
     spreadIndex: 0,
   };
   private readonly listeners = new Set<ReaderSnapshotListener>();
-  private readonly pictures = new FrameCache<CompiledReaderPicture>(
+  private readonly pictures = new FrameCache<RetainedReaderPicture>(
     3,
-    (picture) => this.deferSkiaCleanup(() => this.pictureCompiler.dispose(picture)),
+    (retained) => this.deferSkiaCleanup(() => {
+      this.pictureCompiler.dispose(retained.compiled);
+      retained.imageLease.release();
+    }),
   );
   private readonly pictureCompiler = new SkiaPictureCompiler();
   private publication?: ReaderPublicationView;
@@ -40,7 +48,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private fontRegistry?: LunarSkiaFontRegistry;
   private textMeasurer?: LunarSkiaTextMeasurer;
   private imageCache?: SkiaImageCache;
-  private readonly imageLeases = new Map<string, { release(): void }>();
+  private readonly pictureRenderIds = new Map<string, number>();
   private request?: ReaderOpenRequest;
   private data?: ArrayBuffer;
   private operation = 0;
@@ -145,8 +153,10 @@ export class LunarReaderRuntime implements ReaderRuntime {
   getCurrentPicture(
     revisionId = this.snapshot.revisionId,
     spreadIndex = this.snapshot.spreadIndex,
+    renderId = this.pictureRenderIds.get(pictureSlotKey(revisionId, spreadIndex)),
   ): CompiledReaderPicture | undefined {
-    return this.pictures.get({ revisionId, spreadIndex });
+    if (renderId === undefined) return undefined;
+    return this.pictures.get({ revisionId, spreadIndex, renderId })?.compiled;
   }
 
   getCurrentFrame(spreadIndex = this.snapshot.spreadIndex): ReaderRenderFrame | undefined {
@@ -333,13 +343,18 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (!publication || !imageCache || !textMeasurer) {
       throw new Error('The reader resources are unavailable.');
     }
-    const key = { revisionId: this.snapshot.revisionId, spreadIndex };
+    const revisionId = this.snapshot.revisionId;
+    const slotKey = pictureSlotKey(revisionId, spreadIndex);
+    const activeRenderId = this.pictureRenderIds.get(slotKey);
     let frame = await this.paginationBackend.getFrame(this.snapshot.revisionId, spreadIndex);
     frame ??= publication.getFrame(spreadIndex);
     if (!frame) {
       throw new RangeError(`Spread ${spreadIndex} is outside the publication.`);
     }
-    if (this.pictures.get(key)) {
+    if (
+      activeRenderId !== undefined &&
+      this.pictures.get({ revisionId, spreadIndex, renderId: activeRenderId })
+    ) {
       return;
     }
     const imageLease = await imageCache.acquire(frame.imageSources);
@@ -367,25 +382,30 @@ export class LunarReaderRuntime implements ReaderRuntime {
     } finally {
       readerPerformanceEnd('reader.picture.compile', pictureStartedAt);
     }
-    this.pictures.set(key, picture);
-    this.imageLeases.set(`${key.revisionId}:${key.spreadIndex}`, imageLease);
     this.renderId += 1;
+    this.pictures.set(
+      { revisionId, spreadIndex, renderId: this.renderId },
+      { compiled: picture, imageLease },
+    );
+    this.pictureRenderIds.set(slotKey, this.renderId);
   }
 
   private invalidatePicture(spreadIndex: number): void {
-    const key = { revisionId: this.snapshot.revisionId, spreadIndex };
-    this.pictures.delete(key);
-    const leaseKey = `${key.revisionId}:${key.spreadIndex}`;
-    const lease = this.imageLeases.get(leaseKey);
-    if (lease) this.deferSkiaCleanup(() => lease.release());
-    this.imageLeases.delete(leaseKey);
+    const revisionId = this.snapshot.revisionId;
+    const slotKey = pictureSlotKey(revisionId, spreadIndex);
+    const renderId = this.pictureRenderIds.get(slotKey);
+    if (renderId === undefined) return;
+    // Touch the visible generation so inserting its replacement cannot evict
+    // it before React Skia commits the new Picture node.
+    this.pictures.get({ revisionId, spreadIndex, renderId });
+    this.pictureRenderIds.delete(slotKey);
   }
 
   /**
    * Skia may redraw a committed React tree after the runtime has emitted a
    * replacement snapshot. Delay native resource destruction until two frames
-   * have completed so the previous Picture and its images remain valid
-   * throughout that redraw. Non-visual test environments use two host tasks.
+   * have completed so an evicted, non-current Picture is no longer referenced
+   * by a committed Canvas tree.
    */
   private deferSkiaCleanup(cleanup: () => void): void {
     const run = () => {
@@ -432,7 +452,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
       bookId: this.request?.bookId,
       revisionId: this.snapshot.revisionId,
       spreadIndex,
-      renderId: this.renderId,
+      renderId: this.pictureRenderIds.get(pictureSlotKey(this.snapshot.revisionId, spreadIndex)),
       bookSpreadIndex,
       totalSpreads: bookSpreadIndex === undefined ? undefined : publication.totalSpreads,
       paginationComplete: this.paginationComplete,
@@ -479,8 +499,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
   private releaseResources(): void {
     this.pictures.clear();
-    for (const lease of this.imageLeases.values()) this.deferSkiaCleanup(() => lease.release());
-    this.imageLeases.clear();
+    this.pictureRenderIds.clear();
     const imageCache = this.imageCache;
     if (imageCache) this.deferSkiaCleanup(() => imageCache.clear());
     this.imageCache = undefined;
@@ -525,4 +544,8 @@ function clampProgression(value: number): number {
 function clampSpread(value: number, totalSpreads: number): number {
   const upper = Math.max(0, totalSpreads - 1);
   return Math.min(upper, Math.max(0, Math.round(Number.isFinite(value) ? value : 0)));
+}
+
+function pictureSlotKey(revisionId: number, spreadIndex: number): string {
+  return `${revisionId}:${spreadIndex}`;
 }

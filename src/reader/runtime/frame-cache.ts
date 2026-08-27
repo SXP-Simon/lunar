@@ -1,6 +1,7 @@
 export interface ReaderFrameKey {
   readonly revisionId: number;
   readonly spreadIndex: number;
+  readonly renderId?: number;
 }
 
 interface CacheEntry<T> {
@@ -98,5 +99,5 @@ export class FrameCache<T> {
 }
 
 function serializeFrameKey(key: ReaderFrameKey): string {
-  return `${key.revisionId}:${key.spreadIndex}`;
+  return `${key.revisionId}:${key.spreadIndex}:${key.renderId ?? 0}`;
 }

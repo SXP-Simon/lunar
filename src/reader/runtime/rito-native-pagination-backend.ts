@@ -226,7 +226,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     const targetBase = target?.split('#', 1)[0] ?? base;
     const targetAnchor = target?.includes('#') ? target.slice(target.indexOf('#') + 1) : undefined;
     const existing = this.findArtifactForTocTarget(targetBase, href, targetAnchor);
-    if (existing !== undefined) return existing;
+    if (existing !== undefined && existing === this.visibleIndex) return existing;
 
     const targetSpineIndex = this.spine.findIndex((item) => item.href === targetBase);
     if (targetSpineIndex < 0 || this.visibleArtifactId === undefined) return undefined;
