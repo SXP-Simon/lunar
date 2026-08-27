@@ -33,6 +33,10 @@ export interface SkiaDisplayListRenderOptions {
     resolveImage(source: string): SkiaImageAsset | undefined;
   };
   readonly paragraphs: SkiaParagraphFactory;
+  readonly colorOverride?: {
+    readonly backgroundColor?: string;
+    readonly foregroundColor?: string;
+  };
 }
 
 export interface LunarSkiaDisplayListRenderer {
@@ -125,17 +129,17 @@ function renderCommand(
     }
     case 'paintPage':
       if (command.paint.backgroundColor) {
-        drawFilledRect(canvas, command.rect, command.paint.backgroundColor, state.alpha);
+        drawFilledRect(canvas, command.rect, state.options.colorOverride?.backgroundColor ?? command.paint.backgroundColor, state.alpha);
       }
       return;
     case 'paintBlock':
       drawBlock(canvas, command.rect, command.paint, command.borderBox, state);
       return;
     case 'paintText':
-      drawText(canvas, command.text, command.rect, command.paint, state);
+      drawText(canvas, command.text, command.rect, command.paint, state, command.lineHeightPx);
       return;
     case 'paintRuby':
-      drawRuby(canvas, command.text, command.rect, command.paint, state, command.rubyAlign);
+      drawRuby(canvas, command.text, command.rect, command.paint, state, command.rubyAlign, command.lineHeightPx);
       return;
     case 'paintImage':
       drawImage(canvas, command.src, command.rect, state, command.sourceRect);
@@ -276,6 +280,24 @@ function drawBlockBorders(
       paint.dispose();
       return;
     }
+    const outline = toRRect(toSkRect(rect), radius);
+    const center = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    const corners = [
+      [{ x: rect.x, y: rect.y }, { x: rect.x + rect.width, y: rect.y }],
+      [{ x: rect.x + rect.width, y: rect.y }, { x: rect.x + rect.width, y: rect.y + rect.height }],
+      [{ x: rect.x + rect.width, y: rect.y + rect.height }, { x: rect.x, y: rect.y + rect.height }],
+      [{ x: rect.x, y: rect.y + rect.height }, { x: rect.x, y: rect.y }],
+    ] as const;
+    const edgeList = [borders.top, borders.right, borders.bottom, borders.left];
+    for (let index = 0; index < edgeList.length; index += 1) {
+      const edge = edgeList[index]; const width = widthsList[index];
+      if (!edge || width <= 0 || edge.style === 'none' || edge.style === 'hidden') continue;
+      const path = Skia.Path.Make();
+      path.moveTo(center.x, center.y); path.lineTo(corners[index][0].x, corners[index][0].y); path.lineTo(corners[index][1].x, corners[index][1].y); path.close();
+      canvas.save(); canvas.clipPath(path, ClipOp.Intersect, true);
+      const paint = createPaint(edge.color, alpha, PaintStyle.Stroke); paint.setStrokeWidth(width); canvas.drawRRect(outline, paint); paint.dispose(); canvas.restore(); path.dispose();
+    }
+    return;
   }
   if (borders.top && widths.topWidth > 0) {
     drawBorderLine(canvas, borders.top, widths.topWidth, rect.x, rect.y + widths.topWidth / 2, rect.x + rect.width, rect.y + widths.topWidth / 2, alpha);
@@ -297,12 +319,14 @@ function drawText(
   rect: ReaderRect,
   paint: ReaderRunPaint,
   state: RenderState,
+  lineHeightPx?: number,
 ): void {
   drawInlineBox(canvas, rect, paint, state.alpha);
   const paragraph = state.options.paragraphs.createParagraph(text, paint, {
-    color: paint.color,
+    color: state.options.colorOverride?.foregroundColor ?? paint.color,
     alpha: state.alpha,
     textShadow: paint.textShadow,
+    lineHeightPx,
   });
   try {
     paragraph.layout(SINGLE_LINE_LAYOUT_WIDTH);
@@ -333,9 +357,24 @@ function drawRuby(
   paint: ReaderRunPaint,
   state: RenderState,
   rubyAlign: 'space-around' | 'start' | 'center' | 'space-between' | undefined,
+  lineHeightPx?: number,
 ): void {
+  const align = rubyAlign ?? 'space-around';
+  if ((align === 'space-around' || align === 'space-between') && Array.from(text).length > 1) {
+    const units = Array.from(text);
+    const widths = units.map((unit) => state.options.paragraphs.measureShapedText(unit, paint).width);
+    const total = widths.reduce((sum, value) => sum + value, 0);
+    const available = Math.max(0, rect.width - total);
+    const gap = align === 'space-between' ? available / Math.max(1, units.length - 1) : available / units.length;
+    let x = rect.x + (align === 'space-around' ? gap / 2 : 0);
+    for (let index = 0; index < units.length; index += 1) {
+      drawText(canvas, units[index], { ...rect, x, width: widths[index] }, { ...paint, backgroundColor: undefined, border: undefined, padding: undefined }, state, lineHeightPx);
+      x += widths[index] + gap;
+    }
+    return;
+  }
   const measured = state.options.paragraphs.measureShapedText(text, paint).width;
-  const x = rubyAlign === 'start' ? rect.x : rubyAlign === 'center' || !rubyAlign || rubyAlign === 'space-around'
+  const x = align === 'start' ? rect.x : align === 'center' || align === 'space-around'
     ? rect.x + Math.max(0, (rect.width - measured) / 2)
     : rect.x + Math.max(0, rect.width - measured);
   drawText(
@@ -344,6 +383,7 @@ function drawRuby(
     { ...rect, x, width: measured },
     { ...paint, backgroundColor: undefined, border: undefined, padding: undefined },
     state,
+    lineHeightPx,
   );
 }
 
@@ -466,6 +506,24 @@ function drawBorderLine(
     drawBorderLine(canvas, { ...edge, style: 'solid' }, third,
       horizontal ? x1 : x1 + offset, horizontal ? y1 + offset : y1,
       horizontal ? x2 : x2 + offset, horizontal ? y2 + offset : y2, alpha);
+    return;
+  }
+  if (edge.style === 'groove' || edge.style === 'ridge') {
+    const half = Math.max(1, width / 2);
+    const horizontal = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
+    const offset = width / 4;
+    const firstAlpha = edge.style === 'groove' ? alpha * 0.55 : alpha;
+    const secondAlpha = edge.style === 'groove' ? alpha : alpha * 0.55;
+    drawBorderLine(canvas, { ...edge, color: tintBorderColor(edge.color, edge.style === 'groove' ? 0.65 : 1), style: 'solid' }, half,
+      horizontal ? x1 : x1 - offset, horizontal ? y1 - offset : y1,
+      horizontal ? x2 : x2 - offset, horizontal ? y2 - offset : y2, firstAlpha);
+    drawBorderLine(canvas, { ...edge, color: tintBorderColor(edge.color, edge.style === 'groove' ? 1 : 0.65), style: 'solid' }, half,
+      horizontal ? x1 : x1 + offset, horizontal ? y1 + offset : y1,
+      horizontal ? x2 : x2 + offset, horizontal ? y2 + offset : y2, secondAlpha);
+    return;
+  }
+  if (edge.style === 'inset' || edge.style === 'outset') {
+    drawBorderLine(canvas, { ...edge, style: 'solid' }, width, x1, y1, x2, y2, alpha * 0.8);
     return;
   }
   const paint = createPaint(edge.color, alpha, PaintStyle.Stroke);
@@ -623,6 +681,14 @@ function tilePositions(origin: number, size: number, boxStart: number, boxSize: 
 
 function clampAlpha(value: number): number {
   return Math.min(1, Math.max(0, Number.isFinite(value) ? value : 1));
+}
+
+function tintBorderColor(color: ReaderColor | string, factor: number): ReaderColor | string {
+  if (typeof color !== 'string') return color;
+  try {
+    const rgba = new Float32Array(Skia.Color(color));
+    return `rgba(${Math.round(clampAlpha(rgba[0] * factor) * 255)}, ${Math.round(clampAlpha(rgba[1] * factor) * 255)}, ${Math.round(clampAlpha(rgba[2] * factor) * 255)}, ${clampAlpha(rgba[3])})`;
+  } catch { return color; }
 }
 
 function assertNever(value: never): never {

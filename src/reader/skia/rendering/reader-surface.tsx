@@ -47,7 +47,7 @@ export function ReaderSurface({ runtime, snapshot, style, overlays = [] }: Reade
       style={style}>
       <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
         <Picture key={`${snapshot.revisionId}:${snapshot.spreadIndex}`} picture={compiled.picture} />
-        {overlays.map((overlay, index) => (
+        {overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
           <SkiaRect
             key={`${index}:${overlay.bounds.x}:${overlay.bounds.y}`}
             x={overlay.bounds.x}

@@ -33,6 +33,20 @@ function toSrgb(space: ReaderColorSpace, c0: number, c1: number, c2: number): [n
     const linear = space === 'display-p3' ? [srgbToLinear(c0), srgbToLinear(c1), srgbToLinear(c2)] as [number, number, number] : [c0, c1, c2] as [number, number, number];
     return linearRgbToSrgb(matrix(matrix(linear, [0.4865709486, 0.2656676932, 0.1982172852, 0.2289745641, 0.6917385218, 0.0792869141, 0, 0.0451133819, 1.0439443689]), [3.2409699419, -1.5373831776, -0.4986107603, -0.9692436363, 1.8759675015, 0.0415550574, 0.0556300797, -0.2039769589, 1.0569715142]));
   }
+  if (space === 'a98-rgb') {
+    const xyz = matrix([
+      signedPow(c0, 563 / 256), signedPow(c1, 563 / 256), signedPow(c2, 563 / 256),
+    ], [0.5767309, 0.1855540, 0.1881852, 0.2973769, 0.6273491, 0.0752741, 0.0270343, 0.0706872, 0.9911085]);
+    return linearRgbToSrgb(matrix(xyz, [3.2409699419, -1.5373831776, -0.4986107603, -0.9692436363, 1.8759675015, 0.0415550574, 0.0556300797, -0.2039769589, 1.0569715142]));
+  }
+  if (space === 'prophoto-rgb') {
+    const xyz = d50ToD65(matrix([prophotoToLinear(c0), prophotoToLinear(c1), prophotoToLinear(c2)], [0.7977666449, 0.1351812974, 0.0313477341, 0.2880748288, 0.7118352342, 0.0000899369, 0, 0, 0.8251046025]));
+    return linearRgbToSrgb(matrix(xyz, [3.2409699419, -1.5373831776, -0.4986107603, -0.9692436363, 1.8759675015, 0.0415550574, 0.0556300797, -0.2039769589, 1.0569715142]));
+  }
+  if (space === 'rec2020') {
+    const xyz = matrix([rec2020ToLinear(c0), rec2020ToLinear(c1), rec2020ToLinear(c2)], [0.6369580483, 0.1446169036, 0.1688809752, 0.2627002120, 0.6779980715, 0.0593017165, 0, 0.0280726930, 1.0609850577]);
+    return linearRgbToSrgb(matrix(xyz, [3.2409699419, -1.5373831776, -0.4986107603, -0.9692436363, 1.8759675015, 0.0415550574, 0.0556300797, -0.2039769589, 1.0569715142]));
+  }
   return [c0, c1, c2];
 }
 
@@ -67,6 +81,9 @@ function linearToSrgb(value: number): number {
 }
 
 function srgbToLinear(value: number): number { const m = Math.abs(value); const l = m <= 0.04045 ? m / 12.92 : Math.pow((m + 0.055) / 1.055, 2.4); return value < 0 ? -l : l; }
+function signedPow(value: number, exponent: number): number { const result = Math.pow(Math.abs(value), exponent); return value < 0 ? -result : result; }
+function prophotoToLinear(value: number): number { const m = Math.abs(value); const l = m <= 16 / 512 ? m / 16 : Math.pow(m, 1.8); return value < 0 ? -l : l; }
+function rec2020ToLinear(value: number): number { const alpha = 1.09929682680944; const beta = 0.018053968510807; const m = Math.abs(value); const l = m < beta * 4.5 ? m / 4.5 : Math.pow((m + alpha - 1) / alpha, 1 / 0.45); return value < 0 ? -l : l; }
 function linearRgbToSrgb(value: [number, number, number]): [number, number, number] { return [linearToSrgb(value[0]), linearToSrgb(value[1]), linearToSrgb(value[2])]; }
 function matrix(v: [number, number, number], m: number[]): [number, number, number] { return [m[0] * v[0] + m[1] * v[1] + m[2] * v[2], m[3] * v[0] + m[4] * v[1] + m[5] * v[2], m[6] * v[0] + m[7] * v[1] + m[8] * v[2]]; }
 function labToXyz(l: number, a: number, b: number): [number, number, number] { const f1 = (l + 16) / 116; return [labInv(f1 + a / 500) * 0.96422, labInv(f1), labInv(f1 - b / 200) * 0.82521]; }

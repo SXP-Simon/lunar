@@ -1,6 +1,6 @@
 import { RitoWireError } from '../errors';
 import { RitoBinaryReader } from './binary';
-import { decodeRitoDisplayList } from './display-list';
+import { decodeRitoDisplayListWithTypedColors } from './display-list';
 import type {
   RitoAdjacentAvailability, RitoArtifact, RitoDisplayListPayload, RitoFontRef, RitoHitEntry,
   RitoLocator, RitoLocatorMatch, RitoNavigation, RitoPage, RitoRect, RitoResourceKind, RitoResourceRef,
@@ -73,7 +73,7 @@ function readDisplayListPayload(reader: RitoBinaryReader): RitoDisplayListPayloa
     const commandCount = record.readU32();
     const semanticDigest = record.readFixedBytes(32, 'display list digest');
     const wireBytes = record.readBlob('display list bytes');
-    const displayList = decodeRitoDisplayList(wireBytes);
+    const displayList = decodeRitoDisplayListWithTypedColors(wireBytes);
     if (displayList.formatVersion !== formatVersion || displayList.commands.length !== commandCount) {
       throw new RitoWireError('Display list metadata does not match RITODL1 bytes.');
     }

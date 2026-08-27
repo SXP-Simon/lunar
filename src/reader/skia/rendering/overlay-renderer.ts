@@ -4,6 +4,7 @@ import type { ReaderRect } from '../../contracts';
 import { skiaColor } from './color-adapter';
 
 export interface ReaderOverlayRect {
+  readonly revisionId?: number;
   readonly bounds: ReaderRect;
   readonly color: string;
   readonly radius?: number;

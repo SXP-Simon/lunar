@@ -41,7 +41,7 @@ export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
 
     const metrics = {
       width: this.measureWidth(text, paint),
-      height: paint.font.sizePx,
+      height: this.resolveFontMetricsSafe(paint),
     };
     writeBoundedCache(this.textCache, key, metrics, MAX_TEXT_MEASUREMENTS);
     return metrics;
@@ -55,7 +55,11 @@ export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
       return cached;
     }
 
-    const metrics = this.fontResolver.resolveFont(paint.font).getMetrics();
+    const metrics = this.fontResolver.resolveFont(paint.font).getMetrics?.() ?? {
+      ascent: -paint.font.sizePx * 0.8,
+      descent: paint.font.sizePx * 0.2,
+      leading: 0,
+    };
     const resolved = {
       ascentPx: Math.max(0, -metrics.ascent),
       descentPx: Math.max(0, metrics.descent),
@@ -98,6 +102,15 @@ export class LunarSkiaTextMeasurer implements SkiaTextMeasurer {
       Math.max(0, characters.length - 1) * letterSpacing +
       characters.filter((character) => character === ' ').length * wordSpacing
     );
+  }
+
+  private resolveFontMetricsSafe(paint: ReaderMeasurePaint): number {
+    try {
+      const metrics = this.resolveFontMetrics(paint);
+      return metrics.contentHeightPx || paint.font.sizePx;
+    } catch {
+      return paint.font.sizePx;
+    }
   }
 }
 

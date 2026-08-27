@@ -11,7 +11,7 @@ export {
   toExternalId,
   toExternalIdString,
 } from './protocol/binary';
-export { decodeRitoDisplayList } from './protocol/display-list';
+export { decodeRitoDisplayList, decodeRitoDisplayListWithTypedColors } from './protocol/display-list';
 export { decodeRitoArtifact, decodeRitoResource } from './protocol/artifact';
 export { decodeRitoPublication } from './protocol/publication';
 export {
@@ -31,6 +31,8 @@ export type * from './protocol/artifact-types';
 export type {
   RitoDisplayCommand,
   RitoDisplayList,
+  RitoTypedColor,
+  RitoPaintColor,
 } from './protocol/display-types';
 export {
   encodeRitoAdjacentRequest,

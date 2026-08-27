@@ -9,6 +9,7 @@ import type {
   RitoDisplayRect,
   RitoDisplayTransform,
   RitoRunPaint,
+  RitoTypedColor,
 } from './display-types';
 
 const COLOR_SPACES = [
@@ -21,7 +22,7 @@ const BORDER_STYLES = [
 ] as const;
 
 /** Strict decoder for Rito's paint-ready RITODL1 V1 payload. */
-export function decodeRitoDisplayList(data: Uint8Array): RitoDisplayList {
+export function decodeRitoDisplayList(data: Uint8Array, options: { readonly preserveColorSpaces?: boolean } = {}): RitoDisplayList {
   const reader = new RitoBinaryReader(data);
   reader.expectHeader('RITODL1');
   const version = reader.readU32();
@@ -31,13 +32,17 @@ export function decodeRitoDisplayList(data: Uint8Array): RitoDisplayList {
   const commandCount = reader.readCount('RITODL1 display command');
   const commands: RitoDisplayCommand[] = [];
   for (let index = 0; index < commandCount; index += 1) {
-    commands.push(readCommand(reader));
+    commands.push(readCommand(reader, options.preserveColorSpaces === true));
   }
   reader.expectExhausted();
   return { formatVersion: 1, commands };
 }
 
-function readCommand(reader: RitoBinaryReader): RitoDisplayCommand {
+export function decodeRitoDisplayListWithTypedColors(data: Uint8Array): RitoDisplayList {
+  return decodeRitoDisplayList(data, { preserveColorSpaces: true });
+}
+
+function readCommand(reader: RitoBinaryReader, typedColors: boolean): RitoDisplayCommand {
   switch (reader.readU16()) {
     case 1:
       return { kind: 'push-state' };
@@ -59,19 +64,19 @@ function readCommand(reader: RitoBinaryReader): RitoDisplayCommand {
       return {
         kind: 'paint-page',
         rect: readRect(reader),
-        paint: { backgroundColor: reader.readOption('page background color', () => readColor(reader)) },
+        paint: { backgroundColor: reader.readOption('page background color', () => readColor(reader, typedColors)) },
       };
     case 8:
       return {
         kind: 'paint-block',
         rect: readRect(reader),
-        paint: readBlockPaint(reader),
+        paint: readBlockPaint(reader, typedColors),
         borderBox: reader.readOption('block border box', () => readBorderBox(reader)),
       };
     case 9:
-      return readText(reader, false);
+      return readText(reader, false, typedColors);
     case 10:
-      return readText(reader, true);
+      return readText(reader, true, typedColors);
     case 11:
       return {
         kind: 'paint-image',
@@ -85,7 +90,7 @@ function readCommand(reader: RitoBinaryReader): RitoDisplayCommand {
       return {
         kind: 'paint-horizontal-rule',
         rect: readRect(reader),
-        paint: { color: readColor(reader), style: readBorderStyle(reader) },
+        paint: { color: readColor(reader, typedColors), style: readBorderStyle(reader) },
       };
     default:
       throw new RitoWireError('RITODL1 contains an unknown display command opcode.');
@@ -115,10 +120,10 @@ function readTransform(reader: RitoBinaryReader): RitoDisplayCommand {
   return { kind: 'transform', origin, boxSize, transforms };
 }
 
-function readText(reader: RitoBinaryReader, ruby: boolean): RitoDisplayCommand {
+function readText(reader: RitoBinaryReader, ruby: boolean, typedColors: boolean): RitoDisplayCommand {
   const text = reader.readUtf8();
   const rect = readRect(reader);
-  const paint = readRunPaint(reader);
+  const paint = readRunPaint(reader, typedColors);
   const lineHeightPx = reader.readOption('text line height', () => reader.readF64());
   const href = reader.readOption('text href', () => reader.readUtf8());
   const sourceText = reader.readOption('source text', () => reader.readUtf8());
@@ -130,9 +135,9 @@ function readText(reader: RitoBinaryReader, ruby: boolean): RitoDisplayCommand {
   return { kind: 'paint-text', text, rect, paint, lineHeightPx, href, sourceText, sourceTextOffset: sourceOffset };
 }
 
-function readBlockPaint(reader: RitoBinaryReader): RitoBlockPaint {
+function readBlockPaint(reader: RitoBinaryReader, typedColors: boolean): RitoBlockPaint {
   const background = reader.readOption('block background', () => ({
-    color: reader.readOption('background color', () => readColor(reader)),
+    color: reader.readOption('background color', () => readColor(reader, typedColors)),
     image: reader.readOption('background image', () => reader.readUtf8()),
     size: reader.readOption('background size', () => readEnum(reader, ['auto', 'cover', 'contain'] as const, 'background size')),
     repeat: reader.readOption('background repeat', () => {
@@ -141,10 +146,10 @@ function readBlockPaint(reader: RitoBinaryReader): RitoBlockPaint {
     position: reader.readOption('background position', () => ({ x: readLength(reader), y: readLength(reader) })),
   }));
   const border = reader.readOption('block border', () => ({
-    top: reader.readOption('top block border', () => readBorderEdge(reader)),
-    right: reader.readOption('right block border', () => readBorderEdge(reader)),
-    bottom: reader.readOption('bottom block border', () => readBorderEdge(reader)),
-    left: reader.readOption('left block border', () => readBorderEdge(reader)),
+    top: reader.readOption('top block border', () => readBorderEdge(reader, typedColors)),
+    right: reader.readOption('right block border', () => readBorderEdge(reader, typedColors)),
+    bottom: reader.readOption('bottom block border', () => readBorderEdge(reader, typedColors)),
+    left: reader.readOption('left block border', () => readBorderEdge(reader, typedColors)),
   }));
   const radius = reader.readOption('block radius', () => {
     switch (reader.readU8()) {
@@ -167,46 +172,46 @@ function readBlockPaint(reader: RitoBinaryReader): RitoBlockPaint {
   });
   const boxShadow = Array.from({ length: reader.readCount('box shadow') }, () => ({
     offsetX: reader.readF64(), offsetY: reader.readF64(), blur: reader.readF64(), spread: reader.readF64(),
-    color: readColor(reader), inset: reader.readBoolean('box shadow inset'),
+    color: readColor(reader, typedColors), inset: reader.readBoolean('box shadow inset'),
   }));
   return { background, border, radius, boxShadow };
 }
 
-function readRunPaint(reader: RitoBinaryReader): RitoRunPaint {
+function readRunPaint(reader: RitoBinaryReader, typedColors: boolean): RitoRunPaint {
   const font = {
     family: reader.readUtf8(), sizePx: reader.readF64(), weight: reader.readF64(),
     style: readEnum(reader, ['normal', 'italic'] as const, 'font style'),
   };
-  const color = readColor(reader);
+  const color = readColor(reader, typedColors);
   const wordSpacingPx = reader.readOption('word spacing', () => reader.readF64());
   const letterSpacingPx = reader.readOption('letter spacing', () => reader.readF64());
-  const backgroundColor = reader.readOption('text background color', () => readColor(reader));
+  const backgroundColor = reader.readOption('text background color', () => readColor(reader, typedColors));
   const backgroundRadius = reader.readOption('text background radius', () => reader.readF64());
   const textShadow = Array.from({ length: reader.readCount('text shadow') }, () => ({
-    offsetX: reader.readF64(), offsetY: reader.readF64(), blur: reader.readF64(), color: readColor(reader),
+    offsetX: reader.readF64(), offsetY: reader.readF64(), blur: reader.readF64(), color: readColor(reader, typedColors),
   }));
   const decoration = reader.readOption('text decoration', () => ({
     kind: readEnum(reader, ['underline', 'line-through'] as const, 'text decoration'),
-    y: reader.readF64(), thickness: reader.readF64(), color: readColor(reader),
+    y: reader.readF64(), thickness: reader.readF64(), color: readColor(reader, typedColors),
   }));
   const padding = reader.readOption('text padding', () => ({
     top: reader.readF64(), right: reader.readF64(), bottom: reader.readF64(), left: reader.readF64(),
   }));
   const border = reader.readOption('text border', () => ({
-    top: reader.readOption('text top border', () => readRunBorderEdge(reader)),
-    bottom: reader.readOption('text bottom border', () => readRunBorderEdge(reader)),
-    start: reader.readOption('text start border', () => readRunBorderEdge(reader)),
-    end: reader.readOption('text end border', () => readRunBorderEdge(reader)),
+    top: reader.readOption('text top border', () => readRunBorderEdge(reader, typedColors)),
+    bottom: reader.readOption('text bottom border', () => readRunBorderEdge(reader, typedColors)),
+    start: reader.readOption('text start border', () => readRunBorderEdge(reader, typedColors)),
+    end: reader.readOption('text end border', () => readRunBorderEdge(reader, typedColors)),
   }));
   return { font, color, wordSpacingPx, letterSpacingPx, backgroundColor, backgroundRadius, textShadow, decoration, padding, border };
 }
 
-function readRunBorderEdge(reader: RitoBinaryReader) {
-  return { widthPx: reader.readF64(), paint: readBorderEdge(reader) };
+function readRunBorderEdge(reader: RitoBinaryReader, typedColors = false) {
+  return { widthPx: reader.readF64(), paint: readBorderEdge(reader, typedColors) };
 }
 
-function readBorderEdge(reader: RitoBinaryReader): RitoBorderPaintEdge {
-  return { color: readColor(reader), style: readBorderStyle(reader) };
+function readBorderEdge(reader: RitoBinaryReader, typedColors = false): RitoBorderPaintEdge {
+  return { color: readColor(reader, typedColors), style: readBorderStyle(reader) };
 }
 
 function readBorderStyle(reader: RitoBinaryReader): RitoBorderPaintEdge['style'] {
@@ -214,7 +219,7 @@ function readBorderStyle(reader: RitoBinaryReader): RitoBorderPaintEdge['style']
   return style;
 }
 
-function readColor(reader: RitoBinaryReader): string {
+function readColor(reader: RitoBinaryReader, typedColors = false): string | RitoTypedColor {
   const space = readEnum(reader, COLOR_SPACES, 'color space');
   const red = reader.readF32();
   const green = reader.readF32();
@@ -223,6 +228,17 @@ function readColor(reader: RitoBinaryReader): string {
   const none = reader.readU8();
   if ((none & 0xf0) !== 0) {
     throw new RitoWireError('RITODL1 color none flags contain unknown bits.');
+  }
+  if (typedColors) {
+    return {
+      space,
+      components: [red, green, blue],
+      alpha,
+      none: {
+        component0: Boolean(none & 1), component1: Boolean(none & 2),
+        component2: Boolean(none & 4), alpha: Boolean(none & 8),
+      },
+    };
   }
   return toRgba(space, none & 1 ? 0 : red, none & 2 ? 0 : green, none & 4 ? 0 : blue, none & 8 ? 0 : alpha);
 }

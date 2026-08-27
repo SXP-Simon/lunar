@@ -19,6 +19,7 @@ export interface SkiaParagraphCreateOptions {
   readonly color?: ReaderColor | string;
   readonly alpha?: number;
   readonly textShadow?: readonly ReaderTextShadow[];
+  readonly lineHeightPx?: number;
 }
 
 export interface SkiaParagraphFactory {
@@ -47,6 +48,7 @@ export class LunarSkiaParagraphFactory implements SkiaParagraphFactory {
       color: colorWithAlpha(options.color ?? '#000000', options.alpha ?? 1),
       fontFamilies: families.length > 0 ? [...families] : ['sans-serif'],
       fontSize: paint.font.sizePx,
+      ...(options.lineHeightPx && options.lineHeightPx > 0 ? { heightMultiplier: options.lineHeightPx / paint.font.sizePx } : {}),
       fontStyle: {
         weight: Math.max(100, Math.min(900, Math.round(paint.font.weight))),
         width: FontWidth.Normal,
