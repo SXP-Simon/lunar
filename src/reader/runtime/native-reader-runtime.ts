@@ -45,6 +45,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private operation = 0;
   private abortController?: AbortController;
   private paginationComplete = false;
+  private navigationTail: Promise<ReaderSnapshot> = Promise.resolve(this.snapshot);
 
   constructor(
     private readonly loadData: ReaderBookDataLoader,
@@ -111,7 +112,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   async goToSpread(spreadIndex: number): Promise<ReaderSnapshot> {
-    return this.showSpread(spreadIndex);
+    return this.enqueueNavigation(() => spreadIndex);
   }
 
   async goToToc(href: string): Promise<ReaderSnapshot> {
@@ -119,15 +120,15 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (target === undefined) {
       throw new RangeError(`The table-of-contents target ${href} was not found.`);
     }
-    return this.showSpread(target);
+    return this.enqueueNavigation(() => target);
   }
 
   async next(): Promise<ReaderSnapshot> {
-    return this.showSpread(this.snapshot.spreadIndex + 1);
+    return this.enqueueNavigation(() => this.snapshot.spreadIndex + 1);
   }
 
   async previous(): Promise<ReaderSnapshot> {
-    return this.showSpread(this.snapshot.spreadIndex - 1);
+    return this.enqueueNavigation(() => this.snapshot.spreadIndex - 1);
   }
 
   getCurrentPicture(
@@ -235,6 +236,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.emit(snapshot);
     void this.advanceBackground(operation).catch(() => undefined);
     return snapshot;
+  }
+
+  private enqueueNavigation(resolveTarget: () => number): Promise<ReaderSnapshot> {
+    const run = this.navigationTail.then(() => this.showSpread(resolveTarget()));
+    this.navigationTail = run.catch(() => this.snapshot);
+    return run;
   }
 
   private async advanceBackground(operation: number): Promise<void> {

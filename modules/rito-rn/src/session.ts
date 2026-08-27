@@ -55,6 +55,10 @@ export class RitoReaderSession {
         artifact = decodeRitoArtifact(response.data);
         if (artifact.sessionId !== request.sessionId) throw new RitoNativeError(4, 'Rito open artifact session ID does not match the request.', 'open');
       }
+      // The opening artifact has already consumed the request ID supplied to
+      // native open. Publish it to the session allocator before any later
+      // turn asks for nextRequestId.
+      session.latestForegroundRequestId = artifact.requestId;
       session.rememberArtifact(artifact);
       await session.adoptForeground({
         sessionId: request.sessionId,
