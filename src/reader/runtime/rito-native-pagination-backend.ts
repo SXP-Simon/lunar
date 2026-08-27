@@ -42,7 +42,7 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
     const opened = await RitoReaderSession.open(new Uint8Array(options.data), request, pinnedFonts, { native: this.config.native });
     readerPerformanceMark('reader.backend.firstArtifact', `artifactId=${opened.artifact.artifactId.toString()}`);
     const publicationMetadata = await opened.session.readPublication();
-    const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata, options.layout, options.fontRegistry, options.imageDecoder);
+    const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata, options.layout, request, options.fontRegistry, options.imageDecoder);
     await publication.prepare(opened.artifact);
     this.session = opened.session;
     this.publication = publication;
@@ -95,7 +95,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   private readonly spreadMode: 'single' | 'double';
   private readonly layoutValue: LoadedReaderPublication['layout'];
 
-  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, layout: ReaderLayoutRequest, private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
+  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, layout: ReaderLayoutRequest, private readonly artifactRequest: import('../rito/rito-native').RitoArtifactRequest, private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
     this.spreadMode = layout.typography.spreadMode;
     this.layoutValue = toReaderLayoutParameters(layout);
     this.metadataValue = publication.metadata;
@@ -193,6 +193,13 @@ class RitoNativePublication implements LoadedReaderPublication {
     return this.tocLabelsByHref.get(locatorHref)
       ?? this.tocLabelsByHref.get(artifact.locator.href);
   }
+  getBookPageIndex(spreadIndex: number): number | undefined {
+    return this.artifacts.get(spreadIndex)?.bookPageIndex;
+  }
+  getCurrentLocator(spreadIndex: number): import('../contracts').ReaderLocator | undefined {
+    const artifact = this.artifacts.get(spreadIndex);
+    return artifact ? toReaderLocator(artifact.locator, this.spine) : undefined;
+  }
   get totalPages() {
     return Math.max(1, [...this.artifacts.values()].reduce((max, artifact) => {
       const end = artifact.bookPageCount
@@ -213,14 +220,48 @@ class RitoNativePublication implements LoadedReaderPublication {
     }).filter((range): range is { spineIdref: string; startPage: number; endPage: number } => range !== undefined);
   }
   get chapterTimings() { return []; }
-  resolveToc(href: string): number | undefined {
+  async resolveToc(href: string): Promise<number | undefined> {
     const base = href.split('#', 1)[0];
     const target = findTocTarget(this.tocValue, href, base);
     const targetBase = target?.split('#', 1)[0] ?? base;
     const targetAnchor = target?.includes('#') ? target.slice(target.indexOf('#') + 1) : undefined;
-    const artifact = [...this.artifacts.values()].find((artifact) =>
-      (artifact.locator.href === targetBase || artifact.locator.href === href) &&
-      (!targetAnchor || artifact.locator.anchorId === targetAnchor),
+    const existing = this.findArtifactForTocTarget(targetBase, href, targetAnchor);
+    if (existing !== undefined) return existing;
+
+    const targetSpineIndex = this.spine.findIndex((item) => item.href === targetBase);
+    if (targetSpineIndex < 0 || this.visibleArtifactId === undefined) return undefined;
+    const targetIndex = this.visibleIndex;
+    const source = this.artifacts.get(targetIndex);
+    if (!source) return undefined;
+    const artifact = await this.session.requestArtifact({
+      ...this.artifactRequest,
+      requestId: this.session.nextRequestId,
+      locator: {
+        href: targetBase,
+        anchorId: targetAnchor,
+      },
+      work: { ...this.artifactRequest.work, maxForegroundQuanta: 8, localPageCap: 16 },
+    });
+    await this.prepare(artifact, targetIndex, true);
+    await this.session.adoptForeground({
+      sessionId: artifact.sessionId,
+      expectedVisibleArtifactId: source.artifactId,
+      candidateArtifactId: artifact.artifactId,
+    });
+    this.artifacts.set(targetIndex, artifact);
+    this.artifactIndexes.delete(source.artifactId);
+    this.artifactIndexes.set(artifact.artifactId, targetIndex);
+    this.visibleArtifactId = artifact.artifactId;
+    this.totalSpreadsValue = artifact.bookPageCount === undefined
+      ? undefined
+      : spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode);
+    await this.session.releaseArtifact(source.artifactId).catch(() => undefined);
+    return targetIndex;
+  }
+
+  private findArtifactForTocTarget(targetBase: string, href: string, targetAnchor?: string): number | undefined {
+    const artifact = [...this.artifacts.values()].find((candidate) =>
+      artifactMatchesTocTarget(candidate, targetBase, href, targetAnchor),
     );
     return artifact === undefined ? undefined : this.artifactIndexes.get(artifact.artifactId);
   }
@@ -265,6 +306,7 @@ class RitoNativePublication implements LoadedReaderPublication {
         locator: result.locator ? {
           spineIdref: this.spine.find((item) => item.href === result.locator?.href)?.idref ?? result.locator.href,
           manifestHref: result.locator.href,
+          anchorId: result.locator.anchorId,
           chapterProgress: result.locator.progression ?? 0,
           sourcePoint: result.locator.sourcePoint ? { nodePath: result.locator.sourcePoint.nodePath, textOffset: safeTextOffset(result.locator.sourcePoint.textOffset) } : undefined,
           sourceRange: result.locator.sourceRange ? {
@@ -393,6 +435,37 @@ function findTocTarget(entries: readonly import('../contracts').ReaderTocEntry[]
   return undefined;
 }
 
+function artifactMatchesTocTarget(
+  artifact: RitoArtifact,
+  targetBase: string,
+  href: string,
+  targetAnchor?: string,
+): boolean {
+  return (artifact.locator.href === targetBase || artifact.locator.href === href)
+    && (!targetAnchor || artifact.locator.anchorId === targetAnchor);
+}
+
+function toReaderLocator(
+  locator: import('../../../modules/rito-rn/src/protocol/artifact-types').RitoLocator,
+  spine: readonly RitoPublication['spine'][number][],
+): import('../contracts').ReaderLocator {
+  return {
+    spineIdref: spine.find((item) => item.href === locator.href)?.idref ?? locator.href,
+    manifestHref: locator.href,
+    anchorId: locator.anchorId,
+    chapterProgress: locator.progression ?? 0,
+    sourcePoint: locator.sourcePoint
+      ? { nodePath: locator.sourcePoint.nodePath, textOffset: safeTextOffset(locator.sourcePoint.textOffset) }
+      : undefined,
+    sourceRange: locator.sourceRange
+      ? {
+          start: { nodePath: locator.sourceRange.start.nodePath, textOffset: safeTextOffset(locator.sourceRange.start.textOffset) },
+          end: { nodePath: locator.sourceRange.end.nodePath, textOffset: safeTextOffset(locator.sourceRange.end.textOffset) },
+        }
+      : undefined,
+  };
+}
+
 function createTocLabelIndex(entries: readonly import('../contracts').ReaderTocEntry[]): ReadonlyMap<string, string> {
   const labels = new Map<string, string>();
   const visited = new Set<import('../contracts').ReaderTocEntry>();
@@ -427,7 +500,27 @@ function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutR
   const typography = request.typography;
   const locator = request.restorePosition?.locator;
   const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, marginTop: typography.marginVertical, marginRight: typography.marginHorizontal, marginBottom: typography.marginVertical, marginLeft: typography.marginHorizontal, spreadMode: typography.spreadMode, firstPageAlone: typography.spreadMode === 'double', spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily };
-  return { sessionId: BigInt(Math.max(1, revisionId)), requestId: BigInt(Math.max(1, operationId)), layout: value, locator: { href: locator?.manifestHref ?? initialHref, anchorId: locator?.sourcePoint ? undefined : undefined, progression: request.restorePosition?.progression }, work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 4 }, textProfile: 'platform-string-runs' };
+  return {
+    sessionId: BigInt(Math.max(1, revisionId)),
+    requestId: BigInt(Math.max(1, operationId)),
+    layout: value,
+    locator: {
+      href: locator?.manifestHref ?? initialHref,
+      anchorId: locator?.anchorId,
+      sourcePoint: locator?.sourcePoint
+        ? { nodePath: locator.sourcePoint.nodePath, textOffset: BigInt(Math.max(0, locator.sourcePoint.textOffset)) }
+        : undefined,
+      sourceRange: locator?.sourceRange
+        ? {
+            start: { nodePath: locator.sourceRange.start.nodePath, textOffset: BigInt(Math.max(0, locator.sourceRange.start.textOffset)) },
+            end: { nodePath: locator.sourceRange.end.nodePath, textOffset: BigInt(Math.max(0, locator.sourceRange.end.textOffset)) },
+          }
+        : undefined,
+      progression: locator?.sourcePoint || locator?.sourceRange ? undefined : request.restorePosition?.progression,
+    },
+    work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 4 },
+    textProfile: 'platform-string-runs',
+  };
 }
 
 function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../contracts').ReaderLayoutParameters {

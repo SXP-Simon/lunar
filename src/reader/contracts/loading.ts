@@ -413,9 +413,14 @@ export interface ReaderPublicationView {
   readonly chapters: readonly ReaderChapterRange[];
   readonly chapterTimings: readonly ReaderChapterTiming[];
   readonly getCurrentChapterTitle?: () => string | undefined;
+  /** Whole-book page number for the artifact currently assigned to a spread. */
+  readonly getBookPageIndex?: (spreadIndex: number) => number | undefined;
+  /** Durable source locator for the artifact currently assigned to a spread. */
+  readonly getCurrentLocator?: (spreadIndex: number) => ReaderLocator | undefined;
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined;
   getImage(source: string): Uint8Array | undefined;
-  resolveToc(href: string): number | undefined;
+  /** Resolves a TOC target, paginating it on demand when necessary. */
+  resolveToc(href: string): number | undefined | Promise<number | undefined>;
   resolveTextRangeGeometry?(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]>;
   search?(request: ReaderSearchRequest): Promise<ReaderSearchResponse>;
 }

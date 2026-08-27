@@ -13,6 +13,7 @@ export interface ReaderSourceRange {
 export interface ReaderLocator {
   readonly spineIdref: string;
   readonly manifestHref?: string;
+  readonly anchorId?: string;
   readonly chapterProgress: number;
   readonly sourcePoint?: ReaderSourcePoint;
   readonly sourceRange?: ReaderSourceRange;
@@ -23,6 +24,10 @@ export interface ReaderPosition {
   readonly progression: number;
   readonly pageIndex: number;
   readonly spreadIndex: number;
+  /** Whole-book page number, when a publication-backed artifact provides it. */
+  readonly bookPageIndex?: number;
+  /** Whole-book spread number, when whole-book pagination provides it. */
+  readonly bookSpreadIndex?: number;
   readonly timestamp: number;
 }
 
@@ -81,7 +86,12 @@ export interface ReaderSnapshot {
   readonly phase: ReaderPhase;
   readonly bookId?: string;
   readonly revisionId: number;
+  /** Render-slot index used by the frame and picture caches. */
   readonly spreadIndex: number;
+  /** Changes whenever the Skia Picture assigned to the render slot changes. */
+  readonly renderId?: number;
+  /** Whole-book spread number; absent for chapter-local exact seeks. */
+  readonly bookSpreadIndex?: number;
   readonly totalSpreads?: number;
   readonly paginationComplete?: boolean;
   readonly position?: ReaderPosition;

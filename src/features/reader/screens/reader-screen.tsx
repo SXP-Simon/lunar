@@ -38,9 +38,9 @@ export default function ReaderScreen() {
     ?? session.book?.title
     ?? '正在读取章节';
   const totalSpreads = session.snapshot.totalSpreads;
-  const currentSpread = session.snapshot.spreadIndex;
+  const currentSpread = session.snapshot.bookSpreadIndex ?? session.snapshot.spreadIndex;
   const progressText = totalSpreads === undefined
-    ? `第 ${currentSpread + 1} 页`
+    ? '页码计算中'
     : `${currentSpread + 1} / ${totalSpreads}`;
   const progressPercentage = totalSpreads === undefined
     ? undefined

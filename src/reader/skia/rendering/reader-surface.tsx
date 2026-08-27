@@ -50,7 +50,7 @@ export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTrans
       style={style}>
       {canRenderFrame && (
         <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
-          <Picture key={`${snapshot.revisionId}:${snapshot.spreadIndex}`} picture={compiled.picture} />
+          <Picture key={`${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 0}`} picture={compiled.picture} />
           {overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
             <SkiaRect
               key={`${index}:${overlay.bounds.x}:${overlay.bounds.y}`}

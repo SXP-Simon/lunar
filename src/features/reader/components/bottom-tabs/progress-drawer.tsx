@@ -26,7 +26,7 @@ export function ProgressDrawer({
 }: ProgressDrawerProps) {
   const insets = useSafeAreaInsets();
   const total = snapshot.totalSpreads;
-  const currentPage = snapshot.spreadIndex;
+  const currentPage = snapshot.bookSpreadIndex ?? snapshot.spreadIndex;
   const sliderMax = Math.max(currentPage, (total ?? 1) - 1);
   const [draftPage, setDraftPage] = useState<number>();
   const displayedPage = draftPage ?? currentPage;
@@ -53,7 +53,7 @@ export function ProgressDrawer({
           <View className="gap-6 px-5 pb-8 pt-2">
             <View className="items-center gap-2">
               <BottomSheet.Title className="rounded-full bg-background px-5 py-2 text-2xl tabular-nums text-foreground">
-                {total === undefined ? `第 ${displayedPage + 1} 页` : `${displayedPage + 1} / ${total}`}
+                {total === undefined ? '页码计算中' : `${displayedPage + 1} / ${total}`}
               </BottomSheet.Title>
               <BottomSheet.Description className="text-sm text-muted">
                 {percentage === undefined ? '正在计算全书页数' : `阅读进度 ${percentage}%`}

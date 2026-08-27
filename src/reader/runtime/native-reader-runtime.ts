@@ -32,7 +32,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private readonly listeners = new Set<ReaderSnapshotListener>();
   private readonly pictures = new FrameCache<CompiledReaderPicture>(
     3,
-    (picture) => this.pictureCompiler.dispose(picture),
+    (picture) => this.deferSkiaCleanup(() => this.pictureCompiler.dispose(picture)),
   );
   private readonly pictureCompiler = new SkiaPictureCompiler();
   private publication?: ReaderPublicationView;
@@ -47,6 +47,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private abortController?: AbortController;
   private paginationComplete = false;
   private backgroundScheduled = false;
+  private renderId = 0;
   private navigationTail: Promise<ReaderSnapshot> = Promise.resolve(this.snapshot);
 
   constructor(
@@ -123,11 +124,14 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   async goToToc(href: string): Promise<ReaderSnapshot> {
-    const target = this.publication?.resolveToc(href);
-    if (target === undefined) {
-      throw new RangeError(`The table-of-contents target ${href} was not found.`);
-    }
-    return this.enqueueNavigation(() => target);
+    return this.enqueueAsyncNavigation(async () => {
+      const target = await this.publication?.resolveToc(href);
+      if (target === undefined) {
+        throw new RangeError(`The table-of-contents target ${href} was not found.`);
+      }
+      this.invalidatePicture(target);
+      return target;
+    });
   }
 
   async next(): Promise<ReaderSnapshot> {
@@ -276,6 +280,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return run;
   }
 
+  private enqueueAsyncNavigation(resolveTarget: () => Promise<number>): Promise<ReaderSnapshot> {
+    const run = this.navigationTail.then(async () => this.showSpread(await resolveTarget()));
+    this.navigationTail = run.catch(() => this.snapshot);
+    return run;
+  }
+
   private async advanceBackground(operation: number): Promise<void> {
     this.backgroundScheduled = false;
     const backend = this.paginationBackend as Partial<ReaderBackgroundPaginationBackend>;
@@ -336,22 +346,60 @@ export class LunarReaderRuntime implements ReaderRuntime {
     try {
       this.assertCurrent(operation);
     } catch (error) {
-      imageLease.release();
+      this.deferSkiaCleanup(() => imageLease.release());
       throw error;
     }
     const pictureStartedAt = readerPerformanceStart('reader.picture.compile');
-    const picture = this.pictureCompiler.compile(frame.displayList, {
-      pixelRatio: 1,
-      images: imageCache,
-      paragraphs: textMeasurer.paragraphs,
-      colorOverride: {
-        backgroundColor: publication.layout.palette.backgroundColor,
-        foregroundColor: publication.layout.palette.foregroundColor,
-      },
-    });
-    readerPerformanceEnd('reader.picture.compile', pictureStartedAt);
+    let picture: CompiledReaderPicture;
+    try {
+      picture = this.pictureCompiler.compile(frame.displayList, {
+        pixelRatio: 1,
+        images: imageCache,
+        paragraphs: textMeasurer.paragraphs,
+        colorOverride: {
+          backgroundColor: publication.layout.palette.backgroundColor,
+          foregroundColor: publication.layout.palette.foregroundColor,
+        },
+      });
+    } catch (error) {
+      this.deferSkiaCleanup(() => imageLease.release());
+      throw error;
+    } finally {
+      readerPerformanceEnd('reader.picture.compile', pictureStartedAt);
+    }
     this.pictures.set(key, picture);
     this.imageLeases.set(`${key.revisionId}:${key.spreadIndex}`, imageLease);
+    this.renderId += 1;
+  }
+
+  private invalidatePicture(spreadIndex: number): void {
+    const key = { revisionId: this.snapshot.revisionId, spreadIndex };
+    this.pictures.delete(key);
+    const leaseKey = `${key.revisionId}:${key.spreadIndex}`;
+    const lease = this.imageLeases.get(leaseKey);
+    if (lease) this.deferSkiaCleanup(() => lease.release());
+    this.imageLeases.delete(leaseKey);
+  }
+
+  /**
+   * Skia may redraw a committed React tree after the runtime has emitted a
+   * replacement snapshot. Delay native resource destruction until two frames
+   * have completed so the previous Picture and its images remain valid
+   * throughout that redraw. Non-visual test environments use two host tasks.
+   */
+  private deferSkiaCleanup(cleanup: () => void): void {
+    const run = () => {
+      try {
+        cleanup();
+      } catch {
+        // Resource cleanup is best effort after the owning frame is gone.
+      }
+    };
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => requestAnimationFrame(run));
+      return;
+    }
+    setTimeout(() => setTimeout(run, 0), 0);
   }
 
   private createReadySnapshot(spreadIndex: number): ReaderSnapshot {
@@ -360,11 +408,23 @@ export class LunarReaderRuntime implements ReaderRuntime {
       throw new Error('The publication is unavailable.');
     }
     const frame = publication.getFrame(spreadIndex);
+    const locator = publication.getCurrentLocator?.(spreadIndex);
+    const bookPageIndex = publication.getBookPageIndex?.(spreadIndex);
+    const bookSpreadIndex = bookPageIndex === undefined
+      ? undefined
+      : publication.layout.spreadMode === 'double'
+        ? Math.floor(bookPageIndex / 2)
+        : bookPageIndex;
     const position: ReaderPosition = {
+      locator,
       progression:
-        publication.totalSpreads === undefined || publication.totalSpreads <= 1 ? 0 : spreadIndex / (publication.totalSpreads - 1),
+        publication.totalSpreads === undefined || publication.totalSpreads <= 1 || bookSpreadIndex === undefined
+          ? 0
+          : bookSpreadIndex / (publication.totalSpreads - 1),
       pageIndex: frame?.pageIndices[0] ?? spreadIndex,
       spreadIndex,
+      bookPageIndex,
+      bookSpreadIndex,
       timestamp: Date.now(),
     };
     return {
@@ -372,7 +432,9 @@ export class LunarReaderRuntime implements ReaderRuntime {
       bookId: this.request?.bookId,
       revisionId: this.snapshot.revisionId,
       spreadIndex,
-      totalSpreads: publication.totalSpreads,
+      renderId: this.renderId,
+      bookSpreadIndex,
+      totalSpreads: bookSpreadIndex === undefined ? undefined : publication.totalSpreads,
       paginationComplete: this.paginationComplete,
       position,
     };
@@ -417,9 +479,10 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
   private releaseResources(): void {
     this.pictures.clear();
-    for (const lease of this.imageLeases.values()) lease.release();
+    for (const lease of this.imageLeases.values()) this.deferSkiaCleanup(() => lease.release());
     this.imageLeases.clear();
-    this.imageCache?.clear();
+    const imageCache = this.imageCache;
+    if (imageCache) this.deferSkiaCleanup(() => imageCache.clear());
     this.imageCache = undefined;
     this.textMeasurer?.dispose();
     this.textMeasurer = undefined;
