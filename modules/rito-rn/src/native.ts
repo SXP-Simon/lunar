@@ -6,6 +6,14 @@ import NativeRitoReader, {
 import { RitoNativeError, RitoNativeModuleUnavailableError, type RitoNativeStatus } from './errors';
 import { toExternalIdString } from './protocol/binary';
 
+const perfConsole = console as Console & { timeStamp?: (label?: string) => void };
+
+function nativePerfMark(label: string): void {
+  if (process.env.EXPO_PUBLIC_READER_PERF === '1') {
+    perfConsole.timeStamp?.(`[LunarReader] ${label}`);
+  }
+}
+
 export type RitoNativePinnedFontFace = {
   readonly bytes: Uint8Array;
   readonly expectedSha256: string;
@@ -59,9 +67,9 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
     return this.unwrap(
       'open',
       this.native.open(
-        toBase64(publication),
-        toBase64(request),
-        fonts.map(toNativePinnedFontFace),
+        toBase64(publication, 'rito.encode.open.publication'),
+        toBase64(request, 'rito.encode.open.request'),
+        fonts.map((face, index) => toNativePinnedFontFace(face, index)),
       ),
     );
   }
@@ -71,31 +79,31 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
   }
 
   async requestArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('requestArtifact', this.native.requestArtifact(toExternalIdString(sessionId), toBase64(request)));
+    return this.unwrap('requestArtifact', this.native.requestArtifact(toExternalIdString(sessionId), toBase64(request, 'rito.encode.requestArtifact')));
   }
 
   async requestAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('requestAdjacent', this.native.requestAdjacent(toExternalIdString(sessionId), toBase64(request)));
+    return this.unwrap('requestAdjacent', this.native.requestAdjacent(toExternalIdString(sessionId), toBase64(request, 'rito.encode.requestAdjacent')));
   }
 
   async peekAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('peekAdjacent', this.native.peekAdjacent(toExternalIdString(sessionId), toBase64(request)));
+    return this.unwrap('peekAdjacent', this.native.peekAdjacent(toExternalIdString(sessionId), toBase64(request, 'rito.encode.peekAdjacent')));
   }
 
   async adoptForeground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('adoptForeground', this.native.adoptForeground(toExternalIdString(sessionId), toBase64(request)));
+    return this.unwrap('adoptForeground', this.native.adoptForeground(toExternalIdString(sessionId), toBase64(request, 'rito.encode.adoptForeground')));
   }
 
   async commitPeekedArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('commitPeekedArtifact', this.native.commitPeekedArtifact(toExternalIdString(sessionId), toBase64(request)));
+    return this.unwrap('commitPeekedArtifact', this.native.commitPeekedArtifact(toExternalIdString(sessionId), toBase64(request, 'rito.encode.commitPeekedArtifact')));
   }
 
   async advanceBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('advanceBackground', this.native.advanceBackground(toExternalIdString(sessionId), toBase64(request)));
+    return this.unwrap('advanceBackground', this.native.advanceBackground(toExternalIdString(sessionId), toBase64(request, 'rito.encode.advanceBackground')));
   }
 
   async adoptBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('adoptBackground', this.native.adoptBackground(toExternalIdString(sessionId), toBase64(request)));
+    return this.unwrap('adoptBackground', this.native.adoptBackground(toExternalIdString(sessionId), toBase64(request, 'rito.encode.adoptBackground')));
   }
 
   async readResource(sessionId: bigint, artifactId: bigint, kind: number, href: string): Promise<RitoNativeCallResult> {
@@ -106,11 +114,11 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
   }
 
   async search(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('search', this.native.search(toExternalIdString(sessionId), toBase64(request)));
+    return this.unwrap('search', this.native.search(toExternalIdString(sessionId), toBase64(request, 'rito.encode.search')));
   }
 
   async textRangeGeometry(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('textRangeGeometry', this.native.textRangeGeometry(toExternalIdString(sessionId), toBase64(request)));
+    return this.unwrap('textRangeGeometry', this.native.textRangeGeometry(toExternalIdString(sessionId), toBase64(request, 'rito.encode.textRangeGeometry')));
   }
 
   async readFootnote(sessionId: bigint, artifactId: bigint, key: string): Promise<RitoNativeCallResult> {
@@ -126,7 +134,9 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
   }
 
   private async unwrap(operation: string, result: Promise<NativeBufferResult>): Promise<RitoNativeCallResult> {
+    nativePerfMark(`rito.turbomodule.${operation}.start`);
     const response = await result;
+    nativePerfMark(`rito.turbomodule.${operation}.end`);
     if (!(response.data instanceof Uint8Array)) {
       throw new RitoNativeError(4, 'NativeRitoReader returned a non-binary response.', operation);
     }
@@ -138,9 +148,9 @@ class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
   }
 }
 
-function toNativePinnedFontFace(face: RitoNativePinnedFontFace): NativePinnedFontFace {
+function toNativePinnedFontFace(face: RitoNativePinnedFontFace, index: number): NativePinnedFontFace {
   return {
-    bytes: toBase64(face.bytes),
+    bytes: toBase64(face.bytes, `rito.encode.open.font.${index}`),
     expectedSha256: face.expectedSha256,
     genericRole: toNativeFontRole(face.genericRole),
     language: face.language,
@@ -158,7 +168,8 @@ function toNativeFontRole(role: RitoNativePinnedFontFace['genericRole']): number
   }
 }
 
-function toBase64(value: Uint8Array): string {
+function toBase64(value: Uint8Array, label?: string): string {
+  nativePerfMark(label ? `${label}.start` : 'rito.encode.base64.start');
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   let output = '';
   for (let index = 0; index < value.byteLength; index += 3) {
@@ -170,5 +181,6 @@ function toBase64(value: Uint8Array): string {
     output += second === undefined ? '=' : alphabet[((second & 15) << 2) | ((third ?? 0) >> 6)];
     output += third === undefined ? '=' : alphabet[third & 63];
   }
+  nativePerfMark(label ? `${label}.end` : 'rito.encode.base64.end');
   return output;
 }

@@ -19,6 +19,7 @@ import { LunarSkiaTextMeasurer } from '../skia/text/text-measurer';
 import { FrameCache } from './frame-cache';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackend } from './pagination-backend';
+import { readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
 
 export type ReaderBookDataLoader = (request: ReaderOpenRequest) => Promise<ArrayBuffer>;
 
@@ -45,6 +46,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private operation = 0;
   private abortController?: AbortController;
   private paginationComplete = false;
+  private backgroundScheduled = false;
   private navigationTail: Promise<ReaderSnapshot> = Promise.resolve(this.snapshot);
 
   constructor(
@@ -63,6 +65,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
   async open(request: ReaderOpenRequest): Promise<ReaderOpenResult> {
     const operation = this.beginOperation();
+    const openStartedAt = readerPerformanceStart('reader.open');
     this.releaseResources();
     this.request = request;
     this.emit({
@@ -74,6 +77,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
     try {
       const data = await this.loadData(request);
+      readerPerformanceMark('reader.bookBytesReady', `bytes=${data.byteLength}`);
       this.assertCurrent(operation);
       this.data = data;
       return await this.loadCurrentRequest(
@@ -84,6 +88,9 @@ export class LunarReaderRuntime implements ReaderRuntime {
     } catch (error) {
       this.fail(operation, error);
       throw error;
+    }
+    finally {
+      readerPerformanceEnd('reader.open', openStartedAt);
     }
   }
 
@@ -212,6 +219,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.assertCurrent(operation);
     const snapshot = this.createReadySnapshot(target);
     this.emit(snapshot);
+    readerPerformanceMark('reader.firstReadySnapshot', `spread=${target}`);
     void this.advanceBackground(operation).catch(() => undefined);
     return { metadata: publication.metadata, toc: publication.toc, snapshot };
   }
@@ -245,6 +253,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   private async advanceBackground(operation: number): Promise<void> {
+    this.backgroundScheduled = false;
     const backend = this.paginationBackend as Partial<ReaderBackgroundPaginationBackend>;
     if (typeof backend.advanceBackground !== 'function') {
       return;
@@ -252,23 +261,35 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (operation !== this.operation || this.abortController?.signal.aborted) {
       return;
     }
+    const quantumStartedAt = readerPerformanceStart('reader.background.quantum');
     const result = await backend.advanceBackground(64);
+    readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
     if (operation !== this.operation || this.abortController?.signal.aborted) {
       return;
     }
-    if (result && typeof result === 'object' && 'artifact' in result && (result as { artifact?: unknown }).artifact) {
-      this.invalidatePicture(this.snapshot.spreadIndex);
-      await this.preparePicture(this.snapshot.spreadIndex, operation);
+    const totalSpreads = this.publication?.totalSpreads;
+    if (totalSpreads !== this.snapshot.totalSpreads) {
       this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
     }
     if (isBackgroundComplete(result)) {
       this.paginationComplete = true;
-      this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
+      readerPerformanceMark('reader.background.complete', `totalSpreads=${this.publication?.totalSpreads ?? 'unknown'}`);
+      if (this.snapshot.paginationComplete !== true) {
+        this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
+      }
       return;
     }
+    this.scheduleBackground(operation);
+  }
+
+  private scheduleBackground(operation: number): void {
+    if (this.backgroundScheduled || operation !== this.operation || this.abortController?.signal.aborted) {
+      return;
+    }
+    this.backgroundScheduled = true;
     setTimeout(() => {
       void this.advanceBackground(operation).catch(() => undefined);
-    }, 0);
+    }, 32);
   }
 
   private async preparePicture(spreadIndex: number, operation: number): Promise<void> {
@@ -294,21 +315,15 @@ export class LunarReaderRuntime implements ReaderRuntime {
       imageLease.release();
       throw error;
     }
+    const pictureStartedAt = readerPerformanceStart('reader.picture.compile');
     const picture = this.pictureCompiler.compile(frame.displayList, {
       pixelRatio: 1,
       images: imageCache,
       paragraphs: textMeasurer.paragraphs,
     });
+    readerPerformanceEnd('reader.picture.compile', pictureStartedAt);
     this.pictures.set(key, picture);
     this.imageLeases.set(`${key.revisionId}:${key.spreadIndex}`, imageLease);
-  }
-
-  private invalidatePicture(spreadIndex: number): void {
-    const key = { revisionId: this.snapshot.revisionId, spreadIndex };
-    this.pictures.delete(key);
-    const leaseKey = `${key.revisionId}:${key.spreadIndex}`;
-    this.imageLeases.get(leaseKey)?.release();
-    this.imageLeases.delete(leaseKey);
   }
 
   private createReadySnapshot(spreadIndex: number): ReaderSnapshot {
@@ -384,6 +399,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.publicationOwner = undefined;
     this.publication = undefined;
     this.paginationComplete = false;
+    this.backgroundScheduled = false;
     this.fontRegistry = undefined;
     void this.paginationBackend.close();
   }

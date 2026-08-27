@@ -3,6 +3,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 
 import type { ReaderSnapshot } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/native-reader-runtime';
+import { readerPerformanceMark } from '../../runtime/performance';
 
 export interface ReaderSurfaceProps {
   readonly runtime: LunarReaderRuntime;
@@ -21,6 +22,8 @@ export function ReaderSurface({ runtime, snapshot, style }: ReaderSurfaceProps) 
   if (!compiled || !frame || snapshot.phase !== 'ready') {
     return null;
   }
+
+  readerPerformanceMark('reader.canvas.render', `spread=${snapshot.spreadIndex}`);
 
   return (
     <Canvas

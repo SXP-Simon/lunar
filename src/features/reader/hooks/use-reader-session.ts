@@ -12,7 +12,7 @@ import {
   LunarReaderRuntime,
   RitoNativePaginationBackend,
 } from '@/reader/native';
-import { createLunarRitoPinnedFonts, loadBundledLunarFontBytes } from '@/reader/rito/pinned-font';
+import { createLunarRitoPinnedFonts } from '@/reader/rito/pinned-font';
 import { readReaderBook } from '../infrastructure/expo-reader-book-loader';
 
 export interface ReaderSessionOptions {
@@ -131,7 +131,7 @@ function createReaderRuntime(): LunarReaderRuntime {
   return new LunarReaderRuntime(
     (request) => readReaderBook(request.fileUri),
     new RitoNativePaginationBackend({
-      pinnedFonts: () => createLunarRitoPinnedFonts({ loadFontBytes: loadBundledLunarFontBytes }),
+      pinnedFonts: () => createLunarRitoPinnedFonts(),
     }),
   );
 }

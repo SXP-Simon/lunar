@@ -7,6 +7,7 @@ import type { RitoNativePinnedFontFace, RitoArtifact, RitoLayoutRequest, RitoNat
 import type { RitoReaderSession } from '../../../modules/rito-rn/src/session';
 import type { RitoPublication, RitoTocEntry } from '../../../modules/rito-rn/src/protocol/artifact-types';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackendOpenOptions, ReaderPaginationBackendResult } from './pagination-backend';
+import { readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
 
 export interface RitoNativePaginationBackendOptions {
   readonly initialHref?: string;
@@ -29,14 +30,17 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
   constructor(private readonly config: RitoNativePaginationBackendOptions) {}
 
   async open(options: ReaderPaginationBackendOpenOptions): Promise<ReaderPaginationBackendResult> {
+    const openStartedAt = readerPerformanceStart('reader.backend.open');
     await this.close();
     const initialHref = this.config.initialHref ?? discoverReaderInitialSpineHref(new Uint8Array(options.data));
+    readerPerformanceMark('reader.backend.initialHref', initialHref);
     const pinnedFonts = typeof this.config.pinnedFonts === 'function'
       ? await this.config.pinnedFonts(new Uint8Array(options.data))
       : this.config.pinnedFonts;
     const request = createArtifactRequest(options.request, options.layout, options.revisionId, options.operationId, initialHref);
     const { RitoReaderSession } = await import('../../../modules/rito-rn/src/session');
     const opened = await RitoReaderSession.open(new Uint8Array(options.data), request, pinnedFonts, { native: this.config.native });
+    readerPerformanceMark('reader.backend.firstArtifact', `artifactId=${opened.artifact.artifactId.toString()}`);
     const publicationMetadata = await opened.session.readPublication();
     const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata, options.layout.typography.spreadMode, options.fontRegistry, options.imageDecoder);
     await publication.prepare(opened.artifact);
@@ -44,6 +48,7 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
     this.publication = publication;
     this.operationId = options.operationId;
     this.revisionId = options.revisionId;
+    readerPerformanceEnd('reader.backend.open', openStartedAt);
     return { publication, operationId: options.operationId, revisionId: options.revisionId };
   }
 
@@ -208,6 +213,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   }
 
   async advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<import('../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance> {
+    const backgroundStartedAt = readerPerformanceStart('reader.backend.background');
     let result!: import('../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance;
     const run = this.backgroundTail.then(async () => {
       const visibleId = this.session.currentVisibleArtifactId;
@@ -223,7 +229,12 @@ class RitoNativePublication implements LoadedReaderPublication {
         return;
       }
       const currentIndex = this.artifactIndexes.get(current.artifactId) ?? this.visibleIndex;
-      await this.prepare(candidate, currentIndex, true);
+      // Background publication candidates normally carry the same visible
+      // display list with improved book-wide numbering. Reuse the prepared
+      // frame in that case; only rebuild when the painted commands changed.
+      if (!bytesEqual(candidate.displayList.semanticDigest, current.displayList.semanticDigest)) {
+        await this.prepare(candidate, currentIndex, true);
+      }
       this.artifacts.set(currentIndex, candidate);
       this.artifactIndexes.set(candidate.artifactId, currentIndex);
       if (this.session.currentVisibleArtifactId !== current.artifactId) {
@@ -241,8 +252,12 @@ class RitoNativePublication implements LoadedReaderPublication {
       await this.session.releaseArtifact(current.artifactId).catch(() => undefined);
     });
     this.backgroundTail = run.then(() => undefined, () => undefined);
-    await run;
-    return result;
+    try {
+      await run;
+      return result;
+    } finally {
+      readerPerformanceEnd('reader.backend.background', backgroundStartedAt);
+    }
   }
 
   async close(): Promise<void> {
@@ -256,6 +271,14 @@ class RitoNativePublication implements LoadedReaderPublication {
 function spreadCountFromBookPages(pageCount: number, spreadMode: 'single' | 'double'): number {
   if (spreadMode === 'single') return Math.max(1, pageCount);
   return Math.max(1, Math.ceil(pageCount / 2));
+}
+
+function bytesEqual(left: Uint8Array, right: Uint8Array): boolean {
+  if (left.byteLength !== right.byteLength) return false;
+  for (let index = 0; index < left.byteLength; index += 1) {
+    if (left[index] !== right[index]) return false;
+  }
+  return true;
 }
 
 function toReaderToc(entry: RitoTocEntry): import('../contracts').ReaderTocEntry {

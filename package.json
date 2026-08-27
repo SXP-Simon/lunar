@@ -67,6 +67,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "perf:reader": "node scripts/reader-perf-report.mjs",
     "styles:generate": "uniwind generate-artifacts --css ./src/global.css --dts ./src/uniwind-types.d.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
