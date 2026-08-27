@@ -202,10 +202,13 @@ function drawBlock(
       rect.height + shadow.spread * 2,
     );
     const padding = shadow.blur * 2 + Math.abs(shadow.offsetX) + Math.abs(shadow.offsetY) + Math.max(0, shadow.spread) + 4;
-    const clip = Skia.Path.Make();
-    clip.setFillType(FillType.EvenOdd);
-    clip.addRect(Skia.XYWHRect(rect.x - padding, rect.y - padding, rect.width + padding * 2, rect.height + padding * 2));
-    clip.addRRect(toRRect(toSkRect(rect), radius));
+    const clipBuilder = Skia.PathBuilder.Make();
+    const clip = clipBuilder
+      .setFillType(FillType.EvenOdd)
+      .addRect(Skia.XYWHRect(rect.x - padding, rect.y - padding, rect.width + padding * 2, rect.height + padding * 2))
+      .addRRect(toRRect(toSkRect(rect), radius))
+      .build();
+    clipBuilder.dispose();
     canvas.save();
     canvas.clipPath(clip, ClipOp.Intersect, true);
     canvas.drawRRect(toRRect(spreadRect, radius, shadow.spread), shadowPaint);
@@ -325,8 +328,14 @@ function drawBlockBorders(
     for (let index = 0; index < edgeList.length; index += 1) {
       const edge = edgeList[index]; const width = widthsList[index];
       if (!edge || width <= 0 || edge.style === 'none' || edge.style === 'hidden') continue;
-      const path = Skia.Path.Make();
-      path.moveTo(center.x, center.y); path.lineTo(corners[index][0].x, corners[index][0].y); path.lineTo(corners[index][1].x, corners[index][1].y); path.close();
+      const pathBuilder = Skia.PathBuilder.Make();
+      const path = pathBuilder
+        .moveTo(center.x, center.y)
+        .lineTo(corners[index][0].x, corners[index][0].y)
+        .lineTo(corners[index][1].x, corners[index][1].y)
+        .close()
+        .build();
+      pathBuilder.dispose();
       canvas.save(); canvas.clipPath(path, ClipOp.Intersect, true);
       drawStyledRoundedBorder(canvas, rect, radius, { ...edge, color: resolveDirectionalBorder(edge, index) }, width, alpha);
       canvas.restore(); path.dispose();
