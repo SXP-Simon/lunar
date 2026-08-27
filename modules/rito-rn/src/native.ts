@@ -1,17 +1,14 @@
-import NativeRitoReader, {
-  type NativeBufferResult,
-  type NativePinnedFontFace,
-  type Spec,
-} from '../specs/NativeRitoReader';
+import type {
+  RitoNitro as RitoNitroSpec,
+  RitoNitroPinnedFontFace,
+  RitoNitroResult,
+} from './specs/rito-nitro.nitro';
 import { RitoNativeError, RitoNativeModuleUnavailableError, type RitoNativeStatus } from './errors';
 import { toExternalIdString } from './protocol/binary';
 
 const perfConsole = console as Console & { timeStamp?: (label?: string) => void };
-
 function nativePerfMark(label: string): void {
-  if (process.env.EXPO_PUBLIC_READER_PERF === '1') {
-    perfConsole.timeStamp?.(`[LunarReader] ${label}`);
-  }
+  if (process.env.EXPO_PUBLIC_READER_PERF === '1') perfConsole.timeStamp?.(`[LunarReader] ${label}`);
 }
 
 export type RitoNativePinnedFontFace = {
@@ -22,11 +19,7 @@ export type RitoNativePinnedFontFace = {
 };
 
 export interface RitoNativeReaderModule {
-  open(
-    publication: Uint8Array,
-    request: Uint8Array,
-    fonts: readonly RitoNativePinnedFontFace[],
-  ): Promise<RitoNativeCallResult>;
+  open(publication: Uint8Array, request: Uint8Array, fonts: readonly RitoNativePinnedFontFace[]): Promise<RitoNativeCallResult>;
   readPublication(sessionId: bigint): Promise<RitoNativeCallResult>;
   requestArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
   requestAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult>;
@@ -49,138 +42,71 @@ export interface RitoNativeCallResult {
   readonly error: string;
 }
 
+let nativeObject: RitoNitroSpec | null | undefined;
+function getNitroObject(): RitoNitroSpec | null {
+  if (nativeObject !== undefined) return nativeObject;
+  try {
+    const nitroModules = loadNitroModules();
+    nativeObject = nitroModules?.createHybridObject<RitoNitroSpec>('RitoNitro') ?? null;
+  } catch {
+    nativeObject = null;
+  }
+  return nativeObject;
+}
+
+function loadNitroModules(): { createHybridObject<T>(name: string): T } | null {
+  try {
+    const runtimeRequire = (0, eval)('require') as ((name: string) => { NitroModules?: { createHybridObject<T>(name: string): T } }) | undefined;
+    return runtimeRequire?.('react-native-nitro-modules')?.NitroModules ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function isRitoNativeReaderAvailable(): boolean {
-  return NativeRitoReader !== null;
+  return getNitroObject() !== null;
 }
 
 export function getRitoNativeReaderModule(): RitoNativeReaderModule {
-  if (!NativeRitoReader) {
-    throw new RitoNativeModuleUnavailableError();
-  }
-  return new RitoNativeReaderModuleImplementation(NativeRitoReader);
+  const native = getNitroObject();
+  if (!native) throw new RitoNativeModuleUnavailableError();
+  return new RitoNitroReaderModule(native);
 }
 
-class RitoNativeReaderModuleImplementation implements RitoNativeReaderModule {
-  constructor(private readonly native: Spec) {}
+class RitoNitroReaderModule implements RitoNativeReaderModule {
+  constructor(private readonly native: RitoNitroSpec) {}
 
-  async open(publication: Uint8Array, request: Uint8Array, fonts: readonly RitoNativePinnedFontFace[]): Promise<RitoNativeCallResult> {
-    return this.unwrap(
-      'open',
-      this.native.open(
-        toBase64(publication, 'rito.encode.open.publication'),
-        toBase64(request, 'rito.encode.open.request'),
-        fonts.map((face, index) => toNativePinnedFontFace(face, index)),
-      ),
-    );
+  open(publication: Uint8Array, request: Uint8Array, fonts: readonly RitoNativePinnedFontFace[]): Promise<RitoNativeCallResult> {
+    return this.unwrap('open', this.native.open(toArrayBuffer(publication), toArrayBuffer(request), fonts.map(toNitroFont)));
   }
+  readPublication(sessionId: bigint) { return this.unwrap('readPublication', this.native.readPublication(toExternalIdString(sessionId))); }
+  requestArtifact(sessionId: bigint, request: Uint8Array) { return this.unwrap('requestArtifact', this.native.requestArtifact(toExternalIdString(sessionId), toArrayBuffer(request))); }
+  requestAdjacent(sessionId: bigint, request: Uint8Array) { return this.unwrap('requestAdjacent', this.native.requestAdjacent(toExternalIdString(sessionId), toArrayBuffer(request))); }
+  peekAdjacent(sessionId: bigint, request: Uint8Array) { return this.unwrap('peekAdjacent', this.native.peekAdjacent(toExternalIdString(sessionId), toArrayBuffer(request))); }
+  adoptForeground(sessionId: bigint, request: Uint8Array) { return this.unwrap('adoptForeground', this.native.adoptForeground(toExternalIdString(sessionId), toArrayBuffer(request))); }
+  commitPeekedArtifact(sessionId: bigint, request: Uint8Array) { return this.unwrap('commitPeekedArtifact', this.native.commitPeekedArtifact(toExternalIdString(sessionId), toArrayBuffer(request))); }
+  advanceBackground(sessionId: bigint, request: Uint8Array) { return this.unwrap('advanceBackground', this.native.advanceBackground(toExternalIdString(sessionId), toArrayBuffer(request))); }
+  adoptBackground(sessionId: bigint, request: Uint8Array) { return this.unwrap('adoptBackground', this.native.adoptBackground(toExternalIdString(sessionId), toArrayBuffer(request))); }
+  readResource(sessionId: bigint, artifactId: bigint, kind: number, href: string) { return this.unwrap('readResource', this.native.readResource(toExternalIdString(sessionId), toExternalIdString(artifactId), kind, href)); }
+  search(sessionId: bigint, request: Uint8Array) { return this.unwrap('search', this.native.search(toExternalIdString(sessionId), toArrayBuffer(request))); }
+  textRangeGeometry(sessionId: bigint, request: Uint8Array) { return this.unwrap('textRangeGeometry', this.native.textRangeGeometry(toExternalIdString(sessionId), toArrayBuffer(request))); }
+  readFootnote(sessionId: bigint, artifactId: bigint, key: string) { return this.unwrap('readFootnote', this.native.readFootnote(toExternalIdString(sessionId), toExternalIdString(artifactId), key)); }
+  releaseArtifact(sessionId: bigint, artifactId: bigint) { return this.unwrap('releaseArtifact', this.native.releaseArtifact(toExternalIdString(sessionId), toExternalIdString(artifactId))); }
+  dispose(sessionId: bigint) { return this.unwrap('dispose', this.native.disposeSession(toExternalIdString(sessionId))); }
 
-  async readPublication(sessionId: bigint): Promise<RitoNativeCallResult> {
-    return this.unwrap('readPublication', this.native.readPublication(toExternalIdString(sessionId)));
-  }
-
-  async requestArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('requestArtifact', this.native.requestArtifact(toExternalIdString(sessionId), toBase64(request, 'rito.encode.requestArtifact')));
-  }
-
-  async requestAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('requestAdjacent', this.native.requestAdjacent(toExternalIdString(sessionId), toBase64(request, 'rito.encode.requestAdjacent')));
-  }
-
-  async peekAdjacent(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('peekAdjacent', this.native.peekAdjacent(toExternalIdString(sessionId), toBase64(request, 'rito.encode.peekAdjacent')));
-  }
-
-  async adoptForeground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('adoptForeground', this.native.adoptForeground(toExternalIdString(sessionId), toBase64(request, 'rito.encode.adoptForeground')));
-  }
-
-  async commitPeekedArtifact(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('commitPeekedArtifact', this.native.commitPeekedArtifact(toExternalIdString(sessionId), toBase64(request, 'rito.encode.commitPeekedArtifact')));
-  }
-
-  async advanceBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('advanceBackground', this.native.advanceBackground(toExternalIdString(sessionId), toBase64(request, 'rito.encode.advanceBackground')));
-  }
-
-  async adoptBackground(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('adoptBackground', this.native.adoptBackground(toExternalIdString(sessionId), toBase64(request, 'rito.encode.adoptBackground')));
-  }
-
-  async readResource(sessionId: bigint, artifactId: bigint, kind: number, href: string): Promise<RitoNativeCallResult> {
-    return this.unwrap(
-      'readResource',
-      this.native.readResource(toExternalIdString(sessionId), toExternalIdString(artifactId), kind, href),
-    );
-  }
-
-  async search(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('search', this.native.search(toExternalIdString(sessionId), toBase64(request, 'rito.encode.search')));
-  }
-
-  async textRangeGeometry(sessionId: bigint, request: Uint8Array): Promise<RitoNativeCallResult> {
-    return this.unwrap('textRangeGeometry', this.native.textRangeGeometry(toExternalIdString(sessionId), toBase64(request, 'rito.encode.textRangeGeometry')));
-  }
-
-  async readFootnote(sessionId: bigint, artifactId: bigint, key: string): Promise<RitoNativeCallResult> {
-    return this.unwrap('readFootnote', this.native.readFootnote(toExternalIdString(sessionId), toExternalIdString(artifactId), key));
-  }
-
-  async releaseArtifact(sessionId: bigint, artifactId: bigint): Promise<RitoNativeCallResult> {
-    return this.unwrap('releaseArtifact', this.native.releaseArtifact(toExternalIdString(sessionId), toExternalIdString(artifactId)));
-  }
-
-  async dispose(sessionId: bigint): Promise<RitoNativeCallResult> {
-    return this.unwrap('dispose', this.native.dispose(toExternalIdString(sessionId)));
-  }
-
-  private async unwrap(operation: string, result: Promise<NativeBufferResult>): Promise<RitoNativeCallResult> {
-    nativePerfMark(`rito.turbomodule.${operation}.start`);
+  private async unwrap(operation: string, result: Promise<RitoNitroResult>): Promise<RitoNativeCallResult> {
+    nativePerfMark(`rito.nitro.${operation}.start`);
     const response = await result;
-    nativePerfMark(`rito.turbomodule.${operation}.end`);
-    if (!(response.data instanceof Uint8Array)) {
-      throw new RitoNativeError(4, 'NativeRitoReader returned a non-binary response.', operation);
-    }
-    return {
-      status: response.status as RitoNativeStatus,
-      data: response.data.slice(),
-      error: typeof response.error === 'string' ? response.error : '',
-    };
+    nativePerfMark(`rito.nitro.${operation}.end`);
+    if (!(response.data instanceof ArrayBuffer)) throw new RitoNativeError(4, 'Rito Nitro returned a non-binary response.', operation);
+    return { status: response.status as RitoNativeStatus, data: new Uint8Array(response.data.slice(0)), error: response.error || '' };
   }
 }
 
-function toNativePinnedFontFace(face: RitoNativePinnedFontFace, index: number): NativePinnedFontFace {
-  return {
-    bytes: toBase64(face.bytes, `rito.encode.open.font.${index}`),
-    expectedSha256: face.expectedSha256,
-    genericRole: toNativeFontRole(face.genericRole),
-    language: face.language,
-  };
+function toArrayBuffer(value: Uint8Array): ArrayBuffer {
+  if (value.byteOffset === 0 && value.byteLength === value.buffer.byteLength && value.buffer instanceof ArrayBuffer) return value.buffer;
+  return value.slice().buffer;
 }
-
-function toNativeFontRole(role: RitoNativePinnedFontFace['genericRole']): number {
-  switch (role) {
-    case 'serif':
-      return 0;
-    case 'sansSerif':
-      return 1;
-    case 'monospace':
-      return 2;
-  }
-}
-
-function toBase64(value: Uint8Array, label?: string): string {
-  nativePerfMark(label ? `${label}.start` : 'rito.encode.base64.start');
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  let output = '';
-  for (let index = 0; index < value.byteLength; index += 3) {
-    const first = value[index] ?? 0;
-    const second = value[index + 1];
-    const third = value[index + 2];
-    output += alphabet[first >> 2];
-    output += alphabet[((first & 3) << 4) | ((second ?? 0) >> 4)];
-    output += second === undefined ? '=' : alphabet[((second & 15) << 2) | ((third ?? 0) >> 6)];
-    output += third === undefined ? '=' : alphabet[third & 63];
-  }
-  nativePerfMark(label ? `${label}.end` : 'rito.encode.base64.end');
-  return output;
+function toNitroFont(face: RitoNativePinnedFontFace): RitoNitroPinnedFontFace {
+  return { bytes: toArrayBuffer(face.bytes), expectedSha256: face.expectedSha256, genericRole: face.genericRole === 'serif' ? 0 : face.genericRole === 'sansSerif' ? 1 : 2, language: face.language };
 }

@@ -38,7 +38,7 @@ export class RitoNativeSessionInvalidatedError extends RitoNativeError {
 
 export class RitoNativeModuleUnavailableError extends Error {
   constructor() {
-    super('The NativeRitoReader Turbo Module is unavailable in this build.');
+    super('The Rito Nitro Module is unavailable in this build.');
     this.name = 'RitoNativeModuleUnavailableError';
   }
 }

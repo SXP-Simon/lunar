@@ -1,9 +1,13 @@
 {
   "name": "@ritojs/react-native",
   "version": "0.1.0",
-  "description": "React Native Turbo Module bindings for Rito's native reader protocol.",
+  "description": "Nitro C++ bindings for Rito's native reader protocol.",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "scripts": {
+    "codegen": "nitrogen --logLevel=info",
+    "typecheck": "tsc --noEmit"
+  },
   "files": [
     "android-pure-cxx",
     "cpp",
@@ -11,24 +15,16 @@
     "native/rito",
     "specs",
     "scripts",
+    "nitrogen",
+    "android",
+    "RitoNitro.podspec",
+    "nitro.json",
     "src",
     "react-native.config.js",
     "package.json"
   ],
   "peerDependencies": {
-    "react-native": ">=0.86.0"
-  },
-  "codegenConfig": {
-    "name": "RitoReactNativeSpec",
-    "type": "modules",
-    "jsSrcsDir": "specs",
-    "android": {
-      "javaPackageName": "com.ritojs.reactnative"
-    },
-    "ios": {
-      "modulesProvider": {
-        "NativeRitoReader": "NativeRitoReaderProvider"
-      }
-    }
+    "react-native": ">=0.86.0",
+    "react-native-nitro-modules": ">=0.37.0"
   }
 }
