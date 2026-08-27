@@ -322,6 +322,28 @@ export interface ReaderRenderFrame {
   readonly text?: string;
 }
 
+export interface ReaderTextPosition {
+  readonly blockIndex: number;
+  readonly lineIndex: number;
+  readonly runIndex: number;
+  readonly charIndex: number;
+}
+
+export interface ReaderTextRangeGeometryRequest {
+  readonly pageIndex: number;
+  readonly start: ReaderTextPosition;
+  readonly end: ReaderTextPosition;
+}
+
+export interface ReaderTextRangeRect {
+  readonly bounds: ReaderRect;
+  readonly blockIndex: number;
+  readonly lineIndex: number;
+  readonly runIndex: number;
+  readonly startCharIndex: number;
+  readonly endCharIndex: number;
+}
+
 export interface ReaderHitEntry {
   readonly pageIndex: number;
   readonly bounds: ReaderRect;
@@ -366,6 +388,7 @@ export interface ReaderPublicationView {
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined;
   getImage(source: string): Uint8Array | undefined;
   resolveToc(href: string): number | undefined;
+  resolveTextRangeGeometry?(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]>;
 }
 
 export interface LoadedReaderPublication extends ReaderPublicationView {

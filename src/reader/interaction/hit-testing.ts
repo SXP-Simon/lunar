@@ -1,11 +1,11 @@
+import type { ReaderHitEntry } from '../contracts';
+
 export interface ReaderTextPosition {
   readonly blockIndex: number;
   readonly lineIndex: number;
   readonly runIndex: number;
   readonly charIndex: number;
 }
-
-import type { ReaderHitEntry } from '../contracts';
 
 export interface ReaderHitMap {
   readonly entries: readonly ReaderHitEntry[];

@@ -1,6 +1,6 @@
 import { Canvas, Group, Picture, Rect as SkiaRect } from '@shopify/react-native-skia';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { ReaderSnapshot } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/native-reader-runtime';
@@ -12,9 +12,17 @@ export interface ReaderSurfaceProps {
   readonly snapshot: ReaderSnapshot;
   readonly style?: StyleProp<ViewStyle>;
   readonly overlays?: readonly ReaderOverlayRect[];
+  readonly onTransformChange?: (transform: ReaderSurfaceTransform) => void;
 }
 
-export function ReaderSurface({ runtime, snapshot, style, overlays = [] }: ReaderSurfaceProps) {
+export interface ReaderSurfaceTransform {
+  readonly scale: number;
+  readonly offsetX: number;
+  readonly offsetY: number;
+  toDisplayPoint(x: number, y: number): { readonly x: number; readonly y: number };
+}
+
+export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTransformChange }: ReaderSurfaceProps) {
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const compiled = snapshot.phase === 'ready'
     ? runtime.getCurrentPicture(snapshot.revisionId, snapshot.spreadIndex)
@@ -22,17 +30,20 @@ export function ReaderSurface({ runtime, snapshot, style, overlays = [] }: Reade
   const frame = snapshot.phase === 'ready'
     ? runtime.getCurrentFrame(snapshot.spreadIndex)
     : undefined;
+  const scale = frame && viewport.width > 0 && viewport.height > 0
+    ? Math.min(viewport.width / frame.width, viewport.height / frame.height)
+    : 1;
+  const offsetX = frame ? (viewport.width - frame.width * scale) / 2 : 0;
+  const offsetY = frame ? (viewport.height - frame.height * scale) / 2 : 0;
+  useEffect(() => {
+    onTransformChange?.(createReaderSurfaceTransform(scale, offsetX, offsetY));
+  }, [offsetX, offsetY, onTransformChange, scale]);
 
   if (!compiled || !frame || snapshot.phase !== 'ready') {
     return null;
   }
 
   readerPerformanceMark('reader.canvas.render', `spread=${snapshot.spreadIndex}`);
-  const scale = viewport.width > 0 && viewport.height > 0
-    ? Math.min(viewport.width / frame.width, viewport.height / frame.height)
-    : 1;
-  const offsetX = (viewport.width - frame.width * scale) / 2;
-  const offsetY = (viewport.height - frame.height * scale) / 2;
 
   return (
     <Canvas
@@ -62,4 +73,12 @@ export function ReaderSurface({ runtime, snapshot, style, overlays = [] }: Reade
       </Group>
     </Canvas>
   );
+}
+
+export function createReaderSurfaceTransform(scale: number, offsetX: number, offsetY: number): ReaderSurfaceTransform {
+  const safeScale = scale > 0 && Number.isFinite(scale) ? scale : 1;
+  return {
+    scale: safeScale, offsetX, offsetY,
+    toDisplayPoint: (x, y) => ({ x: (x - offsetX) / safeScale, y: (y - offsetY) / safeScale }),
+  };
 }

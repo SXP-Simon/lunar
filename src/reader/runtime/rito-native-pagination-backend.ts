@@ -208,6 +208,19 @@ class RitoNativePublication implements LoadedReaderPublication {
     return artifact === undefined ? undefined : this.artifactIndexes.get(artifact.artifactId);
   }
 
+  async resolveTextRangeGeometry(request: import('../contracts').ReaderTextRangeGeometryRequest): Promise<readonly import('../contracts').ReaderTextRangeRect[]> {
+    const artifact = [...this.artifacts.values()].find((candidate) => candidate.localPageIndexes.includes(request.pageIndex));
+    if (!artifact) return [];
+    const geometry = await this.session.textRangeGeometry({
+      sessionId: artifact.sessionId,
+      artifactId: artifact.artifactId,
+      pageIndex: request.pageIndex,
+      start: request.start,
+      end: request.end,
+    });
+    return geometry.rects;
+  }
+
   private indexForArtifact(artifact: RitoArtifact): number {
     return this.artifactIndexes.get(artifact.artifactId) ?? this.visibleIndex;
   }

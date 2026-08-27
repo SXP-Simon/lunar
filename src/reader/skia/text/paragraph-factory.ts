@@ -23,6 +23,7 @@ export interface SkiaParagraphCreateOptions {
 }
 
 export interface SkiaParagraphFactory {
+  readonly fonts: SkiaFontRegistry;
   createParagraph(
     text: string,
     paint: ReaderMeasurePaint,

@@ -7,7 +7,7 @@ import {
   toExternalIdString,
 } from '../../modules/rito-rn/src/protocol/binary';
 import { RitoWireError as BinaryRitoWireError } from '../../modules/rito-rn/src/errors';
-import { decodeRitoDisplayList } from '../../modules/rito-rn/src/protocol/display-list';
+import { decodeRitoDisplayList, decodeRitoDisplayListWithTypedColors } from '../../modules/rito-rn/src/protocol/display-list';
 import { toReaderV1DisplayList } from '../../src/reader/rito/rito-v1-display-list';
 import { encodeRitoAdjacentRequest } from '../../modules/rito-rn/src/protocol/requests';
 import { encodeRitoBackgroundHandoff, encodeRitoBackgroundRequest, encodeRitoForegroundHandoff } from '../../modules/rito-rn/src/protocol/requests';
@@ -100,6 +100,26 @@ describe('Rito React Native binary protocol', () => {
       kind: 'paint-page',
       rect: { x: 0, y: 0, width: 10, height: 10 },
       paint: { backgroundColor: 'rgba(0, 255, 0, 1)' },
+    });
+  });
+
+  it('preserves typed color spaces and none flags for native artifacts', () => {
+    const bytes = new RitoBinaryWriter()
+      .writeAscii('RITODL1').writeU32(1).writeU32(1).writeU16(7)
+      .writeF64(0).writeF64(0).writeF64(10).writeF64(10)
+      .writeU8(1).writeU8(9).writeF32(1).writeF32(0.2).writeF32(0.1).writeF32(0.75).writeU8(0b0010)
+      .toUint8Array();
+    expect(decodeRitoDisplayListWithTypedColors(bytes).commands[0]).toEqual({
+      kind: 'paint-page',
+      rect: { x: 0, y: 0, width: 10, height: 10 },
+      paint: {
+        backgroundColor: {
+          space: 'display-p3',
+          components: [1, expect.closeTo(0.2), expect.closeTo(0.1)],
+          alpha: 0.75,
+          none: { component0: false, component1: true, component2: false, alpha: false },
+        },
+      },
     });
   });
 

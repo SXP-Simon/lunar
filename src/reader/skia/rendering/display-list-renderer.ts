@@ -321,7 +321,11 @@ function drawText(
   state: RenderState,
   lineHeightPx?: number,
 ): void {
-  drawInlineBox(canvas, rect, paint, state.alpha);
+  const fontMetrics = state.options.paragraphs.fonts.resolveFont(paint.font).getMetrics();
+  const ascent = Math.max(0, -(fontMetrics?.ascent ?? -paint.font.sizePx * 0.8));
+  const descent = Math.max(0, fontMetrics?.descent ?? paint.font.sizePx * 0.2);
+  const contentTop = rect.y + paint.font.sizePx * 0.8 - ascent;
+  drawInlineBox(canvas, rect, paint, state.alpha, { contentTop, contentHeight: ascent + descent });
   const paragraph = state.options.paragraphs.createParagraph(text, paint, {
     color: state.options.colorOverride?.foregroundColor ?? paint.color,
     alpha: state.alpha,
@@ -330,7 +334,10 @@ function drawText(
   });
   try {
     paragraph.layout(SINGLE_LINE_LAYOUT_WIDTH);
-    paragraph.paint(canvas, rect.x, rect.y);
+    const line = paragraph.getLineMetrics()[0];
+    const targetBaseline = Math.round(rect.y + paint.font.sizePx * 0.8);
+    const paragraphTop = line ? targetBaseline - line.baseline : rect.y;
+    paragraph.paint(canvas, rect.x - (paint.letterSpacingPx ?? 0) / 2, paragraphTop);
   } finally {
     paragraph.dispose();
   }
@@ -392,8 +399,9 @@ function drawInlineBox(
   rect: ReaderRect,
   paint: ReaderRunPaint,
   alpha: number,
+  metrics?: { readonly contentTop: number; readonly contentHeight: number },
 ): void {
-  const box = computeInlineBox(rect, paint);
+  const box = computeInlineBox(rect, paint, metrics);
   if (paint.backgroundColor) {
     drawFilledRect(
       canvas,
@@ -413,7 +421,7 @@ function drawInlineBox(
   drawRunBorder(canvas, border.end, box.x + box.width, box.y, box.x + box.width, box.y + box.height, alpha);
 }
 
-function computeInlineBox(rect: ReaderRect, paint: ReaderRunPaint): ReaderRect {
+function computeInlineBox(rect: ReaderRect, paint: ReaderRunPaint, metrics?: { readonly contentTop: number; readonly contentHeight: number }): ReaderRect {
   const padding = paint.padding;
   const border = paint.border;
   const left = (padding?.left ?? 0) + (border?.start?.widthPx ?? 0);
@@ -422,9 +430,9 @@ function computeInlineBox(rect: ReaderRect, paint: ReaderRunPaint): ReaderRect {
   const bottom = (padding?.bottom ?? 0) + (border?.bottom?.widthPx ?? 0);
   return {
     x: rect.x - left,
-    y: rect.y - top,
+    y: (metrics?.contentTop ?? rect.y) - top,
     width: rect.width + left + right,
-    height: paint.font.sizePx + top + bottom,
+    height: (metrics?.contentHeight ?? paint.font.sizePx) + top + bottom,
   };
 }
 
@@ -496,6 +504,7 @@ function drawBorderLine(
   alpha: number,
 ): void {
   if (edge.style === 'none' || edge.style === 'hidden') return;
+  [x1, y1, x2, y2] = snapBorderLine(x1, y1, x2, y2, width);
   if (edge.style === 'double') {
     const third = Math.max(1, width / 3);
     const horizontal = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
@@ -543,6 +552,16 @@ function drawBorderLine(
   paint.dispose();
 }
 
+function snapBorderLine(x1: number, y1: number, x2: number, y2: number, width: number): [number, number, number, number] {
+  const offset = Math.round(width) % 2 === 1 ? 0.5 : 0;
+  if (Math.abs(x2 - x1) >= Math.abs(y2 - y1)) {
+    const y = Math.round((y1 + y2) / 2) + offset;
+    return [Math.round(x1), y, Math.round(x2), y];
+  }
+  const x = Math.round((x1 + x2) / 2) + offset;
+  return [x, Math.round(y1), x, Math.round(y2)];
+}
+
 function drawSolidLine(
   canvas: SkCanvas,
   x1: number,
@@ -583,8 +602,9 @@ function createPaint(
   const paint = Skia.Paint();
   paint.setAntiAlias(true);
   paint.setStyle(style);
-  paint.setColor(skiaColor(color));
-  paint.setAlphaf(clampAlpha(alpha));
+  const resolved = skiaColor(color);
+  paint.setColor(resolved);
+  paint.setAlphaf(clampAlpha(alpha * (resolved[3] ?? 1)));
   return paint;
 }
 

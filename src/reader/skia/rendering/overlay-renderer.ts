@@ -1,6 +1,6 @@
 import { PaintStyle, Skia, type SkCanvas } from '@shopify/react-native-skia';
 
-import type { ReaderRect } from '../../contracts';
+import type { ReaderPublicationView, ReaderRect, ReaderTextRangeGeometryRequest } from '../../contracts';
 import { skiaColor } from './color-adapter';
 
 export interface ReaderOverlayRect {
@@ -25,4 +25,14 @@ export function renderSkiaOverlays(canvas: SkCanvas, overlays: readonly ReaderOv
     else canvas.drawRect(rect, paint);
     paint.dispose();
   }
+}
+
+export async function resolveReaderRangeOverlays(
+  publication: ReaderPublicationView,
+  revisionId: number,
+  request: ReaderTextRangeGeometryRequest,
+  style: Omit<ReaderOverlayRect, 'bounds' | 'revisionId'>,
+): Promise<readonly ReaderOverlayRect[]> {
+  const rects = await publication.resolveTextRangeGeometry?.(request) ?? [];
+  return rects.map((rect) => ({ ...style, revisionId, bounds: rect.bounds }));
 }
