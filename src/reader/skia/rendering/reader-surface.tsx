@@ -1,6 +1,6 @@
-import { Canvas, Group, Picture, Rect as SkiaRect } from '@shopify/react-native-skia';
+import { Canvas, Group, Picture, Rect as SkiaRect, useCanvasSize } from '@shopify/react-native-skia';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import type { ReaderSnapshot } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/native-reader-runtime';
@@ -19,7 +19,7 @@ export interface ReaderSurfaceProps {
 }
 
 export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTransformChange }: ReaderSurfaceProps) {
-  const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  const { ref, size: viewport } = useCanvasSize();
   const compiled = snapshot.phase === 'ready'
     ? runtime.getCurrentPicture(snapshot.revisionId, snapshot.spreadIndex)
     : undefined;
@@ -35,11 +35,10 @@ export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTrans
     onTransformChange?.(createReaderSurfaceTransform(scale, offsetX, offsetY));
   }, [offsetX, offsetY, onTransformChange, scale]);
 
-  if (!compiled || !frame || snapshot.phase !== 'ready') {
-    return null;
+  const canRenderFrame = compiled !== undefined && frame !== undefined && snapshot.phase === 'ready';
+  if (canRenderFrame) {
+    readerPerformanceMark('reader.canvas.render', `spread=${snapshot.spreadIndex}`);
   }
-
-  readerPerformanceMark('reader.canvas.render', `spread=${snapshot.spreadIndex}`);
 
   return (
     <Canvas
@@ -47,26 +46,25 @@ export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTrans
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       pointerEvents="none"
-      onLayout={(event) => {
-        const { width, height } = event.nativeEvent.layout;
-        setViewport((current) => current.width === width && current.height === height ? current : { width, height });
-      }}
+      ref={ref}
       style={style}>
-      <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
-        <Picture key={`${snapshot.revisionId}:${snapshot.spreadIndex}`} picture={compiled.picture} />
-        {overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
-          <SkiaRect
-            key={`${index}:${overlay.bounds.x}:${overlay.bounds.y}`}
-            x={overlay.bounds.x}
-            y={overlay.bounds.y}
-            width={overlay.bounds.width}
-            height={overlay.bounds.height}
-            color={overlay.color}
-            style={overlay.outline ? 'stroke' : 'fill'}
-            strokeWidth={overlay.thickness ?? 1}
-          />
-        ))}
-      </Group>
+      {canRenderFrame && (
+        <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
+          <Picture key={`${snapshot.revisionId}:${snapshot.spreadIndex}`} picture={compiled.picture} />
+          {overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
+            <SkiaRect
+              key={`${index}:${overlay.bounds.x}:${overlay.bounds.y}`}
+              x={overlay.bounds.x}
+              y={overlay.bounds.y}
+              width={overlay.bounds.width}
+              height={overlay.bounds.height}
+              color={overlay.color}
+              style={overlay.outline ? 'stroke' : 'fill'}
+              strokeWidth={overlay.thickness ?? 1}
+            />
+          ))}
+        </Group>
+      )}
     </Canvas>
   );
 }
