@@ -5,11 +5,17 @@ export interface ReaderSourcePoint {
   readonly textOffset: number;
 }
 
+export interface ReaderSourceRange {
+  readonly start: ReaderSourcePoint;
+  readonly end: ReaderSourcePoint;
+}
+
 export interface ReaderLocator {
   readonly spineIdref: string;
   readonly manifestHref?: string;
   readonly chapterProgress: number;
   readonly sourcePoint?: ReaderSourcePoint;
+  readonly sourceRange?: ReaderSourceRange;
 }
 
 export interface ReaderPosition {

@@ -74,7 +74,7 @@ export class SkiaDisplayListRenderer
     }
 
     validateDisplayList(displayList);
-    const state: RenderState = { alpha: 1, alphaStack: [1], options, blockGrounds: [] };
+    const state: RenderState = { alpha: 1, alphaStack: [1], options, blockGrounds: [], groundStackSizes: [] };
     canvas.save();
     canvas.scale(options.pixelRatio, options.pixelRatio);
     try {
@@ -92,6 +92,7 @@ interface RenderState {
   readonly alphaStack: number[];
   readonly options: SkiaDisplayListRenderOptions;
   readonly blockGrounds: DeclaredGround[];
+  readonly groundStackSizes: number[];
   pageGround?: ReaderColor | string;
 }
 
@@ -104,12 +105,15 @@ function renderCommand(
     case 'pushState':
       canvas.save();
       state.alphaStack.push(state.alpha);
+      state.groundStackSizes.push(state.blockGrounds.length);
       return;
     case 'popState':
       if (state.alphaStack.length > 1) {
         canvas.restore();
         state.alphaStack.pop();
         state.alpha = state.alphaStack.at(-1) ?? 1;
+        const groundSize = state.groundStackSizes.pop();
+        if (groundSize !== undefined) state.blockGrounds.length = groundSize;
       }
       return;
     case 'translate':
@@ -126,7 +130,7 @@ function renderCommand(
       const rect = toSkRect(command.rect);
       if (command.radius && (command.radius.rx > 0 || command.radius.ry > 0)) {
         canvas.clipRRect(
-          Skia.RRectXY(rect, command.radius.rx, command.radius.ry),
+          Skia.RRectXY(rect, Math.min(rect.width / 2, Math.max(0, command.radius.rx)), Math.min(rect.height / 2, Math.max(0, command.radius.ry))),
           ClipOp.Intersect,
           true,
         );
@@ -136,9 +140,9 @@ function renderCommand(
       return;
     }
     case 'paintPage':
+      state.blockGrounds.length = 0;
+      state.pageGround = undefined;
       if (command.paint.backgroundColor) {
-        state.blockGrounds.length = 0;
-        state.pageGround = undefined;
         const original = command.paint.backgroundColor;
         const override = state.options.colorOverride;
         if (override && !isBookOwnedPageGround(original)) {
@@ -182,7 +186,7 @@ function drawBlock(
   if (paint.background?.color && isOpaqueColor(paint.background.color)) {
     state.blockGrounds.push({ rect, color: paint.background.color });
   }
-  for (const shadow of paint.boxShadow ?? []) {
+  for (const shadow of [...(paint.boxShadow ?? [])].reverse()) {
     if (shadow.inset) { drawInsetShadow(canvas, rect, radius, shadow, state.alpha); continue; }
     const shadowPaint = createPaint(shadow.color, state.alpha);
     const filter = shadow.blur > 0
@@ -450,8 +454,8 @@ function drawRuby(
   lineHeightPx?: number,
 ): void {
   const align = rubyAlign ?? 'space-around';
-  if ((align === 'space-around' || align === 'space-between') && Array.from(text).length > 1) {
-    const units = Array.from(text);
+  const units = segmentText(text);
+  if ((align === 'space-around' || align === 'space-between') && units.length > 1) {
     const widths = units.map((unit) => state.options.paragraphs.measureShapedText(unit, paint).width);
     const total = widths.reduce((sum, value) => sum + value, 0);
     const available = Math.max(0, rect.width - total);
@@ -475,6 +479,16 @@ function drawRuby(
     state,
     lineHeightPx,
   );
+}
+
+function segmentText(text: string): string[] {
+  const Segmenter = (Intl as typeof Intl & {
+    Segmenter?: new (locale?: string, options?: { granularity?: string }) => { segment(value: string): Iterable<{ segment: string }> };
+  }).Segmenter;
+  if (Segmenter) {
+    return Array.from(new Segmenter('zh-Hans', { granularity: 'grapheme' }).segment(text), (part) => part.segment);
+  }
+  return Array.from(text);
 }
 
 function drawVerticalText(
@@ -501,8 +515,13 @@ function drawVerticalText(
     }, barePaint, state);
   }
   if (paint.decoration && paint.decoration.thickness > 0) {
-    const x = rect.x + rect.width - paint.decoration.y;
-    drawSolidLine(canvas, x, rect.y, x, rect.y + rect.height, paint.decoration.color, paint.decoration.thickness, state.alpha);
+    if (paint.decoration.kind === 'line-through') {
+      const y = rect.y + rect.height / 2;
+      drawSolidLine(canvas, rect.x, y, rect.x + rect.width, y, paint.decoration.color, paint.decoration.thickness, state.alpha);
+    } else {
+      const x = rect.x + rect.width - paint.decoration.y;
+      drawSolidLine(canvas, x, rect.y, x, rect.y + rect.height, paint.decoration.color, paint.decoration.thickness, state.alpha);
+    }
   }
 }
 
@@ -543,6 +562,15 @@ function drawInlineBox(
   const border = paint.border;
   if (!border) {
     return;
+  }
+  const radius = paint.backgroundRadius ?? 0;
+  if (radius > 0 && border.top && border.bottom && border.start && border.end) {
+    const edges = [border.top, border.end, border.bottom, border.start];
+    const first = edges[0];
+    if (edges.every((edge) => edge.paint.style === first.paint.style && edge.paint.color === first.paint.color) && edges.every((edge) => edge.widthPx === first.widthPx)) {
+      drawStyledRoundedBorder(canvas, box, { rx: radius, ry: radius }, first.paint, first.widthPx, alpha);
+      return;
+    }
   }
   drawRunBorder(canvas, border.top, box.x, box.y, box.x + box.width, box.y, alpha, 0);
   drawRunBorder(canvas, border.bottom, box.x, box.y + box.height, box.x + box.width, box.y + box.height, alpha, 2);

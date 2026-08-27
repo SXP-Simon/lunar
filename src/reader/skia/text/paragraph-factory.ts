@@ -45,7 +45,7 @@ export class LunarSkiaParagraphFactory implements SkiaParagraphFactory {
     const families = this.fonts.getFontFamilies(paint.font.family);
     const provider = this.fonts.getParagraphProvider(paint.font.family);
     const paragraphStyle = {
-      textAlign: TextAlign.Left,
+      textAlign: TextAlign.Start,
       textDirection: detectParagraphDirection(text) === 'rtl' ? TextDirection.RTL : TextDirection.LTR,
     };
     const builder = provider

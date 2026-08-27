@@ -2,6 +2,10 @@ import type {
   ReaderLayoutRequest,
   ReaderOpenRequest,
   ReaderOpenResult,
+  ReaderSearchRequest,
+  ReaderSearchResponse,
+  ReaderTextRangeGeometryRequest,
+  ReaderTextRangeRect,
   ReaderSnapshot,
 } from '../contracts';
 
@@ -16,5 +20,7 @@ export interface ReaderRuntime {
   goToToc(href: string): Promise<ReaderSnapshot>;
   next(): Promise<ReaderSnapshot>;
   previous(): Promise<ReaderSnapshot>;
+  search(request: ReaderSearchRequest): Promise<ReaderSearchResponse>;
+  resolveTextRangeGeometry(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]>;
   close(): Promise<void>;
 }

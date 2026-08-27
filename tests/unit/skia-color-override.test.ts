@@ -11,6 +11,7 @@ import {
   effectiveTextColor,
   isBookOwnedPageGround,
 } from '../../src/reader/skia/rendering/color-override';
+import { skiaColor } from '../../src/reader/skia/rendering/color-adapter';
 
 describe('Skia reader color override', () => {
   it('distinguishes a designed dark page from white paper', () => {
@@ -35,6 +36,20 @@ describe('Skia reader color override', () => {
     expect(effectiveTextColor('#333333', {
       backgroundColor: '#000000', foregroundColor: '#ffffff',
     }, ground)).toBe('#333333');
+  });
+
+  it('converts typed linear and wide-gamut colors onto the sRGB surface', () => {
+    const linear = skiaColor({
+      space: 'srgb-linear', components: [1, 0, 0], alpha: 1,
+      none: { component0: false, component1: false, component2: false, alpha: false },
+    });
+    const p3 = skiaColor({
+      space: 'display-p3', components: [1, 0, 0], alpha: 1,
+      none: { component0: false, component1: false, component2: false, alpha: false },
+    });
+    expect(linear[0]).toBe(1);
+    expect(p3[0]).toBeGreaterThan(0.9);
+    expect(p3[3]).toBe(1);
   });
 });
 

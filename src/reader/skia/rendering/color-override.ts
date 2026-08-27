@@ -66,7 +66,9 @@ function relativeLuminance(color: ArrayLike<number>): number {
 }
 
 function rgbToHsl(color: ArrayLike<number>): [number, number, number] {
-  const r = color[0] ?? 0; const g = color[1] ?? 0; const b = color[2] ?? 0;
+  const r = Math.round((color[0] ?? 0) * 255) / 255;
+  const g = Math.round((color[1] ?? 0) * 255) / 255;
+  const b = Math.round((color[2] ?? 0) * 255) / 255;
   const max = Math.max(r, g, b); const min = Math.min(r, g, b); const lightness = (max + min) / 2;
   if (max === min) return [0, 0, lightness];
   const delta = max - min;

@@ -256,6 +256,10 @@ class RitoNativePublication implements LoadedReaderPublication {
           manifestHref: result.locator.href,
           chapterProgress: result.locator.progression ?? 0,
           sourcePoint: result.locator.sourcePoint ? { nodePath: result.locator.sourcePoint.nodePath, textOffset: safeTextOffset(result.locator.sourcePoint.textOffset) } : undefined,
+          sourceRange: result.locator.sourceRange ? {
+            start: { nodePath: result.locator.sourceRange.start.nodePath, textOffset: safeTextOffset(result.locator.sourceRange.start.textOffset) },
+            end: { nodePath: result.locator.sourceRange.end.nodePath, textOffset: safeTextOffset(result.locator.sourceRange.end.textOffset) },
+          } : undefined,
         } : undefined,
       })),
     };
@@ -378,7 +382,9 @@ function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../contr
   const typography = layout.typography;
   const palette = layout.theme === 'dark'
     ? { backgroundColor: '#000000', foregroundColor: '#FFFFFF', spreadBodyBackgroundColor: '#000000' }
-    : { backgroundColor: '#FFFFFF', foregroundColor: '#000000', spreadBodyBackgroundColor: '#FFFFFF' };
+    : layout.theme === 'paper'
+      ? { backgroundColor: '#FAF9F6', foregroundColor: '#202020', spreadBodyBackgroundColor: '#FAF9F6' }
+      : { backgroundColor: '#FFFFFF', foregroundColor: '#000000', spreadBodyBackgroundColor: '#FFFFFF' };
   return {
     viewportWidth: layout.viewport.width,
     viewportHeight: layout.viewport.height,
