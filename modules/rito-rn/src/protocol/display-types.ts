@@ -102,8 +102,8 @@ export type RitoDisplayCommand =
   | { readonly kind: 'clip-rect'; readonly rect: RitoDisplayRect; readonly radius?: { readonly rx: number; readonly ry: number } }
   | { readonly kind: 'paint-page'; readonly rect: RitoDisplayRect; readonly paint: { readonly backgroundColor?: RitoPaintColor } }
   | { readonly kind: 'paint-block'; readonly rect: RitoDisplayRect; readonly paint: RitoBlockPaint; readonly borderBox?: { readonly topWidth: number; readonly rightWidth: number; readonly bottomWidth: number; readonly leftWidth: number } }
-  | { readonly kind: 'paint-text'; readonly text: string; readonly rect: RitoDisplayRect; readonly paint: RitoRunPaint; readonly lineHeightPx?: number; readonly href?: string; readonly sourceText?: string; readonly sourceTextOffset?: bigint }
-  | { readonly kind: 'paint-ruby'; readonly text: string; readonly rect: RitoDisplayRect; readonly paint: RitoRunPaint; readonly lineHeightPx?: number; readonly href?: string; readonly sourceText?: string; readonly sourceTextOffset?: bigint; readonly rubyAlign?: string }
+  | { readonly kind: 'paint-text'; readonly text: string; readonly rect: RitoDisplayRect; readonly paint: RitoRunPaint; readonly lineHeightPx?: number; readonly href?: string; readonly sourceText?: string; readonly sourceTextOffset?: bigint; readonly vertical?: boolean }
+  | { readonly kind: 'paint-ruby'; readonly text: string; readonly rect: RitoDisplayRect; readonly paint: RitoRunPaint; readonly lineHeightPx?: number; readonly href?: string; readonly sourceText?: string; readonly sourceTextOffset?: bigint; readonly rubyAlign?: string; readonly vertical?: boolean }
   | { readonly kind: 'paint-image'; readonly src: string; readonly rect: RitoDisplayRect; readonly alt?: string; readonly href?: string; readonly sourceRect?: RitoDisplayRect }
   | { readonly kind: 'paint-horizontal-rule'; readonly rect: RitoDisplayRect; readonly paint: { readonly color: RitoPaintColor; readonly style: RitoBorderStyle } };
 

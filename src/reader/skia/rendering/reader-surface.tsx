@@ -6,6 +6,9 @@ import type { ReaderSnapshot } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/native-reader-runtime';
 import { readerPerformanceMark } from '../../runtime/performance';
 import type { ReaderOverlayRect } from './overlay-renderer';
+import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
+
+export type { ReaderSurfaceTransform } from './surface-transform';
 
 export interface ReaderSurfaceProps {
   readonly runtime: LunarReaderRuntime;
@@ -13,13 +16,6 @@ export interface ReaderSurfaceProps {
   readonly style?: StyleProp<ViewStyle>;
   readonly overlays?: readonly ReaderOverlayRect[];
   readonly onTransformChange?: (transform: ReaderSurfaceTransform) => void;
-}
-
-export interface ReaderSurfaceTransform {
-  readonly scale: number;
-  readonly offsetX: number;
-  readonly offsetY: number;
-  toDisplayPoint(x: number, y: number): { readonly x: number; readonly y: number };
 }
 
 export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTransformChange }: ReaderSurfaceProps) {
@@ -73,12 +69,4 @@ export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTrans
       </Group>
     </Canvas>
   );
-}
-
-export function createReaderSurfaceTransform(scale: number, offsetX: number, offsetY: number): ReaderSurfaceTransform {
-  const safeScale = scale > 0 && Number.isFinite(scale) ? scale : 1;
-  return {
-    scale: safeScale, offsetX, offsetY,
-    toDisplayPoint: (x, y) => ({ x: (x - offsetX) / safeScale, y: (y - offsetY) / safeScale }),
-  };
 }

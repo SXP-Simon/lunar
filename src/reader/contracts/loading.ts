@@ -1,4 +1,4 @@
-import type { ReaderBookMetadata, ReaderLayoutRequest, ReaderTocEntry } from './reader';
+import type { ReaderBookMetadata, ReaderLayoutRequest, ReaderLocator, ReaderSourcePoint, ReaderTocEntry } from './reader';
 
 export interface ReaderFontShorthand {
   readonly style: 'normal' | 'italic';
@@ -239,6 +239,7 @@ export type ReaderDrawCommand =
       readonly href?: string;
       readonly sourceText?: string;
       readonly sourceTextOffset?: number;
+      readonly vertical?: boolean;
     }
   | {
       readonly kind: 'paintRuby';
@@ -250,6 +251,7 @@ export type ReaderDrawCommand =
       readonly sourceText?: string;
       readonly sourceTextOffset?: number;
       readonly rubyAlign?: 'space-around' | 'start' | 'center' | 'space-between';
+      readonly vertical?: boolean;
     }
   | {
       readonly kind: 'paintImage';
@@ -344,6 +346,30 @@ export interface ReaderTextRangeRect {
   readonly endCharIndex: number;
 }
 
+export interface ReaderSearchRequest {
+  readonly query: string;
+  readonly caseSensitive?: boolean;
+  readonly wholeWord?: boolean;
+  readonly limit?: number;
+}
+
+export interface ReaderSearchResult {
+  readonly pageIndex: number;
+  readonly spreadIndex: number;
+  readonly start: ReaderTextPosition;
+  readonly end: ReaderTextPosition;
+  readonly context: string;
+  readonly locator?: ReaderLocator;
+}
+
+export interface ReaderSearchResponse {
+  readonly query: string;
+  readonly truncated: boolean;
+  readonly searchedPageCount: number;
+  readonly scopeComplete: boolean;
+  readonly results: readonly ReaderSearchResult[];
+}
+
 export interface ReaderHitEntry {
   readonly pageIndex: number;
   readonly bounds: ReaderRect;
@@ -353,6 +379,7 @@ export interface ReaderHitEntry {
   readonly imageAlt?: string;
   readonly footnoteKey?: string;
   readonly footnotePending?: boolean;
+  readonly sourcePoint?: ReaderSourcePoint;
 }
 
 export type ReaderSemanticRole =
@@ -389,6 +416,7 @@ export interface ReaderPublicationView {
   getImage(source: string): Uint8Array | undefined;
   resolveToc(href: string): number | undefined;
   resolveTextRangeGeometry?(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]>;
+  search?(request: ReaderSearchRequest): Promise<ReaderSearchResponse>;
 }
 
 export interface LoadedReaderPublication extends ReaderPublicationView {

@@ -42,7 +42,7 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
     const opened = await RitoReaderSession.open(new Uint8Array(options.data), request, pinnedFonts, { native: this.config.native });
     readerPerformanceMark('reader.backend.firstArtifact', `artifactId=${opened.artifact.artifactId.toString()}`);
     const publicationMetadata = await opened.session.readPublication();
-    const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata, options.layout.typography.spreadMode, options.fontRegistry, options.imageDecoder);
+    const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata, options.layout, options.fontRegistry, options.imageDecoder);
     await publication.prepare(opened.artifact);
     this.session = opened.session;
     this.publication = publication;
@@ -91,7 +91,12 @@ class RitoNativePublication implements LoadedReaderPublication {
   private readonly spine: RitoPublication['spine'];
   private backgroundTail: Promise<void> = Promise.resolve();
 
-  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, private readonly spreadMode: 'single' | 'double', private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
+  private readonly spreadMode: 'single' | 'double';
+  private readonly layoutValue: LoadedReaderPublication['layout'];
+
+  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, layout: ReaderLayoutRequest, private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
+    this.spreadMode = layout.typography.spreadMode;
+    this.layoutValue = toReaderLayoutParameters(layout);
     this.metadataValue = publication.metadata;
     this.tocValue = publication.toc.map(toReaderToc);
     this.spine = publication.spine;
@@ -133,6 +138,7 @@ class RitoNativePublication implements LoadedReaderPublication {
         imageAlt: hit.imageAlt,
         footnoteKey: hit.footnoteKey,
         footnotePending: hit.footnotePending,
+        sourcePoint: hit.sourcePoint ? { nodePath: hit.sourcePoint.nodePath, textOffset: safeTextOffset(hit.sourcePoint.textOffset) } : undefined,
       }))),
       semantics: pages.flatMap((page) => page.semantics.map(toReaderSemanticNode)),
       text: pages.map((page) => page.text).join(''),
@@ -175,7 +181,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   getImage(source: string): Uint8Array | undefined { return this.images.get(source); }
   get metadata() { return this.metadataValue; }
   get toc() { return this.tocValue; }
-  get layout() { const frame = this.frames.values().next().value as ReaderRenderFrame | undefined; return { viewportWidth: frame?.width ?? 0, viewportHeight: frame?.height ?? 0, pageWidth: frame?.width ?? 0, pageHeight: frame?.height ?? 0, pixelRatio: 1, marginTop: 0, marginRight: 0, marginBottom: 0, marginLeft: 0, spreadMode: 'single' as const, spreadGap: 0, rootFontSize: 16, palette: { backgroundColor: '#000000', foregroundColor: '#ffffff', spreadBodyBackgroundColor: '#000000' } }; }
+  get layout() { return this.layoutValue; }
   get totalPages() {
     return Math.max(1, [...this.artifacts.values()].reduce((max, artifact) => {
       const end = artifact.bookPageCount
@@ -219,6 +225,40 @@ class RitoNativePublication implements LoadedReaderPublication {
       end: request.end,
     });
     return geometry.rects;
+  }
+
+  async search(request: import('../contracts').ReaderSearchRequest): Promise<import('../contracts').ReaderSearchResponse> {
+    const artifact = this.visibleArtifactId === undefined
+      ? undefined
+      : [...this.artifacts.values()].find((candidate) => candidate.artifactId === this.visibleArtifactId);
+    if (!artifact) return { query: request.query, truncated: false, searchedPageCount: 0, scopeComplete: false, results: [] };
+    const response = await this.session.search({
+      sessionId: artifact.sessionId,
+      artifactId: artifact.artifactId,
+      query: request.query,
+      caseSensitive: request.caseSensitive,
+      wholeWord: request.wholeWord,
+      limit: request.limit,
+    });
+    return {
+      query: response.query,
+      truncated: response.truncated,
+      searchedPageCount: response.searchedPageCount,
+      scopeComplete: response.scopeComplete,
+      results: response.results.map((result) => ({
+        pageIndex: result.pageIndex,
+        spreadIndex: result.spreadIndex,
+        start: result.start,
+        end: result.end,
+        context: result.context,
+        locator: result.locator ? {
+          spineIdref: this.spine.find((item) => item.href === result.locator?.href)?.idref ?? result.locator.href,
+          manifestHref: result.locator.href,
+          chapterProgress: result.locator.progression ?? 0,
+          sourcePoint: result.locator.sourcePoint ? { nodePath: result.locator.sourcePoint.nodePath, textOffset: safeTextOffset(result.locator.sourcePoint.textOffset) } : undefined,
+        } : undefined,
+      })),
+    };
   }
 
   private indexForArtifact(artifact: RitoArtifact): number {
@@ -294,6 +334,11 @@ function bytesEqual(left: Uint8Array, right: Uint8Array): boolean {
   return true;
 }
 
+function safeTextOffset(value: bigint): number {
+  if (value > BigInt(Number.MAX_SAFE_INTEGER)) throw new RangeError('Rito source text offset exceeds JavaScript safe integer range.');
+  return Number(value);
+}
+
 function toReaderToc(entry: RitoTocEntry): import('../contracts').ReaderTocEntry {
   const target = entry.target.kind === 'locator'
     ? `${entry.target.locator.href}${entry.target.locator.anchorId ? `#${entry.target.locator.anchorId}` : ''}`
@@ -327,4 +372,28 @@ function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutR
   const locator = request.restorePosition?.locator;
   const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, marginTop: typography.marginVertical, marginRight: typography.marginHorizontal, marginBottom: typography.marginVertical, marginLeft: typography.marginHorizontal, spreadMode: typography.spreadMode, firstPageAlone: typography.spreadMode === 'double', spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily };
   return { sessionId: BigInt(Math.max(1, revisionId)), requestId: BigInt(Math.max(1, operationId)), layout: value, locator: { href: locator?.manifestHref ?? initialHref, anchorId: locator?.sourcePoint ? undefined : undefined, progression: request.restorePosition?.progression }, work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 4 }, textProfile: 'platform-string-runs' };
+}
+
+function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../contracts').ReaderLayoutParameters {
+  const typography = layout.typography;
+  const palette = layout.theme === 'dark'
+    ? { backgroundColor: '#000000', foregroundColor: '#FFFFFF', spreadBodyBackgroundColor: '#000000' }
+    : { backgroundColor: '#FFFFFF', foregroundColor: '#000000', spreadBodyBackgroundColor: '#FFFFFF' };
+  return {
+    viewportWidth: layout.viewport.width,
+    viewportHeight: layout.viewport.height,
+    pageWidth: layout.viewport.width,
+    pageHeight: layout.viewport.height,
+    pixelRatio: layout.viewport.pixelRatio,
+    marginTop: typography.marginVertical,
+    marginRight: typography.marginHorizontal,
+    marginBottom: typography.marginVertical,
+    marginLeft: typography.marginHorizontal,
+    spreadMode: typography.spreadMode,
+    spreadGap: 0,
+    rootFontSize: typography.fontSize,
+    lineHeight: typography.lineHeight,
+    fontFamily: typography.fontFamily,
+    palette,
+  };
 }

@@ -1,6 +1,6 @@
 import { PaintStyle, Skia, type SkCanvas } from '@shopify/react-native-skia';
 
-import type { ReaderPublicationView, ReaderRect, ReaderTextRangeGeometryRequest } from '../../contracts';
+import type { ReaderRect, ReaderSearchResult, ReaderTextRangeGeometryRequest, ReaderTextRangeRect } from '../../contracts';
 import { skiaColor } from './color-adapter';
 
 export interface ReaderOverlayRect {
@@ -28,11 +28,25 @@ export function renderSkiaOverlays(canvas: SkCanvas, overlays: readonly ReaderOv
 }
 
 export async function resolveReaderRangeOverlays(
-  publication: ReaderPublicationView,
+  source: { resolveTextRangeGeometry(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]> },
   revisionId: number,
   request: ReaderTextRangeGeometryRequest,
   style: Omit<ReaderOverlayRect, 'bounds' | 'revisionId'>,
 ): Promise<readonly ReaderOverlayRect[]> {
-  const rects = await publication.resolveTextRangeGeometry?.(request) ?? [];
+  const rects = await source.resolveTextRangeGeometry(request);
   return rects.map((rect) => ({ ...style, revisionId, bounds: rect.bounds }));
+}
+
+export async function resolveReaderSearchOverlays(
+  source: { resolveTextRangeGeometry(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]> },
+  revisionId: number,
+  results: readonly ReaderSearchResult[],
+  style: Omit<ReaderOverlayRect, 'bounds' | 'revisionId'>,
+): Promise<readonly ReaderOverlayRect[]> {
+  const groups = await Promise.all(results.map((result) => resolveReaderRangeOverlays(source, revisionId, {
+    pageIndex: result.pageIndex,
+    start: result.start,
+    end: result.end,
+  }, style)));
+  return groups.flat();
 }

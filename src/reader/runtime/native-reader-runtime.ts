@@ -158,6 +158,26 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.getCurrentFrame(spreadIndex)?.semantics ?? [];
   }
 
+  async resolveTextRangeGeometry(request: import('../contracts').ReaderTextRangeGeometryRequest): Promise<readonly import('../contracts').ReaderTextRangeRect[]> {
+    const publication = this.publication;
+    if (!publication?.resolveTextRangeGeometry || this.snapshot.phase !== 'ready') return [];
+    const revision = this.snapshot.revisionId;
+    const rects = await publication.resolveTextRangeGeometry(request);
+    return revision === this.snapshot.revisionId ? rects : [];
+  }
+
+  async search(request: import('../contracts').ReaderSearchRequest): Promise<import('../contracts').ReaderSearchResponse> {
+    const publication = this.publication;
+    if (!publication?.search || this.snapshot.phase !== 'ready') {
+      return { query: request.query, truncated: false, searchedPageCount: 0, scopeComplete: false, results: [] };
+    }
+    const revision = this.snapshot.revisionId;
+    const response = await publication.search(request);
+    return revision === this.snapshot.revisionId
+      ? response
+      : { query: request.query, truncated: false, searchedPageCount: 0, scopeComplete: false, results: [] };
+  }
+
   getBackgroundColor(): string {
     return this.publication?.layout.palette.backgroundColor ?? '#000000';
   }
@@ -320,6 +340,10 @@ export class LunarReaderRuntime implements ReaderRuntime {
       pixelRatio: 1,
       images: imageCache,
       paragraphs: textMeasurer.paragraphs,
+      colorOverride: {
+        backgroundColor: publication.layout.palette.backgroundColor,
+        foregroundColor: publication.layout.palette.foregroundColor,
+      },
     });
     readerPerformanceEnd('reader.picture.compile', pictureStartedAt);
     this.pictures.set(key, picture);

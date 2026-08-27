@@ -1,6 +1,7 @@
 import {
   BlurStyle,
   ClipOp,
+  FillType,
   PaintStyle,
   Skia,
   StrokeCap,
@@ -26,6 +27,14 @@ import {
   type SkiaParagraphFactory,
 } from '../text/paragraph-factory';
 import { skiaColor } from './color-adapter';
+import {
+  declaredGroundFor,
+  effectiveTextColor,
+  isBookOwnedPageGround,
+  isOpaqueColor,
+  type DeclaredGround,
+  type SkiaColorOverride,
+} from './color-override';
 
 export interface SkiaDisplayListRenderOptions {
   readonly pixelRatio: number;
@@ -33,10 +42,7 @@ export interface SkiaDisplayListRenderOptions {
     resolveImage(source: string): SkiaImageAsset | undefined;
   };
   readonly paragraphs: SkiaParagraphFactory;
-  readonly colorOverride?: {
-    readonly backgroundColor?: string;
-    readonly foregroundColor?: string;
-  };
+  readonly colorOverride?: SkiaColorOverride;
 }
 
 export interface LunarSkiaDisplayListRenderer {
@@ -68,7 +74,7 @@ export class SkiaDisplayListRenderer
     }
 
     validateDisplayList(displayList);
-    const state: RenderState = { alpha: 1, alphaStack: [1], options };
+    const state: RenderState = { alpha: 1, alphaStack: [1], options, blockGrounds: [] };
     canvas.save();
     canvas.scale(options.pixelRatio, options.pixelRatio);
     try {
@@ -85,6 +91,8 @@ interface RenderState {
   alpha: number;
   readonly alphaStack: number[];
   readonly options: SkiaDisplayListRenderOptions;
+  readonly blockGrounds: DeclaredGround[];
+  pageGround?: ReaderColor | string;
 }
 
 function renderCommand(
@@ -129,17 +137,28 @@ function renderCommand(
     }
     case 'paintPage':
       if (command.paint.backgroundColor) {
-        drawFilledRect(canvas, command.rect, state.options.colorOverride?.backgroundColor ?? command.paint.backgroundColor, state.alpha);
+        state.blockGrounds.length = 0;
+        state.pageGround = undefined;
+        const original = command.paint.backgroundColor;
+        const override = state.options.colorOverride;
+        if (override && !isBookOwnedPageGround(original)) {
+          drawFilledRect(canvas, command.rect, override.backgroundColor, state.alpha);
+        } else {
+          state.pageGround = original;
+          drawFilledRect(canvas, command.rect, original, state.alpha);
+        }
       }
       return;
     case 'paintBlock':
       drawBlock(canvas, command.rect, command.paint, command.borderBox, state);
       return;
     case 'paintText':
-      drawText(canvas, command.text, command.rect, command.paint, state, command.lineHeightPx);
+      if (command.vertical) drawVerticalText(canvas, command.text, command.rect, command.paint, state);
+      else drawText(canvas, command.text, command.rect, command.paint, state, command.lineHeightPx);
       return;
     case 'paintRuby':
-      drawRuby(canvas, command.text, command.rect, command.paint, state, command.rubyAlign, command.lineHeightPx);
+      if (command.vertical) drawVerticalText(canvas, command.text, command.rect, command.paint, state, true);
+      else drawRuby(canvas, command.text, command.rect, command.paint, state, command.rubyAlign, command.lineHeightPx);
       return;
     case 'paintImage':
       drawImage(canvas, command.src, command.rect, state, command.sourceRect);
@@ -160,6 +179,9 @@ function drawBlock(
   state: RenderState,
 ): void {
   const radius = resolveRadius(paint, rect);
+  if (paint.background?.color && isOpaqueColor(paint.background.color)) {
+    state.blockGrounds.push({ rect, color: paint.background.color });
+  }
   for (const shadow of paint.boxShadow ?? []) {
     if (shadow.inset) { drawInsetShadow(canvas, rect, radius, shadow, state.alpha); continue; }
     const shadowPaint = createPaint(shadow.color, state.alpha);
@@ -175,7 +197,16 @@ function drawBlock(
       rect.width + shadow.spread * 2,
       rect.height + shadow.spread * 2,
     );
+    const padding = shadow.blur * 2 + Math.abs(shadow.offsetX) + Math.abs(shadow.offsetY) + Math.max(0, shadow.spread) + 4;
+    const clip = Skia.Path.Make();
+    clip.setFillType(FillType.EvenOdd);
+    clip.addRect(Skia.XYWHRect(rect.x - padding, rect.y - padding, rect.width + padding * 2, rect.height + padding * 2));
+    clip.addRRect(toRRect(toSkRect(rect), radius));
+    canvas.save();
+    canvas.clipPath(clip, ClipOp.Intersect, true);
     canvas.drawRRect(toRRect(spreadRect, radius, shadow.spread), shadowPaint);
+    canvas.restore();
+    clip.dispose();
     filter?.dispose();
     shadowPaint.dispose();
   }
@@ -206,7 +237,6 @@ function drawBackgroundImage(
   if (!asset) {
     return;
   }
-
   const scale = background.size === 'cover'
     ? Math.max(rect.width / asset.width, rect.height / asset.height)
     : background.size === 'contain'
@@ -230,7 +260,8 @@ function drawBackgroundImage(
   const columns = tilePositions(x, width, rect.x, rect.width, repeatX, repeat);
   const rows = tilePositions(y, height, rect.y, rect.height, repeatY, repeat);
   if (columns.length * rows.length > 4096) {
-    imagePaint.dispose(); canvas.restore(); return;
+    imagePaint.dispose(); canvas.restore();
+    throw new Error(`Skia background requires ${columns.length * rows.length} tiles; maximum is 4096.`);
   }
   for (const tileY of rows) for (const tileX of columns) {
       canvas.drawImageRect(
@@ -253,11 +284,13 @@ function drawInsetShadow(
 ): void {
   const paint = createPaint(shadow.color, alpha, PaintStyle.Stroke);
   paint.setStrokeWidth(Math.max(1, shadow.spread + shadow.blur));
-  if (shadow.blur > 0) paint.setMaskFilter(Skia.MaskFilter.MakeBlur(BlurStyle.Normal, Math.max(0.01, shadow.blur / 2), true));
+  const filter = shadow.blur > 0 ? Skia.MaskFilter.MakeBlur(BlurStyle.Normal, Math.max(0.01, shadow.blur / 2), true) : undefined;
+  if (filter) paint.setMaskFilter(filter);
   canvas.save();
   canvas.clipRRect(toRRect(toSkRect(rect), radius), ClipOp.Intersect, true);
   canvas.drawRRect(toRRect(Skia.XYWHRect(rect.x + shadow.offsetX, rect.y + shadow.offsetY, rect.width, rect.height), radius), paint);
   canvas.restore();
+  filter?.dispose();
   paint.dispose();
 }
 
@@ -273,14 +306,10 @@ function drawBlockBorders(
     const edges = [borders.top, borders.right, borders.bottom, borders.left];
     const widthsList = [widths.topWidth, widths.rightWidth, widths.bottomWidth, widths.leftWidth];
     const first = edges[0];
-    if (first && edges.every((edge) => edge?.style === first.style && edge?.color === first.color) && widthsList.every((width) => width === widthsList[0])) {
-      const paint = createPaint(first.color, alpha, PaintStyle.Stroke);
-      paint.setStrokeWidth(widthsList[0]);
-      canvas.drawRRect(toRRect(toSkRect(rect), radius), paint);
-      paint.dispose();
+    if (first && !isDirectionalBorderStyle(first.style) && edges.every((edge) => edge?.style === first.style && edge?.color === first.color) && widthsList.every((width) => width === widthsList[0])) {
+      drawStyledRoundedBorder(canvas, rect, radius, first, widthsList[0], alpha);
       return;
     }
-    const outline = toRRect(toSkRect(rect), radius);
     const center = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
     const corners = [
       [{ x: rect.x, y: rect.y }, { x: rect.x + rect.width, y: rect.y }],
@@ -295,22 +324,72 @@ function drawBlockBorders(
       const path = Skia.Path.Make();
       path.moveTo(center.x, center.y); path.lineTo(corners[index][0].x, corners[index][0].y); path.lineTo(corners[index][1].x, corners[index][1].y); path.close();
       canvas.save(); canvas.clipPath(path, ClipOp.Intersect, true);
-      const paint = createPaint(edge.color, alpha, PaintStyle.Stroke); paint.setStrokeWidth(width); canvas.drawRRect(outline, paint); paint.dispose(); canvas.restore(); path.dispose();
+      drawStyledRoundedBorder(canvas, rect, radius, { ...edge, color: resolveDirectionalBorder(edge, index) }, width, alpha);
+      canvas.restore(); path.dispose();
     }
     return;
   }
   if (borders.top && widths.topWidth > 0) {
-    drawBorderLine(canvas, borders.top, widths.topWidth, rect.x, rect.y + widths.topWidth / 2, rect.x + rect.width, rect.y + widths.topWidth / 2, alpha);
+    drawBorderLine(canvas, { ...borders.top, color: resolveDirectionalBorder(borders.top, 0) }, widths.topWidth, rect.x, rect.y + widths.topWidth / 2, rect.x + rect.width, rect.y + widths.topWidth / 2, alpha);
   }
   if (borders.right && widths.rightWidth > 0) {
-    drawBorderLine(canvas, borders.right, widths.rightWidth, rect.x + rect.width - widths.rightWidth / 2, rect.y, rect.x + rect.width - widths.rightWidth / 2, rect.y + rect.height, alpha);
+    drawBorderLine(canvas, { ...borders.right, color: resolveDirectionalBorder(borders.right, 1) }, widths.rightWidth, rect.x + rect.width - widths.rightWidth / 2, rect.y, rect.x + rect.width - widths.rightWidth / 2, rect.y + rect.height, alpha);
   }
   if (borders.bottom && widths.bottomWidth > 0) {
-    drawBorderLine(canvas, borders.bottom, widths.bottomWidth, rect.x, rect.y + rect.height - widths.bottomWidth / 2, rect.x + rect.width, rect.y + rect.height - widths.bottomWidth / 2, alpha);
+    drawBorderLine(canvas, { ...borders.bottom, color: resolveDirectionalBorder(borders.bottom, 2) }, widths.bottomWidth, rect.x, rect.y + rect.height - widths.bottomWidth / 2, rect.x + rect.width, rect.y + rect.height - widths.bottomWidth / 2, alpha);
   }
   if (borders.left && widths.leftWidth > 0) {
-    drawBorderLine(canvas, borders.left, widths.leftWidth, rect.x + widths.leftWidth / 2, rect.y, rect.x + widths.leftWidth / 2, rect.y + rect.height, alpha);
+    drawBorderLine(canvas, { ...borders.left, color: resolveDirectionalBorder(borders.left, 3) }, widths.leftWidth, rect.x + widths.leftWidth / 2, rect.y, rect.x + widths.leftWidth / 2, rect.y + rect.height, alpha);
   }
+}
+
+function drawStyledRoundedBorder(
+  canvas: SkCanvas,
+  rect: ReaderRect,
+  radius: ResolvedRadius,
+  edge: ReaderBorderPaintEdge,
+  width: number,
+  alpha: number,
+): void {
+  if (width <= 0 || edge.style === 'none' || edge.style === 'hidden') return;
+  if (edge.style === 'double') {
+    const third = Math.max(1, width / 3);
+    drawStyledRoundedBorder(canvas, rect, radius, { ...edge, style: 'solid' }, third, alpha);
+    const inset = third * 2;
+    if (rect.width > inset * 2 && rect.height > inset * 2) {
+      drawStyledRoundedBorder(canvas, { x: rect.x + inset, y: rect.y + inset, width: rect.width - inset * 2, height: rect.height - inset * 2 }, shrinkRadius(radius, inset), { ...edge, style: 'solid' }, third, alpha);
+    }
+    return;
+  }
+  if (edge.style === 'groove' || edge.style === 'ridge') {
+    const half = Math.max(1, width / 2);
+    drawStyledRoundedBorder(canvas, rect, radius, { ...edge, color: tintBorderColor(edge.color, edge.style === 'groove' ? 0.6 : 1.15), style: 'solid' }, half, alpha);
+    const inset = half;
+    if (rect.width > inset * 2 && rect.height > inset * 2) {
+      drawStyledRoundedBorder(canvas, { x: rect.x + inset, y: rect.y + inset, width: rect.width - inset * 2, height: rect.height - inset * 2 }, shrinkRadius(radius, inset), { ...edge, color: tintBorderColor(edge.color, edge.style === 'groove' ? 1.15 : 0.6), style: 'solid' }, half, alpha);
+    }
+    return;
+  }
+  const paint = createPaint(edge.color, alpha, PaintStyle.Stroke);
+  paint.setStrokeWidth(edge.style === 'dotted' ? width * 0.75 : width);
+  let effect: ReturnType<typeof Skia.PathEffect.MakeDash> | undefined;
+  if (edge.style === 'dotted') {
+    effect = Skia.PathEffect.MakeDash([0.001, Math.max(1, width * 1.5)]);
+    paint.setStrokeCap(StrokeCap.Round);
+  } else if (edge.style === 'dashed') {
+    effect = Skia.PathEffect.MakeDash([Math.max(1, width * 3), Math.max(1, width * 2)]);
+  }
+  if (effect) paint.setPathEffect(effect);
+  canvas.drawRRect(toRRect(toSkRect(rect), radius), paint);
+  effect?.dispose(); paint.dispose();
+}
+
+function shrinkRadius(radius: ResolvedRadius, inset: number): ResolvedRadius {
+  if (!radius.corners) return { rx: Math.max(0, radius.rx - inset), ry: Math.max(0, radius.ry - inset) };
+  return { rx: Math.max(0, radius.rx - inset), ry: Math.max(0, radius.ry - inset), corners: {
+    topLeft: Math.max(0, radius.corners.topLeft - inset), topRight: Math.max(0, radius.corners.topRight - inset),
+    bottomRight: Math.max(0, radius.corners.bottomRight - inset), bottomLeft: Math.max(0, radius.corners.bottomLeft - inset),
+  } };
 }
 
 function drawText(
@@ -327,7 +406,11 @@ function drawText(
   const contentTop = rect.y + paint.font.sizePx * 0.8 - ascent;
   drawInlineBox(canvas, rect, paint, state.alpha, { contentTop, contentHeight: ascent + descent });
   const paragraph = state.options.paragraphs.createParagraph(text, paint, {
-    color: state.options.colorOverride?.foregroundColor ?? paint.color,
+    color: effectiveTextColor(
+      paint.color,
+      state.options.colorOverride,
+      declaredGroundFor(rect, paint.backgroundColor, state.blockGrounds, state.pageGround),
+    ),
     alpha: state.alpha,
     textShadow: paint.textShadow,
     lineHeightPx,
@@ -394,6 +477,52 @@ function drawRuby(
   );
 }
 
+function drawVerticalText(
+  canvas: SkCanvas,
+  text: string,
+  rect: ReaderRect,
+  paint: ReaderRunPaint,
+  state: RenderState,
+  ruby = false,
+): void {
+  const units = Array.from(text);
+  if (units.length === 0) return;
+  if (!ruby) drawVerticalInlineBox(canvas, rect, paint, state.alpha);
+  const slotHeight = rect.height / units.length;
+  const barePaint = { ...paint, backgroundColor: undefined, border: undefined, padding: undefined, decoration: undefined };
+  for (let index = 0; index < units.length; index += 1) {
+    const unit = units[index];
+    const measured = state.options.paragraphs.measureShapedText(unit, paint).width;
+    drawText(canvas, unit, {
+      x: rect.x + Math.max(0, (rect.width - measured) / 2),
+      y: rect.y + index * slotHeight,
+      width: measured,
+      height: slotHeight,
+    }, barePaint, state);
+  }
+  if (paint.decoration && paint.decoration.thickness > 0) {
+    const x = rect.x + rect.width - paint.decoration.y;
+    drawSolidLine(canvas, x, rect.y, x, rect.y + rect.height, paint.decoration.color, paint.decoration.thickness, state.alpha);
+  }
+}
+
+function drawVerticalInlineBox(canvas: SkCanvas, rect: ReaderRect, paint: ReaderRunPaint, alpha: number): void {
+  const padding = paint.padding;
+  const border = paint.border;
+  const box = {
+    x: rect.x - (padding?.left ?? 0) - (border?.start?.widthPx ?? 0),
+    y: rect.y - (padding?.top ?? 0) - (border?.top?.widthPx ?? 0),
+    width: rect.width + (padding?.left ?? 0) + (padding?.right ?? 0) + (border?.start?.widthPx ?? 0) + (border?.end?.widthPx ?? 0),
+    height: rect.height + (padding?.top ?? 0) + (padding?.bottom ?? 0) + (border?.top?.widthPx ?? 0) + (border?.bottom?.widthPx ?? 0),
+  };
+  if (paint.backgroundColor) drawFilledRect(canvas, box, paint.backgroundColor, alpha, { rx: paint.backgroundRadius ?? 0, ry: paint.backgroundRadius ?? 0 });
+  if (!border) return;
+  drawRunBorder(canvas, border.top, box.x, box.y, box.x + box.width, box.y, alpha, 0);
+  drawRunBorder(canvas, border.end, box.x + box.width, box.y, box.x + box.width, box.y + box.height, alpha, 1);
+  drawRunBorder(canvas, border.bottom, box.x, box.y + box.height, box.x + box.width, box.y + box.height, alpha, 2);
+  drawRunBorder(canvas, border.start, box.x, box.y, box.x, box.y + box.height, alpha, 3);
+}
+
 function drawInlineBox(
   canvas: SkCanvas,
   rect: ReaderRect,
@@ -415,10 +544,10 @@ function drawInlineBox(
   if (!border) {
     return;
   }
-  drawRunBorder(canvas, border.top, box.x, box.y, box.x + box.width, box.y, alpha);
-  drawRunBorder(canvas, border.bottom, box.x, box.y + box.height, box.x + box.width, box.y + box.height, alpha);
-  drawRunBorder(canvas, border.start, box.x, box.y, box.x, box.y + box.height, alpha);
-  drawRunBorder(canvas, border.end, box.x + box.width, box.y, box.x + box.width, box.y + box.height, alpha);
+  drawRunBorder(canvas, border.top, box.x, box.y, box.x + box.width, box.y, alpha, 0);
+  drawRunBorder(canvas, border.bottom, box.x, box.y + box.height, box.x + box.width, box.y + box.height, alpha, 2);
+  drawRunBorder(canvas, border.start, box.x, box.y, box.x, box.y + box.height, alpha, 3);
+  drawRunBorder(canvas, border.end, box.x + box.width, box.y, box.x + box.width, box.y + box.height, alpha, 1);
 }
 
 function computeInlineBox(rect: ReaderRect, paint: ReaderRunPaint, metrics?: { readonly contentTop: number; readonly contentHeight: number }): ReaderRect {
@@ -444,9 +573,10 @@ function drawRunBorder(
   x2: number,
   y2: number,
   alpha: number,
+  side: 0 | 1 | 2 | 3,
 ): void {
   if (edge && edge.widthPx > 0) {
-    drawBorderLine(canvas, edge.paint, edge.widthPx, x1, y1, x2, y2, alpha);
+    drawBorderLine(canvas, { ...edge.paint, color: resolveDirectionalBorder(edge.paint, side) }, edge.widthPx, x1, y1, x2, y2, alpha);
   }
 }
 
@@ -460,6 +590,9 @@ function drawImage(
   const asset = state.options.images.resolveImage(source);
   if (!asset) {
     return;
+  }
+  if (sourceRect && (sourceRect.x < 0 || sourceRect.y < 0 || sourceRect.width <= 0 || sourceRect.height <= 0 || sourceRect.x + sourceRect.width > asset.width || sourceRect.y + sourceRect.height > asset.height)) {
+    throw new Error(`Skia image sourceRect is outside ${source}.`);
   }
   const paint = createPaint('#FFFFFF', state.alpha);
   canvas.drawImageRect(
@@ -692,9 +825,15 @@ function toSkRect(rect: ReaderRect): SkRect {
 
 function tilePositions(origin: number, size: number, boxStart: number, boxSize: number, repeat: boolean, mode: string): number[] {
   if (!repeat) return [origin];
-  const count = Math.max(1, Math.ceil(boxSize / Math.max(1, size)));
-  const gap = mode === 'space' && count > 1 ? Math.max(0, (boxSize - count * size) / (count - 1)) : 0;
-  const step = size + gap;
+  const safeSize = Math.max(1, size);
+  if (mode === 'space') {
+    const count = Math.floor(boxSize / safeSize);
+    if (count <= 1) return [origin];
+    const gap = (boxSize - count * safeSize) / (count - 1);
+    return Array.from({ length: count }, (_, index) => boxStart + index * (safeSize + gap));
+  }
+  const count = Math.max(1, Math.ceil(boxSize / safeSize));
+  const step = safeSize;
   const first = boxStart - Math.ceil((boxStart - origin) / Math.max(1, step)) * step;
   return Array.from({ length: Math.min(4096, count + 4) }, (_, i) => first + i * step).filter((v) => v < boxStart + boxSize);
 }
@@ -704,11 +843,21 @@ function clampAlpha(value: number): number {
 }
 
 function tintBorderColor(color: ReaderColor | string, factor: number): ReaderColor | string {
-  if (typeof color !== 'string') return color;
   try {
-    const rgba = new Float32Array(Skia.Color(color));
+    const rgba = new Float32Array(skiaColor(color));
     return `rgba(${Math.round(clampAlpha(rgba[0] * factor) * 255)}, ${Math.round(clampAlpha(rgba[1] * factor) * 255)}, ${Math.round(clampAlpha(rgba[2] * factor) * 255)}, ${clampAlpha(rgba[3])})`;
   } catch { return color; }
+}
+
+function isDirectionalBorderStyle(style: ReaderBorderPaintEdge['style']): boolean {
+  return style === 'inset' || style === 'outset' || style === 'groove' || style === 'ridge';
+}
+
+function resolveDirectionalBorder(edge: ReaderBorderPaintEdge, side: number): ReaderColor | string {
+  if (edge.style !== 'inset' && edge.style !== 'outset') return edge.color;
+  const leading = side === 0 || side === 3;
+  const dark = edge.style === 'inset' ? leading : !leading;
+  return tintBorderColor(edge.color, dark ? 0.6 : 1.18);
 }
 
 function assertNever(value: never): never {
