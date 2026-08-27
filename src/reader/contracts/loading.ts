@@ -412,6 +412,7 @@ export interface ReaderPublicationView {
   readonly totalSpreads?: number;
   readonly chapters: readonly ReaderChapterRange[];
   readonly chapterTimings: readonly ReaderChapterTiming[];
+  readonly getCurrentChapterTitle?: () => string | undefined;
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined;
   getImage(source: string): Uint8Array | undefined;
   resolveToc(href: string): number | undefined;

@@ -149,6 +149,10 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.publication?.getFrame(spreadIndex);
   }
 
+  getCurrentChapterTitle(): string | undefined {
+    return this.publication?.getCurrentChapterTitle?.();
+  }
+
   getCurrentHitMap(spreadIndex = this.snapshot.spreadIndex) {
     const frame = this.getCurrentFrame(spreadIndex);
     return frame?.hits ? { pageIndex: frame.pageIndices[0] ?? spreadIndex, entries: frame.hits } : undefined;

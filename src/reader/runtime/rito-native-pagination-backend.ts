@@ -182,6 +182,16 @@ class RitoNativePublication implements LoadedReaderPublication {
   get metadata() { return this.metadataValue; }
   get toc() { return this.tocValue; }
   get layout() { return this.layoutValue; }
+  getCurrentChapterTitle(): string | undefined {
+    const artifact = this.visibleArtifactId === undefined
+      ? undefined
+      : [...this.artifacts.values()].find((candidate) => candidate.artifactId === this.visibleArtifactId);
+    if (!artifact) return undefined;
+    const locatorHref = artifact.locator.anchorId
+      ? `${artifact.locator.href}#${artifact.locator.anchorId}`
+      : artifact.locator.href;
+    return findTocLabel(this.tocValue, locatorHref);
+  }
   get totalPages() {
     return Math.max(1, [...this.artifacts.values()].reduce((max, artifact) => {
       const end = artifact.bookPageCount
@@ -354,6 +364,16 @@ function findTocTarget(entries: readonly import('../contracts').ReaderTocEntry[]
   for (const entry of entries) {
     if (entry.href === href || entry.href === base) return entry.href;
     const nested = findTocTarget(entry.children, href, base);
+    if (nested) return nested;
+  }
+  return undefined;
+}
+
+function findTocLabel(entries: readonly import('../contracts').ReaderTocEntry[], href: string): string | undefined {
+  const base = href.split('#', 1)[0];
+  for (const entry of entries) {
+    if (entry.href === href || entry.href.split('#', 1)[0] === base) return entry.label;
+    const nested = findTocLabel(entry.children, href);
     if (nested) return nested;
   }
   return undefined;

@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Spinner } from 'heroui-native/spinner';
 import { useCallback, useMemo, useState } from 'react';
 import { PixelRatio, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
 import type { ReaderViewport } from '@/reader';
@@ -14,6 +15,7 @@ import { useReaderSession } from '../hooks/use-reader-session';
 export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { theme } = useUniwind();
   const [viewport, setViewport] = useState<ReaderViewport>();
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -26,6 +28,18 @@ export default function ReaderScreen() {
     theme: readerTheme,
   });
   const isReady = session.snapshot.phase === 'ready';
+  const chapterTitle = session.runtime.getCurrentChapterTitle()
+    ?? session.metadata?.title
+    ?? session.book?.title
+    ?? '正在读取章节';
+  const totalSpreads = session.snapshot.totalSpreads;
+  const currentSpread = session.snapshot.spreadIndex;
+  const progressText = totalSpreads === undefined
+    ? `第 ${currentSpread + 1} 页`
+    : `${currentSpread + 1} / ${totalSpreads}`;
+  const progressPercentage = totalSpreads === undefined
+    ? undefined
+    : Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
   const canvasBackground = isReady
     ? session.runtime.getBackgroundColor()
     : readerTheme === 'dark'
@@ -90,18 +104,45 @@ export default function ReaderScreen() {
         snapshot={session.snapshot}
         style={StyleSheet.absoluteFill}
       />
+      <View
+        pointerEvents="none"
+        style={[
+          styles.chapterOverlay,
+          { paddingTop: insets.top + 14, paddingLeft: insets.left + 18, paddingRight: insets.right + 18 },
+        ]}>
+        <Text className="text-sm text-muted" numberOfLines={1}>{chapterTitle}</Text>
+      </View>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.progressOverlay,
+          { paddingBottom: insets.bottom + 16, paddingLeft: insets.left + 18, paddingRight: insets.right + 18 },
+        ]}>
+        <Text className="text-xs tabular-nums text-muted">
+          {progressText}{progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}
+        </Text>
+      </View>
       <Pressable
         accessibilityLabel="阅读页面"
         accessibilityRole="adjustable"
         accessibilityValue={{
           min: 1,
-          max: session.snapshot.totalSpreads ?? Math.max(1, session.snapshot.spreadIndex + 1),
-          now: session.snapshot.spreadIndex + 1,
-          text: `第 ${session.snapshot.spreadIndex + 1} 页`,
+          max: totalSpreads ?? Math.max(1, currentSpread + 1),
+          now: currentSpread + 1,
+          text: progressText,
         }}
         onPress={(event) => handleReadingPress(event.nativeEvent.locationX)}
         style={StyleSheet.absoluteFill}
       />
+
+      {(controlsVisible || Boolean(session.errorMessage)) && (
+        <ReaderControls
+          onBack={() => router.back()}
+          onOpenToc={handleOpenToc}
+          onOpenProgress={handleOpenProgress}
+          title={chapterTitle}
+        />
+      )}
 
       {!isReady && !session.errorMessage && (
         <View className="absolute inset-0 items-center justify-center gap-4 bg-background">
@@ -117,15 +158,6 @@ export default function ReaderScreen() {
             {session.errorMessage}
           </Text>
         </View>
-      )}
-
-      {(controlsVisible || Boolean(session.errorMessage)) && (
-        <ReaderControls
-          onBack={() => router.back()}
-          onOpenToc={handleOpenToc}
-          onOpenProgress={handleOpenProgress}
-          title={session.metadata?.title ?? session.book?.title ?? '阅读器'}
-        />
       )}
 
       <TocDrawer
@@ -147,5 +179,18 @@ export default function ReaderScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  chapterOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  progressOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'flex-end',
   },
 });
