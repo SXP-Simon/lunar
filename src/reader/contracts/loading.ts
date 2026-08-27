@@ -314,6 +314,8 @@ export interface ReaderChapterTiming {
 
 export interface ReaderRenderFrame {
   readonly spreadIndex: number;
+  /** Stable artifact identity used to validate cached frames and Pictures. */
+  readonly sourceKey?: string;
   readonly pageIndices: readonly number[];
   readonly width: number;
   readonly height: number;

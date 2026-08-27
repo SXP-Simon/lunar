@@ -26,6 +26,7 @@ export type ReaderBookDataLoader = (request: ReaderOpenRequest) => Promise<Array
 interface RetainedReaderPicture {
   readonly compiled: CompiledReaderPicture;
   readonly imageLease: { release(): void };
+  readonly sourceKey?: string;
 }
 
 export class LunarReaderRuntime implements ReaderRuntime {
@@ -368,11 +369,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (!frame) {
       throw new RangeError(`Spread ${spreadIndex} is outside the publication.`);
     }
-    if (
-      activeRenderId !== undefined &&
-      this.pictures.get({ revisionId, spreadIndex, renderId: activeRenderId })
-    ) {
-      return;
+    const activePicture = activeRenderId === undefined
+      ? undefined
+      : this.pictures.get({ revisionId, spreadIndex, renderId: activeRenderId });
+    if (activePicture) {
+      if (activePicture.sourceKey === frame.sourceKey) return;
+      this.invalidatePicture(spreadIndex);
     }
     const imageLease = await imageCache.acquire(frame.imageSources);
     try {
@@ -402,7 +404,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.renderId += 1;
     this.pictures.set(
       { revisionId, spreadIndex, renderId: this.renderId },
-      { compiled: picture, imageLease },
+      { compiled: picture, imageLease, sourceKey: frame.sourceKey },
     );
     this.pictureRenderIds.set(slotKey, this.renderId);
   }
@@ -412,8 +414,9 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const slotKey = pictureSlotKey(revisionId, spreadIndex);
     const renderId = this.pictureRenderIds.get(slotKey);
     if (renderId === undefined) return;
-    // Touch the visible generation so inserting its replacement cannot evict
-    // it before React Skia commits the new Picture node.
+    // Touch the old entry before publishing its replacement so an in-flight
+    // React Skia tree can keep resolving the previous render ID while the new
+    // Picture is compiled. Cleanup remains deferred by the cache disposer.
     this.pictures.get({ revisionId, spreadIndex, renderId });
     this.pictureRenderIds.delete(slotKey);
   }
