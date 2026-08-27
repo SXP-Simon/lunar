@@ -25,14 +25,17 @@ export function ProgressDrawer({
   snapshot,
 }: ProgressDrawerProps) {
   const insets = useSafeAreaInsets();
-  const total = Math.max(1, snapshot.totalSpreads ?? 1);
-  const currentPage = Math.min(total - 1, snapshot.spreadIndex);
+  const total = snapshot.totalSpreads;
+  const currentPage = snapshot.spreadIndex;
+  const sliderMax = Math.max(currentPage, (total ?? 1) - 1);
   const [draftPage, setDraftPage] = useState<number>();
   const displayedPage = draftPage ?? currentPage;
-  const percentage = Math.round((displayedPage / Math.max(total - 1, 1)) * 100);
+  const percentage = total === undefined
+    ? undefined
+    : Math.round((displayedPage / Math.max(total - 1, 1)) * 100);
   const goToPage = (target: number) => {
     setDraftPage(undefined);
-    void runtime.goToSpread(Math.min(Math.max(target, 0), total - 1));
+    void runtime.goToSpread(Math.min(Math.max(target, 0), sliderMax));
   };
 
   return (
@@ -50,16 +53,16 @@ export function ProgressDrawer({
           <View className="gap-6 px-5 pb-8 pt-2">
             <View className="items-center gap-2">
               <BottomSheet.Title className="rounded-full bg-background px-5 py-2 text-2xl tabular-nums text-foreground">
-                {displayedPage + 1} / {total}
+                {total === undefined ? `第 ${displayedPage + 1} 页` : `${displayedPage + 1} / ${total}`}
               </BottomSheet.Title>
               <BottomSheet.Description className="text-sm text-muted">
-                阅读进度 {percentage}%
+                {percentage === undefined ? '正在计算全书页数' : `阅读进度 ${percentage}%`}
               </BottomSheet.Description>
             </View>
 
             <Slider
               accessibilityLabel="选择阅读页面"
-              maxValue={total - 1}
+              maxValue={sliderMax}
               minValue={0}
               onChange={(value) => setDraftPage(toSliderValue(value))}
               onChangeEnd={(value) => {
@@ -90,15 +93,15 @@ export function ProgressDrawer({
               />
               <ProgressAction
                 accessibilityLabel="前进十页"
-                isDisabled={currentPage >= total - 1}
+                isDisabled={total === undefined || currentPage >= total - 1}
                 name={{ ios: 'goforward.10', android: 'forward_10', web: 'forward_10' }}
                 onPress={() => goToPage(currentPage + 10)}
               />
               <ProgressAction
                 accessibilityLabel="前往最后一页"
-                isDisabled={currentPage >= total - 1}
+                isDisabled={total === undefined || currentPage >= total - 1}
                 name={{ ios: 'forward.end.fill', android: 'last_page', web: 'last_page' }}
-                onPress={() => goToPage(total - 1)}
+                onPress={() => total !== undefined && goToPage(total - 1)}
               />
             </View>
           </View>

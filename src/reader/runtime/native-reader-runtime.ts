@@ -16,7 +16,6 @@ import {
   type CompiledReaderPicture,
 } from '../skia/rendering/picture-compiler';
 import { LunarSkiaTextMeasurer } from '../skia/text/text-measurer';
-import { LUNAR_READER_FONT_FAMILY } from '../typography';
 import { FrameCache } from './frame-cache';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackend } from './pagination-backend';
@@ -202,7 +201,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.assertCurrent(operation);
     this.publication = publication;
     this.publicationOwner = publication;
-    this.paginationComplete = true;
+    this.paginationComplete = publication.totalSpreads !== undefined;
     this.imageCache ??= new SkiaImageCache({
       getBytes: (source) => publication.getImage(source),
     });
@@ -212,8 +211,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.assertCurrent(operation);
     const snapshot = this.createReadySnapshot(target);
     this.emit(snapshot);
-    void this.warmAdjacentPictures(target, operation);
-    void this.advanceBackground(operation);
+    void this.advanceBackground(operation).catch(() => undefined);
     return { metadata: publication.metadata, toc: publication.toc, snapshot };
   }
 
@@ -222,14 +220,20 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (!publication || this.snapshot.phase !== 'ready') {
       return this.snapshot;
     }
-    const target = clampSpread(spreadIndex, publication.totalSpreads);
+    const target = Math.max(0, Math.round(Number.isFinite(spreadIndex) ? spreadIndex : 0));
     const operation = this.operation;
-    await this.preparePicture(target, operation);
+    try {
+      await this.preparePicture(target, operation);
+    } catch (error) {
+      if (error instanceof RangeError) {
+        return this.snapshot;
+      }
+      throw error;
+    }
     this.assertCurrent(operation);
     const snapshot = this.createReadySnapshot(target);
     this.emit(snapshot);
-    void this.warmAdjacentPictures(target, operation);
-    void this.advanceBackground(operation);
+    void this.advanceBackground(operation).catch(() => undefined);
     return snapshot;
   }
 
@@ -238,16 +242,26 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (typeof backend.advanceBackground !== 'function') {
       return;
     }
-    for (let quantum = 0; quantum < 32 && operation === this.operation; quantum += 1) {
-      const result = await backend.advanceBackground(64);
-      if (operation !== this.operation || this.abortController?.signal.aborted) {
-        return;
-      }
-      if (isBackgroundComplete(result)) {
-        return;
-      }
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    if (operation !== this.operation || this.abortController?.signal.aborted) {
+      return;
     }
+    const result = await backend.advanceBackground(64);
+    if (operation !== this.operation || this.abortController?.signal.aborted) {
+      return;
+    }
+    if (result && typeof result === 'object' && 'artifact' in result && (result as { artifact?: unknown }).artifact) {
+      this.invalidatePicture(this.snapshot.spreadIndex);
+      await this.preparePicture(this.snapshot.spreadIndex, operation);
+      this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
+    }
+    if (isBackgroundComplete(result)) {
+      this.paginationComplete = true;
+      this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
+      return;
+    }
+    setTimeout(() => {
+      void this.advanceBackground(operation).catch(() => undefined);
+    }, 0);
   }
 
   private async preparePicture(spreadIndex: number, operation: number): Promise<void> {
@@ -258,15 +272,13 @@ export class LunarReaderRuntime implements ReaderRuntime {
       throw new Error('The reader resources are unavailable.');
     }
     const key = { revisionId: this.snapshot.revisionId, spreadIndex };
-    if (this.pictures.get(key)) {
-      return;
-    }
-    let frame = publication.getFrame(spreadIndex);
-    if (!frame) {
-      frame = await this.paginationBackend.getFrame(this.snapshot.revisionId, spreadIndex);
-    }
+    let frame = await this.paginationBackend.getFrame(this.snapshot.revisionId, spreadIndex);
+    frame ??= publication.getFrame(spreadIndex);
     if (!frame) {
       throw new RangeError(`Spread ${spreadIndex} is outside the publication.`);
+    }
+    if (this.pictures.get(key)) {
+      return;
     }
     const imageLease = await imageCache.acquire(frame.imageSources);
     try {
@@ -284,18 +296,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.imageLeases.set(`${key.revisionId}:${key.spreadIndex}`, imageLease);
   }
 
-  private async warmAdjacentPictures(spreadIndex: number, operation: number): Promise<void> {
-    const total = this.publication?.totalSpreads ?? 0;
-    for (const target of [spreadIndex - 1, spreadIndex + 1]) {
-      if (target < 0 || target >= total || operation !== this.operation) {
-        continue;
-      }
-      try {
-        await this.preparePicture(target, operation);
-      } catch {
-        return;
-      }
-    }
+  private invalidatePicture(spreadIndex: number): void {
+    const key = { revisionId: this.snapshot.revisionId, spreadIndex };
+    this.pictures.delete(key);
+    const leaseKey = `${key.revisionId}:${key.spreadIndex}`;
+    this.imageLeases.get(leaseKey)?.release();
+    this.imageLeases.delete(leaseKey);
   }
 
   private createReadySnapshot(spreadIndex: number): ReaderSnapshot {
@@ -306,7 +312,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const frame = publication.getFrame(spreadIndex);
     const position: ReaderPosition = {
       progression:
-        publication.totalSpreads <= 1 ? 0 : spreadIndex / (publication.totalSpreads - 1),
+        publication.totalSpreads === undefined || publication.totalSpreads <= 1 ? 0 : spreadIndex / (publication.totalSpreads - 1),
       pageIndex: frame?.pageIndices[0] ?? spreadIndex,
       spreadIndex,
       timestamp: Date.now(),
@@ -391,8 +397,8 @@ function isBackgroundComplete(value: unknown): boolean {
   return state === 'complete' || state === 'terminal';
 }
 
-function progressionToSpread(progression: number, totalSpreads: number): number {
-  if (totalSpreads <= 1) {
+function progressionToSpread(progression: number, totalSpreads?: number): number {
+  if (totalSpreads === undefined || totalSpreads <= 1) {
     return 0;
   }
   return clampSpread(Math.round(clampProgression(progression) * (totalSpreads - 1)), totalSpreads);

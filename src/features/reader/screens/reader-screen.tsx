@@ -95,7 +95,7 @@ export default function ReaderScreen() {
         accessibilityRole="adjustable"
         accessibilityValue={{
           min: 1,
-          max: session.snapshot.totalSpreads ?? 1,
+          max: session.snapshot.totalSpreads ?? Math.max(1, session.snapshot.spreadIndex + 1),
           now: session.snapshot.spreadIndex + 1,
           text: `第 ${session.snapshot.spreadIndex + 1} 页`,
         }}

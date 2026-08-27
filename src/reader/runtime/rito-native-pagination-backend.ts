@@ -38,7 +38,7 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
     const { RitoReaderSession } = await import('../../../modules/rito-rn/src/session');
     const opened = await RitoReaderSession.open(new Uint8Array(options.data), request, pinnedFonts, { native: this.config.native });
     const publicationMetadata = await opened.session.readPublication();
-    const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata, options.fontRegistry, options.imageDecoder);
+    const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata, options.layout.typography.spreadMode, options.fontRegistry, options.imageDecoder);
     await publication.prepare(opened.artifact);
     this.session = opened.session;
     this.publication = publication;
@@ -75,25 +75,31 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
 class RitoNativePublication implements LoadedReaderPublication {
   private readonly frames = new Map<number, ReaderRenderFrame>();
   private readonly artifacts = new Map<number, RitoArtifact>();
+  private readonly artifactIndexes = new Map<bigint, number>();
   private readonly images = new Map<string, Uint8Array>();
   private closed = false;
-  private nextRequestId: bigint;
   private visibleArtifactId?: bigint;
+  private visibleIndex = 0;
+  private totalSpreadsValue?: number;
   private readonly metadataValue: LoadedReaderPublication['metadata'];
   private readonly tocValue: LoadedReaderPublication['toc'];
   private readonly spine: RitoPublication['spine'];
+  private backgroundTail: Promise<void> = Promise.resolve();
 
-  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
-    this.nextRequestId = first.requestId;
+  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, private readonly spreadMode: 'single' | 'double', private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
     this.metadataValue = publication.metadata;
     this.tocValue = publication.toc.map(toReaderToc);
     this.spine = publication.spine;
     this.visibleArtifactId = first.artifactId;
-    this.artifacts.set(first.localSpreadIndex, first);
+    this.artifacts.set(0, first);
+    this.artifactIndexes.set(first.artifactId, 0);
+    this.totalSpreadsValue = first.bookPageCount !== undefined
+      ? spreadCountFromBookPages(first.bookPageCount, this.spreadMode)
+      : first.terminalExtent ? 1 : undefined;
   }
 
-  async prepare(artifact: RitoArtifact): Promise<void> {
-    if (this.frames.has(artifact.localSpreadIndex)) return;
+  async prepare(artifact: RitoArtifact, spreadIndex = this.indexForArtifact(artifact), replace = false): Promise<void> {
+    if (this.frames.has(spreadIndex) && !replace) return;
     for (const font of artifact.fonts) {
       if (!this.fonts) break;
       const resource = await this.session.readResource(artifact.artifactId, 1, font.href);
@@ -106,8 +112,8 @@ class RitoNativePublication implements LoadedReaderPublication {
     }
     const display = toReaderV1DisplayList(artifact.displayList.displayList, artifact.width, artifact.height);
     const pages = artifact.pages.filter((page) => artifact.localPageIndexes.includes(page.pageIndex));
-    this.frames.set(artifact.localSpreadIndex, {
-      spreadIndex: artifact.localSpreadIndex,
+    this.frames.set(spreadIndex, {
+      spreadIndex,
       pageIndices: artifact.localPageIndexes,
       width: artifact.width,
       height: artifact.height,
@@ -133,23 +139,48 @@ class RitoNativePublication implements LoadedReaderPublication {
   }
 
   async ensureFrame(spreadIndex: number): Promise<void> {
-    const existing = this.frames.get(spreadIndex);
-    if (existing) return;
-    const current = this.artifacts.get(this.visibleSpreadIndex());
-    if (!current || Math.abs(spreadIndex - current.localSpreadIndex) !== 1) return;
-    const artifact = await this.session.requestAdjacent({ sessionId: current.sessionId, requestId: ++this.nextRequestId, fromArtifactId: current.artifactId, direction: spreadIndex > current.localSpreadIndex ? 'next' : 'previous', work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 4 } });
-    await this.prepare(artifact);
-    await this.session.adoptForeground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId, candidateArtifactId: artifact.artifactId });
-    this.artifacts.set(artifact.localSpreadIndex, artifact);
-    this.visibleArtifactId = artifact.artifactId;
-    return;
+    await this.backgroundTail.catch(() => undefined);
+    if (spreadIndex === this.visibleIndex && this.frames.has(spreadIndex)) return;
+    const distance = Math.abs(spreadIndex - this.visibleIndex);
+    if (distance === 0 || distance > 4096) return;
+    const direction = spreadIndex > this.visibleIndex ? 'next' : 'previous';
+    for (let step = 0; step < distance; step += 1) {
+      const current = this.artifacts.get(this.visibleIndex);
+      if (!current || !this.visibleArtifactId) return;
+      const artifact = await this.session.turn({
+        sessionId: current.sessionId,
+        requestId: this.session.nextRequestId,
+        fromArtifactId: current.artifactId,
+        direction,
+        work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 16 },
+      });
+      const nextIndex = this.visibleIndex + (direction === 'next' ? 1 : -1);
+      await this.prepare(artifact, nextIndex);
+      this.artifacts.set(nextIndex, artifact);
+      this.artifactIndexes.set(artifact.artifactId, nextIndex);
+      this.visibleArtifactId = artifact.artifactId;
+      this.visibleIndex = nextIndex;
+      this.totalSpreadsValue = artifact.bookPageCount !== undefined
+        ? spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode)
+        : artifact.terminalExtent ? nextIndex + 1 : this.totalSpreadsValue;
+      await this.session.releaseArtifact(current.artifactId).catch(() => undefined);
+      if (this.frames.has(spreadIndex)) return;
+    }
   }
   getImage(source: string): Uint8Array | undefined { return this.images.get(source); }
   get metadata() { return this.metadataValue; }
   get toc() { return this.tocValue; }
   get layout() { const frame = this.frames.values().next().value as ReaderRenderFrame | undefined; return { viewportWidth: frame?.width ?? 0, viewportHeight: frame?.height ?? 0, pageWidth: frame?.width ?? 0, pageHeight: frame?.height ?? 0, pixelRatio: 1, marginTop: 0, marginRight: 0, marginBottom: 0, marginLeft: 0, spreadMode: 'single' as const, spreadGap: 0, rootFontSize: 16, palette: { backgroundColor: '#000000', foregroundColor: '#ffffff', spreadBodyBackgroundColor: '#000000' } }; }
-  get totalPages() { return Math.max(1, [...this.artifacts.values()].reduce((max, artifact) => Math.max(max, artifact.bookPageCount ?? artifact.localPageIndex + 1), 0)); }
-  get totalSpreads() { return Math.max(1, this.frames.size); }
+  get totalPages() {
+    return Math.max(1, [...this.artifacts.values()].reduce((max, artifact) => {
+      const end = artifact.bookPageCount
+        ?? (artifact.bookPageIndex === undefined
+          ? 0
+          : artifact.bookPageIndex + artifact.localPageIndexes.length);
+      return Math.max(max, end);
+    }, 0));
+  }
+  get totalSpreads() { return this.totalSpreadsValue; }
   get chapters() {
     return this.spine.map((item) => {
       const pages = [...this.artifacts.values()].filter((artifact) => artifact.locator.href === item.href || artifact.locator.href.startsWith(`${item.href}#`));
@@ -165,29 +196,53 @@ class RitoNativePublication implements LoadedReaderPublication {
     const target = findTocTarget(this.tocValue, href, base);
     const targetBase = target?.split('#', 1)[0] ?? base;
     const targetAnchor = target?.includes('#') ? target.slice(target.indexOf('#') + 1) : undefined;
-    return [...this.artifacts.values()].find((artifact) =>
+    const artifact = [...this.artifacts.values()].find((artifact) =>
       (artifact.locator.href === targetBase || artifact.locator.href === href) &&
       (!targetAnchor || artifact.locator.anchorId === targetAnchor),
-    )?.localSpreadIndex;
+    );
+    return artifact === undefined ? undefined : this.artifactIndexes.get(artifact.artifactId);
   }
 
-  private visibleSpreadIndex(): number { for (const [index, artifact] of this.artifacts) if (artifact.artifactId === this.visibleArtifactId) return index; return 0; }
+  private indexForArtifact(artifact: RitoArtifact): number {
+    return this.artifactIndexes.get(artifact.artifactId) ?? this.visibleIndex;
+  }
 
   async advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<import('../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance> {
-    if (!this.visibleArtifactId) throw new Error('Rito background pagination requires a visible artifact.');
-    const current = this.artifacts.get(this.visibleSpreadIndex());
-    if (!current) throw new Error('Rito visible artifact is unavailable.');
-    const advance = await this.session.advanceBackground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId, maxTopLevelNodesPerQuantum });
-    if (advance.artifact) {
-      await this.prepare(advance.artifact);
-      this.artifacts.set(advance.artifact.localSpreadIndex, advance.artifact);
-      const current = this.artifacts.get(this.visibleSpreadIndex());
-      if (current) {
-        await this.session.adoptBackground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId, candidateArtifactId: advance.artifact.artifactId });
-        this.visibleArtifactId = advance.artifact.artifactId;
+    let result!: import('../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance;
+    const run = this.backgroundTail.then(async () => {
+      const visibleId = this.session.currentVisibleArtifactId;
+      if (!visibleId) throw new Error('Rito background pagination requires a visible artifact.');
+      const current = [...this.artifacts.values()].find((artifact) => artifact.artifactId === visibleId);
+      if (!current) throw new Error('Rito visible artifact is unavailable.');
+      const advance = await this.session.advanceBackground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId, maxTopLevelNodesPerQuantum });
+      result = advance;
+      const candidate = advance.artifact;
+      if (!candidate) return;
+      if (advance.movesVisibleContent) {
+        await this.session.releaseArtifact(candidate.artifactId).catch(() => undefined);
+        return;
       }
-    }
-    return advance;
+      const currentIndex = this.artifactIndexes.get(current.artifactId) ?? this.visibleIndex;
+      await this.prepare(candidate, currentIndex, true);
+      this.artifacts.set(currentIndex, candidate);
+      this.artifactIndexes.set(candidate.artifactId, currentIndex);
+      if (this.session.currentVisibleArtifactId !== current.artifactId) {
+        await this.session.releaseArtifact(candidate.artifactId).catch(() => undefined);
+        return;
+      }
+      await this.session.adoptBackground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId, candidateArtifactId: candidate.artifactId });
+      this.visibleArtifactId = candidate.artifactId;
+      this.visibleIndex = currentIndex;
+      this.totalSpreadsValue = candidate.bookPageCount !== undefined || candidate.terminalExtent
+        ? candidate.bookPageCount !== undefined
+          ? spreadCountFromBookPages(candidate.bookPageCount, this.spreadMode)
+          : Math.max(this.totalSpreadsValue ?? 0, currentIndex + 1)
+        : this.totalSpreadsValue;
+      await this.session.releaseArtifact(current.artifactId).catch(() => undefined);
+    });
+    this.backgroundTail = run.then(() => undefined, () => undefined);
+    await run;
+    return result;
   }
 
   async close(): Promise<void> {
@@ -196,6 +251,11 @@ class RitoNativePublication implements LoadedReaderPublication {
     for (const artifact of this.artifacts.values()) await this.session.releaseArtifact(artifact.artifactId).catch(() => undefined);
     await this.session.dispose();
   }
+}
+
+function spreadCountFromBookPages(pageCount: number, spreadMode: 'single' | 'double'): number {
+  if (spreadMode === 'single') return Math.max(1, pageCount);
+  return Math.max(1, Math.ceil(pageCount / 2));
 }
 
 function toReaderToc(entry: RitoTocEntry): import('../contracts').ReaderTocEntry {
@@ -229,6 +289,6 @@ function toReaderSemanticNode(node: import('../../../modules/rito-rn/src/protoco
 function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutRequest, revisionId: number, operationId: number, initialHref: string): import('../rito/rito-native').RitoArtifactRequest {
   const typography = request.typography;
   const locator = request.restorePosition?.locator;
-  const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, marginTop: typography.marginVertical, marginRight: typography.marginHorizontal, marginBottom: typography.marginVertical, marginLeft: typography.marginHorizontal, spreadMode: typography.spreadMode, firstPageAlone: true, spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily };
+  const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, marginTop: typography.marginVertical, marginRight: typography.marginHorizontal, marginBottom: typography.marginVertical, marginLeft: typography.marginHorizontal, spreadMode: typography.spreadMode, firstPageAlone: typography.spreadMode === 'double', spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily };
   return { sessionId: BigInt(Math.max(1, revisionId)), requestId: BigInt(Math.max(1, operationId)), layout: value, locator: { href: locator?.manifestHref ?? initialHref, anchorId: locator?.sourcePoint ? undefined : undefined, progression: request.restorePosition?.progression }, work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 4 }, textProfile: 'platform-string-runs' };
 }

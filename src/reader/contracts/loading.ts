@@ -342,7 +342,8 @@ export interface ReaderPublicationView {
   readonly toc: readonly ReaderTocEntry[];
   readonly layout: ReaderLayoutParameters;
   readonly totalPages: number;
-  readonly totalSpreads: number;
+  /** Total spreads once whole-book pagination has completed. */
+  readonly totalSpreads?: number;
   readonly chapters: readonly ReaderChapterRange[];
   readonly chapterTimings: readonly ReaderChapterTiming[];
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined;
