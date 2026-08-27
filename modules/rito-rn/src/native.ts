@@ -1,3 +1,4 @@
+import { NitroModules } from 'react-native-nitro-modules';
 import type {
   RitoNitro as RitoNitroSpec,
   RitoNitroPinnedFontFace,
@@ -46,21 +47,11 @@ let nativeObject: RitoNitroSpec | null | undefined;
 function getNitroObject(): RitoNitroSpec | null {
   if (nativeObject !== undefined) return nativeObject;
   try {
-    const nitroModules = loadNitroModules();
-    nativeObject = nitroModules?.createHybridObject<RitoNitroSpec>('RitoNitro') ?? null;
+    nativeObject = NitroModules.createHybridObject<RitoNitroSpec>('RitoNitro');
   } catch {
     nativeObject = null;
   }
   return nativeObject;
-}
-
-function loadNitroModules(): { createHybridObject<T>(name: string): T } | null {
-  try {
-    const runtimeRequire = (0, eval)('require') as ((name: string) => { NitroModules?: { createHybridObject<T>(name: string): T } }) | undefined;
-    return runtimeRequire?.('react-native-nitro-modules')?.NitroModules ?? null;
-  } catch {
-    return null;
-  }
 }
 
 export function isRitoNativeReaderAvailable(): boolean {
@@ -99,7 +90,9 @@ class RitoNitroReaderModule implements RitoNativeReaderModule {
     const response = await result;
     nativePerfMark(`rito.nitro.${operation}.end`);
     if (!(response.data instanceof ArrayBuffer)) throw new RitoNativeError(4, 'Rito Nitro returned a non-binary response.', operation);
-    return { status: response.status as RitoNativeStatus, data: new Uint8Array(response.data.slice(0)), error: response.error || '' };
+    // Keep a view over Nitro's returned ArrayBuffer. The view retains the
+    // backing buffer, so protocol decoding does not require another full copy.
+    return { status: response.status as RitoNativeStatus, data: new Uint8Array(response.data), error: response.error || '' };
   }
 }
 
