@@ -33,7 +33,7 @@ export default function ReaderScreen() {
     theme: readerTheme,
   });
   const isReady = session.snapshot.phase === 'ready';
-  const chapterTitle = session.runtime.getCurrentChapterTitle()
+  const chapterTitle = session.snapshot.chapterTitle
     ?? session.metadata?.title
     ?? session.book?.title
     ?? '正在读取章节';

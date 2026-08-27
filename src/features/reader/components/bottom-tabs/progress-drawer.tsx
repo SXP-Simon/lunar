@@ -26,14 +26,17 @@ export function ProgressDrawer({
 }: ProgressDrawerProps) {
   const insets = useSafeAreaInsets();
   const total = snapshot.totalSpreads;
-  const currentPage = snapshot.bookSpreadIndex ?? snapshot.spreadIndex;
-  const sliderMax = Math.max(currentPage, (total ?? 1) - 1);
+  const currentPage = snapshot.bookSpreadIndex;
+  const hasAbsolutePosition = currentPage !== undefined && total !== undefined;
+  const sliderValue = currentPage ?? 0;
+  const sliderMax = Math.max(0, (total ?? 1) - 1);
   const [draftPage, setDraftPage] = useState<number>();
-  const displayedPage = draftPage ?? currentPage;
+  const displayedPage = draftPage ?? sliderValue;
   const percentage = total === undefined
     ? undefined
     : Math.round((displayedPage / Math.max(total - 1, 1)) * 100);
   const goToPage = (target: number) => {
+    if (!hasAbsolutePosition) return;
     setDraftPage(undefined);
     void runtime.goToSpread(Math.min(Math.max(target, 0), sliderMax));
   };
@@ -62,13 +65,14 @@ export function ProgressDrawer({
 
             <Slider
               accessibilityLabel="选择阅读页面"
+              isDisabled={!hasAbsolutePosition || total <= 1}
               maxValue={sliderMax}
               minValue={0}
               onChange={(value) => setDraftPage(toSliderValue(value))}
               onChangeEnd={(value) => {
                 const target = toSliderValue(value);
                 setDraftPage(undefined);
-                void runtime.goToSpread(target);
+                if (hasAbsolutePosition) void runtime.goToSpread(target);
               }}
               step={1}
               value={displayedPage}>
@@ -81,25 +85,25 @@ export function ProgressDrawer({
             <View className="flex-row items-center justify-between">
               <ProgressAction
                 accessibilityLabel="回到第一页"
-                isDisabled={currentPage === 0}
+                isDisabled={!hasAbsolutePosition || currentPage === 0}
                 name={{ ios: 'backward.end.fill', android: 'first_page', web: 'first_page' }}
                 onPress={() => goToPage(0)}
               />
               <ProgressAction
                 accessibilityLabel="后退十页"
-                isDisabled={currentPage === 0}
+                isDisabled={!hasAbsolutePosition || currentPage === 0}
                 name={{ ios: 'gobackward.10', android: 'replay_10', web: 'replay_10' }}
-                onPress={() => goToPage(currentPage - 10)}
+                onPress={() => goToPage((currentPage ?? 0) - 10)}
               />
               <ProgressAction
                 accessibilityLabel="前进十页"
-                isDisabled={total === undefined || currentPage >= total - 1}
+                isDisabled={!hasAbsolutePosition || (currentPage ?? 0) >= (total ?? 1) - 1}
                 name={{ ios: 'goforward.10', android: 'forward_10', web: 'forward_10' }}
-                onPress={() => goToPage(currentPage + 10)}
+                onPress={() => goToPage((currentPage ?? 0) + 10)}
               />
               <ProgressAction
                 accessibilityLabel="前往最后一页"
-                isDisabled={total === undefined || currentPage >= total - 1}
+                isDisabled={!hasAbsolutePosition || (currentPage ?? 0) >= (total ?? 1) - 1}
                 name={{ ios: 'forward.end.fill', android: 'last_page', web: 'last_page' }}
                 onPress={() => total !== undefined && goToPage(total - 1)}
               />

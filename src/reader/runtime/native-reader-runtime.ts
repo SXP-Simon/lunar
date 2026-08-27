@@ -128,7 +128,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   async goToSpread(spreadIndex: number): Promise<ReaderSnapshot> {
-    return this.enqueueNavigation(() => spreadIndex);
+    return this.enqueueNavigation(() => this.resolveSpreadTarget(spreadIndex));
   }
 
   async goToToc(href: string): Promise<ReaderSnapshot> {
@@ -143,11 +143,15 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   async next(): Promise<ReaderSnapshot> {
-    return this.enqueueNavigation(() => this.snapshot.spreadIndex + 1);
+    return this.enqueueNavigation(() => this.publication?.canNavigate?.('next') === false
+      ? this.snapshot.spreadIndex
+      : this.snapshot.spreadIndex + 1);
   }
 
   async previous(): Promise<ReaderSnapshot> {
-    return this.enqueueNavigation(() => this.snapshot.spreadIndex - 1);
+    return this.enqueueNavigation(() => this.publication?.canNavigate?.('previous') === false
+      ? this.snapshot.spreadIndex
+      : this.snapshot.spreadIndex - 1);
   }
 
   getCurrentPicture(
@@ -288,6 +292,19 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const run = this.navigationTail.then(() => this.showSpread(resolveTarget()));
     this.navigationTail = run.catch(() => this.snapshot);
     return run;
+  }
+
+  private resolveSpreadTarget(requestedSpreadIndex: number): number {
+    const requested = Math.round(Number.isFinite(requestedSpreadIndex) ? requestedSpreadIndex : 0);
+    const currentBookSpread = this.snapshot.bookSpreadIndex;
+    if (currentBookSpread === undefined) {
+      return requested;
+    }
+    // Progress controls use the whole-book number, while the publication
+    // keeps a render slot for the currently visible artifact. Translate the
+    // requested page by relative distance so adjacent artifact navigation
+    // remains the source of truth.
+    return this.snapshot.spreadIndex + requested - currentBookSpread;
   }
 
   private enqueueAsyncNavigation(resolveTarget: () => Promise<number>): Promise<ReaderSnapshot> {
@@ -454,6 +471,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
       spreadIndex,
       renderId: this.pictureRenderIds.get(pictureSlotKey(this.snapshot.revisionId, spreadIndex)),
       bookSpreadIndex,
+      chapterTitle: publication.getCurrentChapterTitle?.(),
       totalSpreads: bookSpreadIndex === undefined ? undefined : publication.totalSpreads,
       paginationComplete: this.paginationComplete,
       position,

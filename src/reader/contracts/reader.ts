@@ -92,6 +92,8 @@ export interface ReaderSnapshot {
   readonly renderId?: number;
   /** Whole-book spread number; absent for chapter-local exact seeks. */
   readonly bookSpreadIndex?: number;
+  /** Chapter title resolved from the same foreground artifact as the frame. */
+  readonly chapterTitle?: string;
   readonly totalSpreads?: number;
   readonly paginationComplete?: boolean;
   readonly position?: ReaderPosition;

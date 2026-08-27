@@ -79,11 +79,10 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
 
 class RitoNativePublication implements LoadedReaderPublication {
   private readonly frames = new Map<number, ReaderRenderFrame>();
-  private readonly artifacts = new Map<number, RitoArtifact>();
+  private readonly artifactIds = new Map<number, bigint>();
   private readonly artifactIndexes = new Map<bigint, number>();
   private readonly images = new Map<string, Uint8Array>();
   private closed = false;
-  private visibleArtifactId?: bigint;
   private visibleIndex = 0;
   private totalSpreadsValue?: number;
   private readonly metadataValue: LoadedReaderPublication['metadata'];
@@ -102,12 +101,11 @@ class RitoNativePublication implements LoadedReaderPublication {
     this.tocValue = publication.toc.map(toReaderToc);
     this.tocLabelsByHref = createTocLabelIndex(this.tocValue);
     this.spine = publication.spine;
-    this.visibleArtifactId = first.artifactId;
-    this.artifacts.set(0, first);
+    this.artifactIds.set(0, first.artifactId);
     this.artifactIndexes.set(first.artifactId, 0);
     this.totalSpreadsValue = first.bookPageCount !== undefined
       ? spreadCountFromBookPages(first.bookPageCount, this.spreadMode)
-      : first.terminalExtent ? 1 : undefined;
+      : undefined;
   }
 
   async prepare(artifact: RitoArtifact, spreadIndex = this.indexForArtifact(artifact), replace = false): Promise<void> {
@@ -158,8 +156,9 @@ class RitoNativePublication implements LoadedReaderPublication {
     if (distance === 0 || distance > 4096) return;
     const direction = spreadIndex > this.visibleIndex ? 'next' : 'previous';
     for (let step = 0; step < distance; step += 1) {
-      const current = this.artifacts.get(this.visibleIndex);
-      if (!current || !this.visibleArtifactId) return;
+      const currentId = this.session.currentVisibleArtifactId;
+      const current = currentId === undefined ? undefined : this.session.getArtifact(currentId);
+      if (!current || currentId === undefined) return;
       const artifact = await this.session.turn({
         sessionId: current.sessionId,
         requestId: this.session.nextRequestId,
@@ -169,13 +168,12 @@ class RitoNativePublication implements LoadedReaderPublication {
       });
       const nextIndex = this.visibleIndex + (direction === 'next' ? 1 : -1);
       await this.prepare(artifact, nextIndex);
-      this.artifacts.set(nextIndex, artifact);
+      this.artifactIds.set(nextIndex, artifact.artifactId);
       this.artifactIndexes.set(artifact.artifactId, nextIndex);
-      this.visibleArtifactId = artifact.artifactId;
       this.visibleIndex = nextIndex;
       this.totalSpreadsValue = artifact.bookPageCount !== undefined
         ? spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode)
-        : artifact.terminalExtent ? nextIndex + 1 : this.totalSpreadsValue;
+        : this.totalSpreadsValue;
       await this.session.releaseArtifact(current.artifactId).catch(() => undefined);
       if (this.frames.has(spreadIndex)) return;
     }
@@ -185,7 +183,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   get toc() { return this.tocValue; }
   get layout() { return this.layoutValue; }
   getCurrentChapterTitle(): string | undefined {
-    const artifact = this.artifacts.get(this.visibleIndex);
+    const artifact = this.currentArtifact;
     if (!artifact) return undefined;
     const locatorHref = artifact.locator.anchorId
       ? `${artifact.locator.href}#${artifact.locator.anchorId}`
@@ -194,14 +192,18 @@ class RitoNativePublication implements LoadedReaderPublication {
       ?? this.tocLabelsByHref.get(artifact.locator.href);
   }
   getBookPageIndex(spreadIndex: number): number | undefined {
-    return this.artifacts.get(spreadIndex)?.bookPageIndex;
+    return this.artifactForSpread(spreadIndex)?.bookPageIndex;
   }
   getCurrentLocator(spreadIndex: number): import('../contracts').ReaderLocator | undefined {
-    const artifact = this.artifacts.get(spreadIndex);
+    const artifact = this.artifactForSpread(spreadIndex);
     return artifact ? toReaderLocator(artifact.locator, this.spine) : undefined;
   }
+  canNavigate(direction: 'next' | 'previous'): boolean {
+    const availability = this.currentArtifact?.navigation[direction];
+    return availability !== 'terminal' && availability !== 'blocked';
+  }
   get totalPages() {
-    return Math.max(1, [...this.artifacts.values()].reduce((max, artifact) => {
+    return Math.max(1, this.availableArtifacts.reduce((max, artifact) => {
       const end = artifact.bookPageCount
         ?? (artifact.bookPageIndex === undefined
           ? 0
@@ -212,7 +214,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   get totalSpreads() { return this.totalSpreadsValue; }
   get chapters() {
     return this.spine.map((item) => {
-      const pages = [...this.artifacts.values()].filter((artifact) => artifact.locator.href === item.href || artifact.locator.href.startsWith(`${item.href}#`));
+      const pages = this.availableArtifacts.filter((artifact) => artifact.locator.href === item.href || artifact.locator.href.startsWith(`${item.href}#`));
       if (pages.length === 0) return undefined;
       const startPage = Math.min(...pages.map((artifact) => artifact.bookPageIndex ?? artifact.localPageIndex));
       const endPage = Math.max(...pages.map((artifact) => (artifact.bookPageIndex ?? artifact.localPageIndex) + artifact.localPageIndexes.length - 1));
@@ -229,9 +231,9 @@ class RitoNativePublication implements LoadedReaderPublication {
     if (existing !== undefined && existing === this.visibleIndex) return existing;
 
     const targetSpineIndex = this.spine.findIndex((item) => item.href === targetBase);
-    if (targetSpineIndex < 0 || this.visibleArtifactId === undefined) return undefined;
+    if (targetSpineIndex < 0 || this.session.currentVisibleArtifactId === undefined) return undefined;
     const targetIndex = this.visibleIndex;
-    const source = this.artifacts.get(targetIndex);
+    const source = this.currentArtifact;
     if (!source) return undefined;
     const artifact = await this.session.requestArtifact({
       ...this.artifactRequest,
@@ -248,10 +250,9 @@ class RitoNativePublication implements LoadedReaderPublication {
       expectedVisibleArtifactId: source.artifactId,
       candidateArtifactId: artifact.artifactId,
     });
-    this.artifacts.set(targetIndex, artifact);
+    this.artifactIds.set(targetIndex, artifact.artifactId);
     this.artifactIndexes.delete(source.artifactId);
     this.artifactIndexes.set(artifact.artifactId, targetIndex);
-    this.visibleArtifactId = artifact.artifactId;
     this.totalSpreadsValue = artifact.bookPageCount === undefined
       ? undefined
       : spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode);
@@ -260,14 +261,14 @@ class RitoNativePublication implements LoadedReaderPublication {
   }
 
   private findArtifactForTocTarget(targetBase: string, href: string, targetAnchor?: string): number | undefined {
-    const artifact = [...this.artifacts.values()].find((candidate) =>
+    const artifact = this.availableArtifacts.find((candidate) =>
       artifactMatchesTocTarget(candidate, targetBase, href, targetAnchor),
     );
     return artifact === undefined ? undefined : this.artifactIndexes.get(artifact.artifactId);
   }
 
   async resolveTextRangeGeometry(request: import('../contracts').ReaderTextRangeGeometryRequest): Promise<readonly import('../contracts').ReaderTextRangeRect[]> {
-    const artifact = [...this.artifacts.values()].find((candidate) => candidate.localPageIndexes.includes(request.pageIndex));
+    const artifact = this.availableArtifacts.find((candidate) => candidate.localPageIndexes.includes(request.pageIndex));
     if (!artifact) return [];
     const geometry = await this.session.textRangeGeometry({
       sessionId: artifact.sessionId,
@@ -280,9 +281,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   }
 
   async search(request: import('../contracts').ReaderSearchRequest): Promise<import('../contracts').ReaderSearchResponse> {
-    const artifact = this.visibleArtifactId === undefined
-      ? undefined
-      : [...this.artifacts.values()].find((candidate) => candidate.artifactId === this.visibleArtifactId);
+    const artifact = this.currentArtifact;
     if (!artifact) return { query: request.query, truncated: false, searchedPageCount: 0, scopeComplete: false, results: [] };
     const response = await this.session.search({
       sessionId: artifact.sessionId,
@@ -328,7 +327,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     const run = this.backgroundTail.then(async () => {
       const visibleId = this.session.currentVisibleArtifactId;
       if (!visibleId) throw new Error('Rito background pagination requires a visible artifact.');
-      const current = [...this.artifacts.values()].find((artifact) => artifact.artifactId === visibleId);
+      const current = this.session.getArtifact(visibleId);
       if (!current) throw new Error('Rito visible artifact is unavailable.');
       const advance = await this.session.advanceBackground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId, maxTopLevelNodesPerQuantum });
       result = advance;
@@ -345,20 +344,18 @@ class RitoNativePublication implements LoadedReaderPublication {
       if (!bytesEqual(candidate.displayList.semanticDigest, current.displayList.semanticDigest)) {
         await this.prepare(candidate, currentIndex, true);
       }
-      this.artifacts.set(currentIndex, candidate);
+      this.artifactIds.set(currentIndex, candidate.artifactId);
       this.artifactIndexes.set(candidate.artifactId, currentIndex);
       if (this.session.currentVisibleArtifactId !== current.artifactId) {
         await this.session.releaseArtifact(candidate.artifactId).catch(() => undefined);
         return;
       }
       await this.session.adoptBackground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId, candidateArtifactId: candidate.artifactId });
-      this.visibleArtifactId = candidate.artifactId;
+      this.artifactIndexes.delete(current.artifactId);
       this.visibleIndex = currentIndex;
-      this.totalSpreadsValue = candidate.bookPageCount !== undefined || candidate.terminalExtent
-        ? candidate.bookPageCount !== undefined
-          ? spreadCountFromBookPages(candidate.bookPageCount, this.spreadMode)
-          : Math.max(this.totalSpreadsValue ?? 0, currentIndex + 1)
-        : this.totalSpreadsValue;
+      if (candidate.bookPageCount !== undefined) {
+        this.totalSpreadsValue = spreadCountFromBookPages(candidate.bookPageCount, this.spreadMode);
+      }
       await this.session.releaseArtifact(current.artifactId).catch(() => undefined);
     });
     this.backgroundTail = run.then(() => undefined, () => undefined);
@@ -373,8 +370,26 @@ class RitoNativePublication implements LoadedReaderPublication {
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
-    for (const artifact of this.artifacts.values()) await this.session.releaseArtifact(artifact.artifactId).catch(() => undefined);
+    for (const artifactId of this.artifactIds.values()) await this.session.releaseArtifact(artifactId).catch(() => undefined);
     await this.session.dispose();
+  }
+
+  private get currentArtifact(): RitoArtifact | undefined {
+    return this.session.currentVisibleArtifact;
+  }
+
+  private get availableArtifacts(): RitoArtifact[] {
+    const artifacts: RitoArtifact[] = [];
+    for (const artifactId of new Set(this.artifactIds.values())) {
+      const artifact = this.session.getArtifact(artifactId);
+      if (artifact) artifacts.push(artifact);
+    }
+    return artifacts;
+  }
+
+  private artifactForSpread(spreadIndex: number): RitoArtifact | undefined {
+    const artifactId = this.artifactIds.get(spreadIndex);
+    return artifactId === undefined ? undefined : this.session.getArtifact(artifactId);
   }
 }
 

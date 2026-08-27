@@ -84,9 +84,15 @@ export class RitoReaderSession {
     try {
       for (let index = 0; index < this.maxContinuationQuanta; index += 1) {
         const result = await this.native.requestArtifact(this.sessionId, encodeRitoArtifactRequest(current));
-        if (result.status === STATUS_EXACT_PENDING) { current = { ...current, requestId: current.requestId + 1n, work: { ...current.work, maxForegroundQuanta: 1 } }; continue; }
+        this.recordConsumedRequestId(current.requestId);
+        if (result.status === STATUS_EXACT_PENDING) {
+          current = { ...current, requestId: current.requestId + 1n, work: { ...current.work, maxForegroundQuanta: 1 } };
+          await yieldHostTurn();
+          continue;
+        }
         if (result.status !== STATUS_OK) throw nativeError(result, 'requestArtifact');
         const artifact = this.decodeCandidate(result.data, current.requestId, 'requestArtifact');
+        this.recordConsumedRequestId(artifact.requestId);
         if (navigation.superseded) {
           await this.releaseOrInvalidate(artifact, navigation.requestId);
           throw navigation.error;
@@ -108,9 +114,15 @@ export class RitoReaderSession {
     try {
       for (let index = 0; index < this.maxContinuationQuanta; index += 1) {
         const result = await this.native.requestAdjacent(this.sessionId, encodeRitoAdjacentRequest(current));
-        if (result.status === STATUS_ADJACENT_PENDING) { current = { ...current, requestId: current.requestId + 1n, work: { ...current.work, maxForegroundQuanta: 1 } }; continue; }
+        this.recordConsumedRequestId(current.requestId);
+        if (result.status === STATUS_ADJACENT_PENDING) {
+          current = { ...current, requestId: current.requestId + 1n, work: { ...current.work, maxForegroundQuanta: 1 } };
+          await yieldHostTurn();
+          continue;
+        }
         if (result.status !== STATUS_OK) throw nativeError(result, 'requestAdjacent');
         const artifact = this.decodeCandidate(result.data, current.requestId, 'requestAdjacent');
+        this.recordConsumedRequestId(artifact.requestId);
         if (navigation.superseded) {
           await this.releaseOrInvalidate(artifact, navigation.requestId);
           throw navigation.error;
@@ -139,6 +151,7 @@ export class RitoReaderSession {
       this.sessionId,
       encodeRitoAdjacentRequest(request),
     );
+    this.recordConsumedRequestId(request.requestId);
     if (result.status === STATUS_TARGET_NOT_PUBLISHED) return undefined;
     if (result.status !== STATUS_OK) throw nativeError(result, 'peekAdjacent');
     const artifact = this.decodeCandidate(result.data, request.requestId, 'peekAdjacent');
@@ -364,8 +377,22 @@ export class RitoReaderSession {
   }
 
   get currentVisibleArtifactId(): bigint | undefined { return this.visibleArtifactId; }
+  /** The artifact currently committed as foreground content. */
+  get currentVisibleArtifact(): RitoArtifact | undefined {
+    return this.visibleArtifactId === undefined
+      ? undefined
+      : this.artifacts.get(this.visibleArtifactId);
+  }
+  /** Reads an artifact still owned by this session. */
+  getArtifact(artifactId: bigint): RitoArtifact | undefined {
+    return this.artifacts.get(artifactId);
+  }
   get latestRequestId(): bigint { return this.latestForegroundRequestId; }
   get nextRequestId(): bigint { if (this.latestForegroundRequestId >= 0x7fff_ffff_ffff_ffffn) throw new RangeError('Rito request ID space is exhausted.'); return this.latestForegroundRequestId + 1n; }
+
+  private recordConsumedRequestId(requestId: bigint): void {
+    if (requestId > this.latestForegroundRequestId) this.latestForegroundRequestId = requestId;
+  }
 
   private async success(operation: string, call: () => Promise<RitoNativeCallResult>): Promise<Uint8Array> { const result = await call(); if (result.status !== STATUS_OK) throw nativeError(result, operation); return result.data; }
   private decodeCandidate(data: Uint8Array, requestId: bigint, operation: string): RitoArtifact { const artifact = decodeRitoArtifact(data); if (artifact.sessionId !== this.sessionId || artifact.requestId !== requestId) throw new RitoNativeError(4, 'Rito artifact identity does not match the request.', operation); this.rememberArtifact(artifact); return artifact; }
@@ -463,6 +490,10 @@ export class RitoReaderSession {
 
 function peekKey(artifactId: bigint, direction: RitoAdjacentRequest['direction']): string {
   return `${artifactId.toString()}:${direction}`;
+}
+
+function yieldHostTurn(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 function resourceKind(kind: number): RitoResource['kind'] {
