@@ -22,7 +22,7 @@ export type RitoDisplayTransform =
 export type RitoBorderStyle = 'none' | 'hidden' | 'dotted' | 'dashed' | 'solid' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset';
 
 export interface RitoBorderPaintEdge {
-  readonly color: string;
+    readonly color: string;
   readonly style: RitoBorderStyle;
 }
 
@@ -33,7 +33,7 @@ export interface RitoRunPaint {
     readonly weight: number;
     readonly style: 'normal' | 'italic';
   };
-  readonly color: string;
+    readonly color: string;
   readonly wordSpacingPx?: number;
   readonly letterSpacingPx?: number;
   readonly backgroundColor?: string;
@@ -94,7 +94,7 @@ export type RitoDisplayCommand =
   | { readonly kind: 'paint-page'; readonly rect: RitoDisplayRect; readonly paint: { readonly backgroundColor?: string } }
   | { readonly kind: 'paint-block'; readonly rect: RitoDisplayRect; readonly paint: RitoBlockPaint; readonly borderBox?: { readonly topWidth: number; readonly rightWidth: number; readonly bottomWidth: number; readonly leftWidth: number } }
   | { readonly kind: 'paint-text'; readonly text: string; readonly rect: RitoDisplayRect; readonly paint: RitoRunPaint; readonly lineHeightPx?: number; readonly href?: string; readonly sourceText?: string; readonly sourceTextOffset?: bigint }
-  | { readonly kind: 'paint-ruby'; readonly text: string; readonly rect: RitoDisplayRect; readonly paint: RitoRunPaint; readonly lineHeightPx?: number; readonly href?: string; readonly sourceText?: string; readonly sourceTextOffset?: bigint }
+  | { readonly kind: 'paint-ruby'; readonly text: string; readonly rect: RitoDisplayRect; readonly paint: RitoRunPaint; readonly lineHeightPx?: number; readonly href?: string; readonly sourceText?: string; readonly sourceTextOffset?: bigint; readonly rubyAlign?: string }
   | { readonly kind: 'paint-image'; readonly src: string; readonly rect: RitoDisplayRect; readonly alt?: string; readonly href?: string; readonly sourceRect?: RitoDisplayRect }
   | { readonly kind: 'paint-horizontal-rule'; readonly rect: RitoDisplayRect; readonly paint: { readonly color: string; readonly style: RitoBorderStyle } };
 

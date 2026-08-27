@@ -123,9 +123,9 @@ function readText(reader: RitoBinaryReader, ruby: boolean): RitoDisplayCommand {
   const href = reader.readOption('text href', () => reader.readUtf8());
   const sourceText = reader.readOption('source text', () => reader.readUtf8());
   const sourceOffset = reader.readOption('source text offset', () => reader.readU64());
-  reader.readOption('ruby align', () => reader.readUtf8());
+  const rubyAlign = reader.readOption('ruby align', () => reader.readUtf8());
   if (ruby) {
-    return { kind: 'paint-ruby', text, rect, paint, lineHeightPx, href, sourceText, sourceTextOffset: sourceOffset };
+    return { kind: 'paint-ruby', text, rect, paint, lineHeightPx, href, sourceText, sourceTextOffset: sourceOffset, rubyAlign };
   }
   return { kind: 'paint-text', text, rect, paint, lineHeightPx, href, sourceText, sourceTextOffset: sourceOffset };
 }

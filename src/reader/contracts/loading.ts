@@ -85,6 +85,18 @@ export type ReaderLength =
   | { readonly unit: 'px'; readonly value: number }
   | { readonly unit: 'percent'; readonly value: number };
 
+export type ReaderColorSpace =
+  | 'srgb' | 'hsl' | 'hwb' | 'lab' | 'lch' | 'oklab' | 'oklch'
+  | 'srgb-linear' | 'display-p3' | 'display-p3-linear' | 'a98-rgb'
+  | 'prophoto-rgb' | 'rec2020' | 'xyz-d50' | 'xyz-d65';
+
+export interface ReaderColor {
+  readonly space: ReaderColorSpace;
+  readonly components: readonly [number, number, number];
+  readonly alpha: number;
+  readonly none: { readonly component0: boolean; readonly component1: boolean; readonly component2: boolean; readonly alpha: boolean };
+}
+
 export type ReaderTransform =
   | {
       readonly kind: 'translate';
@@ -97,7 +109,7 @@ export type ReaderTransform =
 export type ReaderBorderStyle = 'none' | 'hidden' | 'solid' | 'dotted' | 'dashed' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset';
 
 export interface ReaderBorderPaintEdge {
-  readonly color: string;
+  readonly color: ReaderColor | string;
   readonly style: ReaderBorderStyle;
 }
 
@@ -131,7 +143,7 @@ export interface ReaderTextShadow {
   readonly offsetX: number;
   readonly offsetY: number;
   readonly blur: number;
-  readonly color: string;
+  readonly color: ReaderColor | string;
 }
 
 export interface ReaderBoxShadow extends ReaderTextShadow {
@@ -144,18 +156,18 @@ export type ReaderRunDecoration =
       readonly kind: 'underline';
       readonly y: number;
       readonly thickness: number;
-      readonly color: string;
+      readonly color: ReaderColor | string;
     }
   | {
       readonly kind: 'line-through';
       readonly y: number;
       readonly thickness: number;
-      readonly color: string;
+      readonly color: ReaderColor | string;
     };
 
 export interface ReaderRunPaint extends ReaderMeasurePaint {
-  readonly color: string;
-  readonly backgroundColor?: string;
+  readonly color: ReaderColor | string;
+  readonly backgroundColor?: ReaderColor | string;
   readonly backgroundRadius?: number;
   readonly textShadow?: readonly ReaderTextShadow[];
   readonly decoration?: ReaderRunDecoration;
@@ -170,7 +182,7 @@ export interface ReaderBackgroundPosition {
 
 export interface ReaderBlockPaint {
   readonly background?: {
-    readonly color?: string;
+    readonly color?: ReaderColor | string;
     readonly image?: string;
     readonly size?: 'cover' | 'contain' | 'auto';
     readonly repeat?: 'repeat' | 'no-repeat' | 'repeat-x' | 'repeat-y' | 'space' | 'round';
@@ -187,11 +199,11 @@ export interface ReaderBlockPaint {
 }
 
 export interface ReaderPagePaint {
-  readonly backgroundColor?: string;
+  readonly backgroundColor?: ReaderColor | string;
 }
 
 export interface ReaderHorizontalRulePaint {
-  readonly color: string;
+  readonly color: ReaderColor | string;
   readonly style: ReaderBorderStyle;
 }
 
@@ -233,6 +245,11 @@ export type ReaderDrawCommand =
       readonly text: string;
       readonly rect: ReaderRect;
       readonly paint: ReaderRunPaint;
+      readonly lineHeightPx?: number;
+      readonly href?: string;
+      readonly sourceText?: string;
+      readonly sourceTextOffset?: number;
+      readonly rubyAlign?: 'space-around' | 'start' | 'center' | 'space-between';
     }
   | {
       readonly kind: 'paintImage';

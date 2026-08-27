@@ -62,7 +62,14 @@ function toReaderDrawCommand(command: RitoDisplayCommand): ReaderDrawCommand {
         sourceTextOffset: toSafeOffset(command.sourceTextOffset),
       };
     case 'paint-ruby':
-      return { kind: 'paintRuby', text: command.text, rect: command.rect, paint: command.paint };
+      return {
+        kind: 'paintRuby', text: command.text, rect: command.rect, paint: command.paint,
+        ...(command.lineHeightPx === undefined ? {} : { lineHeightPx: command.lineHeightPx }),
+        ...(command.href === undefined ? {} : { href: command.href }),
+        ...(command.sourceText === undefined ? {} : { sourceText: command.sourceText }),
+        ...(command.sourceTextOffset === undefined ? {} : { sourceTextOffset: toSafeOffset(command.sourceTextOffset) }),
+        ...(command.rubyAlign === 'start' || command.rubyAlign === 'center' || command.rubyAlign === 'space-between' || command.rubyAlign === 'space-around' ? { rubyAlign: command.rubyAlign } : {}),
+      };
     case 'paint-image':
       return {
         kind: 'paintImage',

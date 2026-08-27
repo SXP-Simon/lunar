@@ -8,13 +8,15 @@ import {
 
 import type {
   ReaderMeasurePaint,
+  ReaderColor,
   ReaderTextMetrics,
   ReaderTextShadow,
 } from '../../contracts';
 import type { SkiaFontRegistry } from '../fonts/font-registry';
+import { skiaColor } from '../rendering/color-adapter';
 
 export interface SkiaParagraphCreateOptions {
-  readonly color?: string;
+  readonly color?: ReaderColor | string;
   readonly alpha?: number;
   readonly textShadow?: readonly ReaderTextShadow[];
 }
@@ -46,9 +48,9 @@ export class LunarSkiaParagraphFactory implements SkiaParagraphFactory {
       fontFamilies: families.length > 0 ? [...families] : ['sans-serif'],
       fontSize: paint.font.sizePx,
       fontStyle: {
-        weight: 400,
+        weight: Math.max(100, Math.min(900, Math.round(paint.font.weight))),
         width: FontWidth.Normal,
-        slant: FontSlant.Upright,
+        slant: paint.font.style === 'italic' ? FontSlant.Italic : FontSlant.Upright,
       },
       letterSpacing: paint.letterSpacingPx ?? 0,
       wordSpacing: paint.wordSpacingPx ?? 0,
@@ -88,8 +90,8 @@ export class LunarSkiaParagraphFactory implements SkiaParagraphFactory {
 
 export const SINGLE_LINE_LAYOUT_WIDTH = 100_000;
 
-function colorWithAlpha(value: string, alpha: number) {
-  const color = Skia.Color(value);
+function colorWithAlpha(value: ReaderColor | string, alpha: number) {
+  const color = skiaColor(value);
   const resolved = new Float32Array(color);
   resolved[3] = (resolved[3] ?? 1) * Math.min(1, Math.max(0, alpha));
   return resolved;

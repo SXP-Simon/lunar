@@ -84,7 +84,8 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
 
   getFontFamilies(family: string): readonly string[] {
     this.assertActive();
-    return this.registeredFamilies.has(family) ? [family, LUNAR_READER_FONT_FAMILY] : [LUNAR_READER_FONT_FAMILY];
+    const families = splitFontFamilyStack(family).filter((name) => this.registeredFamilies.has(name));
+    return [...families, LUNAR_READER_FONT_FAMILY];
   }
 
   getParagraphProvider(_family: string): SkTypefaceFontProvider {
@@ -95,19 +96,19 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
 
   resolveFont(font: ReaderFontShorthand): SkFont {
     this.assertActive();
-    const key = `${font.sizePx}`;
+    const key = `${font.family}|${font.sizePx}|${font.weight}|${font.style}`;
     const cached = this.fonts.get(key);
     if (cached) {
       return cached;
     }
 
     const style: FontStyle = {
-      weight: 400,
+      weight: Math.max(100, Math.min(900, Math.round(font.weight))),
       width: FontWidth.Normal,
-      slant: FontSlant.Upright,
+      slant: font.style === 'italic' ? FontSlant.Italic : FontSlant.Upright,
     };
     this.assertBuiltinLoaded();
-    const family = this.registeredFamilies.has(font.family) ? font.family : LUNAR_READER_FONT_FAMILY;
+    const family = splitFontFamilyStack(font.family).find((name) => this.registeredFamilies.has(name)) ?? LUNAR_READER_FONT_FAMILY;
     const typeface = this.readerFontProvider.matchFamilyStyle(family, style);
     const skFont = Skia.Font(typeface, font.sizePx);
     this.fonts.set(key, skFont);
@@ -174,4 +175,22 @@ function hashBytes(bytes: Uint8Array): string {
   let hash = 2166136261;
   for (const byte of bytes) hash = Math.imul(hash ^ byte, 16777619);
   return (hash >>> 0).toString(16);
+}
+
+function splitFontFamilyStack(value: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let quote = '';
+  for (const char of value) {
+    if ((char === '"' || char === "'") && (!quote || quote === char)) {
+      quote = quote ? '' : char;
+      continue;
+    }
+    if (char === ',' && !quote) {
+      const name = current.trim(); if (name) result.push(name); current = ''; continue;
+    }
+    current += char;
+  }
+  const name = current.trim(); if (name) result.push(name);
+  return result;
 }
