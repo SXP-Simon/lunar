@@ -88,6 +88,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   private totalSpreadsValue?: number;
   private readonly metadataValue: LoadedReaderPublication['metadata'];
   private readonly tocValue: LoadedReaderPublication['toc'];
+  private readonly tocLabelsByHref: ReadonlyMap<string, string>;
   private readonly spine: RitoPublication['spine'];
   private backgroundTail: Promise<void> = Promise.resolve();
 
@@ -99,6 +100,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     this.layoutValue = toReaderLayoutParameters(layout);
     this.metadataValue = publication.metadata;
     this.tocValue = publication.toc.map(toReaderToc);
+    this.tocLabelsByHref = createTocLabelIndex(this.tocValue);
     this.spine = publication.spine;
     this.visibleArtifactId = first.artifactId;
     this.artifacts.set(0, first);
@@ -183,14 +185,13 @@ class RitoNativePublication implements LoadedReaderPublication {
   get toc() { return this.tocValue; }
   get layout() { return this.layoutValue; }
   getCurrentChapterTitle(): string | undefined {
-    const artifact = this.visibleArtifactId === undefined
-      ? undefined
-      : [...this.artifacts.values()].find((candidate) => candidate.artifactId === this.visibleArtifactId);
+    const artifact = this.artifacts.get(this.visibleIndex);
     if (!artifact) return undefined;
     const locatorHref = artifact.locator.anchorId
       ? `${artifact.locator.href}#${artifact.locator.anchorId}`
       : artifact.locator.href;
-    return findTocLabel(this.tocValue, locatorHref);
+    return this.tocLabelsByHref.get(locatorHref)
+      ?? this.tocLabelsByHref.get(artifact.locator.href);
   }
   get totalPages() {
     return Math.max(1, [...this.artifacts.values()].reduce((max, artifact) => {
@@ -354,29 +355,60 @@ function safeTextOffset(value: bigint): number {
 }
 
 function toReaderToc(entry: RitoTocEntry): import('../contracts').ReaderTocEntry {
+  type MutableEntry = { label: string; href: string; children: MutableEntry[] };
   const target = entry.target.kind === 'locator'
     ? `${entry.target.locator.href}${entry.target.locator.anchorId ? `#${entry.target.locator.anchorId}` : ''}`
     : entry.target.href;
-  return { label: entry.label, href: target, children: entry.children.map(toReaderToc) };
+  const root: MutableEntry = { label: entry.label, href: target, children: [] };
+  const visited = new Set<RitoTocEntry>([entry]);
+  const stack: { source: RitoTocEntry; output: MutableEntry }[] = [{ source: entry, output: root }];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) break;
+    for (let index = current.source.children.length - 1; index >= 0; index -= 1) {
+      const child = current.source.children[index];
+      if (visited.has(child)) continue;
+      visited.add(child);
+      const childTarget = child.target.kind === 'locator'
+        ? `${child.target.locator.href}${child.target.locator.anchorId ? `#${child.target.locator.anchorId}` : ''}`
+        : child.target.href;
+      const childOutput: MutableEntry = { label: child.label, href: childTarget, children: [] };
+      current.output.children.unshift(childOutput);
+      stack.push({ source: child, output: childOutput });
+    }
+  }
+  return root;
 }
 
 function findTocTarget(entries: readonly import('../contracts').ReaderTocEntry[], href: string, base: string): string | undefined {
-  for (const entry of entries) {
+  const stack = [...entries].reverse();
+  while (stack.length > 0) {
+    const entry = stack.pop();
+    if (!entry) continue;
     if (entry.href === href || entry.href === base) return entry.href;
-    const nested = findTocTarget(entry.children, href, base);
-    if (nested) return nested;
+    for (let index = entry.children.length - 1; index >= 0; index -= 1) {
+      stack.push(entry.children[index]);
+    }
   }
   return undefined;
 }
 
-function findTocLabel(entries: readonly import('../contracts').ReaderTocEntry[], href: string): string | undefined {
-  const base = href.split('#', 1)[0];
-  for (const entry of entries) {
-    if (entry.href === href || entry.href.split('#', 1)[0] === base) return entry.label;
-    const nested = findTocLabel(entry.children, href);
-    if (nested) return nested;
+function createTocLabelIndex(entries: readonly import('../contracts').ReaderTocEntry[]): ReadonlyMap<string, string> {
+  const labels = new Map<string, string>();
+  const visited = new Set<import('../contracts').ReaderTocEntry>();
+  const stack = [...entries].reverse();
+  while (stack.length > 0) {
+    const entry = stack.pop();
+    if (!entry || visited.has(entry)) continue;
+    visited.add(entry);
+    if (!labels.has(entry.href)) labels.set(entry.href, entry.label);
+    const base = entry.href.split('#', 1)[0];
+    if (!labels.has(base)) labels.set(base, entry.label);
+    for (let index = entry.children.length - 1; index >= 0; index -= 1) {
+      stack.push(entry.children[index]);
+    }
   }
-  return undefined;
+  return labels;
 }
 
 function toReaderSemanticNode(node: import('../../../modules/rito-rn/src/protocol/artifact-types').RitoSemanticNode): import('../contracts').ReaderSemanticNode {

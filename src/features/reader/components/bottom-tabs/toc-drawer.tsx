@@ -1,6 +1,7 @@
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
+import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,7 +22,7 @@ interface FlatTocEntry extends ReaderTocEntry {
 
 export function TocDrawer({ isOpen, onOpenChange, runtime, toc }: TocDrawerProps) {
   const insets = useSafeAreaInsets();
-  const entries = flattenToc(toc);
+  const entries = useMemo(() => isOpen ? flattenToc(toc) : [], [isOpen, toc]);
 
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -73,8 +74,17 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, toc }: TocDrawerProps
 }
 
 function flattenToc(entries: readonly ReaderTocEntry[], depth = 0): FlatTocEntry[] {
-  return entries.flatMap((entry) => [
-    { ...entry, depth },
-    ...flattenToc(entry.children, depth + 1),
-  ]);
+  const flattened: FlatTocEntry[] = [];
+  const visited = new Set<ReaderTocEntry>();
+  const stack = entries.slice().reverse().map((entry) => ({ entry, depth }));
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current || visited.has(current.entry)) continue;
+    visited.add(current.entry);
+    flattened.push({ ...current.entry, depth: current.depth });
+    for (let index = current.entry.children.length - 1; index >= 0; index -= 1) {
+      stack.push({ entry: current.entry.children[index], depth: current.depth + 1 });
+    }
+  }
+  return flattened;
 }
