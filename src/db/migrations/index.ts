@@ -57,6 +57,16 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     name: 'track_imported_metadata_version',
     statements: [
       'ALTER TABLE books ADD COLUMN metadata_version INTEGER NOT NULL DEFAULT 1',
+      `CREATE TABLE IF NOT EXISTS book_assets (
+        book_id TEXT NOT NULL,
+        path TEXT NOT NULL,
+        uri TEXT NOT NULL,
+        byte_size INTEGER NOT NULL CHECK (byte_size >= 0),
+        sha256 TEXT,
+        PRIMARY KEY (book_id, path),
+        FOREIGN KEY(book_id) REFERENCES books(id) ON DELETE CASCADE
+      )`,
+      'CREATE INDEX IF NOT EXISTS book_assets_book_id_index ON book_assets(book_id)',
     ],
   },
 ];

@@ -5,6 +5,7 @@ import {
 
 import type { LibraryBookRecord } from '../domain/library-book';
 import type { BookRepository } from '../repositories/book-repository';
+import type { BookAssetRepository } from '../repositories/book-asset-repository';
 import type { BookFileService, ManagedBookFile } from './book-file-service';
 
 export const CURRENT_BOOK_METADATA_VERSION = 2;
@@ -14,6 +15,7 @@ export type EpubInspector = (data: ArrayBuffer) => ReaderBookInspection;
 export interface BookImportServiceOptions {
   readonly files: BookFileService;
   readonly books: BookRepository;
+  readonly assets?: BookAssetRepository;
   readonly inspectEpub?: EpubInspector;
   readonly now?: () => number;
 }
@@ -21,12 +23,14 @@ export interface BookImportServiceOptions {
 export class BookImportService {
   private readonly files: BookFileService;
   private readonly books: BookRepository;
+  private readonly assets?: BookAssetRepository;
   private readonly inspectEpub: EpubInspector;
   private readonly now: () => number;
 
   constructor(options: BookImportServiceOptions) {
     this.files = options.files;
     this.books = options.books;
+    this.assets = options.assets;
     this.inspectEpub = options.inspectEpub ?? inspectReaderBookAssets;
     this.now = options.now ?? Date.now;
   }
@@ -34,6 +38,8 @@ export class BookImportService {
   async import(sourceUri: string, fileName: string): Promise<LibraryBookRecord> {
     const managedFile = await this.files.importEpub(sourceUri, fileName);
     const previous = await this.books.findBySha256(managedFile.sha256);
+    let savedBook = false;
+    let savedBookId: string | undefined;
 
     try {
       const inspection = this.inspectEpub(await this.files.readBook(managedFile));
@@ -49,8 +55,16 @@ export class BookImportService {
         previous,
       );
       await this.books.save(book);
+      savedBook = true;
+      savedBookId = book.id;
+      if (this.assets && managedFile.assets) {
+        await this.assets.saveMany(book.id, managedFile.assets);
+      }
       return book;
     } catch (error) {
+      if (savedBook && !previous && savedBookId) {
+        await this.books.remove(savedBookId).catch(() => undefined);
+      }
       if (!previous) {
         await this.files.removeBook(managedFile).catch(() => undefined);
       }
@@ -116,5 +130,6 @@ function toManagedBookFile(book: LibraryBookRecord): ManagedBookFile {
     fileName: book.fileName,
     fileSize: book.fileSize,
     sha256: book.sha256,
+    assets: undefined,
   };
 }
