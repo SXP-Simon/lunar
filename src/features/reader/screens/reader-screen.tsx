@@ -12,6 +12,11 @@ import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
 import { ReaderControls } from '../components/reader-controls';
 import { useReaderSession } from '../hooks/use-reader-session';
 
+// ReaderControls overlays the surface, so only the safe-area edge gets reserved here.
+const ReaderSurfaceTopSpacing = 4;
+const ReaderSurfaceBottomSpacing = 4;
+const ReaderChapterTopSpacing = 4;
+
 export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
@@ -97,18 +102,37 @@ export default function ReaderScreen() {
     }
   }, [session.snapshot.phase]);
 
+  const surfaceTopInset = insets.top + ReaderSurfaceTopSpacing;
+  const surfaceBottomInset = insets.bottom + ReaderSurfaceBottomSpacing;
+
   return (
-    <View onLayout={handleLayout} style={[styles.screen, { backgroundColor: canvasBackground }]}>
-      <ReaderSurface
-        runtime={session.runtime}
-        snapshot={session.snapshot}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={[styles.screen, { backgroundColor: canvasBackground }]}>
+      <View
+        onLayout={handleLayout}
+        style={[styles.surfaceRegion, { top: surfaceTopInset, bottom: surfaceBottomInset }]}>
+        <ReaderSurface
+          runtime={session.runtime}
+          snapshot={session.snapshot}
+          style={StyleSheet.absoluteFill}
+        />
+        <Pressable
+          accessibilityLabel="阅读页面"
+          accessibilityRole="adjustable"
+          accessibilityValue={{
+            min: 1,
+            max: totalSpreads ?? Math.max(1, currentSpread + 1),
+            now: currentSpread + 1,
+            text: progressText,
+          }}
+          onPress={(event) => handleReadingPress(event.nativeEvent.locationX)}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
       <View
         pointerEvents="none"
         style={[
           styles.chapterOverlay,
-          { paddingTop: insets.top + 14, paddingLeft: insets.left + 18, paddingRight: insets.right + 18 },
+          { paddingTop: insets.top + ReaderChapterTopSpacing, paddingLeft: insets.left + 18, paddingRight: insets.right + 18 },
         ]}>
         <Text className="text-sm text-muted" numberOfLines={1}>{chapterTitle}</Text>
       </View>
@@ -122,19 +146,6 @@ export default function ReaderScreen() {
           {progressText}{progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}
         </Text>
       </View>
-      <Pressable
-        accessibilityLabel="阅读页面"
-        accessibilityRole="adjustable"
-        accessibilityValue={{
-          min: 1,
-          max: totalSpreads ?? Math.max(1, currentSpread + 1),
-          now: currentSpread + 1,
-          text: progressText,
-        }}
-        onPress={(event) => handleReadingPress(event.nativeEvent.locationX)}
-        style={StyleSheet.absoluteFill}
-      />
-
       {(controlsVisible || Boolean(session.errorMessage)) && (
         <ReaderControls
           onBack={() => router.back()}
@@ -179,6 +190,11 @@ export default function ReaderScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  surfaceRegion: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
   },
   chapterOverlay: {
     position: 'absolute',
