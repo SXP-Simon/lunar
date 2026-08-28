@@ -7,9 +7,24 @@ import type {
 import { RitoNativeError, RitoNativeModuleUnavailableError, type RitoNativeStatus } from './errors';
 import { toExternalIdString } from './protocol/binary';
 
-const perfConsole = console as Console & { timeStamp?: (label?: string) => void };
+declare global {
+  var LUNAR_READER_PERF: boolean | undefined;
+  var LUNAR_READER_TRACE: boolean | undefined;
+  var __LUNAR_READER_PERF__: boolean | undefined;
+}
+
+const perfConsole = console as Console & { info?: (...data: unknown[]) => void };
 function nativePerfMark(label: string): void {
-  if (process.env.EXPO_PUBLIC_READER_PERF === '1') perfConsole.timeStamp?.(`[LunarReader] ${label}`);
+  if (
+    process.env.EXPO_PUBLIC_READER_PERF !== '1'
+    && globalThis.LUNAR_READER_PERF !== true
+    && globalThis.__LUNAR_READER_PERF__ !== true
+  ) return;
+  try {
+    perfConsole.info?.(`[LunarReader][perf] ${label}`);
+  } catch {
+    // Logging must never affect a native reader operation.
+  }
 }
 
 export type RitoNativePinnedFontFace = {

@@ -143,6 +143,10 @@ class RitoNativePublication implements LoadedReaderPublication {
     }
     const display = toReaderV1DisplayList(artifact.displayList.displayList, artifact.width, artifact.height);
     const pages = artifact.pages.filter((page) => artifact.localPageIndexes.includes(page.pageIndex));
+    if (pages.length === 0 || artifact.localPageIndexes.length === 0) {
+      readerDiagnostic('frame.empty', `artifact=${describeArtifact(artifact)} matchedPages=${pages.length}`);
+      throw new RangeError(`Rito artifact ${artifact.artifactId.toString()} contains no renderable pages.`);
+    }
     const frame: ReaderRenderFrame = {
       spreadIndex,
       sourceKey,
@@ -170,10 +174,15 @@ class RitoNativePublication implements LoadedReaderPublication {
   }
 
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined {
-    const frame = this.slots.get(spreadIndex)?.frame;
+    const slot = this.slots.get(spreadIndex);
+    const frame = slot?.frame;
     if (!frame) return undefined;
-    if (frame.spreadIndex !== spreadIndex || frame.pageIndices.length === 0) {
-      readerDiagnostic('frame.reject', `requestedSpread=${spreadIndex} frameSpread=${frame.spreadIndex} pages=${frame.pageIndices.length}`);
+    const artifact = slot?.artifactId === undefined ? undefined : this.session.getArtifact(slot.artifactId);
+    const sourceMismatch = artifact !== undefined
+      && frame.sourceKey !== undefined
+      && frame.sourceKey !== artifactSourceKey(artifact);
+    if (!artifact || frame.spreadIndex !== spreadIndex || frame.pageIndices.length === 0 || sourceMismatch) {
+      readerDiagnostic('frame.reject', `requestedSpread=${spreadIndex} frameSpread=${frame.spreadIndex} pageIndexes=${frame.pageIndices.length} frameSource=${frame.sourceKey ?? 'none'} artifactSource=${artifact ? artifactSourceKey(artifact) : 'missing'}`);
       return undefined;
     }
     return frame;
@@ -427,14 +436,16 @@ class RitoNativePublication implements LoadedReaderPublication {
         return;
       }
       const currentIndex = this.indexForArtifact(current);
-      // A non-moving background candidate only changes pagination ownership
-      // and whole-book numbering. Its painted content is sealed, so keep the
-      // completed frame instead of rebuilding the same spread. Prepare only
-      // when the visible slot has no frame yet.
-      if (!this.slots.get(currentIndex)?.frame) {
+      // The publication candidate has a new artifact identity. The slot may
+      // retain a frame from the previous artifact, but that frame cannot be
+      // published under the candidate until its source identity is refreshed.
+      // `prepare` only rebuilds the lightweight ReaderRenderFrame; the
+      // rendering layer can still reuse the compiled Picture by renderKey.
+      const currentSlot = this.slots.get(currentIndex);
+      if (!currentSlot?.frame || currentSlot.frame.sourceKey !== artifactSourceKey(candidate)) {
         await this.prepare(candidate, currentIndex, true);
       }
-      this.assignArtifact(currentIndex, candidate, true);
+      this.assignArtifact(currentIndex, candidate);
       if (this.session.currentVisibleArtifactId !== current.artifactId) {
         await this.session.releaseArtifact(candidate.artifactId).catch(() => undefined);
         return;
@@ -490,9 +501,10 @@ class RitoNativePublication implements LoadedReaderPublication {
 
   private assignArtifact(spreadIndex: number, artifact: RitoArtifact, preserveFrame = false): void {
     const current = this.slots.get(spreadIndex);
+    const frameBelongsToArtifact = current?.frame?.sourceKey === artifactSourceKey(artifact);
     this.slots.set(spreadIndex, {
       artifactId: artifact.artifactId,
-      ...((preserveFrame || current?.artifactId === artifact.artifactId) && current?.frame
+      ...((frameBelongsToArtifact && (preserveFrame || current?.artifactId === artifact.artifactId)) && current?.frame
         ? { frame: current.frame }
         : {}),
     });
@@ -603,7 +615,7 @@ function describeArtifact(artifact: RitoArtifact | undefined): string {
     `href=${artifact.locator.href}`,
     `localPage=${artifact.localPageIndex}`,
     `localSpread=${artifact.localSpreadIndex}`,
-    `pages=${artifact.localPageIndexes.join(',')}`,
+    `pageIndexes=${artifact.localPageIndexes.join(',')}`,
     `nav=${artifact.navigation.previous}/${artifact.navigation.next}`,
     `book=${artifact.bookPageIndex ?? 'none'}/${artifact.bookPageCount ?? 'none'}`,
   ].join(' ');

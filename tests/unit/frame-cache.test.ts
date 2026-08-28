@@ -29,4 +29,13 @@ describe('FrameCache', () => {
     expect(cache.get({ revisionId: 2, spreadIndex: 0 })).toBe('current');
     expect(dispose).toHaveBeenCalledWith('old');
   });
+
+  it('resolves a render identity after it moves to another slot', () => {
+    const cache = new FrameCache<string>(3);
+
+    cache.set({ revisionId: 1, spreadIndex: 0, renderId: 7 }, 'compiled-picture');
+
+    expect(cache.getByRenderId(1, 7)).toBe('compiled-picture');
+    expect(cache.getByRenderId(2, 7)).toBeUndefined();
+  });
 });

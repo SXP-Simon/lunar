@@ -42,6 +42,23 @@ export class FrameCache<T> {
     return entry.value;
   }
 
+  /**
+   * Reads a cached render identity without assuming the slot that first
+   * materialized it. A single compiled Picture may be assigned to several
+   * logical slots while navigation crosses a chapter boundary.
+   */
+  getByRenderId(revisionId: number, renderId: number): T | undefined {
+    for (const [serializedKey, entry] of this.entries) {
+      if (entry.key.revisionId !== revisionId || entry.key.renderId !== renderId) {
+        continue;
+      }
+      this.entries.delete(serializedKey);
+      this.entries.set(serializedKey, entry);
+      return entry.value;
+    }
+    return undefined;
+  }
+
   set(key: ReaderFrameKey, value: T): void {
     const serializedKey = serializeFrameKey(key);
     const current = this.entries.get(serializedKey);

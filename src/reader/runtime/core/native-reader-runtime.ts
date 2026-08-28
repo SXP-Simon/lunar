@@ -44,7 +44,6 @@ export class LunarReaderRuntime implements ReaderRuntime {
       if (retained.renderKey && this.pictureRenderIdsByRenderKey.get(retained.renderKey) === retained.renderId) {
         this.pictureRenderIdsByRenderKey.delete(retained.renderKey);
       }
-      this.pictureKeysByRenderId.delete(retained.renderId);
       for (const [slotKey, renderId] of this.pictureRenderIds) {
         if (renderId === retained.renderId) this.pictureRenderIds.delete(slotKey);
       }
@@ -60,7 +59,6 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private readonly imageByteCache = new ReaderImageByteCache();
   private readonly pictureRenderIds = new Map<string, number>();
   private readonly pictureRenderIdsByRenderKey = new Map<string, number>();
-  private readonly pictureKeysByRenderId = new Map<number, { readonly revisionId: number; readonly spreadIndex: number; readonly renderId: number }>();
   private request?: ReaderOpenRequest;
   private data?: ArrayBuffer;
   private operation = 0;
@@ -68,7 +66,13 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private paginationComplete = false;
   private backgroundScheduled = false;
   private renderId = 0;
-  private navigationTail: Promise<ReaderSnapshot> = Promise.resolve(this.snapshot);
+  /**
+   * Every operation that can change the publication or the visible snapshot
+   * passes through one queue. Background work used to run beside navigation;
+   * its completion could then publish a snapshot while a turn was compiling
+   * the next Picture.
+   */
+  private actionTail: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly loadData: ReaderBookDataLoader,
@@ -182,7 +186,11 @@ export class LunarReaderRuntime implements ReaderRuntime {
     renderId = this.pictureRenderIds.get(pictureSlotKey(revisionId, spreadIndex)),
   ): CompiledReaderPicture | undefined {
     if (renderId === undefined) return undefined;
-    return this.pictures.get({ revisionId, spreadIndex, renderId })?.compiled;
+    // A render identity may be assigned to more than one logical slot when
+    // the same sealed picture is reused after a chapter-boundary turn. The
+    // cache resolves by render identity, so the caller's current slot does
+    // not need to match the slot where the Picture was first compiled.
+    return this.pictures.getByRenderId(revisionId, renderId)?.compiled;
   }
 
   getCurrentFrame(spreadIndex = this.snapshot.spreadIndex): ReaderRenderFrame | undefined {
@@ -284,7 +292,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const snapshot = this.createReadySnapshot(target);
     this.emit(snapshot);
     readerPerformanceMark('reader.firstReadySnapshot', `spread=${target}`);
-    void this.advanceBackground(operation).catch(() => undefined);
+    this.scheduleBackground(operation);
     return { metadata: publication.metadata, toc: publication.toc, snapshot };
   }
 
@@ -310,13 +318,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const snapshot = this.createReadySnapshot(target);
     this.emit(snapshot);
     readerDiagnostic('runtime.show.ready', `target=${target} snapshot=${describeSnapshot(snapshot)}`);
-    void this.advanceBackground(operation).catch(() => undefined);
+    this.scheduleBackground(operation);
     return snapshot;
   }
 
   private enqueueNavigation(resolveTarget: () => number): Promise<ReaderSnapshot> {
-    const run = this.navigationTail.then(() => this.showSpread(resolveTarget()));
-    this.navigationTail = run.catch(() => this.snapshot);
+    const run = this.enqueueAction(() => this.showSpread(resolveTarget()));
     return run;
   }
 
@@ -334,52 +341,59 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   private enqueueAsyncNavigation(resolveTarget: () => Promise<number>): Promise<ReaderSnapshot> {
-    const run = this.navigationTail.then(async () => this.showSpread(await resolveTarget()));
-    this.navigationTail = run.catch(() => this.snapshot);
+    const run = this.enqueueAction(async () => this.showSpread(await resolveTarget()));
+    return run;
+  }
+
+  private enqueueAction<T>(action: () => Promise<T>): Promise<T> {
+    const run = this.actionTail.then(action, action);
+    this.actionTail = run.then(() => undefined, () => undefined);
     return run;
   }
 
   private async advanceBackground(operation: number): Promise<void> {
-    this.backgroundScheduled = false;
-    const backend = this.paginationBackend as Partial<ReaderBackgroundPaginationBackend>;
-    if (typeof backend.advanceBackground !== 'function') {
-      return;
-    }
-    if (operation !== this.operation || this.abortController?.signal.aborted) {
-      return;
-    }
-    const quantumStartedAt = readerPerformanceStart('reader.background.quantum');
-    let result: unknown;
-    readerDiagnostic('runtime.bg.begin', `operation=${operation} snapshot=${describeSnapshot(this.snapshot)}`);
-    try {
-      result = await backend.advanceBackground(64);
-    } catch (error) {
-      readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
-      readerDiagnostic('runtime.bg.error', `operation=${operation} error=${describeError(error)}`);
-      if (operation === this.operation && !this.abortController?.signal.aborted && isRetryableBackgroundError(error)) {
-        this.scheduleBackground(operation);
+    return this.enqueueAction(async () => {
+      this.backgroundScheduled = false;
+      const backend = this.paginationBackend as Partial<ReaderBackgroundPaginationBackend>;
+      if (typeof backend.advanceBackground !== 'function') {
         return;
       }
-      throw error;
-    }
-    readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
-    readerDiagnostic('runtime.bg.result', `operation=${operation} result=${describeBackgroundResult(result)} snapshot=${describeSnapshot(this.snapshot)}`);
-    if (operation !== this.operation || this.abortController?.signal.aborted) {
-      return;
-    }
-    const totalSpreads = this.publication?.totalSpreads;
-    if (totalSpreads !== this.snapshot.totalSpreads) {
-      this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
-    }
-    if (isBackgroundComplete(result)) {
-      this.paginationComplete = true;
-      readerPerformanceMark('reader.background.complete', `totalSpreads=${this.publication?.totalSpreads ?? 'unknown'}`);
-      if (this.snapshot.paginationComplete !== true) {
+      if (operation !== this.operation || this.abortController?.signal.aborted) {
+        return;
+      }
+      const quantumStartedAt = readerPerformanceStart('reader.background.quantum');
+      let result: unknown;
+      readerDiagnostic('runtime.bg.begin', `operation=${operation} snapshot=${describeSnapshot(this.snapshot)}`);
+      try {
+        result = await backend.advanceBackground(64);
+      } catch (error) {
+        readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
+        readerDiagnostic('runtime.bg.error', `operation=${operation} error=${describeError(error)}`);
+        if (operation === this.operation && !this.abortController?.signal.aborted && isRetryableBackgroundError(error)) {
+          this.scheduleBackground(operation);
+          return;
+        }
+        throw error;
+      }
+      readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
+      readerDiagnostic('runtime.bg.result', `operation=${operation} result=${describeBackgroundResult(result)} snapshot=${describeSnapshot(this.snapshot)}`);
+      if (operation !== this.operation || this.abortController?.signal.aborted) {
+        return;
+      }
+      const totalSpreads = this.publication?.totalSpreads;
+      if (totalSpreads !== this.snapshot.totalSpreads) {
         this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
       }
-      return;
-    }
-    this.scheduleBackground(operation);
+      if (isBackgroundComplete(result)) {
+        this.paginationComplete = true;
+        readerPerformanceMark('reader.background.complete', `totalSpreads=${this.publication?.totalSpreads ?? 'unknown'}`);
+        if (this.snapshot.paginationComplete !== true) {
+          this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
+        }
+        return;
+      }
+      this.scheduleBackground(operation);
+    });
   }
 
   private scheduleBackground(operation: number): void {
@@ -418,8 +432,9 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const renderKey = frame.renderKey ?? frame.sourceKey;
     if (renderKey) {
       const cachedRenderId = this.pictureRenderIdsByRenderKey.get(renderKey);
-      const cachedKey = cachedRenderId === undefined ? undefined : this.pictureKeysByRenderId.get(cachedRenderId);
-      const cachedPicture = cachedKey === undefined ? undefined : this.pictures.get(cachedKey);
+      const cachedPicture = cachedRenderId === undefined
+        ? undefined
+        : this.pictures.getByRenderId(revisionId, cachedRenderId);
       if (cachedPicture && cachedRenderId !== undefined) {
         this.pictureRenderIds.set(slotKey, cachedRenderId);
         readerDiagnostic('picture.cache.hit', `spread=${spreadIndex} renderId=${cachedRenderId} renderKey=${renderKey}`);
@@ -459,7 +474,6 @@ export class LunarReaderRuntime implements ReaderRuntime {
       { revisionId, spreadIndex, renderId },
       { renderId, compiled: picture, imageLease, sourceKey: frame.sourceKey, renderKey: frame.renderKey },
     );
-    this.pictureKeysByRenderId.set(renderId, { revisionId, spreadIndex, renderId });
     if (renderKey) this.pictureRenderIdsByRenderKey.set(renderKey, renderId);
     this.pictureRenderIds.set(slotKey, renderId);
     readerDiagnostic('picture.compile.done', `spread=${spreadIndex} renderId=${renderId} renderKey=${renderKey ?? 'none'}`);
@@ -578,7 +592,6 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.pictures.clear();
     this.pictureRenderIds.clear();
     this.pictureRenderIdsByRenderKey.clear();
-    this.pictureKeysByRenderId.clear();
     const imageCache = this.imageCache;
     if (imageCache) this.deferSkiaCleanup(() => imageCache.clear());
     this.imageCache = undefined;
@@ -601,7 +614,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
 }
 
 function describeSnapshot(snapshot: ReaderSnapshot): string {
-  return `revision=${snapshot.revisionId} spread=${snapshot.spreadIndex} bookSpread=${snapshot.bookSpreadIndex ?? 'none'} chapter=${snapshot.chapterTitle ?? 'none'} total=${snapshot.totalSpreads ?? 'none'} complete=${String(snapshot.paginationComplete)}`;
+  return `revision=${snapshot.revisionId} spread=${snapshot.spreadIndex} renderId=${snapshot.renderId ?? 'none'} bookSpread=${snapshot.bookSpreadIndex ?? 'none'} chapter=${snapshot.chapterTitle ?? 'none'} total=${snapshot.totalSpreads ?? 'none'} complete=${String(snapshot.paginationComplete)}`;
 }
 
 function describeBackgroundResult(result: unknown): string {
