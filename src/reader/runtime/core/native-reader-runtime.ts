@@ -31,6 +31,11 @@ interface RetainedReaderPicture {
   readonly renderKey?: string;
 }
 
+// A turn across a chapter boundary can visit several local spreads before it
+// returns to the original chapter. Keep that neighborhood available for the
+// common back-and-forth gesture while retaining a bounded native resource set.
+const READER_PICTURE_CACHE_CAP = 12;
+
 export class LunarReaderRuntime implements ReaderRuntime {
   private snapshot: ReaderSnapshot = {
     phase: 'idle',
@@ -39,7 +44,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   };
   private readonly listeners = new Set<ReaderSnapshotListener>();
   private readonly pictures = new FrameCache<RetainedReaderPicture>(
-    3,
+    READER_PICTURE_CACHE_CAP,
     (retained) => this.deferSkiaCleanup(() => {
       if (retained.renderKey && this.pictureRenderIdsByRenderKey.get(retained.renderKey) === retained.renderId) {
         this.pictureRenderIdsByRenderKey.delete(retained.renderKey);
@@ -65,12 +70,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private abortController?: AbortController;
   private paginationComplete = false;
   private backgroundScheduled = false;
+  private foregroundQueued = 0;
   private renderId = 0;
   /**
-   * Every operation that can change the publication or the visible snapshot
-   * passes through one queue. Background work used to run beside navigation;
-   * its completion could then publish a snapshot while a turn was compiling
-   * the next Picture.
+   * Foreground operations share one queue. Background work has its own lane;
+   * the publication queue and native compare-and-swap checks keep its result
+   * ordered with a turn while allowing a pending turn to take precedence.
    */
   private actionTail: Promise<void> = Promise.resolve();
 
@@ -190,7 +195,19 @@ export class LunarReaderRuntime implements ReaderRuntime {
     // the same sealed picture is reused after a chapter-boundary turn. The
     // cache resolves by render identity, so the caller's current slot does
     // not need to match the slot where the Picture was first compiled.
-    return this.pictures.getByRenderId(revisionId, renderId)?.compiled;
+    const retained = this.pictures.getByRenderId(revisionId, renderId);
+    if (!retained) {
+      readerDiagnostic('picture.miss', `revision=${revisionId} spread=${spreadIndex} renderId=${renderId} cacheEntries=${this.pictures.size}`);
+      return undefined;
+    }
+    const frame = this.getCurrentFrame(spreadIndex);
+    const frameRenderKey = frame ? pictureRenderKey(frame) : undefined;
+    const retainedRenderKey = pictureRenderKey(retained);
+    if (frameRenderKey && retainedRenderKey && frameRenderKey !== retainedRenderKey) {
+      readerDiagnostic('picture.identity.reject', `revision=${revisionId} spread=${spreadIndex} renderId=${renderId} frameRenderKey=${frameRenderKey} pictureRenderKey=${retainedRenderKey}`);
+      return undefined;
+    }
+    return retained?.compiled;
   }
 
   getCurrentFrame(spreadIndex = this.snapshot.spreadIndex): ReaderRenderFrame | undefined {
@@ -323,8 +340,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   private enqueueNavigation(resolveTarget: () => number): Promise<ReaderSnapshot> {
-    const run = this.enqueueAction(() => this.showSpread(resolveTarget()));
-    return run;
+    return this.enqueueForeground(() => this.showSpread(resolveTarget()));
   }
 
   private resolveSpreadTarget(requestedSpreadIndex: number): number {
@@ -341,8 +357,19 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   private enqueueAsyncNavigation(resolveTarget: () => Promise<number>): Promise<ReaderSnapshot> {
-    const run = this.enqueueAction(async () => this.showSpread(await resolveTarget()));
-    return run;
+    return this.enqueueForeground(async () => this.showSpread(await resolveTarget()));
+  }
+
+  private enqueueForeground(action: () => Promise<ReaderSnapshot>): Promise<ReaderSnapshot> {
+    this.foregroundQueued += 1;
+    return this.enqueueAction(async () => {
+      try {
+        return await action();
+      } finally {
+        this.foregroundQueued -= 1;
+        if (this.foregroundQueued === 0) this.scheduleBackground(this.operation);
+      }
+    });
   }
 
   private enqueueAction<T>(action: () => Promise<T>): Promise<T> {
@@ -352,52 +379,48 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   private async advanceBackground(operation: number): Promise<void> {
-    return this.enqueueAction(async () => {
-      this.backgroundScheduled = false;
-      const backend = this.paginationBackend as Partial<ReaderBackgroundPaginationBackend>;
-      if (typeof backend.advanceBackground !== 'function') {
-        return;
-      }
-      if (operation !== this.operation || this.abortController?.signal.aborted) {
-        return;
-      }
-      const quantumStartedAt = readerPerformanceStart('reader.background.quantum');
-      let result: unknown;
-      readerDiagnostic('runtime.bg.begin', `operation=${operation} snapshot=${describeSnapshot(this.snapshot)}`);
-      try {
-        result = await backend.advanceBackground(64);
-      } catch (error) {
-        readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
-        readerDiagnostic('runtime.bg.error', `operation=${operation} error=${describeError(error)}`);
-        if (operation === this.operation && !this.abortController?.signal.aborted && isRetryableBackgroundError(error)) {
-          this.scheduleBackground(operation);
-          return;
-        }
-        throw error;
-      }
+    this.backgroundScheduled = false;
+    const backend = this.paginationBackend as Partial<ReaderBackgroundPaginationBackend>;
+    if (typeof backend.advanceBackground !== 'function') return;
+    if (operation !== this.operation || this.abortController?.signal.aborted) return;
+    if (this.foregroundQueued > 0) {
+      readerDiagnostic('runtime.bg.pause', `operation=${operation} foregroundQueued=${this.foregroundQueued}`);
+      return;
+    }
+    const quantumStartedAt = readerPerformanceStart('reader.background.quantum');
+    let result: unknown;
+    readerDiagnostic('runtime.bg.begin', `operation=${operation} snapshot=${describeSnapshot(this.snapshot)}`);
+    try {
+      result = await backend.advanceBackground(64);
+    } catch (error) {
       readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
-      readerDiagnostic('runtime.bg.result', `operation=${operation} result=${describeBackgroundResult(result)} snapshot=${describeSnapshot(this.snapshot)}`);
-      if (operation !== this.operation || this.abortController?.signal.aborted) {
+      readerDiagnostic('runtime.bg.error', `operation=${operation} error=${describeError(error)}`);
+      if (operation === this.operation && !this.abortController?.signal.aborted && isRetryableBackgroundError(error)) {
+        this.scheduleBackground(operation);
         return;
       }
-      const totalSpreads = this.publication?.totalSpreads;
-      if (totalSpreads !== this.snapshot.totalSpreads) {
+      throw error;
+    }
+    readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
+    readerDiagnostic('runtime.bg.result', `operation=${operation} result=${describeBackgroundResult(result)} snapshot=${describeSnapshot(this.snapshot)}`);
+    if (operation !== this.operation || this.abortController?.signal.aborted) return;
+    const totalSpreads = this.publication?.totalSpreads;
+    if (totalSpreads !== this.snapshot.totalSpreads) {
+      this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
+    }
+    if (isBackgroundComplete(result)) {
+      this.paginationComplete = true;
+      readerPerformanceMark('reader.background.complete', `totalSpreads=${this.publication?.totalSpreads ?? 'unknown'}`);
+      if (this.snapshot.paginationComplete !== true) {
         this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
       }
-      if (isBackgroundComplete(result)) {
-        this.paginationComplete = true;
-        readerPerformanceMark('reader.background.complete', `totalSpreads=${this.publication?.totalSpreads ?? 'unknown'}`);
-        if (this.snapshot.paginationComplete !== true) {
-          this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
-        }
-        return;
-      }
-      this.scheduleBackground(operation);
-    });
+      return;
+    }
+    if (this.foregroundQueued === 0) this.scheduleBackground(operation);
   }
 
   private scheduleBackground(operation: number): void {
-    if (this.backgroundScheduled || operation !== this.operation || this.abortController?.signal.aborted) {
+    if (!this.publication || this.snapshot.phase !== 'ready' || this.backgroundScheduled || this.paginationComplete || this.foregroundQueued > 0 || operation !== this.operation || this.abortController?.signal.aborted) {
       return;
     }
     this.backgroundScheduled = true;

@@ -458,7 +458,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       await this.releaseAfterNavigation(current);
       this.pruneSlots();
       readerDiagnostic('bg.commit', `spread=${currentIndex} artifact=${describeArtifact(candidate)} released=${current.artifactId.toString()}`);
-    });
+    }, 'background');
     try {
       await run;
       return result;
