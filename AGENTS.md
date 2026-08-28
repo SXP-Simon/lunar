@@ -8,7 +8,9 @@
 
 [MUST] Expo 相关变更以 [Expo SDK 57 版本文档](https://docs.expo.dev/versions/v57.0.0/) 为依据。
 
-[MUST] 产品范围与阅读内核设计以 [RN_EPUB_PRODUCT_TECHNICAL_DESIGN.md](RN_EPUB_PRODUCT_TECHNICAL_DESIGN.md) 为依据。
+[MUST] 产品范围与工程边界以 `docs/` 中的专题约束和当前公开代码契约为依据。
+
+[SHOULD] 专题文档描述的约束优先于未记录的历史约定。
 
 ## 文档索引
 
@@ -27,3 +29,7 @@
 [MUST] 跨层变更同时遵守全部相关专题文档。
 
 [MUST] 专题规则与根文档存在差异时，以范围更具体的专题规则为准。
+
+[MUST] 文档中的强制要求使用 `MUST` 标记，参考性要求使用 `SHOULD` 标记。
+
+[MUST] 约束文档仅描述职责、边界、依赖与取舍，不承担具体实现方案的说明职责。

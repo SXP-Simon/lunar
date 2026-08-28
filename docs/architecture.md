@@ -20,6 +20,8 @@
 
 [MUST] `src/stores` 仅承载跨页面共享的应用状态。
 
+[MUST] 层级之间不得形成循环依赖。
+
 ## 依赖方向
 
 [MUST] `src/app` 通过 `src/features` 组合业务界面。
@@ -35,3 +37,13 @@
 [MUST] `src/db` 保持业务无关，且隔离 `src/app`、`src/features`、`src/components/ui` 与 `src/reader`。
 
 [MUST] 跨层引用使用各层公开入口，内部文件仅供所属层使用。
+
+## 取舍约束
+
+[SHOULD] 模块职责清晰优先于减少文件数量。
+
+[SHOULD] 层间隔离优先于复用其他层的内部实现。
+
+[SHOULD] 公开契约稳定性优先于暴露更多内部类型。
+
+[SHOULD] 平台相关能力的边界清晰优先于在业务层共享平台细节。
