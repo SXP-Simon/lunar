@@ -24,9 +24,11 @@ import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPe
 export type ReaderBookDataLoader = (request: ReaderOpenRequest) => Promise<ArrayBuffer>;
 
 interface RetainedReaderPicture {
+  readonly renderId: number;
   readonly compiled: CompiledReaderPicture;
   readonly imageLease: { release(): void };
   readonly sourceKey?: string;
+  readonly renderKey?: string;
 }
 
 export class LunarReaderRuntime implements ReaderRuntime {
@@ -39,6 +41,13 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private readonly pictures = new FrameCache<RetainedReaderPicture>(
     3,
     (retained) => this.deferSkiaCleanup(() => {
+      if (retained.renderKey && this.pictureRenderIdsByRenderKey.get(retained.renderKey) === retained.renderId) {
+        this.pictureRenderIdsByRenderKey.delete(retained.renderKey);
+      }
+      this.pictureKeysByRenderId.delete(retained.renderId);
+      for (const [slotKey, renderId] of this.pictureRenderIds) {
+        if (renderId === retained.renderId) this.pictureRenderIds.delete(slotKey);
+      }
       this.pictureCompiler.dispose(retained.compiled);
       retained.imageLease.release();
     }),
@@ -50,6 +59,8 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private textMeasurer?: LunarSkiaTextMeasurer;
   private imageCache?: SkiaImageCache;
   private readonly pictureRenderIds = new Map<string, number>();
+  private readonly pictureRenderIdsByRenderKey = new Map<string, number>();
+  private readonly pictureKeysByRenderId = new Map<number, { readonly revisionId: number; readonly spreadIndex: number; readonly renderId: number }>();
   private request?: ReaderOpenRequest;
   private data?: ArrayBuffer;
   private operation = 0;
@@ -401,9 +412,22 @@ export class LunarReaderRuntime implements ReaderRuntime {
       ? undefined
       : this.pictures.get({ revisionId, spreadIndex, renderId: activeRenderId });
     if (activePicture) {
-      if (activePicture.sourceKey === frame.sourceKey) return;
+      if (pictureRenderKey(activePicture) === pictureRenderKey(frame)) return;
       this.invalidatePicture(spreadIndex);
     }
+    const renderKey = frame.renderKey ?? frame.sourceKey;
+    if (renderKey) {
+      const cachedRenderId = this.pictureRenderIdsByRenderKey.get(renderKey);
+      const cachedKey = cachedRenderId === undefined ? undefined : this.pictureKeysByRenderId.get(cachedRenderId);
+      const cachedPicture = cachedKey === undefined ? undefined : this.pictures.get(cachedKey);
+      if (cachedPicture && cachedRenderId !== undefined) {
+        this.pictureRenderIds.set(slotKey, cachedRenderId);
+        readerDiagnostic('picture.cache.hit', `spread=${spreadIndex} renderId=${cachedRenderId} renderKey=${renderKey}`);
+        return;
+      }
+      this.pictureRenderIdsByRenderKey.delete(renderKey);
+    }
+    readerDiagnostic('picture.compile.begin', `spread=${spreadIndex} renderKey=${renderKey ?? 'none'} sourceKey=${frame.sourceKey ?? 'none'}`);
     const imageLease = await imageCache.acquire(frame.imageSources);
     try {
       this.assertCurrent(operation);
@@ -430,11 +454,15 @@ export class LunarReaderRuntime implements ReaderRuntime {
       readerPerformanceEnd('reader.picture.compile', pictureStartedAt);
     }
     this.renderId += 1;
+    const renderId = this.renderId;
     this.pictures.set(
-      { revisionId, spreadIndex, renderId: this.renderId },
-      { compiled: picture, imageLease, sourceKey: frame.sourceKey },
+      { revisionId, spreadIndex, renderId },
+      { renderId, compiled: picture, imageLease, sourceKey: frame.sourceKey, renderKey: frame.renderKey },
     );
-    this.pictureRenderIds.set(slotKey, this.renderId);
+    this.pictureKeysByRenderId.set(renderId, { revisionId, spreadIndex, renderId });
+    if (renderKey) this.pictureRenderIdsByRenderKey.set(renderKey, renderId);
+    this.pictureRenderIds.set(slotKey, renderId);
+    readerDiagnostic('picture.compile.done', `spread=${spreadIndex} renderId=${renderId} renderKey=${renderKey ?? 'none'}`);
   }
 
   private invalidatePicture(spreadIndex: number): void {
@@ -549,6 +577,8 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private releaseResources(): void {
     this.pictures.clear();
     this.pictureRenderIds.clear();
+    this.pictureRenderIdsByRenderKey.clear();
+    this.pictureKeysByRenderId.clear();
     const imageCache = this.imageCache;
     if (imageCache) this.deferSkiaCleanup(() => imageCache.clear());
     this.imageCache = undefined;
@@ -586,6 +616,10 @@ function describeError(error: unknown): string {
   if (typeof error !== 'object' || error === null) return String(error);
   const value = error as { readonly status?: unknown; readonly message?: unknown };
   return `status=${String(value.status ?? 'none')} message=${String(value.message ?? error)}`;
+}
+
+function pictureRenderKey(value: Pick<RetainedReaderPicture, 'renderKey' | 'sourceKey'> | Pick<ReaderRenderFrame, 'renderKey' | 'sourceKey'>): string | undefined {
+  return value.renderKey ?? value.sourceKey;
 }
 
 function isRetryableBackgroundError(error: unknown): boolean {

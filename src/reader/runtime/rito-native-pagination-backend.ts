@@ -8,6 +8,7 @@ import type { RitoReaderSession } from '../../../modules/rito-rn/src/session';
 import type { RitoPublication, RitoTocEntry } from '../../../modules/rito-rn/src/protocol/artifact-types';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackendOpenOptions, ReaderPaginationBackendResult } from './pagination-backend';
 import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
+import { ReaderOperationQueue } from './reader-operation-queue';
 
 export interface RitoNativePaginationBackendOptions {
   readonly initialHref?: string;
@@ -19,6 +20,8 @@ interface PublicationSlot {
   readonly artifactId: bigint;
   readonly frame?: ReaderRenderFrame;
 }
+
+const RETAINED_BOUNDARY_ARTIFACT_CAP = 3;
 
 /**
  * Rito 1.0 pagination backend. It keeps the native artifact as the source of
@@ -84,6 +87,7 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
 
 class RitoNativePublication implements LoadedReaderPublication {
   private readonly slots = new Map<number, PublicationSlot>();
+  private readonly retainedBoundaryArtifacts = new Map<string, bigint>();
   private readonly images = new Map<string, Uint8Array>();
   private closed = false;
   private visibleIndex = 0;
@@ -92,7 +96,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   private readonly tocValue: LoadedReaderPublication['toc'];
   private readonly tocLabelsByHref: ReadonlyMap<string, string>;
   private readonly spine: RitoPublication['spine'];
-  private operationTail: Promise<void> = Promise.resolve();
+  private readonly operationQueue = new ReaderOperationQueue();
 
   private readonly spreadMode: 'single' | 'double';
   private readonly layoutValue: LoadedReaderPublication['layout'];
@@ -129,6 +133,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     const frame: ReaderRenderFrame = {
       spreadIndex,
       sourceKey,
+      renderKey: artifactRenderKey(artifact, this.images),
       pageIndices: artifact.localPageIndexes,
       width: artifact.width,
       height: artifact.height,
@@ -152,11 +157,17 @@ class RitoNativePublication implements LoadedReaderPublication {
   }
 
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined {
-    return this.slots.get(spreadIndex)?.frame;
+    const frame = this.slots.get(spreadIndex)?.frame;
+    if (!frame) return undefined;
+    if (frame.spreadIndex !== spreadIndex || frame.pageIndices.length === 0) {
+      readerDiagnostic('frame.reject', `requestedSpread=${spreadIndex} frameSpread=${frame.spreadIndex} pages=${frame.pageIndices.length}`);
+      return undefined;
+    }
+    return frame;
   }
 
   async ensureFrame(spreadIndex: number): Promise<void> {
-    return this.enqueueOperation(async () => {
+    return this.operationQueue.enqueue(async () => {
       await this.ensureFrameQueued(spreadIndex);
     });
   }
@@ -169,7 +180,8 @@ class RitoNativePublication implements LoadedReaderPublication {
       if (
         current &&
         slot?.artifactId === current.artifactId &&
-        slot.frame?.sourceKey === artifactSourceKey(current)
+        slot.frame?.sourceKey === artifactSourceKey(current) &&
+        slot.frame.pageIndices.length > 0
       ) {
         readerDiagnostic('nav.ensure.current.hit', `spread=${spreadIndex} artifact=${describeArtifact(current)}`);
         return;
@@ -209,7 +221,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       this.totalSpreadsValue = artifact.bookPageCount !== undefined
         ? spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode)
         : this.totalSpreadsValue;
-      await this.session.releaseArtifact(current.artifactId).catch(() => undefined);
+      await this.releaseAfterNavigation(current);
     }
   }
   getImage(source: string): Uint8Array | undefined { return this.images.get(source); }
@@ -268,7 +280,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   }
   get chapterTimings() { return []; }
   async resolveToc(href: string): Promise<number | undefined> {
-    return this.enqueueOperation(() => this.resolveTocQueued(href));
+    return this.operationQueue.enqueue(() => this.resolveTocQueued(href));
   }
 
   private async resolveTocQueued(href: string): Promise<number | undefined> {
@@ -305,7 +317,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     this.totalSpreadsValue = artifact.bookPageCount === undefined
       ? undefined
       : spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode);
-    await this.session.releaseArtifact(source.artifactId).catch(() => undefined);
+    await this.releaseAfterNavigation(source);
     readerDiagnostic('toc.commit', `href=${href} spread=${targetIndex} artifact=${describeArtifact(artifact)} released=${source.artifactId.toString()}`);
     return targetIndex;
   }
@@ -377,7 +389,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   async advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<import('../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance> {
     const backgroundStartedAt = readerPerformanceStart('reader.backend.background');
     let result!: import('../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance;
-    const run = this.operationTail.then(async () => {
+    const run = this.operationQueue.enqueue(async () => {
       const visibleId = this.session.currentVisibleArtifactId;
       if (!visibleId) throw new Error('Rito background pagination requires a visible artifact.');
       const current = this.session.getArtifact(visibleId);
@@ -415,10 +427,9 @@ class RitoNativePublication implements LoadedReaderPublication {
       if (candidate.bookPageCount !== undefined) {
         this.totalSpreadsValue = spreadCountFromBookPages(candidate.bookPageCount, this.spreadMode);
       }
-      await this.session.releaseArtifact(current.artifactId).catch(() => undefined);
+      await this.releaseAfterNavigation(current);
       readerDiagnostic('bg.commit', `spread=${currentIndex} artifact=${describeArtifact(candidate)} released=${current.artifactId.toString()}`);
     });
-    this.operationTail = run.then(() => undefined, () => undefined);
     try {
       await run;
       return result;
@@ -430,9 +441,13 @@ class RitoNativePublication implements LoadedReaderPublication {
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
-    await this.operationTail.catch(() => undefined);
-    const artifactIds = new Set([...this.slots.values()].map((slot) => slot.artifactId));
+    await this.operationQueue.drain();
+    const artifactIds = new Set([
+      ...[...this.slots.values()].map((slot) => slot.artifactId),
+      ...this.retainedBoundaryArtifacts.values(),
+    ]);
     this.slots.clear();
+    this.retainedBoundaryArtifacts.clear();
     for (const artifactId of artifactIds) await this.session.releaseArtifact(artifactId).catch(() => undefined);
     await this.session.dispose();
   }
@@ -466,6 +481,34 @@ class RitoNativePublication implements LoadedReaderPublication {
     readerDiagnostic('slot.assign', `spread=${spreadIndex} artifact=${describeArtifact(artifact)} previous=${current?.artifactId.toString() ?? 'none'} preserveFrame=${String(preserveFrame)}`);
   }
 
+  private async releaseAfterNavigation(artifact: RitoArtifact): Promise<void> {
+    if (!this.isChapterBoundaryArtifact(artifact)) {
+      await this.session.releaseArtifact(artifact.artifactId).catch(() => undefined);
+      return;
+    }
+    const key = boundaryArtifactKey(artifact);
+    const previous = this.retainedBoundaryArtifacts.get(key);
+    if (previous === artifact.artifactId) return;
+    this.retainedBoundaryArtifacts.delete(key);
+    this.retainedBoundaryArtifacts.set(key, artifact.artifactId);
+    readerDiagnostic('boundary.retain', `key=${key} artifact=${describeArtifact(artifact)} retained=${this.retainedBoundaryArtifacts.size}`);
+    if (previous !== undefined) {
+      await this.session.releaseArtifact(previous).catch(() => undefined);
+    }
+    while (this.retainedBoundaryArtifacts.size > RETAINED_BOUNDARY_ARTIFACT_CAP) {
+      const oldest = this.retainedBoundaryArtifacts.entries().next().value as [string, bigint] | undefined;
+      if (!oldest) break;
+      this.retainedBoundaryArtifacts.delete(oldest[0]);
+      await this.session.releaseArtifact(oldest[1]).catch(() => undefined);
+      readerDiagnostic('boundary.release', `key=${oldest[0]} artifact=${oldest[1].toString()} retained=${this.retainedBoundaryArtifacts.size}`);
+    }
+  }
+
+  private isChapterBoundaryArtifact(artifact: RitoArtifact): boolean {
+    return artifact.navigation.previous === 'chapter-boundary'
+      || artifact.navigation.next === 'chapter-boundary';
+  }
+
   private rebaseSlots(delta: number): void {
     if (delta === 0) return;
     const entries = [...this.slots.entries()];
@@ -482,11 +525,6 @@ class RitoNativePublication implements LoadedReaderPublication {
     this.visibleIndex += delta;
   }
 
-  private enqueueOperation<T>(operation: () => Promise<T>): Promise<T> {
-    const run = this.operationTail.then(operation, operation);
-    this.operationTail = run.then(() => undefined, () => undefined);
-    return run;
-  }
 }
 
 function spreadCountFromBookPages(pageCount: number, spreadMode: 'single' | 'double'): number {
@@ -500,6 +538,35 @@ function artifactSourceKey(artifact: RitoArtifact): string {
   // while belonging to different chapters, so the digest alone cannot guard
   // a frame cache slot.
   return `${artifact.revisionId.toString()}:${artifact.artifactId.toString()}`;
+}
+
+function artifactRenderKey(artifact: RitoArtifact, images: ReadonlyMap<string, Uint8Array>): string {
+  const digest = bytesToHex(artifact.displayList.semanticDigest);
+  const imageKeys = artifact.resources
+    .filter((resource) => resource.kind === 'image')
+    .map((resource) => `${resource.href}:${byteHash(images.get(resource.href))}`)
+    .join('|');
+  return `${artifact.width}x${artifact.height}:${artifact.displayList.commandCount}:${digest}:${byteHash(artifact.displayList.wireBytes)}:${imageKeys}`;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  let result = '';
+  for (const byte of bytes) result += byte.toString(16).padStart(2, '0');
+  return result;
+}
+
+function byteHash(bytes: Uint8Array | undefined): string {
+  if (!bytes) return 'none';
+  let hash = 2166136261;
+  for (const byte of bytes) {
+    hash ^= byte;
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function boundaryArtifactKey(artifact: RitoArtifact): string {
+  return `${artifact.locator.href}:${artifact.localPageIndex}:${artifact.localSpreadIndex}`;
 }
 
 function describeArtifact(artifact: RitoArtifact | undefined): string {
