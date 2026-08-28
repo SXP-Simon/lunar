@@ -7,6 +7,7 @@ import type {
   ReaderRenderFrame,
   ReaderTextMeasurer,
 } from '../../contracts';
+import type { ReaderImageByteCache } from '../cache/reader-image-cache';
 
 export interface ReaderPaginationBackendOpenOptions {
   readonly request: ReaderOpenRequest;
@@ -18,6 +19,8 @@ export interface ReaderPaginationBackendOpenOptions {
   readonly textMeasurer?: ReaderTextMeasurer;
   readonly fontRegistry?: ReaderFontRegistry;
   readonly imageDecoder?: ReaderImageDecoder;
+  /** Runtime-owned encoded image cache shared by pagination and rendering. */
+  readonly imageCache?: ReaderImageByteCache;
 }
 
 export interface ReaderPaginationBackendResult {

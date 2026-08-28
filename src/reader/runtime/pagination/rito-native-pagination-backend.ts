@@ -9,6 +9,7 @@ import type { RitoPublication, RitoTocEntry } from '../../../../modules/rito-rn/
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackendOpenOptions, ReaderPaginationBackendResult } from './pagination-backend';
 import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from '../core/performance';
 import { ReaderOperationQueue } from '../cache/reader-operation-queue';
+import { ReaderImageByteCache } from '../cache/reader-image-cache';
 
 export interface RitoNativePaginationBackendOptions {
   readonly initialHref?: string;
@@ -22,6 +23,7 @@ interface PublicationSlot {
 }
 
 const RETAINED_BOUNDARY_ARTIFACT_CAP = 3;
+const RETAINED_SLOT_RADIUS = 4;
 
 /**
  * Rito 1.0 pagination backend. It keeps the native artifact as the source of
@@ -32,6 +34,8 @@ const RETAINED_BOUNDARY_ARTIFACT_CAP = 3;
 export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBackend {
   private session?: RitoReaderSession;
   private publication?: RitoNativePublication;
+  private imageCache?: ReaderImageByteCache;
+  private ownsImageCache = false;
   private operationId?: number;
   private revisionId?: number;
 
@@ -50,7 +54,10 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
     const opened = await RitoReaderSession.open(new Uint8Array(options.data), request, pinnedFonts, { native: this.config.native });
     readerPerformanceMark('reader.backend.firstArtifact', `artifactId=${opened.artifact.artifactId.toString()}`);
     const publicationMetadata = await opened.session.readPublication();
-    const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata, options.layout, request, options.fontRegistry, options.imageDecoder);
+    const imageCache = options.imageCache ?? new ReaderImageByteCache();
+    this.imageCache = imageCache;
+    this.ownsImageCache = options.imageCache === undefined;
+    const publication = new RitoNativePublication(opened.session, opened.artifact, publicationMetadata, options.layout, request, options.fontRegistry, options.imageDecoder, imageCache);
     await publication.prepare(opened.artifact);
     this.session = opened.session;
     this.publication = publication;
@@ -81,14 +88,19 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
     this.operationId = undefined;
     this.revisionId = undefined;
     this.session = undefined;
-    await publication?.close();
+    try {
+      await publication?.close();
+    } finally {
+      if (this.ownsImageCache) this.imageCache?.clear();
+      this.imageCache = undefined;
+      this.ownsImageCache = false;
+    }
   }
 }
 
 class RitoNativePublication implements LoadedReaderPublication {
   private readonly slots = new Map<number, PublicationSlot>();
   private readonly retainedBoundaryArtifacts = new Map<string, bigint>();
-  private readonly images = new Map<string, Uint8Array>();
   private closed = false;
   private visibleIndex = 0;
   private totalSpreadsValue?: number;
@@ -101,7 +113,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   private readonly spreadMode: 'single' | 'double';
   private readonly layoutValue: LoadedReaderPublication['layout'];
 
-  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, layout: ReaderLayoutRequest, private readonly artifactRequest: import('../../rito/rito-native').RitoArtifactRequest, private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
+  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, layout: ReaderLayoutRequest, private readonly artifactRequest: import('../../rito/rito-native').RitoArtifactRequest, private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder, private readonly imageCache?: ReaderImageByteCache) {
     this.spreadMode = layout.typography.spreadMode;
     this.layoutValue = toReaderLayoutParameters(layout);
     this.metadataValue = publication.metadata;
@@ -123,21 +135,22 @@ class RitoNativePublication implements LoadedReaderPublication {
       const resource = await this.session.readResource(artifact.artifactId, 1, font.href);
       await this.fonts.loadFont({ family: font.family, src: font.href, bytes: resource.bytes, weight: String(font.weight), style: font.style, fingerprint: font.shapeFingerprint, byteLength: Number(font.byteLength) });
     }
-    for (const resource of artifact.resources) {
-      if (resource.kind !== 'image') continue;
+    const imageResources = artifact.resources.filter((resource) => resource.kind === 'image');
+    const imageSources = imageResources.map((resource) => resource.href);
+    for (const resource of imageResources) {
       const image = await this.session.readResource(artifact.artifactId, 0, resource.href);
-      this.images.set(resource.href, image.bytes);
+      this.imageCache?.set(resource.href, image.bytes, imageSources);
     }
     const display = toReaderV1DisplayList(artifact.displayList.displayList, artifact.width, artifact.height);
     const pages = artifact.pages.filter((page) => artifact.localPageIndexes.includes(page.pageIndex));
     const frame: ReaderRenderFrame = {
       spreadIndex,
       sourceKey,
-      renderKey: artifactRenderKey(artifact, this.images),
+      renderKey: artifactRenderKey(artifact, this.imageCache),
       pageIndices: artifact.localPageIndexes,
       width: artifact.width,
       height: artifact.height,
-      imageSources: [...this.images.keys()],
+      imageSources: [...new Set(imageSources)],
       displayList: display,
       hits: pages.flatMap((page) => page.hits.map((hit) => ({
         pageIndex: hit.pageIndex,
@@ -222,9 +235,12 @@ class RitoNativePublication implements LoadedReaderPublication {
         ? spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode)
         : this.totalSpreadsValue;
       await this.releaseAfterNavigation(current);
+      this.pruneSlots();
     }
   }
-  getImage(source: string): Uint8Array | undefined { return this.images.get(source); }
+  getImage(source: string): Uint8Array | undefined {
+    return this.imageCache?.get(source);
+  }
   get metadata() { return this.metadataValue; }
   get toc() { return this.tocValue; }
   get layout() { return this.layoutValue; }
@@ -318,6 +334,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       ? undefined
       : spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode);
     await this.releaseAfterNavigation(source);
+    this.pruneSlots();
     readerDiagnostic('toc.commit', `href=${href} spread=${targetIndex} artifact=${describeArtifact(artifact)} released=${source.artifactId.toString()}`);
     return targetIndex;
   }
@@ -428,6 +445,7 @@ class RitoNativePublication implements LoadedReaderPublication {
         this.totalSpreadsValue = spreadCountFromBookPages(candidate.bookPageCount, this.spreadMode);
       }
       await this.releaseAfterNavigation(current);
+      this.pruneSlots();
       readerDiagnostic('bg.commit', `spread=${currentIndex} artifact=${describeArtifact(candidate)} released=${current.artifactId.toString()}`);
     });
     try {
@@ -509,6 +527,14 @@ class RitoNativePublication implements LoadedReaderPublication {
       || artifact.navigation.next === 'chapter-boundary';
   }
 
+  private pruneSlots(): void {
+    const minimum = this.visibleIndex - RETAINED_SLOT_RADIUS;
+    const maximum = this.visibleIndex + RETAINED_SLOT_RADIUS;
+    for (const spreadIndex of this.slots.keys()) {
+      if (spreadIndex < minimum || spreadIndex > maximum) this.slots.delete(spreadIndex);
+    }
+  }
+
   private rebaseSlots(delta: number): void {
     if (delta === 0) return;
     const entries = [...this.slots.entries()];
@@ -540,11 +566,11 @@ function artifactSourceKey(artifact: RitoArtifact): string {
   return `${artifact.revisionId.toString()}:${artifact.artifactId.toString()}`;
 }
 
-function artifactRenderKey(artifact: RitoArtifact, images: ReadonlyMap<string, Uint8Array>): string {
+function artifactRenderKey(artifact: RitoArtifact, images: ReaderImageByteCache | undefined): string {
   const digest = bytesToHex(artifact.displayList.semanticDigest);
   const imageKeys = artifact.resources
     .filter((resource) => resource.kind === 'image')
-    .map((resource) => `${resource.href}:${byteHash(images.get(resource.href))}`)
+    .map((resource) => `${resource.href}:${byteHash(images?.get(resource.href))}`)
     .join('|');
   return `${artifact.width}x${artifact.height}:${artifact.displayList.commandCount}:${digest}:${byteHash(artifact.displayList.wireBytes)}:${imageKeys}`;
 }

@@ -1,5 +1,4 @@
 import type {
-  LoadedReaderPublication,
   ReaderLayoutRequest,
   ReaderOpenRequest,
   ReaderOpenResult,
@@ -17,6 +16,7 @@ import {
 } from '../../skia/rendering/picture-compiler';
 import { LunarSkiaTextMeasurer } from '../../skia/text/text-measurer';
 import { FrameCache } from '../cache/frame-cache';
+import { ReaderImageByteCache } from '../cache/reader-image-cache';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackend } from '../pagination/pagination-backend';
 import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
@@ -54,10 +54,10 @@ export class LunarReaderRuntime implements ReaderRuntime {
   );
   private readonly pictureCompiler = new SkiaPictureCompiler();
   private publication?: ReaderPublicationView;
-  private publicationOwner?: LoadedReaderPublication;
   private fontRegistry?: LunarSkiaFontRegistry;
   private textMeasurer?: LunarSkiaTextMeasurer;
   private imageCache?: SkiaImageCache;
+  private readonly imageByteCache = new ReaderImageByteCache();
   private readonly pictureRenderIds = new Map<string, number>();
   private readonly pictureRenderIdsByRenderKey = new Map<string, number>();
   private readonly pictureKeysByRenderId = new Map<number, { readonly revisionId: number; readonly spreadIndex: number; readonly renderId: number }>();
@@ -87,7 +87,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   async open(request: ReaderOpenRequest): Promise<ReaderOpenResult> {
     const operation = this.beginOperation();
     const openStartedAt = readerPerformanceStart('reader.open');
-    this.releaseResources();
+    await this.releaseResources();
     this.request = request;
     this.emit({
       phase: 'opening',
@@ -107,7 +107,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
         'paginating',
       );
     } catch (error) {
-      this.fail(operation, error);
+      await this.fail(operation, error);
       throw error;
     }
     finally {
@@ -128,13 +128,13 @@ export class LunarReaderRuntime implements ReaderRuntime {
       revisionId: this.snapshot.revisionId + 1,
       errorMessage: undefined,
     });
-    this.releaseResources();
+    await this.releaseResources();
 
     try {
       const result = await this.loadCurrentRequest(progression, operation, 'reflowing');
       return result.snapshot;
     } catch (error) {
-      this.fail(operation, error);
+      await this.fail(operation, error);
       throw error;
     }
   }
@@ -231,7 +231,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (this.snapshot.phase !== 'idle') {
       this.emit({ ...this.snapshot, phase: 'closing' });
     }
-    this.releaseResources();
+    await this.releaseResources();
     this.data = undefined;
     this.request = undefined;
     this.emit({
@@ -268,11 +268,11 @@ export class LunarReaderRuntime implements ReaderRuntime {
       signal: this.abortController?.signal ?? new AbortController().signal,
       fontRegistry,
       textMeasurer,
+      imageCache: this.imageByteCache,
     });
     const publication = backendResult.publication;
     this.assertCurrent(operation);
     this.publication = publication;
-    this.publicationOwner = publication;
     this.paginationComplete = publication.totalSpreads !== undefined;
     this.imageCache ??= new SkiaImageCache({
       getBytes: (source) => publication.getImage(source),
@@ -555,7 +555,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     }
   }
 
-  private fail(operation: number, error: unknown): void {
+  private async fail(operation: number, error: unknown): Promise<void> {
     if (operation !== this.operation || (error instanceof Error && error.name === 'AbortError')) {
       return;
     }
@@ -566,7 +566,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
       '[LunarReaderRuntime] Reader operation failed.',
       diagnostic,
     );
-    this.releaseResources();
+    await this.releaseResources();
     this.emit({
       ...this.snapshot,
       phase: 'error',
@@ -574,7 +574,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     });
   }
 
-  private releaseResources(): void {
+  private async releaseResources(): Promise<void> {
     this.pictures.clear();
     this.pictureRenderIds.clear();
     this.pictureRenderIdsByRenderKey.clear();
@@ -584,13 +584,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.imageCache = undefined;
     this.textMeasurer?.dispose();
     this.textMeasurer = undefined;
-    this.publicationOwner?.close();
-    this.publicationOwner = undefined;
     this.publication = undefined;
     this.paginationComplete = false;
     this.backgroundScheduled = false;
     this.fontRegistry = undefined;
-    void this.paginationBackend.close();
+    await this.paginationBackend.close().catch(() => undefined);
+    this.imageByteCache.clear();
   }
 
   private emit(snapshot: ReaderSnapshot): void {
