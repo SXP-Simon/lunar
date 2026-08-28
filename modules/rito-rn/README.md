@@ -23,7 +23,7 @@ ReaderRuntime
     -> Rito 1.0.0 Rust 内核
 ```
 
-模块本身只负责阅读内核和原生桥接，未引入 Skia。Lunar 的渲染适配位于 `src/reader/runtime/rito-native-pagination-backend.ts`，负责把 Rito DisplayList 转换为阅读界面使用的帧数据。
+模块本身只负责阅读内核和原生桥接，未引入 Skia。Lunar 的渲染适配位于 `src/reader/runtime/pagination/rito-native-pagination-backend.ts`，负责把 Rito DisplayList 转换为阅读界面使用的帧数据。
 
 ## 当前接口
 

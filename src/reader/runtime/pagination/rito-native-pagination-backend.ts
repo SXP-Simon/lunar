@@ -1,14 +1,14 @@
 import type {
   LoadedReaderPublication, ReaderFontRegistry, ReaderImageDecoder, ReaderLayoutRequest, ReaderOpenRequest, ReaderRenderFrame,
-} from '../contracts';
-import { toReaderV1DisplayList } from '../rito';
-import { discoverReaderInitialSpineHref } from '../rito/epub-inspector';
-import type { RitoNativePinnedFontFace, RitoArtifact, RitoLayoutRequest, RitoNativeReaderModule } from '../rito/rito-native';
-import type { RitoReaderSession } from '../../../modules/rito-rn/src/session';
-import type { RitoPublication, RitoTocEntry } from '../../../modules/rito-rn/src/protocol/artifact-types';
+} from '../../contracts';
+import { toReaderV1DisplayList } from '../../rito';
+import { discoverReaderInitialSpineHref } from '../../rito/epub-inspector';
+import type { RitoNativePinnedFontFace, RitoArtifact, RitoLayoutRequest, RitoNativeReaderModule } from '../../rito/rito-native';
+import type { RitoReaderSession } from '../../../../modules/rito-rn/src/session';
+import type { RitoPublication, RitoTocEntry } from '../../../../modules/rito-rn/src/protocol/artifact-types';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackendOpenOptions, ReaderPaginationBackendResult } from './pagination-backend';
-import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
-import { ReaderOperationQueue } from './reader-operation-queue';
+import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from '../core/performance';
+import { ReaderOperationQueue } from '../cache/reader-operation-queue';
 
 export interface RitoNativePaginationBackendOptions {
   readonly initialHref?: string;
@@ -46,7 +46,7 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
       ? await this.config.pinnedFonts(new Uint8Array(options.data))
       : this.config.pinnedFonts;
     const request = createArtifactRequest(options.request, options.layout, options.revisionId, options.operationId, initialHref);
-    const { RitoReaderSession } = await import('../../../modules/rito-rn/src/session');
+    const { RitoReaderSession } = await import('../../../../modules/rito-rn/src/session');
     const opened = await RitoReaderSession.open(new Uint8Array(options.data), request, pinnedFonts, { native: this.config.native });
     readerPerformanceMark('reader.backend.firstArtifact', `artifactId=${opened.artifact.artifactId.toString()}`);
     const publicationMetadata = await opened.session.readPublication();
@@ -101,7 +101,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   private readonly spreadMode: 'single' | 'double';
   private readonly layoutValue: LoadedReaderPublication['layout'];
 
-  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, layout: ReaderLayoutRequest, private readonly artifactRequest: import('../rito/rito-native').RitoArtifactRequest, private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
+  constructor(private readonly session: RitoReaderSession, first: RitoArtifact, publication: RitoPublication, layout: ReaderLayoutRequest, private readonly artifactRequest: import('../../rito/rito-native').RitoArtifactRequest, private readonly fonts?: ReaderFontRegistry, private readonly imageDecoder?: ReaderImageDecoder) {
     this.spreadMode = layout.typography.spreadMode;
     this.layoutValue = toReaderLayoutParameters(layout);
     this.metadataValue = publication.metadata;
@@ -240,7 +240,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   getBookPageIndex(spreadIndex: number): number | undefined {
     return this.artifactForSpread(spreadIndex)?.bookPageIndex;
   }
-  getCurrentLocator(spreadIndex: number): import('../contracts').ReaderLocator | undefined {
+  getCurrentLocator(spreadIndex: number): import('../../contracts').ReaderLocator | undefined {
     const artifact = this.artifactForSpread(spreadIndex);
     return artifact ? toReaderLocator(artifact.locator, this.spine) : undefined;
   }
@@ -329,7 +329,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     return artifact === undefined ? undefined : this.indexForArtifact(artifact);
   }
 
-  async resolveTextRangeGeometry(request: import('../contracts').ReaderTextRangeGeometryRequest): Promise<readonly import('../contracts').ReaderTextRangeRect[]> {
+  async resolveTextRangeGeometry(request: import('../../contracts').ReaderTextRangeGeometryRequest): Promise<readonly import('../../contracts').ReaderTextRangeRect[]> {
     const artifact = this.availableArtifacts.find((candidate) => candidate.localPageIndexes.includes(request.pageIndex));
     if (!artifact) return [];
     const geometry = await this.session.textRangeGeometry({
@@ -342,7 +342,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     return geometry.rects;
   }
 
-  async search(request: import('../contracts').ReaderSearchRequest): Promise<import('../contracts').ReaderSearchResponse> {
+  async search(request: import('../../contracts').ReaderSearchRequest): Promise<import('../../contracts').ReaderSearchResponse> {
     const artifact = this.currentArtifact;
     if (!artifact) return { query: request.query, truncated: false, searchedPageCount: 0, scopeComplete: false, results: [] };
     const response = await this.session.search({
@@ -386,9 +386,9 @@ class RitoNativePublication implements LoadedReaderPublication {
     return this.visibleIndex;
   }
 
-  async advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<import('../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance> {
+  async advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<import('../../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance> {
     const backgroundStartedAt = readerPerformanceStart('reader.backend.background');
-    let result!: import('../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance;
+    let result!: import('../../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance;
     const run = this.operationQueue.enqueue(async () => {
       const visibleId = this.session.currentVisibleArtifactId;
       if (!visibleId) throw new Error('Rito background pagination requires a visible artifact.');
@@ -594,7 +594,7 @@ function safeTextOffset(value: bigint): number {
   return Number(value);
 }
 
-function toReaderToc(entry: RitoTocEntry): import('../contracts').ReaderTocEntry {
+function toReaderToc(entry: RitoTocEntry): import('../../contracts').ReaderTocEntry {
   type MutableEntry = { label: string; href: string; children: MutableEntry[] };
   const target = entry.target.kind === 'locator'
     ? `${entry.target.locator.href}${entry.target.locator.anchorId ? `#${entry.target.locator.anchorId}` : ''}`
@@ -620,7 +620,7 @@ function toReaderToc(entry: RitoTocEntry): import('../contracts').ReaderTocEntry
   return root;
 }
 
-function findTocTarget(entries: readonly import('../contracts').ReaderTocEntry[], href: string, base: string): string | undefined {
+function findTocTarget(entries: readonly import('../../contracts').ReaderTocEntry[], href: string, base: string): string | undefined {
   const stack = [...entries].reverse();
   while (stack.length > 0) {
     const entry = stack.pop();
@@ -644,9 +644,9 @@ function artifactMatchesTocTarget(
 }
 
 function toReaderLocator(
-  locator: import('../../../modules/rito-rn/src/protocol/artifact-types').RitoLocator,
+  locator: import('../../../../modules/rito-rn/src/protocol/artifact-types').RitoLocator,
   spine: readonly RitoPublication['spine'][number][],
-): import('../contracts').ReaderLocator {
+): import('../../contracts').ReaderLocator {
   return {
     spineIdref: spine.find((item) => item.href === locator.href)?.idref ?? locator.href,
     manifestHref: locator.href,
@@ -664,9 +664,9 @@ function toReaderLocator(
   };
 }
 
-function createTocLabelIndex(entries: readonly import('../contracts').ReaderTocEntry[]): ReadonlyMap<string, string> {
+function createTocLabelIndex(entries: readonly import('../../contracts').ReaderTocEntry[]): ReadonlyMap<string, string> {
   const labels = new Map<string, string>();
-  const visited = new Set<import('../contracts').ReaderTocEntry>();
+  const visited = new Set<import('../../contracts').ReaderTocEntry>();
   const stack = [...entries].reverse();
   while (stack.length > 0) {
     const entry = stack.pop();
@@ -682,7 +682,7 @@ function createTocLabelIndex(entries: readonly import('../contracts').ReaderTocE
   return labels;
 }
 
-function toReaderSemanticNode(node: import('../../../modules/rito-rn/src/protocol/artifact-types').RitoSemanticNode): import('../contracts').ReaderSemanticNode {
+function toReaderSemanticNode(node: import('../../../../modules/rito-rn/src/protocol/artifact-types').RitoSemanticNode): import('../../contracts').ReaderSemanticNode {
   return {
     role: node.role === 'list-item' ? 'listitem' : node.role,
     level: node.level,
@@ -694,7 +694,7 @@ function toReaderSemanticNode(node: import('../../../modules/rito-rn/src/protoco
   };
 }
 
-function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutRequest, revisionId: number, operationId: number, initialHref: string): import('../rito/rito-native').RitoArtifactRequest {
+function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutRequest, revisionId: number, operationId: number, initialHref: string): import('../../rito/rito-native').RitoArtifactRequest {
   const typography = request.typography;
   const locator = request.restorePosition?.locator;
   const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, marginTop: typography.marginVertical, marginRight: typography.marginHorizontal, marginBottom: typography.marginVertical, marginLeft: typography.marginHorizontal, spreadMode: typography.spreadMode, firstPageAlone: typography.spreadMode === 'double', spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily };
@@ -721,7 +721,7 @@ function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutR
   };
 }
 
-function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../contracts').ReaderLayoutParameters {
+function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../../contracts').ReaderLayoutParameters {
   const typography = layout.typography;
   const palette = layout.theme === 'dark'
     ? { backgroundColor: '#000000', foregroundColor: '#FFFFFF', spreadBodyBackgroundColor: '#000000' }

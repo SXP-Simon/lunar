@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { FrameCache } from '../../src/reader/runtime/frame-cache';
+import { FrameCache } from '../../src/reader/runtime/cache/frame-cache';
 
 describe('FrameCache', () => {
   it('evicts the least recently used frame', () => {

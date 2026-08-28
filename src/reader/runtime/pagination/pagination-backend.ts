@@ -6,7 +6,7 @@ import type {
   ReaderOpenRequest,
   ReaderRenderFrame,
   ReaderTextMeasurer,
-} from '../contracts';
+} from '../../contracts';
 
 export interface ReaderPaginationBackendOpenOptions {
   readonly request: ReaderOpenRequest;

@@ -7,18 +7,18 @@ import type {
   ReaderPublicationView,
   ReaderRenderFrame,
   ReaderSnapshot,
-} from '../contracts';
-import { loadBundledLunarFontBytes } from '../rito/pinned-font';
-import { LunarSkiaFontRegistry } from '../skia/fonts/font-registry';
-import { SkiaImageCache } from '../skia/images/image-decoder';
+} from '../../contracts';
+import { loadBundledLunarFontBytes } from '../../rito/pinned-font';
+import { LunarSkiaFontRegistry } from '../../skia/fonts/font-registry';
+import { SkiaImageCache } from '../../skia/images/image-decoder';
 import {
   SkiaPictureCompiler,
   type CompiledReaderPicture,
-} from '../skia/rendering/picture-compiler';
-import { LunarSkiaTextMeasurer } from '../skia/text/text-measurer';
-import { FrameCache } from './frame-cache';
+} from '../../skia/rendering/picture-compiler';
+import { LunarSkiaTextMeasurer } from '../../skia/text/text-measurer';
+import { FrameCache } from '../cache/frame-cache';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
-import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackend } from './pagination-backend';
+import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackend } from '../pagination/pagination-backend';
 import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
 
 export type ReaderBookDataLoader = (request: ReaderOpenRequest) => Promise<ArrayBuffer>;
@@ -202,7 +202,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.getCurrentFrame(spreadIndex)?.semantics ?? [];
   }
 
-  async resolveTextRangeGeometry(request: import('../contracts').ReaderTextRangeGeometryRequest): Promise<readonly import('../contracts').ReaderTextRangeRect[]> {
+  async resolveTextRangeGeometry(request: import('../../contracts').ReaderTextRangeGeometryRequest): Promise<readonly import('../../contracts').ReaderTextRangeRect[]> {
     const publication = this.publication;
     if (!publication?.resolveTextRangeGeometry || this.snapshot.phase !== 'ready') return [];
     const revision = this.snapshot.revisionId;
@@ -210,7 +210,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return revision === this.snapshot.revisionId ? rects : [];
   }
 
-  async search(request: import('../contracts').ReaderSearchRequest): Promise<import('../contracts').ReaderSearchResponse> {
+  async search(request: import('../../contracts').ReaderSearchRequest): Promise<import('../../contracts').ReaderSearchResponse> {
     const publication = this.publication;
     if (!publication?.search || this.snapshot.phase !== 'ready') {
       return { query: request.query, truncated: false, searchedPageCount: 0, scopeComplete: false, results: [] };

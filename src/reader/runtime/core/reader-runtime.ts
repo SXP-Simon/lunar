@@ -7,7 +7,7 @@ import type {
   ReaderTextRangeGeometryRequest,
   ReaderTextRangeRect,
   ReaderSnapshot,
-} from '../contracts';
+} from '../../contracts';
 
 export type ReaderSnapshotListener = (snapshot: ReaderSnapshot) => void;
 

@@ -3,8 +3,8 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { useEffect } from 'react';
 
 import type { ReaderSnapshot } from '../../contracts';
-import type { LunarReaderRuntime } from '../../runtime/native-reader-runtime';
-import { readerPerformanceMark } from '../../runtime/performance';
+import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
+import { readerPerformanceMark } from '../../runtime/core/performance';
 import type { ReaderOverlayRect } from './overlay-renderer';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
 
