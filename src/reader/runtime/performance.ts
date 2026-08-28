@@ -18,6 +18,13 @@ export function readerPerformanceMark(name: string, detail?: string): void {
   perfConsole.timeStamp?.(`[LunarReader] ${name}${suffix}`);
 }
 
+/** Emits navigation and pagination state to the host console when tracing is enabled. */
+export function readerDiagnostic(name: string, detail?: string): void {
+  if (!isReaderPerformanceEnabled()) return;
+  const suffix = detail ? ` ${detail}` : '';
+  console.info(`[LunarReader][trace] ${name}${suffix}`);
+}
+
 export function readerPerformanceStart(name: string): number | undefined {
   if (!isReaderPerformanceEnabled()) return undefined;
   const startedAt = performance.now();

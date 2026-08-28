@@ -7,7 +7,7 @@ import type { RitoNativePinnedFontFace, RitoArtifact, RitoLayoutRequest, RitoNat
 import type { RitoReaderSession } from '../../../modules/rito-rn/src/session';
 import type { RitoPublication, RitoTocEntry } from '../../../modules/rito-rn/src/protocol/artifact-types';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackendOpenOptions, ReaderPaginationBackendResult } from './pagination-backend';
-import { readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
+import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
 
 export interface RitoNativePaginationBackendOptions {
   readonly initialHref?: string;
@@ -92,7 +92,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   private readonly tocValue: LoadedReaderPublication['toc'];
   private readonly tocLabelsByHref: ReadonlyMap<string, string>;
   private readonly spine: RitoPublication['spine'];
-  private backgroundTail: Promise<void> = Promise.resolve();
+  private operationTail: Promise<void> = Promise.resolve();
 
   private readonly spreadMode: 'single' | 'double';
   private readonly layoutValue: LoadedReaderPublication['layout'];
@@ -156,7 +156,13 @@ class RitoNativePublication implements LoadedReaderPublication {
   }
 
   async ensureFrame(spreadIndex: number): Promise<void> {
-    await this.backgroundTail.catch(() => undefined);
+    return this.enqueueOperation(async () => {
+      await this.ensureFrameQueued(spreadIndex);
+    });
+  }
+
+  private async ensureFrameQueued(spreadIndex: number): Promise<void> {
+    readerDiagnostic('nav.ensure.begin', `target=${spreadIndex} visibleIndex=${this.visibleIndex} visible=${describeArtifact(this.currentArtifact)}`);
     if (spreadIndex === this.visibleIndex) {
       const current = this.currentArtifact;
       const slot = this.slots.get(spreadIndex);
@@ -165,9 +171,13 @@ class RitoNativePublication implements LoadedReaderPublication {
         slot?.artifactId === current.artifactId &&
         slot.frame?.sourceKey === artifactSourceKey(current)
       ) {
+        readerDiagnostic('nav.ensure.current.hit', `spread=${spreadIndex} artifact=${describeArtifact(current)}`);
         return;
       }
-      if (current) await this.prepare(current, spreadIndex);
+      if (current) {
+        readerDiagnostic('nav.ensure.current.prepare', `spread=${spreadIndex} artifact=${describeArtifact(current)} slotArtifact=${slot?.artifactId.toString() ?? 'none'}`);
+        await this.prepare(current, spreadIndex);
+      }
       return;
     }
     const distance = Math.abs(spreadIndex - this.visibleIndex);
@@ -177,17 +187,25 @@ class RitoNativePublication implements LoadedReaderPublication {
       const currentId = this.session.currentVisibleArtifactId;
       const current = currentId === undefined ? undefined : this.session.getArtifact(currentId);
       if (!current || currentId === undefined) return;
-      const artifact = await this.session.turn({
-        sessionId: current.sessionId,
-        requestId: this.session.nextRequestId,
-        fromArtifactId: current.artifactId,
-        direction,
-        work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 16 },
-      });
+      readerDiagnostic('nav.turn.request', `step=${step + 1}/${distance} direction=${direction} visibleIndex=${this.visibleIndex} artifact=${describeArtifact(current)}`);
+      let artifact: RitoArtifact;
+      try {
+        artifact = await this.session.turn({
+          sessionId: current.sessionId,
+          requestId: this.session.nextRequestId,
+          fromArtifactId: current.artifactId,
+          direction,
+          work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 16 },
+        });
+      } catch (error) {
+        readerDiagnostic('nav.turn.error', `direction=${direction} visibleIndex=${this.visibleIndex} artifact=${describeArtifact(current)} error=${describeError(error)}`);
+        throw error;
+      }
       const nextIndex = this.visibleIndex + (direction === 'next' ? 1 : -1);
       await this.prepare(artifact, nextIndex);
       this.assignArtifact(nextIndex, artifact);
       this.visibleIndex = nextIndex;
+      readerDiagnostic('nav.turn.commit', `direction=${direction} spread=${nextIndex} artifact=${describeArtifact(artifact)}`);
       this.totalSpreadsValue = artifact.bookPageCount !== undefined
         ? spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode)
         : this.totalSpreadsValue;
@@ -215,8 +233,19 @@ class RitoNativePublication implements LoadedReaderPublication {
     return artifact ? toReaderLocator(artifact.locator, this.spine) : undefined;
   }
   canNavigate(direction: 'next' | 'previous'): boolean {
-    const availability = this.currentArtifact?.navigation[direction];
-    return availability !== 'terminal' && availability !== 'blocked';
+    const artifact = this.currentArtifact;
+    const availability = artifact?.navigation[direction];
+    const allowed = availability !== 'terminal' && availability !== 'blocked';
+    readerDiagnostic('nav.availability', `direction=${direction} allowed=${String(allowed)} availability=${availability ?? 'none'} visibleIndex=${this.visibleIndex} artifact=${describeArtifact(artifact)}`);
+    return allowed;
+  }
+  getAdjacentSpreadIndex(currentSpreadIndex: number, direction: 'next' | 'previous'): number {
+    if (direction === 'previous' && this.visibleIndex <= 0) {
+      const delta = 1 - this.visibleIndex;
+      this.rebaseSlots(delta);
+      readerDiagnostic('slot.rebase', `direction=${direction} delta=${delta} requestedCurrent=${currentSpreadIndex} visibleIndex=${this.visibleIndex}`);
+    }
+    return this.visibleIndex + (direction === 'next' ? 1 : -1);
   }
   get totalPages() {
     return Math.max(1, this.availableArtifacts.reduce((max, artifact) => {
@@ -239,6 +268,11 @@ class RitoNativePublication implements LoadedReaderPublication {
   }
   get chapterTimings() { return []; }
   async resolveToc(href: string): Promise<number | undefined> {
+    return this.enqueueOperation(() => this.resolveTocQueued(href));
+  }
+
+  private async resolveTocQueued(href: string): Promise<number | undefined> {
+    readerDiagnostic('toc.begin', `href=${href} visibleIndex=${this.visibleIndex} visible=${describeArtifact(this.currentArtifact)}`);
     const base = href.split('#', 1)[0];
     const target = findTocTarget(this.tocValue, href, base);
     const targetBase = target?.split('#', 1)[0] ?? base;
@@ -260,6 +294,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       },
       work: { ...this.artifactRequest.work, maxForegroundQuanta: 8, localPageCap: 16 },
     });
+    readerDiagnostic('toc.candidate', `href=${href} targetSpread=${targetIndex} artifact=${describeArtifact(artifact)}`);
     await this.prepare(artifact, targetIndex, true);
     await this.session.adoptForeground({
       sessionId: artifact.sessionId,
@@ -271,6 +306,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       ? undefined
       : spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode);
     await this.session.releaseArtifact(source.artifactId).catch(() => undefined);
+    readerDiagnostic('toc.commit', `href=${href} spread=${targetIndex} artifact=${describeArtifact(artifact)} released=${source.artifactId.toString()}`);
     return targetIndex;
   }
 
@@ -341,24 +377,35 @@ class RitoNativePublication implements LoadedReaderPublication {
   async advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<import('../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance> {
     const backgroundStartedAt = readerPerformanceStart('reader.backend.background');
     let result!: import('../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance;
-    const run = this.backgroundTail.then(async () => {
+    const run = this.operationTail.then(async () => {
       const visibleId = this.session.currentVisibleArtifactId;
       if (!visibleId) throw new Error('Rito background pagination requires a visible artifact.');
       const current = this.session.getArtifact(visibleId);
       if (!current) throw new Error('Rito visible artifact is unavailable.');
+      readerDiagnostic('bg.begin', `visibleIndex=${this.visibleIndex} artifact=${describeArtifact(current)} quantum=${maxTopLevelNodesPerQuantum}`);
       const advance = await this.session.advanceBackground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId, maxTopLevelNodesPerQuantum });
       result = advance;
+      readerDiagnostic('bg.result', `state=${advance.state} moves=${String(advance.movesVisibleContent)} replaces=${advance.replacesArtifactId.toString()} candidate=${describeArtifact(advance.artifact)}`);
       const candidate = advance.artifact;
       if (!candidate) return;
       if (advance.movesVisibleContent) {
         await this.session.releaseArtifact(candidate.artifactId).catch(() => undefined);
         return;
       }
+      if (this.session.currentVisibleArtifactId !== current.artifactId) {
+        readerDiagnostic('bg.drop.stale', `expected=${current.artifactId.toString()} actual=${this.session.currentVisibleArtifactId?.toString() ?? 'none'} candidate=${candidate.artifactId.toString()}`);
+        await this.session.releaseArtifact(candidate.artifactId).catch(() => undefined);
+        return;
+      }
       const currentIndex = this.indexForArtifact(current);
-      // Keep the slot record atomic: the artifact and its frame are replaced
-      // together even when background pagination only adds book numbering.
-      await this.prepare(candidate, currentIndex, true);
-      this.assignArtifact(currentIndex, candidate);
+      // A non-moving background candidate only changes pagination ownership
+      // and whole-book numbering. Its painted content is sealed, so keep the
+      // completed frame instead of rebuilding the same spread. Prepare only
+      // when the visible slot has no frame yet.
+      if (!this.slots.get(currentIndex)?.frame) {
+        await this.prepare(candidate, currentIndex, true);
+      }
+      this.assignArtifact(currentIndex, candidate, true);
       if (this.session.currentVisibleArtifactId !== current.artifactId) {
         await this.session.releaseArtifact(candidate.artifactId).catch(() => undefined);
         return;
@@ -369,8 +416,9 @@ class RitoNativePublication implements LoadedReaderPublication {
         this.totalSpreadsValue = spreadCountFromBookPages(candidate.bookPageCount, this.spreadMode);
       }
       await this.session.releaseArtifact(current.artifactId).catch(() => undefined);
+      readerDiagnostic('bg.commit', `spread=${currentIndex} artifact=${describeArtifact(candidate)} released=${current.artifactId.toString()}`);
     });
-    this.backgroundTail = run.then(() => undefined, () => undefined);
+    this.operationTail = run.then(() => undefined, () => undefined);
     try {
       await run;
       return result;
@@ -382,6 +430,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
+    await this.operationTail.catch(() => undefined);
     const artifactIds = new Set([...this.slots.values()].map((slot) => slot.artifactId));
     this.slots.clear();
     for (const artifactId of artifactIds) await this.session.releaseArtifact(artifactId).catch(() => undefined);
@@ -406,14 +455,37 @@ class RitoNativePublication implements LoadedReaderPublication {
     return artifactId === undefined ? undefined : this.session.getArtifact(artifactId);
   }
 
-  private assignArtifact(spreadIndex: number, artifact: RitoArtifact): void {
+  private assignArtifact(spreadIndex: number, artifact: RitoArtifact, preserveFrame = false): void {
     const current = this.slots.get(spreadIndex);
     this.slots.set(spreadIndex, {
       artifactId: artifact.artifactId,
-      ...(current?.artifactId === artifact.artifactId && current.frame
+      ...((preserveFrame || current?.artifactId === artifact.artifactId) && current?.frame
         ? { frame: current.frame }
         : {}),
     });
+    readerDiagnostic('slot.assign', `spread=${spreadIndex} artifact=${describeArtifact(artifact)} previous=${current?.artifactId.toString() ?? 'none'} preserveFrame=${String(preserveFrame)}`);
+  }
+
+  private rebaseSlots(delta: number): void {
+    if (delta === 0) return;
+    const entries = [...this.slots.entries()];
+    this.slots.clear();
+    for (const [spreadIndex, slot] of entries) {
+      const rebasedIndex = spreadIndex + delta;
+      this.slots.set(rebasedIndex, {
+        artifactId: slot.artifactId,
+        ...(slot.frame
+          ? { frame: { ...slot.frame, spreadIndex: rebasedIndex } }
+          : {}),
+      });
+    }
+    this.visibleIndex += delta;
+  }
+
+  private enqueueOperation<T>(operation: () => Promise<T>): Promise<T> {
+    const run = this.operationTail.then(operation, operation);
+    this.operationTail = run.then(() => undefined, () => undefined);
+    return run;
   }
 }
 
@@ -428,6 +500,26 @@ function artifactSourceKey(artifact: RitoArtifact): string {
   // while belonging to different chapters, so the digest alone cannot guard
   // a frame cache slot.
   return `${artifact.revisionId.toString()}:${artifact.artifactId.toString()}`;
+}
+
+function describeArtifact(artifact: RitoArtifact | undefined): string {
+  if (!artifact) return 'none';
+  return [
+    `id=${artifact.artifactId.toString()}`,
+    `rev=${artifact.revisionId.toString()}`,
+    `href=${artifact.locator.href}`,
+    `localPage=${artifact.localPageIndex}`,
+    `localSpread=${artifact.localSpreadIndex}`,
+    `pages=${artifact.localPageIndexes.join(',')}`,
+    `nav=${artifact.navigation.previous}/${artifact.navigation.next}`,
+    `book=${artifact.bookPageIndex ?? 'none'}/${artifact.bookPageCount ?? 'none'}`,
+  ].join(' ');
+}
+
+function describeError(error: unknown): string {
+  if (typeof error !== 'object' || error === null) return String(error);
+  const value = error as { readonly status?: unknown; readonly message?: unknown };
+  return `status=${String(value.status ?? 'none')} message=${String(value.message ?? error)}`;
 }
 
 function safeTextOffset(value: bigint): number {

@@ -421,6 +421,8 @@ export interface ReaderPublicationView {
   readonly getCurrentLocator?: (spreadIndex: number) => ReaderLocator | undefined;
   /** Reports whether the current artifact can produce an adjacent spread. */
   readonly canNavigate?: (direction: 'next' | 'previous') => boolean;
+  /** Returns the render slot for an adjacent turn, rebasing private slots when needed. */
+  readonly getAdjacentSpreadIndex?: (currentSpreadIndex: number, direction: 'next' | 'previous') => number;
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined;
   getImage(source: string): Uint8Array | undefined;
   /** Resolves a TOC target, paginating it on demand when necessary. */

@@ -19,7 +19,7 @@ import { LunarSkiaTextMeasurer } from '../skia/text/text-measurer';
 import { FrameCache } from './frame-cache';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackend } from './pagination-backend';
-import { readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
+import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
 
 export type ReaderBookDataLoader = (request: ReaderOpenRequest) => Promise<ArrayBuffer>;
 
@@ -144,15 +144,25 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   async next(): Promise<ReaderSnapshot> {
-    return this.enqueueNavigation(() => this.publication?.canNavigate?.('next') === false
-      ? this.snapshot.spreadIndex
-      : this.snapshot.spreadIndex + 1);
+    return this.enqueueNavigation(() => {
+      const allowed = this.publication?.canNavigate?.('next') !== false;
+      const target = allowed
+        ? this.publication?.getAdjacentSpreadIndex?.(this.snapshot.spreadIndex, 'next') ?? this.snapshot.spreadIndex + 1
+        : this.snapshot.spreadIndex;
+      readerDiagnostic('runtime.next', `allowed=${String(allowed)} from=${this.snapshot.spreadIndex} target=${target} snapshot=${describeSnapshot(this.snapshot)}`);
+      return target;
+    });
   }
 
   async previous(): Promise<ReaderSnapshot> {
-    return this.enqueueNavigation(() => this.publication?.canNavigate?.('previous') === false
-      ? this.snapshot.spreadIndex
-      : this.snapshot.spreadIndex - 1);
+    return this.enqueueNavigation(() => {
+      const allowed = this.publication?.canNavigate?.('previous') !== false;
+      const target = allowed
+        ? this.publication?.getAdjacentSpreadIndex?.(this.snapshot.spreadIndex, 'previous') ?? this.snapshot.spreadIndex - 1
+        : this.snapshot.spreadIndex;
+      readerDiagnostic('runtime.previous', `allowed=${String(allowed)} from=${this.snapshot.spreadIndex} target=${target} snapshot=${describeSnapshot(this.snapshot)}`);
+      return target;
+    });
   }
 
   getCurrentPicture(
@@ -274,17 +284,21 @@ export class LunarReaderRuntime implements ReaderRuntime {
     }
     const target = Math.max(0, Math.round(Number.isFinite(spreadIndex) ? spreadIndex : 0));
     const operation = this.operation;
+    readerDiagnostic('runtime.show.begin', `requested=${spreadIndex} target=${target} snapshot=${describeSnapshot(this.snapshot)}`);
     try {
       await this.preparePicture(target, operation);
     } catch (error) {
       if (error instanceof RangeError) {
+        readerDiagnostic('runtime.show.range', `target=${target} error=${describeError(error)}`);
         return this.snapshot;
       }
+      readerDiagnostic('runtime.show.error', `target=${target} error=${describeError(error)}`);
       throw error;
     }
     this.assertCurrent(operation);
     const snapshot = this.createReadySnapshot(target);
     this.emit(snapshot);
+    readerDiagnostic('runtime.show.ready', `target=${target} snapshot=${describeSnapshot(snapshot)}`);
     void this.advanceBackground(operation).catch(() => undefined);
     return snapshot;
   }
@@ -324,8 +338,21 @@ export class LunarReaderRuntime implements ReaderRuntime {
       return;
     }
     const quantumStartedAt = readerPerformanceStart('reader.background.quantum');
-    const result = await backend.advanceBackground(64);
+    let result: unknown;
+    readerDiagnostic('runtime.bg.begin', `operation=${operation} snapshot=${describeSnapshot(this.snapshot)}`);
+    try {
+      result = await backend.advanceBackground(64);
+    } catch (error) {
+      readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
+      readerDiagnostic('runtime.bg.error', `operation=${operation} error=${describeError(error)}`);
+      if (operation === this.operation && !this.abortController?.signal.aborted && isRetryableBackgroundError(error)) {
+        this.scheduleBackground(operation);
+        return;
+      }
+      throw error;
+    }
     readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
+    readerDiagnostic('runtime.bg.result', `operation=${operation} result=${describeBackgroundResult(result)} snapshot=${describeSnapshot(this.snapshot)}`);
     if (operation !== this.operation || this.abortController?.signal.aborted) {
       return;
     }
@@ -349,6 +376,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
       return;
     }
     this.backgroundScheduled = true;
+    readerDiagnostic('runtime.bg.schedule', `operation=${operation}`);
     setTimeout(() => {
       void this.advanceBackground(operation).catch(() => undefined);
     }, 32);
@@ -541,6 +569,29 @@ export class LunarReaderRuntime implements ReaderRuntime {
       listener(snapshot);
     }
   }
+}
+
+function describeSnapshot(snapshot: ReaderSnapshot): string {
+  return `revision=${snapshot.revisionId} spread=${snapshot.spreadIndex} bookSpread=${snapshot.bookSpreadIndex ?? 'none'} chapter=${snapshot.chapterTitle ?? 'none'} total=${snapshot.totalSpreads ?? 'none'} complete=${String(snapshot.paginationComplete)}`;
+}
+
+function describeBackgroundResult(result: unknown): string {
+  if (typeof result !== 'object' || result === null) return String(result);
+  const value = result as { readonly state?: unknown; readonly movesVisibleContent?: unknown; readonly artifact?: { readonly artifactId?: bigint; readonly revisionId?: bigint; readonly locator?: { readonly href?: string }; readonly localSpreadIndex?: number } };
+  const artifact = value.artifact;
+  return `state=${String(value.state ?? 'none')} moves=${String(value.movesVisibleContent ?? 'none')} artifact=${artifact ? `${artifact.artifactId?.toString() ?? 'none'}@${artifact.revisionId?.toString() ?? 'none'}:${artifact.locator?.href ?? 'none'}:${artifact.localSpreadIndex ?? 'none'}` : 'none'}`;
+}
+
+function describeError(error: unknown): string {
+  if (typeof error !== 'object' || error === null) return String(error);
+  const value = error as { readonly status?: unknown; readonly message?: unknown };
+  return `status=${String(value.status ?? 'none')} message=${String(value.message ?? error)}`;
+}
+
+function isRetryableBackgroundError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null || !('status' in error)) return false;
+  const status = (error as { readonly status?: unknown }).status;
+  return status === 5 || status === 8;
 }
 
 function isBackgroundComplete(value: unknown): boolean {
