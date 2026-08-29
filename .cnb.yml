@@ -1,0 +1,26 @@
+"**":
+  push:
+    - runner:
+        cpus: 16
+      docker:
+        image: docker.cnb.cool/zhxycn/env:latest
+        volumes:
+          - /opt/android-sdk:copy-on-write
+          - /root/.gradle:copy-on-write
+          - /root/.cargo/registry:copy-on-write
+          - /root/.cargo/git:copy-on-write
+          - /root/.rustup:copy-on-write
+          - /root/.cache:copy-on-write
+          - node_modules:copy-on-write
+      imports:
+        - https://cnb.cool/Umbrae-Labs/secrets/-/blob/main/expo.yml
+      stages:
+        - name: Build development APK
+          script: bash scripts/build-android.sh development
+          timeout: 2h
+        - name: Attach development APK
+          image: cnbcool/attachments:latest
+          settings:
+            attachments:
+              - ./lunar-development.apk
+            ttl: 7

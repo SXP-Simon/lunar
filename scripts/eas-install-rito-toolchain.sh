@@ -19,4 +19,7 @@ if ! command -v cargo-ndk >/dev/null 2>&1; then
   cargo install cargo-ndk --version 4.1.2 --locked
 fi
 
-set-env PATH "$HOME/.cargo/bin:$PATH"
+export PATH="$HOME/.cargo/bin:$PATH"
+if command -v set-env >/dev/null 2>&1; then
+  set-env PATH "$PATH"
+fi
