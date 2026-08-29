@@ -10,44 +10,14 @@ fi
 
 : "${EXPO_TOKEN:?EXPO_TOKEN must be provided by the CNB secret import}"
 
-PKGS=""
-for cmd in unzip:unzip wget:wget; do
-  command -v "${cmd%%:*}" >/dev/null 2>&1 || PKGS+=" ${cmd##*:}"
-done
-if [[ -n "$PKGS" ]]; then
-  apt-get update
-  apt-get install -y $PKGS
-fi
-
-export SDKMAN_DIR="${SDKMAN_DIR:-$HOME/.sdkman}"
-if [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]]; then
-  # shellcheck disable=SC1090
-  . "$SDKMAN_DIR/bin/sdkman-init.sh"
-fi
-
-if ! command -v java >/dev/null 2>&1; then
-  if [[ ! -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]]; then
-    curl -s "https://get.sdkman.io" | bash
-    # shellcheck disable=SC1090
-    . "$SDKMAN_DIR/bin/sdkman-init.sh"
+for command_name in java node unzip wget; do
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "$command_name is required in the CNB build image." >&2
+    exit 1
   fi
-  sdk install java 21.0.7-tem
-  export JAVA_HOME="$SDKMAN_DIR/candidates/java/current"
-  export PATH="$JAVA_HOME/bin:$PATH"
-else
-  java -version
-fi
-
-export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/refs/heads/master/install.sh | bash
-fi
-# shellcheck disable=SC1090
-. "$NVM_DIR/nvm.sh"
-
-NODE_VERSION="${NODE_VERSION:-22.18.0}"
-nvm install "$NODE_VERSION"
-nvm use "$NODE_VERSION"
+done
+java -version
+node --version
 
 export ANDROID_HOME="${ANDROID_HOME:-/opt/android-sdk}"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
@@ -78,8 +48,17 @@ if [[ ! -d "$ANDROID_HOME/platforms/android-36" || ! -d "$ANDROID_HOME/ndk/27.1.
     "cmake;3.22.1"
 fi
 
-corepack enable
-corepack prepare pnpm@10.32.0 --activate
+if command -v corepack >/dev/null 2>&1; then
+  corepack enable
+  corepack prepare pnpm@10.32.0 --activate
+elif ! command -v pnpm >/dev/null 2>&1; then
+  if ! command -v npm >/dev/null 2>&1; then
+    echo "pnpm or npm is required in the CNB build image." >&2
+    exit 1
+  fi
+  npm install --global pnpm@10.32.0
+fi
+
 pnpm install --frozen-lockfile
 
 rm -rf "${TMPDIR:-/tmp}/metro-cache" "${TMPDIR:-/tmp}"/haste-map-*
