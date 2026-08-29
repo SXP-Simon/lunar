@@ -22,7 +22,12 @@ interface PublicationSlot {
   readonly frame?: ReaderRenderFrame;
 }
 
-const RETAINED_BOUNDARY_ARTIFACT_CAP = 3;
+// The engine enforces a hard live-artifact cap (6). Steady state keeps the
+// visible artifact, the last turn source, the retained boundary map and the
+// keep-alive entry live (1 + 1 + 2 + 1), leaving one slot for the transient
+// foreground/background candidate every mutation mints.
+const RETAINED_BOUNDARY_ARTIFACT_CAP = 2;
+const RETAINED_BOUNDARY_KEEP_ALIVE_CAP = 1;
 const RETAINED_SLOT_RADIUS = 4;
 
 /**
@@ -101,6 +106,22 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
 class RitoNativePublication implements LoadedReaderPublication {
   private readonly slots = new Map<number, PublicationSlot>();
   private readonly retainedBoundaryArtifacts = new Map<string, bigint>();
+  /**
+   * Boundary artifacts that lost their retained-map slot but are kept alive
+   * for a few more navigations. The engine's exact-locator cache matches a
+   * backward chapter seek on the href+progression locator that only the
+   * seek-resolved artifact carries; re-published artifacts carry a
+   * source-point locator instead, so dropping the replaced identity
+   * immediately forces the whole previous chapter to be paginated again on
+   * the next crossing.
+   */
+  private readonly retainedBoundaryKeepAlive: bigint[] = [];
+  /**
+   * Artifact the most recent foreground turn navigated away from. It stays
+   * live (and its chapter revision therefore reusable by the engine's exact
+   * locator cache) until the next navigation replaces it.
+   */
+  private lastTurnSourceId?: bigint;
   private closed = false;
   private visibleIndex = 0;
   private totalSpreadsValue?: number;
@@ -224,7 +245,12 @@ class RitoNativePublication implements LoadedReaderPublication {
       readerDiagnostic('nav.turn.request', `step=${step + 1}/${distance} direction=${direction} visibleIndex=${this.visibleIndex} artifact=${describeArtifact(current)}`);
       let artifact: RitoArtifact;
       try {
-        artifact = await this.session.turn({
+        // Reference contract (rito_flutter/browser reader-v1): requestAdjacent
+        // returns an UNADOPTED candidate. Resources must be prepared and only
+        // then the candidate adopted, so a preparation failure can never leave
+        // the session visible ahead of the published snapshot — that drift is
+        // what made repeated presses skip spreads and land chapters away.
+        artifact = await this.session.requestAdjacent({
           sessionId: current.sessionId,
           requestId: this.session.nextRequestId,
           fromArtifactId: current.artifactId,
@@ -236,14 +262,37 @@ class RitoNativePublication implements LoadedReaderPublication {
         throw error;
       }
       const nextIndex = this.visibleIndex + (direction === 'next' ? 1 : -1);
-      await this.prepare(artifact, nextIndex);
+      try {
+        await this.prepare(artifact, nextIndex);
+      } catch (error) {
+        // The candidate was never adopted, so the visible artifact is
+        // unchanged. Release it and let the navigation fail cleanly instead
+        // of leaving a half-committed turn behind.
+        await this.session.releaseArtifact(artifact.artifactId).catch(() => undefined);
+        readerDiagnostic('nav.turn.error', `direction=${direction} prepareFailed=${describeArtifact(artifact)} error=${describeError(error)}`);
+        throw error;
+      }
+      await this.session.adoptForeground({
+        sessionId: current.sessionId,
+        expectedVisibleArtifactId: current.artifactId,
+        candidateArtifactId: artifact.artifactId,
+      });
       this.assignArtifact(nextIndex, artifact);
       this.visibleIndex = nextIndex;
       readerDiagnostic('nav.turn.commit', `direction=${direction} spread=${nextIndex} artifact=${describeArtifact(artifact)}`);
       this.totalSpreadsValue = artifact.bookPageCount !== undefined
         ? spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode)
         : this.totalSpreadsValue;
-      await this.releaseAfterNavigation(current);
+      // Keep the turn source live (reference: release only after the page-turn
+      // no longer paints it). The engine's exact-locator cache can then reuse
+      // the already paginated chapter revision when the reader turns back
+      // across the boundary instead of re-paginating the whole chapter.
+      // Release the source of the previous navigation instead.
+      if (this.lastTurnSourceId !== undefined && this.lastTurnSourceId !== current.artifactId) {
+        const staleSource = this.session.getArtifact(this.lastTurnSourceId);
+        if (staleSource) await this.releaseAfterNavigation(staleSource);
+      }
+      this.lastTurnSourceId = current.artifactId;
       this.pruneSlots();
     }
   }
@@ -277,6 +326,14 @@ class RitoNativePublication implements LoadedReaderPublication {
     return allowed;
   }
   getAdjacentSpreadIndex(currentSpreadIndex: number, direction: 'next' | 'previous'): number {
+    if (this.visibleIndex !== currentSpreadIndex) {
+      // Defensive: the backend drifted from the published snapshot (a failed
+      // turn or an interrupted multi-step jump). Navigate relative to the
+      // snapshot so one press always means exactly one spread; the turn loop
+      // re-walks the backend back to the requested index.
+      readerDiagnostic('slot.drift', `direction=${direction} visibleIndex=${this.visibleIndex} snapshot=${currentSpreadIndex}`);
+      return Math.max(0, currentSpreadIndex + (direction === 'next' ? 1 : -1));
+    }
     if (direction === 'previous' && this.visibleIndex <= 0) {
       const delta = 1 - this.visibleIndex;
       this.rebaseSlots(delta);
@@ -474,9 +531,13 @@ class RitoNativePublication implements LoadedReaderPublication {
     const artifactIds = new Set([
       ...[...this.slots.values()].map((slot) => slot.artifactId),
       ...this.retainedBoundaryArtifacts.values(),
+      ...this.retainedBoundaryKeepAlive,
     ]);
+    if (this.lastTurnSourceId !== undefined) artifactIds.add(this.lastTurnSourceId);
     this.slots.clear();
     this.retainedBoundaryArtifacts.clear();
+    this.retainedBoundaryKeepAlive.length = 0;
+    this.lastTurnSourceId = undefined;
     for (const artifactId of artifactIds) await this.session.releaseArtifact(artifactId).catch(() => undefined);
     await this.session.dispose();
   }
@@ -519,18 +580,37 @@ class RitoNativePublication implements LoadedReaderPublication {
     const key = boundaryArtifactKey(artifact);
     const previous = this.retainedBoundaryArtifacts.get(key);
     if (previous === artifact.artifactId) return;
-    this.retainedBoundaryArtifacts.delete(key);
+    if (previous !== undefined) {
+      // The boundary page was re-published under a new identity. Keep the old
+      // identity alive briefly instead of releasing it: the engine's exact
+      // locator cache can only match the next backward seek against the
+      // seek-resolved href+progression locator that the old identity carries.
+      this.keepBoundaryArtifactAlive(previous);
+    }
     this.retainedBoundaryArtifacts.set(key, artifact.artifactId);
     readerDiagnostic('boundary.retain', `key=${key} artifact=${describeArtifact(artifact)} retained=${this.retainedBoundaryArtifacts.size}`);
-    if (previous !== undefined) {
-      await this.session.releaseArtifact(previous).catch(() => undefined);
-    }
     while (this.retainedBoundaryArtifacts.size > RETAINED_BOUNDARY_ARTIFACT_CAP) {
       const oldest = this.retainedBoundaryArtifacts.entries().next().value as [string, bigint] | undefined;
       if (!oldest) break;
       this.retainedBoundaryArtifacts.delete(oldest[0]);
-      await this.session.releaseArtifact(oldest[1]).catch(() => undefined);
+      this.keepBoundaryArtifactAlive(oldest[1]);
       readerDiagnostic('boundary.release', `key=${oldest[0]} artifact=${oldest[1].toString()} retained=${this.retainedBoundaryArtifacts.size}`);
+    }
+  }
+
+  /** Defers the release of a boundary artifact so recent chapters stay cacheable. */
+  private keepBoundaryArtifactAlive(artifactId: bigint): void {
+    if (this.retainedBoundaryKeepAlive.includes(artifactId)) return;
+    this.retainedBoundaryKeepAlive.push(artifactId);
+    while (this.retainedBoundaryKeepAlive.length > RETAINED_BOUNDARY_KEEP_ALIVE_CAP) {
+      const oldest = this.retainedBoundaryKeepAlive.shift();
+      if (oldest === undefined) break;
+      // The newest identity of a retained key lives in the map; only release
+      // artifacts that are no longer referenced anywhere.
+      if (![...this.retainedBoundaryArtifacts.values()].includes(oldest)) {
+        void this.session.releaseArtifact(oldest).catch(() => undefined);
+        readerDiagnostic('boundary.keepalive.release', `artifact=${oldest.toString()}`);
+      }
     }
   }
 
@@ -754,7 +834,10 @@ function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutR
         : undefined,
       progression: locator?.sourcePoint || locator?.sourceRange ? undefined : request.restorePosition?.progression,
     },
-    work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 4 },
+    // The engine requires every adjacent request's localPageCap to match the
+    // source chapter-local revision's cap, so open, TOC seeks and turns must
+    // all use the same value or the first turn after open is rejected.
+    work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 16 },
     textProfile: 'platform-string-runs',
   };
 }

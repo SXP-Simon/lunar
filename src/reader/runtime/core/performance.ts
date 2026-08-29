@@ -4,10 +4,33 @@ declare global {
   // console commands used by existing development builds.
   var LUNAR_READER_PERF: boolean | undefined;
   var LUNAR_READER_TRACE: boolean | undefined;
+  var LUNAR_READER_TRACE_VERBOSE: boolean | undefined;
   var __LUNAR_READER_PERF__: boolean | undefined;
 }
 
 const perfConsole = console as Console & { info?: (...data: unknown[]) => void };
+
+const conciseTraceEvents = new Set([
+  'toc.begin',
+  'toc.commit',
+  'runtime.next',
+  'runtime.previous',
+  'nav.turn.commit',
+  'runtime.show.ready',
+  'runtime.bg.pause',
+  'bg.commit',
+  'bg.drop.stale',
+]);
+
+const performanceSummaryEvents = new Set([
+  'reader.open',
+  'reader.backend.open',
+  'reader.bookBytesReady',
+  'reader.backend.initialHref',
+  'reader.backend.firstArtifact',
+  'reader.firstReadySnapshot',
+  'reader.background.complete',
+]);
 
 export function isReaderPerformanceEnabled(): boolean {
   return process.env.EXPO_PUBLIC_READER_PERF === '1'
@@ -21,8 +44,12 @@ export function isReaderTraceEnabled(): boolean {
     || globalThis.__LUNAR_READER_PERF__ === true;
 }
 
+export function isReaderVerboseTraceEnabled(): boolean {
+  return globalThis.LUNAR_READER_TRACE_VERBOSE === true;
+}
+
 export function readerPerformanceMark(name: string, detail?: string): void {
-  if (!isReaderPerformanceEnabled()) return;
+  if (!isReaderPerformanceEnabled() || !performanceSummaryEvents.has(name)) return;
   const suffix = detail ? ` ${detail}` : '';
   // `console.timeStamp` is implemented by the Android debugger bridge and
   // crashes on some Hermes/Android combinations. Plain console output keeps
@@ -36,7 +63,7 @@ export function readerPerformanceMark(name: string, detail?: string): void {
 
 /** Emits navigation and pagination state to the host console when tracing is enabled. */
 export function readerDiagnostic(name: string, detail?: string): void {
-  if (!isReaderTraceEnabled()) return;
+  if (!isReaderTraceEnabled() || (!isReaderVerboseTraceEnabled() && !isConciseTraceEvent(name))) return;
   const suffix = detail ? ` ${detail}` : '';
   try {
     perfConsole.info?.(`[LunarReader][trace] ${name}${suffix}`);
@@ -47,13 +74,22 @@ export function readerDiagnostic(name: string, detail?: string): void {
 
 export function readerPerformanceStart(name: string): number | undefined {
   if (!isReaderPerformanceEnabled()) return undefined;
-  const startedAt = performance.now();
-  readerPerformanceMark(`${name}.start`);
-  return startedAt;
+  return performance.now();
 }
 
 export function readerPerformanceEnd(name: string, startedAt: number | undefined): void {
   if (startedAt === undefined || !isReaderPerformanceEnabled()) return;
+  if (!performanceSummaryEvents.has(name)) return;
   const duration = performance.now() - startedAt;
-  readerPerformanceMark(`${name}.end`, `durationMs=${duration.toFixed(2)}`);
+  readerPerformanceMark(name, `durationMs=${duration.toFixed(2)}`);
+}
+
+function isConciseTraceEvent(name: string): boolean {
+  return conciseTraceEvents.has(name)
+    || name.endsWith('.error')
+    || name.endsWith('.reject')
+    || name.endsWith('.miss')
+    || name.endsWith('.empty')
+    || name.endsWith('.range')
+    || name === 'slot.drift';
 }
