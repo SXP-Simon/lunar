@@ -10,6 +10,7 @@
           - /root/.cargo/registry:copy-on-write
           - /root/.cargo/git:copy-on-write
           - /root/.rustup:copy-on-write
+          - /root/.local/share/pnpm/store:copy-on-write
           - /root/.cache:copy-on-write
           - node_modules:copy-on-write
       imports:
