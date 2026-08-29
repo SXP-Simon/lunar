@@ -337,6 +337,25 @@ pub fn retained_adjacent_fixture_epub() -> Vec<u8> {
     })
 }
 
+pub fn long_previous_chapter_fixture_epub() -> Vec<u8> {
+    many_chapter_fixture_epub_with(2, |index| {
+        if index == 0 {
+            let paragraphs = (0..520)
+                .map(|paragraph| {
+                    format!(
+                        "<p>Long previous chapter paragraph {paragraph} must remain available when a tail request crosses a provisional page-cap window.</p>"
+                    )
+                })
+                .collect::<String>();
+            format!(
+                r#"<html xmlns="http://www.w3.org/1999/xhtml"><body>{paragraphs}</body></html>"#
+            )
+        } else {
+            chapter_fixture_xhtml("adjacent source chapter")
+        }
+    })
+}
+
 fn many_chapter_fixture_epub_with(
     chapter_count: usize,
     chapter_xhtml: impl Fn(usize) -> String,

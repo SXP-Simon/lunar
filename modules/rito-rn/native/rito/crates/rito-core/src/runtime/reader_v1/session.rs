@@ -2353,9 +2353,15 @@ impl ReaderSessionV1 {
                 "top-level work budget",
             )?,
         };
+        let requires_final_extent = target_requires_final_extent(&canonical_locator);
         let advance = match self.pending_exact_seek.take() {
             Some(pending) if pending.matches(&layout, &canonical_locator, work.local_page_cap) => {
-                self.advance_until_target(pending.advance, work.max_foreground_quanta, budget)?
+                self.advance_until_target(
+                    pending.advance,
+                    work.max_foreground_quanta,
+                    budget,
+                    requires_final_extent,
+                )?
             }
             Some(pending) => {
                 self.pending_exact_seek = Some(pending);
@@ -2371,6 +2377,7 @@ impl ReaderSessionV1 {
                     advance,
                     work.max_foreground_quanta.saturating_sub(1),
                     budget,
+                    requires_final_extent,
                 )?
             }
             None => {
@@ -2385,6 +2392,7 @@ impl ReaderSessionV1 {
                     advance,
                     work.max_foreground_quanta.saturating_sub(1),
                     budget,
+                    requires_final_extent,
                 )?
             }
         };
@@ -2591,10 +2599,13 @@ impl ReaderSessionV1 {
         mut advance: RuntimeChapterLocalRevisionAdvance,
         max_additional_quanta: u32,
         budget: RuntimeRevisionWorkBudget,
+        requires_final_extent: bool,
     ) -> Result<ReaderExactSeekAdvanceV1, ReaderErrorV1> {
         let mut used_quanta = 0u32;
         loop {
-            if resolved_target(&advance).is_some() {
+            if resolved_target(&advance).is_some()
+                && (!requires_final_extent || advance.revision.final_extent.is_some())
+            {
                 return Ok(ReaderExactSeekAdvanceV1::Resolved(advance));
             }
             if used_quanta >= max_additional_quanta {
@@ -3071,6 +3082,12 @@ fn resolved_target(advance: &RuntimeChapterLocalRevisionAdvance) -> Option<Resol
         local_page_index: *local_page_index,
         local_spread_index: *local_spread_index,
     })
+}
+
+fn target_requires_final_extent(locator: &RuntimeSourceLocator) -> bool {
+    locator
+        .progression
+        .is_some_and(|progression| progression >= 1.0)
 }
 
 fn owner_from_advance(

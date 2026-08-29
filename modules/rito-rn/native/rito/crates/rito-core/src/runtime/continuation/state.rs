@@ -233,6 +233,13 @@ impl RuntimeContinuationRecord {
         self.revision_version = 0;
         self.published_page_count = 0;
     }
+
+    /// Exact chapter-tail seeks must inspect the whole chapter in one
+    /// revision.  A bounded rollover would reset the local page origin and
+    /// leave the returned tail unable to walk backward into earlier windows.
+    pub(super) fn disable_local_page_cap(&mut self) {
+        self.local_page_cap = None;
+    }
 }
 
 #[derive(Debug)]

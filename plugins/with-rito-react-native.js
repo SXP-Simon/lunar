@@ -28,7 +28,8 @@ def ritoFfiSourceDir = ritoFfiSourceInput != null
 def ritoFfiSourceAvailable = ritoFfiSourceDir.isDirectory()
 def ritoFfiOutputDir = layout.buildDirectory.dir('rito-ffi').get().asFile
 def ritoFfiTargetDir = new File(ritoFfiSourceDir, 'target')
-def ritoForceRebuild = providers.environmentVariable('RITO_FFI_REBUILD')
+def ritoForceRebuild = providers.gradleProperty('ritoFfiRebuild')
+    .orElse(providers.environmentVariable('RITO_FFI_REBUILD'))
     .map { it == '1' || it.equalsIgnoreCase('true') }
     .orElse(false)
     .get()
@@ -52,6 +53,7 @@ android {
 
 tasks.register('buildRitoFfiArm64') {
     onlyIf { ritoForceRebuild || !ritoFfiSourceAvailable || !new File(ritoFfiOutputDir, 'arm64-v8a/release/librito_ffi.a').exists() }
+    outputs.upToDateWhen { !ritoForceRebuild }
     inputs.dir(ritoFfiSourceDir)
     outputs.file(new File(ritoFfiOutputDir, 'arm64-v8a/release/librito_ffi.a'))
     doFirst {
@@ -60,13 +62,14 @@ tasks.register('buildRitoFfiArm64') {
         }
         def staticLibrary = new File(ritoFfiTargetDir, 'aarch64-linux-android/release/librito_ffi.a')
         if (!staticLibrary.exists() || ritoForceRebuild) {
-            project.exec {
-                executable 'cargo'
-                workingDir ritoFfiSourceDir
-                args 'ndk', '-t', 'arm64-v8a', '-o', ritoFfiOutputDir.absolutePath,
+            def cargoResult = providers.exec {
+                commandLine 'cargo',
+                    'ndk', '-t', 'arm64-v8a', '-o', ritoFfiOutputDir.absolutePath,
                     'build', '--release', '--target-dir', ritoFfiTargetDir.absolutePath,
                     '--manifest-path', new File(ritoFfiSourceDir, 'crates/rito-ffi/Cargo.toml').absolutePath
+                workingDir ritoFfiSourceDir
             }
+            cargoResult.result.get().assertNormalExitValue()
         }
     }
     doLast {
@@ -80,10 +83,18 @@ tasks.register('buildRitoFfiArm64') {
     }
 }
 
-tasks.matching { task ->
-    task.name.startsWith('configureCMake') || task.name.startsWith('buildCMake')
-}.configureEach {
-    dependsOn(tasks.named('buildRitoFfiArm64'))
+def ritoFfiBuildTask = tasks.named('buildRitoFfiArm64')
+// The Pure C++ module has its own Gradle project. Its CMake tasks must wait
+// for the app task that produces the imported Rust static library.
+def ritoModuleAndroidDir = new File(ritoPackageRoot, 'android').canonicalFile
+gradle.allprojects { targetProject ->
+    if (targetProject == project || targetProject.projectDir.canonicalFile == ritoModuleAndroidDir) {
+        targetProject.tasks.matching { task ->
+            task.name.startsWith('configureCMake') || task.name.startsWith('buildCMake')
+        }.configureEach {
+            dependsOn(ritoFfiBuildTask)
+        }
+    }
 }
 `;
     mod.modResults.contents = appendOnce(

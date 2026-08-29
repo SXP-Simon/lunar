@@ -130,6 +130,11 @@ impl ReaderSessionV1 {
             && revision.owner.coordinate.chapter_index == chapter_index
             && revision.layout == *layout
             && revision.local_page_cap == local_page_cap
+            // A progression of 1.0 means the chapter tail.  A page-cap
+            // window can resolve that locator provisionally, so only a
+            // revision with a published final extent may answer from cache.
+            && (!target_requires_final_extent(locator)
+                || revision.final_local_spread_count.is_some())
             && self.window_projection_is_safe(revision_id, locator))
         .then(|| revision.owner.clone())
     }
@@ -156,6 +161,12 @@ impl ReaderSessionV1 {
                 )
         })
     }
+}
+
+fn target_requires_final_extent(locator: &RuntimeSourceLocator) -> bool {
+    locator
+        .progression
+        .is_some_and(|progression| progression >= 1.0)
 }
 
 fn push_unique_bounded(revision_ids: &mut Vec<u64>, revision_id: u64) {

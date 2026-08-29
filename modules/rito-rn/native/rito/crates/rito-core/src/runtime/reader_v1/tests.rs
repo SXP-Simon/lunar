@@ -1,6 +1,7 @@
 use crate::runtime::{
     tests::fixture::{
-        layout as runtime_layout, long_chapter_window_fixture_epub, multi_chapter_fixture_epub,
+        layout as runtime_layout, long_chapter_window_fixture_epub,
+        long_previous_chapter_fixture_epub, multi_chapter_fixture_epub,
         multi_chapter_image_fixture_epub, retained_adjacent_fixture_epub,
         source_locator_fixture_epub, source_locator_image_fixture_epub,
     },
@@ -1611,6 +1612,163 @@ fn previous_chapter_tail_publishes_when_the_chapter_completes_within_budget() {
             resolved.unwrap_or_else(|| panic!("tail={tail}: previous chapter tail never resolves"));
         assert_eq!(resolved.locator.href, "chapter-0.xhtml", "tail={tail}");
     }
+}
+
+#[test]
+fn previous_chapter_tail_does_not_stop_at_a_provisional_page_cap() {
+    let mut session = ReaderSessionV1::open_owned(98, long_previous_chapter_fixture_epub())
+        .expect("reader session opens");
+    let mut source_request = request(98, 1, "chapter-1.xhtml");
+    source_request.layout.viewport_width = 80.0;
+    source_request.layout.viewport_height = 80.0;
+    source_request.work.local_page_cap = 4;
+    let visible = session
+        .request_artifact(source_request)
+        .expect("source chapter resolves");
+    adopt_initial(&mut session, 98, visible.artifact_id);
+
+    let mut previous = adjacent_with_cap(
+        98,
+        2,
+        visible.artifact_id,
+        ReaderAdjacentDirectionV1::Previous,
+        4,
+    );
+    previous.work.max_foreground_quanta = 8;
+    let mut resolved = None;
+    for request_id in 2..=4096 {
+        previous.request_id = request_id;
+        match session.request_adjacent(previous) {
+            Ok(artifact) => {
+                resolved = Some(artifact);
+                break;
+            }
+            Err(error) => {
+                assert_eq!(
+                    error.kind,
+                    ReaderErrorKindV1::TargetNotPublished,
+                    "{error:?}"
+                );
+                assert!(session.has_pending_adjacent_v1());
+            }
+        }
+    }
+    let tail = resolved.expect("previous chapter tail eventually resolves");
+    assert_eq!(tail.locator.href, "chapter-0.xhtml");
+    assert!(
+        tail.terminal_extent,
+        "tail must come from a terminal chapter-local extent"
+    );
+    assert!(tail.local_page_index > 4);
+}
+
+#[test]
+fn previous_boundary_does_not_reuse_a_partial_cached_revision() {
+    let mut session = ReaderSessionV1::open_owned(99, long_previous_chapter_fixture_epub())
+        .expect("reader session opens");
+    let mut previous_source = request(99, 1, "chapter-0.xhtml");
+    previous_source.layout.viewport_width = 80.0;
+    previous_source.layout.viewport_height = 80.0;
+    previous_source.work.local_page_cap = 4;
+    let partial = session
+        .request_artifact(previous_source)
+        .expect("partial previous chapter resolves");
+    assert!(!partial.terminal_extent);
+    adopt_initial(&mut session, 99, partial.artifact_id);
+
+    let mut current_request = request(99, 2, "chapter-1.xhtml");
+    current_request.layout.viewport_width = 80.0;
+    current_request.layout.viewport_height = 80.0;
+    current_request.work.local_page_cap = 4;
+    let current = session
+        .request_artifact(current_request)
+        .expect("current chapter resolves");
+    adopt_replacement(&mut session, 99, partial.artifact_id, current.artifact_id);
+
+    let mut previous = adjacent_with_cap(
+        99,
+        3,
+        current.artifact_id,
+        ReaderAdjacentDirectionV1::Previous,
+        4,
+    );
+    previous.work.max_foreground_quanta = 64;
+    let mut tail = None;
+    for request_id in 3..=256 {
+        previous.request_id = request_id;
+        match session.request_adjacent(previous) {
+            Ok(artifact) => {
+                tail = Some(artifact);
+                break;
+            }
+            Err(error) => assert_eq!(error.kind, ReaderErrorKindV1::TargetNotPublished),
+        }
+    }
+    let tail = tail.expect("previous boundary seeks through the partial cache");
+    assert_eq!(tail.locator.href, "chapter-0.xhtml");
+    assert!(
+        tail.terminal_extent,
+        "cached partial revision must not answer a chapter-tail seek"
+    );
+}
+
+/// Runs the same boundary seek against the reference EPUB used by the RN
+/// reader.  The file is intentionally loaded at test time so normal CI runs
+/// stay independent of the local book collection.
+#[test]
+#[ignore = "requires the local reference EPUB"]
+fn reference_epub_previous_boundary_publishes_terminal_p05_window() {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../../../../精翻 精排版 第八卷（至特典）(1).epub");
+    let publication = std::fs::read(&path)
+        .unwrap_or_else(|error| panic!("read reference EPUB {}: {error}", path.display()));
+    let mut session = ReaderSessionV1::open_owned(990, publication).expect("reader session opens");
+
+    let mut source = request(990, 1, "Text/p-06.xhtml");
+    source.layout.viewport_width = 393.0;
+    source.layout.viewport_height = 780.0;
+    source.layout.margin_top = 36.0;
+    source.layout.margin_right = 24.0;
+    source.layout.margin_bottom = 36.0;
+    source.layout.margin_left = 24.0;
+    source.layout.root_font_size = 18.0;
+    source.layout.line_height_override = Some(1.65);
+    source.work.local_page_cap = 5;
+    let visible = session
+        .request_artifact(source)
+        .expect("p-06 exact seek resolves");
+    adopt_initial(&mut session, 990, visible.artifact_id);
+
+    let mut previous = adjacent_with_cap(
+        990,
+        2,
+        visible.artifact_id,
+        ReaderAdjacentDirectionV1::Previous,
+        5,
+    );
+    previous.work.max_foreground_quanta = 64;
+    let mut tail = None;
+    for request_id in 2..=256 {
+        previous.request_id = request_id;
+        match session.request_adjacent(previous) {
+            Ok(artifact) => {
+                tail = Some(artifact);
+                break;
+            }
+            Err(error) => assert_eq!(error.kind, ReaderErrorKindV1::TargetNotPublished),
+        }
+    }
+    let tail = tail.expect("p-05 tail seek resolves");
+    assert_eq!(tail.locator.href, "Text/p-05.xhtml");
+    assert!(
+        tail.terminal_extent,
+        "reverse boundary must publish the terminal p-05 window"
+    );
+    assert!(
+        tail.local_page_index > 16,
+        "reverse boundary should expose the full p-05 extent, got page {}",
+        tail.local_page_index
+    );
 }
 
 #[test]

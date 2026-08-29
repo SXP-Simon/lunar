@@ -193,7 +193,7 @@ pub(super) fn initialize_chapter_local_revision(
         required_font_face_catalog,
         footnotes,
     );
-    let record = RuntimeContinuationRecord::new_chapter_local(
+    let mut record = RuntimeContinuationRecord::new_chapter_local(
         revision_id,
         layout_key,
         layout_config,
@@ -202,6 +202,12 @@ pub(super) fn initialize_chapter_local_revision(
         local_page_cap,
         target_locator.clone(),
     );
+    if target_locator
+        .progression
+        .is_some_and(|progression| progression >= 1.0)
+    {
+        record.disable_local_page_cap();
+    }
     Ok(InitializedChapterLocalRevision {
         record,
         budget,

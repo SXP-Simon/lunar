@@ -92,7 +92,8 @@ impl RuntimeDocument {
             if appended.complete
                 || record.reached_local_page_cap()
                 || quantum + 1 == max_quanta.get()
-                || self.local_target_resolves(&revision_id, target_locator)
+                || (!Self::target_requires_final_extent(target_locator)
+                    && self.local_target_resolves(&revision_id, target_locator))
             {
                 break;
             }
@@ -124,6 +125,12 @@ impl RuntimeDocument {
             self.resolve_chapter_local_source_locator_inner(revision_id, target_locator.clone()),
             Ok(RuntimeSourceLocatorResolution::Resolved { .. })
         )
+    }
+
+    fn target_requires_final_extent(locator: &RuntimeSourceLocator) -> bool {
+        locator
+            .progression
+            .is_some_and(|progression| progression >= 1.0)
     }
 
     pub(super) fn apply_chapter_local_work(
