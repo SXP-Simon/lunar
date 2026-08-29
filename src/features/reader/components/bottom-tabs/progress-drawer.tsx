@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ReaderSnapshot } from '@/reader';
 import type { LunarReaderRuntime } from '@/reader/native';
 import { useTheme } from '@/hooks/use-theme';
-import { ReaderBottomTabBarContentHeight } from './constants';
+import { ReaderBottomTabBarHeight } from './constants';
 
 interface ProgressDrawerProps {
   readonly isOpen: boolean;
@@ -25,6 +25,7 @@ export function ProgressDrawer({
   snapshot,
 }: ProgressDrawerProps) {
   const insets = useSafeAreaInsets();
+  const bottomInset = insets.bottom + ReaderBottomTabBarHeight;
   const total = snapshot.totalSpreads;
   const currentPage = snapshot.bookSpreadIndex;
   const hasAbsolutePosition = currentPage !== undefined && total !== undefined;
@@ -44,10 +45,10 @@ export function ProgressDrawer({
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
-        <BottomSheet.Overlay />
+        <BottomSheet.Overlay style={{ bottom: bottomInset }} />
         <BottomSheet.Content
           backgroundClassName="rounded-t-3xl"
-          bottomInset={insets.bottom + ReaderBottomTabBarContentHeight}
+          bottomInset={bottomInset}
           contentContainerClassName="h-full px-0"
           detached
           enableDynamicSizing={false}

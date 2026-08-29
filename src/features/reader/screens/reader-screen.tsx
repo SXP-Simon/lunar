@@ -5,6 +5,7 @@ import { PixelRatio, Pressable, StyleSheet, Text, View, type LayoutChangeEvent }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
+import { IconTabBar } from '@/components/ui/icon-tab-bar';
 import type { ReaderViewport } from '@/reader';
 import { ReaderSurface } from '@/reader/native';
 import { ProgressDrawer } from '../components/bottom-tabs/progress-drawer';
@@ -81,12 +82,16 @@ export default function ReaderScreen() {
     [isReady, session.runtime, viewport],
   );
 
-  const handleOpenToc = useCallback(() => {
-    setIsTocOpen(true);
-  }, []);
-
-  const handleOpenProgress = useCallback(() => {
-    setIsProgressOpen(true);
+  const handleTabSelect = useCallback((key: string) => {
+    if (key === 'toc') {
+      setIsProgressOpen(false);
+      setIsTocOpen(true);
+      return;
+    }
+    if (key === 'progress') {
+      setIsTocOpen(false);
+      setIsProgressOpen(true);
+    }
   }, []);
 
   const statusText = useMemo(() => {
@@ -149,9 +154,18 @@ export default function ReaderScreen() {
       {(controlsVisible || Boolean(session.errorMessage)) && (
         <ReaderControls
           onBack={() => router.back()}
-          onOpenToc={handleOpenToc}
-          onOpenProgress={handleOpenProgress}
           title={chapterTitle}
+        />
+      )}
+
+      {(controlsVisible || isTocOpen || isProgressOpen) && (
+        <IconTabBar
+          activeKey={isTocOpen ? 'toc' : isProgressOpen ? 'progress' : undefined}
+          items={[
+            { key: 'toc', accessibilityLabel: '打开目录', name: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'list' } },
+            { key: 'progress', accessibilityLabel: '打开阅读进度', name: { ios: 'chart.bar', android: 'timeline', web: 'timeline' } },
+          ]}
+          onSelect={handleTabSelect}
         />
       )}
 
