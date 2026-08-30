@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { findLibraryBookById, type LibraryBookRecord } from '@/features/library';
 import {
   createReaderTypographyKey,
-  DEFAULT_READER_TYPOGRAPHY,
   type ReaderOpenResult,
   type ReaderTheme,
   type ReaderViewport,
@@ -13,6 +12,7 @@ import {
   RitoNativePaginationBackend,
 } from '@/reader/native';
 import { createLunarRitoPinnedFonts } from '@/reader/rito/pinned-font';
+import { useReaderStore } from '@/stores';
 import { readReaderBook } from '../infrastructure/expo-reader-book-loader';
 
 export interface ReaderSessionOptions {
@@ -22,6 +22,7 @@ export interface ReaderSessionOptions {
 }
 
 export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptions) {
+  const typography = useReaderStore((state) => state.typography);
   const runtime = useMemo(
     () =>
       createReaderRuntime(),
@@ -80,7 +81,7 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
       viewport.height,
       viewport.pixelRatio,
       theme,
-      createReaderTypographyKey(DEFAULT_READER_TYPOGRAPHY),
+      createReaderTypographyKey(typography),
     ].join(':');
     if (layoutKey.current === nextLayoutKey) {
       return;
@@ -89,7 +90,7 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
 
     const layout = {
       viewport,
-      typography: DEFAULT_READER_TYPOGRAPHY,
+      typography,
       theme,
     };
     if (activeBookId.current === currentBook.id && runtime.getSnapshot().phase === 'ready') {
@@ -106,7 +107,7 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
       })
       .then((result) => setOpenResult({ bookId: currentBook.id, result }))
       .catch(() => undefined);
-  }, [currentBook, runtime, theme, viewport]);
+  }, [currentBook, runtime, theme, typography, viewport]);
 
   useEffect(
     () => () => {

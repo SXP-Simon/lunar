@@ -129,8 +129,9 @@ export class LunarReaderRuntime implements ReaderRuntime {
       throw new Error('A book must be open before updating its layout.');
     }
     const progression = this.snapshot.position?.progression ?? 0;
+    const restorePosition = this.snapshot.position ?? this.request.restorePosition;
     const operation = this.beginOperation();
-    this.request = { ...this.request, ...request };
+    this.request = { ...this.request, ...request, restorePosition };
     this.emit({
       ...this.snapshot,
       phase: 'reflowing',

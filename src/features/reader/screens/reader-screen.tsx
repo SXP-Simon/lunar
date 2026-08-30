@@ -11,6 +11,7 @@ import { ReaderSurface } from '@/reader/native';
 import { ProgressDrawer } from '../components/bottom-tabs/progress-drawer';
 import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
 import { ReaderControls } from '../components/reader-controls';
+import { TypographyDrawer } from '../components/typography-drawer';
 import { useReaderSession } from '../hooks/use-reader-session';
 
 // ReaderControls overlays the surface, so only the safe-area edge gets reserved here.
@@ -27,6 +28,7 @@ export default function ReaderScreen() {
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [isProgressOpen, setIsProgressOpen] = useState(false);
+  const [isTypographyOpen, setIsTypographyOpen] = useState(false);
   const readerTheme = theme === 'dark' ? 'dark' : 'light';
   const session = useReaderSession({
     bookId: bookId ?? '',
@@ -85,12 +87,20 @@ export default function ReaderScreen() {
   const handleTabSelect = useCallback((key: string) => {
     if (key === 'toc') {
       setIsProgressOpen(false);
+      setIsTypographyOpen(false);
       setIsTocOpen(true);
       return;
     }
     if (key === 'progress') {
       setIsTocOpen(false);
+      setIsTypographyOpen(false);
       setIsProgressOpen(true);
+      return;
+    }
+    if (key === 'typography') {
+      setIsTocOpen(false);
+      setIsProgressOpen(false);
+      setIsTypographyOpen(true);
     }
   }, []);
 
@@ -158,12 +168,13 @@ export default function ReaderScreen() {
         />
       )}
 
-      {(controlsVisible || isTocOpen || isProgressOpen) && (
+      {(controlsVisible || isTocOpen || isProgressOpen || isTypographyOpen) && (
         <IconTabBar
-          activeKey={isTocOpen ? 'toc' : isProgressOpen ? 'progress' : undefined}
+          activeKey={isTocOpen ? 'toc' : isProgressOpen ? 'progress' : isTypographyOpen ? 'typography' : undefined}
           items={[
             { key: 'toc', accessibilityLabel: '打开目录', name: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'list' } },
             { key: 'progress', accessibilityLabel: '打开阅读进度', name: { ios: 'chart.bar', android: 'timeline', web: 'timeline' } },
+            { key: 'typography', accessibilityLabel: '打开阅读设置', name: { ios: 'textformat.size', android: 'format_size', web: 'format_size' } },
           ]}
           onSelect={handleTabSelect}
         />
@@ -196,6 +207,10 @@ export default function ReaderScreen() {
         onOpenChange={setIsProgressOpen}
         runtime={session.runtime}
         snapshot={session.snapshot}
+      />
+      <TypographyDrawer
+        isOpen={isTypographyOpen}
+        onOpenChange={setIsTypographyOpen}
       />
     </View>
   );
