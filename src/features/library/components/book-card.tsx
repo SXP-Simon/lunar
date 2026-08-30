@@ -7,6 +7,7 @@ export type LibraryBook = {
   id: string;
   title: string;
   author: string;
+  readingProgress?: number;
   cover: {
     imageUri?: string;
     background: string;
@@ -65,6 +66,11 @@ export function BookCard({ book, onPress }: BookCardProps) {
                 transition={120}
               />
             )}
+            <View style={[styles.progressBadge, { backgroundColor: theme.text }]}>
+              <Text style={[styles.progressText, { color: theme.background }]}>
+                {Math.round((book.readingProgress ?? 0) * 100)}%
+              </Text>
+            </View>
             {pressed && (
               <View
                 pointerEvents="none"
@@ -162,5 +168,18 @@ const styles = StyleSheet.create({
     marginTop: 1,
     fontSize: 10,
     lineHeight: 14,
+  },
+  progressBadge: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  progressText: {
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: '600',
   },
 });

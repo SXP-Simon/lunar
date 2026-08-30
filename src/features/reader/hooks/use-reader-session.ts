@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { findLibraryBookById, type LibraryBookRecord } from '@/features/library';
 import {
   createReaderTypographyKey,
+  type ReaderSnapshot,
   type ReaderOpenResult,
   type ReaderTheme,
   type ReaderViewport,
@@ -14,6 +15,8 @@ import {
 import { createLunarRitoPinnedFonts } from '@/reader/rito/pinned-font';
 import { useReaderStore } from '@/stores';
 import { readReaderBook } from '../infrastructure/expo-reader-book-loader';
+import type { ReaderReadingState } from '../domain/reader-reading-state';
+import { findReaderReadingState, saveReaderReadingState } from '../services/reading-state-service';
 
 export interface ReaderSessionOptions {
   readonly bookId: string;
@@ -33,9 +36,14 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
     bookId: string;
     result: ReaderOpenResult;
   }>();
+  const [readingState, setReadingState] = useState<{
+    bookId: string;
+    state?: ReaderReadingState;
+  }>();
   const [bookError, setBookError] = useState<{ bookId: string; message: string }>();
   const activeBookId = useRef<string | undefined>(undefined);
   const layoutKey = useRef<string | undefined>(undefined);
+  const saveQueue = useRef(Promise.resolve());
   const subscribe = useCallback(
     (listener: () => void) => runtime.subscribe(listener),
     [runtime],
@@ -44,9 +52,41 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const currentBook = book?.id === bookId ? book : undefined;
   const currentOpenResult = openResult?.bookId === bookId ? openResult.result : undefined;
+  const persistSnapshot = useCallback((currentSnapshot: ReaderSnapshot) => {
+    if (
+      !currentBook ||
+      currentSnapshot.bookId !== currentBook.id ||
+      currentSnapshot.phase !== 'ready' ||
+      !currentSnapshot.position
+    ) {
+      return;
+    }
+    const state: ReaderReadingState = {
+      bookId: currentBook.id,
+      position: currentSnapshot.position,
+      totalSpreads: currentSnapshot.totalSpreads,
+      typography,
+      theme,
+      updatedAt: Date.now(),
+    };
+    saveQueue.current = saveQueue.current
+      .then(() => saveReaderReadingState(state))
+      .catch(() => undefined);
+  }, [currentBook, saveQueue, theme, typography]);
 
   useEffect(() => {
     let active = true;
+    findReaderReadingState(bookId)
+      .then((state) => {
+        if (active) {
+          setReadingState({ bookId, state });
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setReadingState({ bookId });
+        }
+      });
     findLibraryBookById(bookId)
       .then((record) => {
         if (!active) {
@@ -72,7 +112,13 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
   }, [bookId]);
 
   useEffect(() => {
-    if (!currentBook || !viewport || viewport.width < 1 || viewport.height < 1) {
+    if (
+      !currentBook ||
+      readingState?.bookId !== bookId ||
+      !viewport ||
+      viewport.width < 1 ||
+      viewport.height < 1
+    ) {
       return;
     }
     const nextLayoutKey = [
@@ -104,16 +150,22 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
         bookId: currentBook.id,
         fileUri: currentBook.fileUri,
         ...layout,
+        restorePosition: readingState.state?.position,
       })
       .then((result) => setOpenResult({ bookId: currentBook.id, result }))
       .catch(() => undefined);
-  }, [currentBook, runtime, theme, typography, viewport]);
+  }, [bookId, currentBook, readingState, runtime, theme, typography, viewport]);
+
+  useEffect(() => {
+    persistSnapshot(snapshot);
+  }, [persistSnapshot, snapshot]);
 
   useEffect(
     () => () => {
+      persistSnapshot(runtime.getSnapshot());
       void runtime.close();
     },
-    [runtime],
+    [persistSnapshot, runtime],
   );
 
   return {

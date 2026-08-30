@@ -1,10 +1,10 @@
 import { SymbolView } from 'expo-symbols';
-import { type Href, useRouter } from 'expo-router';
+import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
 import { SearchField } from 'heroui-native/search-field';
 import { Spinner } from 'heroui-native/spinner';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -68,7 +68,7 @@ export default function LibraryScreen() {
     setLibraryBooks(records.map(toLibraryBook));
   }, []);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let active = true;
     listLibraryBooks()
       .then((records) => {
@@ -90,7 +90,7 @@ export default function LibraryScreen() {
     return () => {
       active = false;
     };
-  }, []);
+  }, []));
 
   const handleImport = useCallback(async () => {
     if (isImporting) {
@@ -216,6 +216,7 @@ function toLibraryBook(record: Awaited<ReturnType<typeof listLibraryBooks>>[numb
     id: record.id,
     title: record.title,
     author: record.author ?? '未知作者',
+    readingProgress: record.readingProgress ?? 0,
     cover: {
       ...palette,
       imageUri: record.coverUri,

@@ -20,6 +20,7 @@ interface BookRow {
   readonly added_at: number;
   readonly last_opened_at: number | null;
   readonly updated_at: number;
+  readonly reading_progress?: number | null;
 }
 
 export class SQLiteBookRepository implements BookRepository {
@@ -82,7 +83,10 @@ export class SQLiteBookRepository implements BookRepository {
 
   async list(): Promise<readonly LibraryBookRecord[]> {
     const rows = await this.database.getAllAsync<BookRow>(
-      'SELECT * FROM books ORDER BY COALESCE(last_opened_at, added_at) DESC, title ASC',
+      `SELECT books.*, reading_states.fallback_progression AS reading_progress
+       FROM books
+       LEFT JOIN reading_states ON reading_states.book_id = books.id
+       ORDER BY COALESCE(last_opened_at, added_at) DESC, title ASC`,
     );
     return rows.map(fromBookRow);
   }
@@ -110,5 +114,10 @@ function fromBookRow(row: BookRow): LibraryBookRecord {
     addedAt: row.added_at,
     lastOpenedAt: row.last_opened_at ?? undefined,
     updatedAt: row.updated_at,
+    readingProgress: clampProgression(row.reading_progress ?? 0),
   };
+}
+
+function clampProgression(value: number): number {
+  return Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0));
 }

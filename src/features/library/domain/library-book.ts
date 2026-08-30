@@ -15,4 +15,5 @@ export interface LibraryBookRecord {
   readonly addedAt: number;
   readonly lastOpenedAt?: number;
   readonly updatedAt: number;
+  readonly readingProgress?: number;
 }
