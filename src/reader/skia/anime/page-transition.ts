@@ -85,7 +85,7 @@ export function useReaderPageTransition(
   const direction = activeTransition?.direction ?? 1;
   const width = current?.frame.width ?? 0;
   const height = current?.frame.height ?? 0;
-  const grabX = interactiveTurn?.grabX ?? (direction > 0 ? width : 0);
+  const grabX = interactiveTurn?.grabX ?? (direction > 0 ? 0 : width);
   const grabY = interactiveTurn?.grabY ?? height / 2;
   const coverMatrix = useDerivedValue(() => {
     const originX = direction > 0 ? width : 0;
