@@ -5,10 +5,17 @@ import { useEffect } from 'react';
 import type { ReaderSnapshot } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
 import { readerPerformanceMark } from '../../runtime/core/performance';
+import {
+  useReaderPageTransition,
+  type ReaderPageAnimationStyle,
+  type ReaderPageContent,
+} from '../anime';
 import type { ReaderOverlayRect } from './overlay-renderer';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
 
 export type { ReaderSurfaceTransform } from './surface-transform';
+export { READER_PAGE_ANIMATION_STYLES } from '../anime';
+export type { ReaderPageAnimationStyle } from '../anime';
 
 export interface ReaderSurfaceProps {
   readonly runtime: LunarReaderRuntime;
@@ -16,9 +23,21 @@ export interface ReaderSurfaceProps {
   readonly style?: StyleProp<ViewStyle>;
   readonly overlays?: readonly ReaderOverlayRect[];
   readonly onTransformChange?: (transform: ReaderSurfaceTransform) => void;
+  /** Defaults to `slide`, which keeps the page content legible throughout the turn. */
+  readonly animationStyle?: ReaderPageAnimationStyle;
+  /** Duration in milliseconds for a page turn. */
+  readonly animationDuration?: number;
 }
 
-export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTransformChange }: ReaderSurfaceProps) {
+export function ReaderSurface({
+  runtime,
+  snapshot,
+  style,
+  overlays = [],
+  onTransformChange,
+  animationStyle = 'slide',
+  animationDuration = 360,
+}: ReaderSurfaceProps) {
   const { ref, size: viewport } = useCanvasSize();
   const compiled = snapshot.phase === 'ready'
     ? runtime.getCurrentPicture(snapshot.revisionId, snapshot.spreadIndex, snapshot.renderId)
@@ -31,6 +50,15 @@ export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTrans
     : 1;
   const offsetX = frame ? (viewport.width - frame.width * scale) / 2 : 0;
   const offsetY = frame ? (viewport.height - frame.height * scale) / 2 : 0;
+  const currentKey = snapshot.phase === 'ready' && compiled && frame
+    ? `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 0}`
+    : undefined;
+  const currentContent: ReaderPageContent | undefined = currentKey && compiled && frame
+    ? { key: currentKey, snapshot, picture: compiled, frame }
+    : undefined;
+  const { transition: activeTransition, style: resolvedAnimationStyle, coverMatrix, slideMatrix, pageMatrix } =
+    useReaderPageTransition(currentContent, animationStyle, animationDuration);
+
   useEffect(() => {
     onTransformChange?.(createReaderSurfaceTransform(scale, offsetX, offsetY));
   }, [offsetX, offsetY, onTransformChange, scale]);
@@ -50,8 +78,25 @@ export function ReaderSurface({ runtime, snapshot, style, overlays = [], onTrans
       style={style}>
       {canRenderFrame && (
         <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
-          <Picture key={`${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 0}`} picture={compiled.picture} />
-          {overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
+          {activeTransition && <Picture picture={activeTransition.from.picture.picture} />}
+          {activeTransition && resolvedAnimationStyle === 'cover' ? (
+            <Group matrix={coverMatrix}>
+              <Picture key={currentKey} picture={compiled.picture} />
+            </Group>
+          ) : activeTransition && resolvedAnimationStyle === 'page' ? (
+            <Group
+              matrix={pageMatrix}
+            >
+              <Picture key={currentKey} picture={compiled.picture} />
+            </Group>
+          ) : activeTransition && resolvedAnimationStyle === 'slide' ? (
+            <Group matrix={slideMatrix}>
+              <Picture key={currentKey} picture={compiled.picture} />
+            </Group>
+          ) : (
+            <Picture key={currentKey} picture={compiled.picture} />
+          )}
+          {!activeTransition && overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
             <SkiaRect
               key={`${index}:${overlay.bounds.x}:${overlay.bounds.y}`}
               x={overlay.bounds.x}

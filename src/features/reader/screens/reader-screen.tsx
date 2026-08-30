@@ -8,10 +8,11 @@ import { useUniwind } from 'uniwind';
 import { IconTabBar } from '@/components/ui/icon-tab-bar';
 import type { ReaderViewport } from '@/reader';
 import { ReaderSurface } from '@/reader/native';
+import { useReaderStore } from '@/stores';
 import { ProgressDrawer } from '../components/bottom-tabs/progress-drawer';
 import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
+import { TypographyDrawer } from '../components/bottom-tabs/typography-drawer';
 import { ReaderControls } from '../components/reader-controls';
-import { TypographyDrawer } from '../components/typography-drawer';
 import { useReaderSession } from '../hooks/use-reader-session';
 
 // ReaderControls overlays the surface, so only the safe-area edge gets reserved here.
@@ -30,6 +31,7 @@ export default function ReaderScreen() {
   const [isProgressOpen, setIsProgressOpen] = useState(false);
   const [isTypographyOpen, setIsTypographyOpen] = useState(false);
   const readerTheme = theme === 'dark' ? 'dark' : 'light';
+  const animationStyle = useReaderStore((state) => state.animationStyle);
   const session = useReaderSession({
     bookId: bookId ?? '',
     viewport,
@@ -128,6 +130,7 @@ export default function ReaderScreen() {
         <ReaderSurface
           runtime={session.runtime}
           snapshot={session.snapshot}
+          animationStyle={animationStyle}
           style={StyleSheet.absoluteFill}
         />
         <Pressable

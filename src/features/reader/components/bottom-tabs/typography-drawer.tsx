@@ -1,12 +1,14 @@
 import { BottomSheet } from 'heroui-native/bottom-sheet';
+import { Button } from 'heroui-native/button';
 import { Slider } from 'heroui-native/slider';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ReaderTypography } from '@/reader';
+import type { ReaderPageAnimationStyle } from '@/reader/native';
 import { useReaderStore } from '@/stores';
-import { getReaderBottomTabBarInset } from './bottom-tabs/constants';
+import { getReaderBottomTabBarInset } from './constants';
 
 interface TypographyDrawerProps {
   readonly isOpen: boolean;
@@ -14,6 +16,15 @@ interface TypographyDrawerProps {
 }
 
 type TypographyKey = 'fontSize' | 'marginHorizontal' | 'lineHeight';
+
+const ANIMATION_OPTIONS: readonly {
+  readonly style: ReaderPageAnimationStyle;
+  readonly label: string;
+}[] = [
+  { style: 'cover', label: '覆盖' },
+  { style: 'page', label: '仿真书页' },
+  { style: 'slide', label: '平移' },
+];
 
 interface TypographySliderProps {
   readonly accessibilityLabel: string;
@@ -36,6 +47,8 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const typography = useReaderStore((state) => state.typography);
   const updateTypography = useReaderStore((state) => state.updateTypography);
+  const animationStyle = useReaderStore((state) => state.animationStyle);
+  const setAnimationStyle = useReaderStore((state) => state.setAnimationStyle);
   const [draft, setDraft] = useState<ReaderTypography>(typography);
 
   const updateDraft = (key: TypographyKey, value: number) => {
@@ -60,8 +73,32 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
           detached
           enableDynamicSizing={false}
           enableOverDrag={false}
-          snapPoints={['30%']}>
+          snapPoints={['42%']}>
           <View className="gap-5 px-5 pb-5 pt-3">
+            <View className="gap-1">
+              <BottomSheet.Title className="text-xl text-foreground">阅读设置</BottomSheet.Title>
+              <BottomSheet.Description className="text-sm text-muted">排版与翻页动画</BottomSheet.Description>
+            </View>
+            <View className="gap-2">
+              <Text className="text-sm text-muted">翻页动画</Text>
+              <View className="flex-row gap-2">
+                {ANIMATION_OPTIONS.map((option) => {
+                  const selected = animationStyle === option.style;
+                  return (
+                    <Button
+                      key={option.style}
+                      accessibilityLabel={`翻页动画：${option.label}`}
+                      accessibilityState={{ selected }}
+                      className="min-w-0 flex-1 rounded-xl px-2"
+                      onPress={() => setAnimationStyle(option.style)}
+                      size="sm"
+                      variant={selected ? 'primary' : 'ghost'}>
+                      <Button.Label numberOfLines={1}>{option.label}</Button.Label>
+                    </Button>
+                  );
+                })}
+              </View>
+            </View>
             <TypographySlider
               accessibilityLabel="调整字号"
               maxValue={32}
