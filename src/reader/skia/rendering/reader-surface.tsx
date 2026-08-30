@@ -6,16 +6,18 @@ import type { ReaderSnapshot } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
 import { readerPerformanceMark } from '../../runtime/core/performance';
 import {
+  PageCurlMesh,
   useReaderPageTransition,
   type ReaderPageAnimationStyle,
   type ReaderPageContent,
+  type ReaderInteractiveTurn,
 } from '../anime';
 import type { ReaderOverlayRect } from './overlay-renderer';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
 
 export type { ReaderSurfaceTransform } from './surface-transform';
 export { READER_PAGE_ANIMATION_STYLES } from '../anime';
-export type { ReaderPageAnimationStyle } from '../anime';
+export type { ReaderInteractiveTurn, ReaderPageAnimationStyle, ReaderPageContent } from '../anime';
 
 export interface ReaderSurfaceProps {
   readonly runtime: LunarReaderRuntime;
@@ -27,6 +29,8 @@ export interface ReaderSurfaceProps {
   readonly animationStyle?: ReaderPageAnimationStyle;
   /** Duration in milliseconds for a page turn. */
   readonly animationDuration?: number;
+  /** Optional finger-controlled turn. The target picture must be prepared first. */
+  readonly interactiveTurn?: ReaderInteractiveTurn;
 }
 
 export function ReaderSurface({
@@ -37,6 +41,7 @@ export function ReaderSurface({
   onTransformChange,
   animationStyle = 'slide',
   animationDuration = 360,
+  interactiveTurn,
 }: ReaderSurfaceProps) {
   const { ref, size: viewport } = useCanvasSize();
   const compiled = snapshot.phase === 'ready'
@@ -56,8 +61,8 @@ export function ReaderSurface({
   const currentContent: ReaderPageContent | undefined = currentKey && compiled && frame
     ? { key: currentKey, snapshot, picture: compiled, frame }
     : undefined;
-  const { transition: activeTransition, style: resolvedAnimationStyle, coverMatrix, slideMatrix, pageMatrix } =
-    useReaderPageTransition(currentContent, animationStyle, animationDuration);
+  const { transition: activeTransition, style: resolvedAnimationStyle, coverMatrix, slideMatrix, outgoingSlideMatrix, progress, grabX, grabY } =
+    useReaderPageTransition(currentContent, animationStyle, animationDuration, interactiveTurn);
 
   useEffect(() => {
     onTransformChange?.(createReaderSurfaceTransform(scale, offsetX, offsetY));
@@ -78,20 +83,34 @@ export function ReaderSurface({
       style={style}>
       {canRenderFrame && (
         <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
-          {activeTransition && <Picture picture={activeTransition.from.picture.picture} />}
-          {activeTransition && resolvedAnimationStyle === 'cover' ? (
-            <Group matrix={coverMatrix}>
+          {activeTransition && resolvedAnimationStyle === 'page' ? (
+            <Group>
               <Picture key={currentKey} picture={compiled.picture} />
+              <PageCurlMesh
+                direction={activeTransition.direction}
+                grabX={grabX}
+                grabY={grabY}
+                height={activeTransition.from.frame.height}
+                picture={activeTransition.from.picture}
+                progress={progress}
+                width={activeTransition.from.frame.width}
+              />
             </Group>
-          ) : activeTransition && resolvedAnimationStyle === 'page' ? (
-            <Group
-              matrix={pageMatrix}
-            >
-              <Picture key={currentKey} picture={compiled.picture} />
+          ) : activeTransition && resolvedAnimationStyle === 'cover' ? (
+            <Group>
+              <Picture picture={activeTransition.from.picture.picture} />
+              <Group matrix={coverMatrix}>
+                <Picture key={currentKey} picture={compiled.picture} />
+              </Group>
             </Group>
           ) : activeTransition && resolvedAnimationStyle === 'slide' ? (
-            <Group matrix={slideMatrix}>
-              <Picture key={currentKey} picture={compiled.picture} />
+            <Group>
+              <Group matrix={outgoingSlideMatrix}>
+                <Picture picture={activeTransition.from.picture.picture} />
+              </Group>
+              <Group matrix={slideMatrix}>
+                <Picture key={currentKey} picture={compiled.picture} />
+              </Group>
             </Group>
           ) : (
             <Picture key={currentKey} picture={compiled.picture} />

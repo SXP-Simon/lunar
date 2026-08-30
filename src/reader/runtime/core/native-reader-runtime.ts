@@ -153,6 +153,17 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.enqueueNavigation(() => this.resolveSpreadTarget(spreadIndex));
   }
 
+  /** Prepare an adjacent spread without changing the visible snapshot. */
+  async prepareSpread(spreadIndex: number): Promise<boolean> {
+    if (!this.publication || this.snapshot.phase !== 'ready') return false;
+    try {
+      await this.preparePicture(Math.round(spreadIndex), this.operation);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async goToToc(href: string): Promise<ReaderSnapshot> {
     return this.enqueueAsyncNavigation(async () => {
       const target = await this.publication?.resolveToc(href);

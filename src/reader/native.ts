@@ -10,6 +10,8 @@ export type { ReaderPaginationBackend } from './runtime/pagination/pagination-ba
 export {
   READER_PAGE_ANIMATION_STYLES,
   ReaderSurface,
+  type ReaderInteractiveTurn,
+  type ReaderPageContent,
   type ReaderPageAnimationStyle,
   type ReaderSurfaceProps,
 } from './skia/rendering/reader-surface';

@@ -1,13 +1,14 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Spinner } from 'heroui-native/spinner';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { PixelRatio, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
 import { IconTabBar } from '@/components/ui/icon-tab-bar';
 import type { ReaderViewport } from '@/reader';
-import { ReaderSurface } from '@/reader/native';
+import { ReaderSurface, type ReaderInteractiveTurn, type ReaderPageContent } from '@/reader/native';
 import { useReaderStore } from '@/stores';
 import { ProgressDrawer } from '../components/bottom-tabs/progress-drawer';
 import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
@@ -19,6 +20,17 @@ import { useReaderSession } from '../hooks/use-reader-session';
 const ReaderSurfaceTopSpacing = 4;
 const ReaderSurfaceBottomSpacing = 4;
 const ReaderChapterTopSpacing = 4;
+
+interface ReaderDragState {
+  readonly startSpread: number;
+  direction: 1 | -1;
+  targetSpread: number;
+  latestProgress: number;
+  grabX: number;
+  grabY: number;
+  preparing: boolean;
+  prepared: boolean;
+}
 
 export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
@@ -37,6 +49,8 @@ export default function ReaderScreen() {
     viewport,
     theme: readerTheme,
   });
+  const dragState = useRef<ReaderDragState | undefined>(undefined);
+  const [interactiveTurn, setInteractiveTurn] = useState<ReaderInteractiveTurn>();
   const isReady = session.snapshot.phase === 'ready';
   const chapterTitle = session.snapshot.chapterTitle
     ?? session.metadata?.title
@@ -50,6 +64,93 @@ export default function ReaderScreen() {
   const progressPercentage = totalSpreads === undefined
     ? undefined
     : Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
+
+  const beginDrag = useCallback(() => {
+    if (!isReady || !viewport) return;
+    dragState.current = {
+      startSpread: session.snapshot.spreadIndex,
+      direction: 1,
+      targetSpread: session.snapshot.spreadIndex + 1,
+      latestProgress: 0,
+      grabX: viewport.width / 2,
+      grabY: viewport.height / 2,
+      preparing: false,
+      prepared: false,
+    };
+  }, [isReady, session.snapshot.spreadIndex, viewport]);
+
+  const updateDrag = useCallback((translationX: number, absoluteX: number, absoluteY: number) => {
+    const state = dragState.current;
+    if (!state || !viewport || !isReady) return;
+    const direction: 1 | -1 = translationX < 0 ? 1 : -1;
+    const targetSpread = state.startSpread + direction;
+    const progress = Math.min(1, Math.max(0, Math.abs(translationX) / Math.max(1, viewport.width)));
+    state.latestProgress = progress;
+    state.grabX = Math.min(viewport.width, Math.max(0, absoluteX));
+    state.grabY = Math.min(viewport.height, Math.max(0, absoluteY - insets.top - ReaderSurfaceTopSpacing));
+    if (state.direction !== direction || state.targetSpread !== targetSpread) {
+      state.direction = direction;
+      state.targetSpread = targetSpread;
+      state.preparing = false;
+      state.prepared = false;
+      setInteractiveTurn(undefined);
+    }
+    if (targetSpread < 0 || (totalSpreads !== undefined && targetSpread >= totalSpreads)) return;
+    if (!state.preparing && !state.prepared) {
+      state.preparing = true;
+      void session.runtime.prepareSpread(targetSpread).then((prepared) => {
+        const current = dragState.current;
+        if (!prepared || !current || current.targetSpread !== targetSpread || current.direction !== direction) return;
+        const targetPicture = session.runtime.getCurrentPicture(session.snapshot.revisionId, targetSpread);
+        const targetFrame = session.runtime.getCurrentFrame(targetSpread);
+        if (!targetPicture || !targetFrame) return;
+        current.prepared = true;
+        setInteractiveTurn({
+          content: {
+            key: `${session.snapshot.revisionId}:${targetSpread}:drag`,
+            snapshot: { ...session.snapshot, spreadIndex: targetSpread, renderId: undefined },
+            picture: targetPicture,
+            frame: targetFrame,
+          } satisfies ReaderPageContent,
+          progress: current.latestProgress,
+          grabX: current.grabX,
+          grabY: current.grabY,
+        });
+      });
+    }
+    if (state.prepared) {
+      setInteractiveTurn((turn) => turn ? { ...turn, progress, grabX: state.grabX, grabY: state.grabY } : turn);
+    }
+  }, [insets.top, isReady, session.runtime, session.snapshot, totalSpreads, viewport]);
+
+  const endDrag = useCallback(() => {
+    const state = dragState.current;
+    dragState.current = undefined;
+    if (!state || !state.prepared || state.latestProgress < 0.35) {
+      setInteractiveTurn(undefined);
+      return;
+    }
+    setInteractiveTurn((turn) => turn ? { ...turn, progress: 1 } : turn);
+    const navigate = state.direction > 0 ? session.runtime.next() : session.runtime.previous();
+    void navigate.finally(() => setInteractiveTurn(undefined));
+  }, [session.runtime]);
+
+  // Gesture callbacks execute after render; the ref keeps the in-flight drag
+  // identity stable while React receives the prepared target asynchronously.
+  /* eslint-disable react-hooks/refs */
+  const panGesture = useMemo(
+    () => Gesture.Pan()
+      .activeOffsetX([-8, 8])
+      .onBegin(beginDrag)
+      .onUpdate((event) => updateDrag(event.translationX, event.absoluteX, event.absoluteY))
+      .onEnd(endDrag)
+      .onFinalize(() => {
+        if (dragState.current) endDrag();
+      })
+      .runOnJS(true),
+    [beginDrag, endDrag, updateDrag],
+  );
+  /* eslint-enable react-hooks/refs */
   const canvasBackground = isReady
     ? session.runtime.getBackgroundColor()
     : readerTheme === 'dark'
@@ -131,20 +232,25 @@ export default function ReaderScreen() {
           runtime={session.runtime}
           snapshot={session.snapshot}
           animationStyle={animationStyle}
+          interactiveTurn={interactiveTurn}
           style={StyleSheet.absoluteFill}
         />
-        <Pressable
-          accessibilityLabel="阅读页面"
-          accessibilityRole="adjustable"
-          accessibilityValue={{
-            min: 1,
-            max: totalSpreads ?? Math.max(1, currentSpread + 1),
-            now: currentSpread + 1,
-            text: progressText,
-          }}
-          onPress={(event) => handleReadingPress(event.nativeEvent.locationX)}
-          style={StyleSheet.absoluteFill}
-        />
+        <GestureDetector gesture={panGesture}>
+          <View collapsable={false} style={StyleSheet.absoluteFill}>
+            <Pressable
+              accessibilityLabel="阅读页面"
+              accessibilityRole="adjustable"
+              accessibilityValue={{
+                min: 1,
+                max: totalSpreads ?? Math.max(1, currentSpread + 1),
+                now: currentSpread + 1,
+                text: progressText,
+              }}
+              onPress={(event) => handleReadingPress(event.nativeEvent.locationX)}
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
+        </GestureDetector>
       </View>
       <View
         pointerEvents="none"

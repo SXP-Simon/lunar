@@ -8,6 +8,7 @@ import {
   useSharedValue,
   withTiming,
   type DerivedValue,
+  type SharedValue,
 } from 'react-native-reanimated';
 
 import type { ReaderRenderFrame, ReaderSnapshot } from '../../contracts';
@@ -45,26 +46,47 @@ interface ReaderPageTransitionValues {
   readonly style: 'cover' | 'page' | 'slide';
   readonly coverMatrix: DerivedValue<Matrix4>;
   readonly slideMatrix: DerivedValue<Matrix4>;
-  readonly pageMatrix: DerivedValue<Matrix4>;
+  readonly outgoingSlideMatrix: DerivedValue<Matrix4>;
+  readonly progress: SharedValue<number>;
+  readonly grabX: number;
+  readonly grabY: number;
+}
+
+export interface ReaderInteractiveTurn {
+  readonly content: ReaderPageContent;
+  readonly progress: number;
+  readonly grabX?: number;
+  readonly grabY?: number;
 }
 
 export function useReaderPageTransition(
   current: ReaderPageContent | undefined,
   animationStyle: ReaderPageAnimationStyle = 'slide',
   animationDuration = 360,
+  interactiveTurn?: ReaderInteractiveTurn,
 ): ReaderPageTransitionValues {
-  const displayedContent = useRef<ReaderPageContent | undefined>(undefined);
+  const [displayedContent, setDisplayedContent] = useState<ReaderPageContent>();
+  const interactiveCommitSpread = useRef<number | undefined>(undefined);
   const [transition, setTransition] = useState<ReaderPageTransitionState>();
   const progress = useSharedValue(1);
   const style = resolveAnimationStyle(animationStyle);
   const currentKey = current?.key;
-  const activeTransition = transition?.toKey === currentKey ? transition : undefined;
+  const interactiveTransition = interactiveTurn && displayedContent
+    ? {
+        from: displayedContent,
+        toKey: interactiveTurn.content.key,
+        direction: interactiveTurn.content.snapshot.spreadIndex > displayedContent.snapshot.spreadIndex ? 1 : -1,
+      } satisfies ReaderPageTransitionState
+    : undefined;
+  const activeTransition = interactiveTransition ?? (transition?.toKey === currentKey ? transition : undefined);
   const clearTransition = useCallback((key: string) => {
     setTransition((value) => value?.toKey === key ? undefined : value);
   }, []);
   const direction = activeTransition?.direction ?? 1;
   const width = current?.frame.width ?? 0;
   const height = current?.frame.height ?? 0;
+  const grabX = interactiveTurn?.grabX ?? (direction > 0 ? width : 0);
+  const grabY = interactiveTurn?.grabY ?? height / 2;
   const coverMatrix = useDerivedValue(() => {
     const originX = direction > 0 ? width : 0;
     const scaleX = Math.max(0.001, progress.value);
@@ -74,34 +96,49 @@ export function useReaderPageTransition(
       { translateX: -originX },
     ]);
   }, [direction, width]);
+  // Keep animated matrices as top-level Skia props. ReanimatedRecorder tracks
+  // those shared values safely; nested values inside `transform` arrays are
+  // interpreted as ordinary numbers by the native recorder.
   const slideMatrix = useDerivedValue(
     () => processTransform3d([{ translateX: direction * width * (1 - progress.value) }]),
     [direction, width],
   );
-  const pageMatrix = useDerivedValue(() => {
-    const originX = direction > 0 ? 0 : width;
-    const originY = height / 2;
-    const angle = direction * (Math.PI / 2) * (1 - progress.value);
-    return processTransform3d([
-      { translateX: originX },
-      { translateY: originY },
-      { perspective: 900 },
-      { rotateY: angle },
-      { translateX: -originX },
-      { translateY: -originY },
-    ]);
-  }, [direction, width, height]);
-
+  const outgoingSlideMatrix = useDerivedValue(
+    () => processTransform3d([{ translateX: -direction * width * progress.value }]),
+    [direction, width],
+  );
   useEffect(() => {
-    if (!current) {
-      displayedContent.current = undefined;
+    if (interactiveTurn) {
+      interactiveCommitSpread.current = interactiveTurn.content.snapshot.spreadIndex;
+      progress.set(Math.min(1, Math.max(0, interactiveTurn.progress)));
+      return;
+    }
+    if (
+      current &&
+      current.snapshot.spreadIndex === interactiveCommitSpread.current &&
+      current.snapshot.spreadIndex !== displayedContent?.snapshot.spreadIndex
+    ) {
+      setDisplayedContent(current);
+      interactiveCommitSpread.current = undefined;
+      setTransition(undefined);
       progress.set(1);
       return;
     }
-    if (displayedContent.current?.key === current.key) return;
+    if (current && current.snapshot.spreadIndex === displayedContent?.snapshot.spreadIndex) {
+      interactiveCommitSpread.current = undefined;
+    }
+    if (!current) {
+      // The surface has no drawable content during loading/reflow; clear the
+      // retained page before the next ready frame is considered.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDisplayedContent(undefined);
+      progress.set(1);
+      return;
+    }
+    if (displayedContent?.key === current.key) return;
 
-    const previous = displayedContent.current;
-    displayedContent.current = current;
+    const previous = displayedContent;
+    setDisplayedContent(current);
     const sameSurface = previous
       && previous.frame.width === current.frame.width
       && previous.frame.height === current.frame.height
@@ -116,10 +153,10 @@ export function useReaderPageTransition(
       setTransition(undefined);
       progress.set(1);
     }
-  }, [current, currentKey, progress, style]);
+  }, [current, currentKey, displayedContent, interactiveTurn, progress, style]);
 
   useEffect(() => {
-    if (!activeTransition) return;
+    if (!activeTransition || interactiveTurn) return;
     progress.set(0);
     progress.set(withTiming(1, {
       duration: clampDuration(animationDuration),
@@ -128,9 +165,9 @@ export function useReaderPageTransition(
       if (finished) runOnJS(clearTransition)(activeTransition.toKey);
     }));
     return () => cancelAnimation(progress);
-  }, [activeTransition, animationDuration, clearTransition, progress]);
+  }, [activeTransition, animationDuration, clearTransition, interactiveTurn, progress]);
 
-  return { transition: activeTransition, style, coverMatrix, slideMatrix, pageMatrix };
+  return { transition: activeTransition, style, coverMatrix, slideMatrix, outgoingSlideMatrix, progress, grabX, grabY };
 }
 
 function resolveAnimationStyle(style: ReaderPageAnimationStyle): 'cover' | 'page' | 'slide' {
