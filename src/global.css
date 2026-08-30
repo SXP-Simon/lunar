@@ -16,6 +16,7 @@
   --color-brand-800: hsl(0 0% 16%);
   --color-brand-900: hsl(0 0% 8%);
   --color-brand-950: hsl(0 0% 0%);
+  --color-navigation-active: hsl(211 100% 50%);
 
   --font-display:
     Spline Sans, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,

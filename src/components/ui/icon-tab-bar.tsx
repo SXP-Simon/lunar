@@ -2,14 +2,15 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCSSVariable } from 'uniwind';
 
 import { useTheme } from '@/hooks/use-theme';
 
-// Keep the reader's bottom navigation compact while preserving a 44pt
+// Keep the reader's bottom navigation compact while retaining a consistent
 // interactive target for each tab.
-export const IconTabBarContentHeight = 44;
-export const IconTabBarTopPadding = 8;
-export const IconTabBarBottomPadding = 8;
+export const IconTabBarContentHeight = 40;
+export const IconTabBarTopPadding = 4;
+export const IconTabBarBottomPadding = 4;
 export const IconTabBarHeight =
   IconTabBarTopPadding + IconTabBarContentHeight + IconTabBarBottomPadding;
 
@@ -28,6 +29,7 @@ interface IconTabBarProps {
 export function IconTabBar({ items, activeKey, onSelect }: IconTabBarProps) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const activeColor = useCSSVariable('--color-navigation-active') as string;
 
   return (
     <View
@@ -46,14 +48,11 @@ export function IconTabBar({ items, activeKey, onSelect }: IconTabBarProps) {
               accessibilityLabel={item.accessibilityLabel}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
-              className={isActive
-                ? 'h-11 flex-1 rounded-lg bg-surface-secondary'
-                : 'h-11 flex-1 rounded-lg'}
-              isIconOnly
+              className="h-10 flex-1 rounded-lg px-0"
               onPress={() => onSelect(item.key)}
               size="sm"
               variant="ghost">
-              <SymbolView name={item.name} size={24} tintColor={isActive ? theme.accent : theme.textSecondary} />
+              <SymbolView name={item.name} size={22} tintColor={isActive ? activeColor : theme.textSecondary} />
             </Button>
           );
         })}

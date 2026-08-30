@@ -47,7 +47,7 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, toc }: TocDrawerProps
             <BottomSheet.Close accessibilityLabel="关闭目录" />
           </View>
           <BottomSheetScrollView
-            contentContainerClassName="gap-1 px-3 py-4"
+            contentContainerClassName="gap-1 px-3"
             showsVerticalScrollIndicator={false}
             style={{ flex: 1 }}>
             {entries.map((entry, index) => (
