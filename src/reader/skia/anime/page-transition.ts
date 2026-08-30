@@ -1,14 +1,14 @@
 import type { Matrix4 } from '@shopify/react-native-skia';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   cancelAnimation,
   Easing,
-  runOnJS,
   useSharedValue,
   withTiming,
   type DerivedValue,
   type SharedValue,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import type { ReaderRenderFrame, ReaderSnapshot } from '../../contracts';
 import type { CompiledReaderPicture } from '../rendering/picture-compiler';
@@ -28,6 +28,9 @@ export const READER_PAGE_ANIMATION_STYLES: readonly ReaderPageAnimationStyle[] =
   'page',
   'slide',
 ];
+
+/** The duration shared by the page shader and the reader navigation handoff. */
+export const PAGE_TURN_DURATION_MS = 520;
 
 export interface ReaderPageContent {
   readonly key: string;
@@ -63,7 +66,6 @@ export interface ReaderInteractiveTurn {
   /** Set while the finger release is being animated to its terminal pose. */
   readonly settling?: boolean;
   readonly settleTo?: 0 | 1;
-  readonly gestureMode?: 'full' | 'weak';
   readonly pressedEdgeX?: number;
   readonly heldRollTilt?: number;
   readonly fingerX?: number;
@@ -83,14 +85,37 @@ export function useReaderPageTransition(
   const progress = useSharedValue(1);
   const style = resolveAnimationStyle(animationStyle);
   const currentKey = current?.key;
-  const interactiveTransition = interactiveTurn && displayedContent
+  const interactiveContent = interactiveTurn?.content;
+  const interactiveTargetSpread = interactiveContent?.snapshot.spreadIndex;
+  const interactiveTransition = useMemo<ReaderPageTransitionState | undefined>(() => interactiveContent && displayedContent
     ? {
         from: displayedContent,
-        toKey: interactiveTurn.content.key,
-        direction: interactiveTurn.content.snapshot.spreadIndex > displayedContent.snapshot.spreadIndex ? 1 : -1,
-      } satisfies ReaderPageTransitionState
-    : undefined;
-  const activeTransition = interactiveTransition ?? (transition?.toKey === currentKey ? transition : undefined);
+        toKey: interactiveContent.key,
+        direction: (interactiveTargetSpread ?? displayedContent.snapshot.spreadIndex) > displayedContent.snapshot.spreadIndex ? 1 : -1,
+    }
+    : undefined, [displayedContent, interactiveContent, interactiveTargetSpread]);
+  const automaticTransition = useMemo<ReaderPageTransitionState | undefined>(() => {
+    if (
+      interactiveContent
+      || !current
+      || !displayedContent
+      || displayedContent.key === currentKey
+      || displayedContent.frame.width !== current.frame.width
+      || displayedContent.frame.height !== current.frame.height
+      || displayedContent.snapshot.revisionId !== current.snapshot.revisionId
+      || displayedContent.snapshot.spreadIndex === current.snapshot.spreadIndex
+    ) {
+      return undefined;
+    }
+    return {
+      from: displayedContent,
+      toKey: currentKey!,
+      direction: current.snapshot.spreadIndex > displayedContent.snapshot.spreadIndex ? 1 : -1,
+    };
+  }, [current, currentKey, displayedContent, interactiveContent]);
+  const activeTransition = interactiveTransition
+    ?? (transition?.toKey === currentKey ? transition : undefined)
+    ?? automaticTransition;
   const clearTransition = useCallback((key: string) => {
     setTransition((value) => value?.toKey === key ? undefined : value);
   }, []);
@@ -103,10 +128,15 @@ export function useReaderPageTransition(
   const slideTransforms = useSlidePageTransforms(direction, width, progress);
   const slideMatrix = slideTransforms.incoming;
   const outgoingSlideMatrix = slideTransforms.outgoing;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (interactiveTurn) {
       interactiveCommitSpread.current = interactiveTurn.content.snapshot.spreadIndex;
-      progress.set(Math.min(1, Math.max(0, interactiveTurn.progress)));
+      // During release the timing driver owns the shared value. Writing the
+      // last React gesture sample here would jump the curl backwards whenever
+      // the runtime publishes its committed snapshot.
+      if (!interactiveTurn.settling) {
+        progress.set(Math.min(1, Math.max(0, interactiveTurn.progress)));
+      }
       return;
     }
     if (
@@ -140,7 +170,10 @@ export function useReaderPageTransition(
       && previous.frame.height === current.frame.height
       && previous.snapshot.revisionId === current.snapshot.revisionId;
     if (sameSurface && previous.snapshot.spreadIndex !== current.snapshot.spreadIndex) {
-      setTransition({
+      // Reuse the transition object that was already visible in this render
+      // when the implicit transition guarded the snapshot handoff. This keeps
+      // the composed SkPicture alive while React records the state update.
+      setTransition(activeTransition ?? {
         from: previous,
         toKey: current.key,
         direction: current.snapshot.spreadIndex > previous.snapshot.spreadIndex ? 1 : -1,
@@ -149,23 +182,25 @@ export function useReaderPageTransition(
       setTransition(undefined);
       progress.set(1);
     }
-  }, [current, currentKey, displayedContent, interactiveTurn, progress, style]);
+  }, [activeTransition, current, currentKey, displayedContent, interactiveTurn, progress, style]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!activeTransition || (interactiveTurn && !interactiveTurn.settling)) return;
     const target = interactiveTurn?.settleTo ?? 1;
     const releaseSpeed = Math.min(6, Math.max(0, interactiveTurn?.releaseVelocity ?? 0));
-    const releaseBoost = Math.min(style === 'page' ? 0.25 : 0.55, releaseSpeed * 0.08);
+    // Keep the page handoff duration constant. A velocity sample may change
+    // the terminal pose, yet it must not shorten the visible paper turn.
+    const releaseBoost = style === 'page' ? 0 : Math.min(0.55, releaseSpeed * 0.08);
     const baseDuration = style === 'page'
-      ? Math.max(1320, clampDuration(animationDuration))
+      ? PAGE_TURN_DURATION_MS
       : clampDuration(animationDuration);
     const duration = Math.max(140, Math.round(baseDuration * (1 - releaseBoost)));
     if (!interactiveTurn?.settling) progress.set(0);
     progress.set(withTiming(target, {
       duration,
-      easing: Easing.out(Easing.cubic),
+      easing: style === 'page' ? Easing.inOut(Easing.sin) : Easing.inOut(Easing.cubic),
     }, (finished) => {
-      if (finished && !interactiveTurn) runOnJS(clearTransition)(activeTransition.toKey);
+      if (finished && !interactiveTurn) scheduleOnRN(clearTransition, activeTransition.toKey);
     }));
     return () => cancelAnimation(progress);
   }, [activeTransition, animationDuration, clearTransition, interactiveTurn, progress, style]);

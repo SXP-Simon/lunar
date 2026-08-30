@@ -105,13 +105,15 @@ half4 main(float2 position) {
 
 interface PageCurlMeshProps {
   readonly picture: CompiledReaderPicture;
+  /** Optional composed picture containing Skia-owned chrome such as the
+   * chapter title and page number. */
+  readonly texturePicture?: SkPicture;
   readonly width: number;
   readonly height: number;
   readonly direction: 1 | -1;
   readonly progress: SharedValue<number>;
   readonly grabX: number;
   readonly grabY: number;
-  readonly gestureMode?: 'full' | 'weak';
   readonly pressedEdgeX?: number;
   readonly heldRollTilt?: number;
 }
@@ -126,17 +128,24 @@ function capturePictureTexture(
   "worklet";
   const surface = Skia.Surface.MakeOffscreen(Math.max(1, Math.round(width)), Math.max(1, Math.round(height)));
   if (!surface) {
-    texture.value = null;
     return;
   }
   const canvas = surface.getCanvas();
   canvas.clear(Skia.Color('transparent'));
   canvas.drawPicture(picture);
   surface.flush();
-  texture.value = surface.makeImageSnapshot();
+  const nextTexture = surface.makeImageSnapshot();
+  const previousTexture = texture.value;
+  const previousSurface = backingSurface.value;
+  // Swap only after the replacement snapshot exists. Clearing the shared
+  // image first leaves one or more transparent frames on Android while the
+  // new GPU-backed texture is being prepared.
+  texture.value = nextTexture;
   // Android snapshots may remain GPU-backed by this Surface. Keep it alive
   // until the texture is released instead of disposing it immediately.
   backingSurface.value = surface;
+  previousTexture?.dispose();
+  previousSurface?.dispose();
 }
 
 function disposePictureTexture(
@@ -159,12 +168,13 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
   // the UI runtime, as the reference implementation does, instead of sending
   // the image through React state on the JS runtime.
   useEffect(() => {
-    runOnUI(capturePictureTexture)(image, backingSurface, picture.picture, width, height);
-    return () => runOnUI(disposePictureTexture)(image, backingSurface);
-  }, [backingSurface, height, image, picture, width]);
+    runOnUI(capturePictureTexture)(image, backingSurface, props.texturePicture ?? picture.picture, width, height);
+  }, [backingSurface, height, image, picture, props.texturePicture, width]);
+
+  useEffect(() => () => runOnUI(disposePictureTexture)(image, backingSurface), [backingSurface, image]);
 
   const uniforms = useSharedValue<Uniforms>(
-    createCurlUniforms(0, props.direction, props.grabX, props.grabY, width, height, props.gestureMode, props.pressedEdgeX, props.heldRollTilt),
+    createCurlUniforms(0, props.direction, props.grabX, props.grabY, width, height, props.pressedEdgeX, props.heldRollTilt),
   );
   useDerivedValue(() => {
     const next = createCurlUniforms(
@@ -174,7 +184,6 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
       props.grabY,
       width,
       height,
-      props.gestureMode,
       props.pressedEdgeX,
       props.heldRollTilt,
     );
@@ -182,10 +191,10 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
     // SharedValue.modify. The latter is treated as a Remote Function by some
     // Android Worklets builds when it is created inside useDerivedValue.
     uniforms.value = next;
-  }, [height, props.direction, props.grabX, props.grabY, props.gestureMode, props.heldRollTilt, props.pressedEdgeX, props.progress, uniforms, width]);
+  }, [height, props.direction, props.grabX, props.grabY, props.heldRollTilt, props.pressedEdgeX, props.progress, uniforms, width]);
 
   if (!PAGE_CURL_SHADER) {
-    return <Picture picture={picture.picture} />;
+    return <Picture picture={props.texturePicture ?? picture.picture} />;
   }
 
   return (
@@ -220,20 +229,18 @@ function createCurlUniforms(
   grabY: number,
   width: number,
   height: number,
-  gestureMode?: 'full' | 'weak',
   pressedEdgeX = 1,
   heldRollTilt = 0,
 ): Uniforms {
   "worklet";
-  const minPressedEdgeX = 0.14;
+  const minPressedEdgeX = 0.2;
   const turn = Math.min(1, Math.max(0, progress));
   const safeWidth = Math.max(1, width);
   const safeHeight = Math.max(1, height);
   const spineX = direction > 0 ? 0 : safeWidth;
   const startMaterial = Math.min(1, Math.max(0, Math.abs(grabX - spineX) / safeWidth));
-  const pressedPose = gestureMode !== undefined && turn < 0.16 && pressedEdgeX < 0.999;
-  const gripScale = gestureMode === 'weak' ? 0.25 : 1;
-  const pressedAmplitude = 2.1266855842119465 * gripScale * Math.sqrt(
+  const pressedPose = turn < 0.16 && pressedEdgeX < 0.999;
+  const pressedAmplitude = 2.1266855842119465 * Math.sqrt(
     Math.min(1, Math.max(0, (1 - pressedEdgeX) / (1 - minPressedEdgeX))),
   );
   const rootAmplitude = pressedPose

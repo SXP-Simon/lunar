@@ -13,15 +13,14 @@ import {
   bookXForGestureTravel,
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
-  pageGestureModeForStart,
   pageTurnStartBookXForTouch,
+  PAGE_TURN_DURATION_MS,
   postHingeTurnProgressForFingerX,
   ReaderSurface,
   shouldCommitTurn,
   type ReaderInteractiveTurn,
   type ReaderPageContent,
   visualTurnProgressForFingerX,
-  weakGripPressedEdgeX,
 } from '@/reader/native';
 import { useReaderStore } from '@/stores';
 import { ProgressDrawer } from '../components/bottom-tabs/progress-drawer';
@@ -37,9 +36,9 @@ interface ReaderDragState {
   readonly startSpread: number;
   readonly startX: number;
   direction: 1 | -1;
+  directionLocked: boolean;
   targetSpread: number;
   startBookX: number;
-  mode: 'full' | 'weak';
   latestProgress: number;
   renderProgress: number;
   grabX: number;
@@ -92,12 +91,15 @@ export default function ReaderScreen() {
       startSpread: session.snapshot.spreadIndex,
       startX,
       direction: 1,
+      directionLocked: false,
       targetSpread: session.snapshot.spreadIndex + 1,
       startBookX: 1,
-      mode: 'full',
       latestProgress: 0,
       renderProgress: 0,
-      grabX: viewport.width / 2,
+      // The curl anchor is the point where the sheet was first caught. The
+      // moving finger affects progress, while changing this anchor every
+      // frame would continuously change the page's curvature.
+      grabX: Math.min(viewport.width, Math.max(0, startX)),
       grabY: startY,
       fingerX: 1,
       pressedEdgeX: 1,
@@ -109,23 +111,23 @@ export default function ReaderScreen() {
     };
   }, [isReady, session.snapshot.spreadIndex, viewport]);
 
-  const updateDrag = useCallback((translationX: number, absoluteX: number, absoluteY: number, velocityX: number) => {
+  const updateDrag = useCallback((translationX: number, absoluteY: number, velocityX: number) => {
     const state = dragState.current;
     if (!state || !viewport || !isReady) return;
-    const direction: 1 | -1 = translationX < 0 ? 1 : -1;
+    if (!state.directionLocked) {
+      if (Math.abs(translationX) < 2) return;
+      state.direction = translationX < 0 ? 1 : -1;
+      state.directionLocked = true;
+    }
+    const direction = state.direction;
     const targetSpread = state.startSpread + direction;
     state.startBookX = pageTurnStartBookXForTouch(state.startX, direction, viewport.width);
-    state.mode = pageGestureModeForStart(state.startBookX);
     const currentBookX = bookXForGestureTravel(state.startBookX, translationX, direction, viewport.width);
     state.fingerX = anchoredGestureFingerX(state.startBookX, currentBookX);
     state.heldRollTilt = gestureLiftRotationForFingerX(state.fingerX);
-    state.pressedEdgeX = state.mode === 'weak'
-      ? weakGripPressedEdgeX(state.startBookX, currentBookX)
-      : gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
+    state.pressedEdgeX = gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
     state.latestProgress = postHingeTurnProgressForFingerX(state.fingerX, state.startBookX);
-    state.renderProgress = state.mode === 'full'
-      ? Math.max(state.latestProgress, visualTurnProgressForFingerX(state.fingerX))
-      : 0;
+    state.renderProgress = Math.max(state.latestProgress, visualTurnProgressForFingerX(state.fingerX));
     const instantaneousThrowVelocity = Math.max(
       0,
       (direction === 1 ? -velocityX : velocityX) / Math.max(1, viewport.width),
@@ -135,7 +137,6 @@ export default function ReaderScreen() {
       (instantaneousThrowVelocity - state.throwVelocity) * 60,
     );
     state.throwVelocity += (instantaneousThrowVelocity - state.throwVelocity) * 0.35;
-    state.grabX = Math.min(viewport.width, Math.max(0, absoluteX));
     state.grabY = Math.min(viewport.height, Math.max(0, absoluteY - insets.top - ReaderSurfaceTopSpacing));
     if (state.direction !== direction || state.targetSpread !== targetSpread) {
       state.direction = direction;
@@ -161,10 +162,12 @@ export default function ReaderScreen() {
             picture: targetPicture,
             frame: targetFrame,
           } satisfies ReaderPageContent,
-          progress: current.latestProgress,
+          // Keep the first prepared frame at the same visual position as the
+          // finger. `latestProgress` only describes the post-hinge commit
+          // stage and is intentionally near zero while the sheet is lifting.
+          progress: current.renderProgress,
           grabX: current.grabX,
           grabY: current.grabY,
-          gestureMode: current.mode,
           pressedEdgeX: current.pressedEdgeX,
           heldRollTilt: current.heldRollTilt,
           fingerX: current.fingerX,
@@ -179,7 +182,6 @@ export default function ReaderScreen() {
         progress: state.renderProgress,
         grabX: state.grabX,
         grabY: state.grabY,
-        gestureMode: state.mode,
         pressedEdgeX: state.pressedEdgeX,
         heldRollTilt: state.heldRollTilt,
         fingerX: state.fingerX,
@@ -189,16 +191,31 @@ export default function ReaderScreen() {
     }
   }, [insets.top, isReady, session.runtime, session.snapshot, totalSpreads, viewport]);
 
-  const endDrag = useCallback((releaseVelocity = 0) => {
+  const endDrag = useCallback((releaseVelocity = 0, releaseTranslationX = 0) => {
     const state = dragState.current;
     dragState.current = undefined;
     if (
       !state
       || !state.prepared
-      || state.mode === 'weak'
     ) {
       setInteractiveTurn(undefined);
       return;
+    }
+    // Android may deliver the last horizontal sample only through onEnd.
+    // Apply that sample before scoring the release so the visible sheet and
+    // the commit decision use the same terminal finger position.
+    if (viewport && Number.isFinite(releaseTranslationX)) {
+      const currentBookX = bookXForGestureTravel(
+        state.startBookX,
+        releaseTranslationX,
+        state.direction,
+        viewport.width,
+      );
+      state.fingerX = anchoredGestureFingerX(state.startBookX, currentBookX);
+      state.heldRollTilt = gestureLiftRotationForFingerX(state.fingerX);
+      state.pressedEdgeX = gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
+      state.latestProgress = postHingeTurnProgressForFingerX(state.fingerX, state.startBookX);
+      state.renderProgress = Math.max(state.latestProgress, visualTurnProgressForFingerX(state.fingerX));
     }
     const terminalThrowVelocity = viewport
       ? Math.max(0, (state.direction === 1 ? -releaseVelocity : releaseVelocity) / Math.max(1, viewport.width))
@@ -213,6 +230,10 @@ export default function ReaderScreen() {
       : 0;
     setInteractiveTurn((turn) => turn ? {
       ...turn,
+      progress: state.renderProgress,
+      pressedEdgeX: state.pressedEdgeX,
+      heldRollTilt: state.heldRollTilt,
+      fingerX: state.fingerX,
       releaseVelocity: normalizedVelocity,
       throwVelocity,
       settling: true,
@@ -222,8 +243,8 @@ export default function ReaderScreen() {
     const pageTurnStyle = animationStyle === 'page'
       || animationStyle === 'pageCurl'
       || animationStyle === 'simulation';
-    const baseDuration = pageTurnStyle ? 1320 : 360;
-    const releaseBoost = Math.min(pageTurnStyle ? 0.25 : 0.55, normalizedVelocity * 0.08);
+    const baseDuration = pageTurnStyle ? PAGE_TURN_DURATION_MS : 360;
+    const releaseBoost = pageTurnStyle ? 0 : Math.min(0.55, normalizedVelocity * 0.08);
     const settleDuration = Math.max(140, Math.round(baseDuration * (1 - releaseBoost)));
     void Promise.allSettled([navigate, waitForPageTurn(settleDuration)])
       .then(() => setInteractiveTurn(undefined));
@@ -236,8 +257,8 @@ export default function ReaderScreen() {
     () => Gesture.Pan()
       .minDistance(2)
       .onBegin((event) => beginDrag(event.x, event.y))
-      .onUpdate((event) => updateDrag(event.translationX, event.absoluteX, event.absoluteY, event.velocityX))
-      .onEnd((event) => endDrag(event.velocityX))
+      .onUpdate((event) => updateDrag(event.translationX, event.absoluteY, event.velocityX))
+      .onEnd((event) => endDrag(event.velocityX, event.translationX))
       .onFinalize(() => {
         if (dragState.current) endDrag();
       })

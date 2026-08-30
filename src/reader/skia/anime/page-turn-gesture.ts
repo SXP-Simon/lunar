@@ -1,7 +1,9 @@
-export type PageTurnGestureMode = 'full' | 'weak';
-
-export const FULL_GESTURE_START_MIN_X = 0.25;
-export const MIN_PRESSED_EDGE_X = 0.14;
+/** Finger position at which the hinge starts bending. A larger value makes
+ * the bend appear after a shorter physical drag. */
+export const MIN_PRESSED_EDGE_X = 0.2;
+export const GESTURE_LIFT_START_FINGER_X = 0.42;
+/** Visual progress reaches the full sheet profile after 0.38 page widths. */
+export const VISUAL_TURN_TRAVEL = 0.38;
 export const GESTURE_HINGE_BEND_AMPLITUDE = 2.1266855842119465;
 export const GESTURE_HINGE_ROTATION = 0.4 * 0.997;
 export const GESTURE_HINGE_CHORD_X = MIN_PRESSED_EDGE_X / Math.cos(GESTURE_HINGE_ROTATION);
@@ -11,11 +13,6 @@ export const DEFAULT_GESTURE_COMMIT_THRESHOLD = 0.78;
 export function clampUnit(value: number): number {
   'worklet';
   return Math.min(1, Math.max(0, value));
-}
-
-export function pageGestureModeForStart(startBookX: number): PageTurnGestureMode {
-  'worklet';
-  return startBookX >= FULL_GESTURE_START_MIN_X ? 'full' : 'weak';
 }
 
 export function pageTurnStartBookXForTouch(
@@ -44,16 +41,10 @@ export function anchoredGestureFingerX(startBookX: number, currentBookX: number)
   return Math.min(1, Math.max(-1, 1 + currentBookX - startBookX));
 }
 
-export function weakGripPressedEdgeX(startBookX: number, currentBookX: number): number {
-  'worklet';
-  const travel = Math.max(0, startBookX - currentBookX);
-  return 1 - Math.min(0.04, travel * 0.2);
-}
-
 export function gestureLiftRotationForFingerX(fingerX: number): number {
   'worklet';
   if (fingerX <= MIN_PRESSED_EDGE_X) return GESTURE_HINGE_ROTATION;
-  const progress = clampUnit((0.36 - fingerX) / (0.36 - MIN_PRESSED_EDGE_X));
+  const progress = clampUnit((GESTURE_LIFT_START_FINGER_X - fingerX) / (GESTURE_LIFT_START_FINGER_X - MIN_PRESSED_EDGE_X));
   return GESTURE_HINGE_ROTATION * progress;
 }
 
@@ -91,7 +82,7 @@ export function postHingeTurnProgressForFingerX(
 /** Visual curl starts before the commit score is reached. */
 export function visualTurnProgressForFingerX(fingerX: number): number {
   'worklet';
-  return clampUnit((1 - Math.min(1, Math.max(-1, fingerX))) / 0.5);
+  return clampUnit((1 - Math.min(1, Math.max(-1, fingerX))) / VISUAL_TURN_TRAVEL);
 }
 
 export function turnCommitScore(

@@ -8,6 +8,7 @@ export {
 } from './runtime/pagination/rito-native-pagination-backend';
 export type { ReaderPaginationBackend } from './runtime/pagination/pagination-backend';
 export {
+  PAGE_TURN_DURATION_MS,
   READER_PAGE_ANIMATION_STYLES,
   ReaderSurface,
   type ReaderInteractiveTurn,
@@ -20,14 +21,11 @@ export {
   bookXForGestureTravel,
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
-  pageGestureModeForStart,
   pageTurnStartBookXForTouch,
   postHingeTurnProgressForFingerX,
   shouldCommitTurn,
   visualTurnProgressForFingerX,
-  weakGripPressedEdgeX,
 } from './skia/anime/page-turn-gesture';
-export type { PageTurnGestureMode } from './skia/anime/page-turn-gesture';
 export { createReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export type { ReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export { resolveReaderRangeOverlays, resolveReaderSearchOverlays } from './skia/rendering/overlay-renderer';

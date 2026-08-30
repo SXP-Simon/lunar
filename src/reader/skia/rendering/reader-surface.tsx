@@ -1,13 +1,17 @@
 import {
   Canvas,
+  ClipOp,
   Group,
   Picture,
   Rect as SkiaRect,
+  Skia,
   Text as SkiaText,
+  type SkFont,
+  type SkPicture,
   useCanvasSize,
 } from '@shopify/react-native-skia';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 
 import type { ReaderSnapshot } from '../../contracts';
@@ -24,7 +28,7 @@ import type { ReaderOverlayRect } from './overlay-renderer';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
 
 export type { ReaderSurfaceTransform } from './surface-transform';
-export { READER_PAGE_ANIMATION_STYLES } from '../anime';
+export { PAGE_TURN_DURATION_MS, READER_PAGE_ANIMATION_STYLES } from '../anime';
 export type { ReaderInteractiveTurn, ReaderPageAnimationStyle, ReaderPageContent } from '../anime';
 
 export interface ReaderSurfaceProps {
@@ -70,6 +74,8 @@ export function ReaderSurface({
   const scale = frame && viewport.width > 0 && viewport.height > 0
     ? Math.min(viewport.width / frame.width, viewport.height / frame.height)
     : 1;
+  const overlayLeft = overlayInsets.left;
+  const overlayRight = overlayInsets.right;
   const offsetX = frame ? (viewport.width - frame.width * scale) / 2 : 0;
   const offsetY = frame ? (viewport.height - frame.height * scale) / 2 : 0;
   const currentKey = snapshot.phase === 'ready' && compiled && frame
@@ -80,6 +86,38 @@ export function ReaderSurface({
     : undefined;
   const { transition: activeTransition, style: resolvedAnimationStyle, coverMatrix, slideMatrix, outgoingSlideMatrix, progress, grabX, grabY } =
     useReaderPageTransition(currentContent, animationStyle, animationDuration, interactiveTurn);
+
+  // The moving sheet owns its chrome. Recording it into the same source
+  // picture prevents a footer or chapter title from travelling on a separate
+  // linear transform while the paper follows the curl profile.
+  const pageCurlTexturePicture = useMemo(() => {
+    if (!activeTransition || resolvedAnimationStyle !== 'page') return undefined;
+    const source = activeTransition.from;
+    const pageScale = Math.max(0.001, scale);
+    const title = source.snapshot.chapterTitle;
+    const progressText = progressLabelForSnapshot(source.snapshot);
+    const titleFont = title ? runtime.getUiFont(14 / pageScale) : undefined;
+    const progressFont = progressText ? runtime.getUiFont(12 / pageScale) : undefined;
+    if ((!title || !titleFont) && (!progressText || !progressFont)) return undefined;
+    return composePageCurlPicture({
+      base: source.picture.picture,
+      color: overlayColor,
+      height: source.frame.height,
+      offsetX,
+      offsetY,
+      pageScale,
+      progress: progressText,
+      progressFont,
+      title,
+      titleFont,
+      viewportHeight: viewport.height,
+      viewportWidth: viewport.width,
+      width: source.frame.width,
+      overlayInsets: { left: overlayLeft, right: overlayRight },
+    });
+  }, [activeTransition, offsetX, offsetY, overlayColor, overlayLeft, overlayRight, resolvedAnimationStyle, runtime, scale, viewport.height, viewport.width]);
+
+  useEffect(() => () => pageCurlTexturePicture?.dispose(), [pageCurlTexturePicture]);
 
   useEffect(() => {
     onTransformChange?.(createReaderSurfaceTransform(scale, offsetX, offsetY));
@@ -143,7 +181,6 @@ export function ReaderSurface({
               {renderChrome(snapshot, frame, chapterTitle, progressLabel)}
               <PageCurlMesh
                 direction={activeTransition.direction}
-                gestureMode={interactiveTurn?.gestureMode}
                 grabX={grabX}
                 grabY={grabY}
                 heldRollTilt={interactiveTurn?.heldRollTilt}
@@ -151,11 +188,9 @@ export function ReaderSurface({
                 picture={activeTransition.from.picture}
                 pressedEdgeX={interactiveTurn?.pressedEdgeX}
                 progress={progress}
+                texturePicture={pageCurlTexturePicture}
                 width={activeTransition.from.frame.width}
               />
-              <Group matrix={outgoingSlideMatrix}>
-                {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
-              </Group>
             </Group>
           ) : activeTransition && resolvedAnimationStyle === 'cover' ? (
             <Group>
@@ -212,4 +247,61 @@ function progressLabelForSnapshot(snapshot: ReaderSnapshot): string {
   if (totalSpreads === undefined) return progressText;
   const progressPercentage = Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
   return `${progressText} · ${progressPercentage}%`;
+}
+
+interface PageCurlPictureOptions {
+  readonly base: SkPicture;
+  readonly color: string;
+  readonly height: number;
+  readonly offsetX: number;
+  readonly offsetY: number;
+  readonly overlayInsets: Readonly<{ left: number; right: number }>;
+  readonly pageScale: number;
+  readonly progress: string;
+  readonly progressFont?: SkFont;
+  readonly title?: string;
+  readonly titleFont?: SkFont;
+  readonly viewportHeight: number;
+  readonly viewportWidth: number;
+  readonly width: number;
+}
+
+function composePageCurlPicture(options: PageCurlPictureOptions): SkPicture {
+  const recorder = Skia.PictureRecorder();
+  const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, options.width, options.height));
+  canvas.drawPicture(options.base);
+  const paint = Skia.Paint();
+  paint.setAntiAlias(true);
+  paint.setColor(Skia.Color(options.color));
+
+  const chapterX = (options.overlayInsets.left + 18 - options.offsetX) / options.pageScale;
+  const chapterY = (16 - options.offsetY) / options.pageScale;
+  const chapterClipWidth = Math.max(
+    0,
+    (options.viewportWidth - options.overlayInsets.right - 18 - options.offsetX) / options.pageScale - chapterX,
+  );
+  if (options.title && options.titleFont && chapterClipWidth > 0) {
+    canvas.save();
+    canvas.clipRect(
+      Skia.XYWHRect(chapterX, -options.offsetY / options.pageScale, chapterClipWidth, 24 / options.pageScale),
+      ClipOp.Intersect,
+      true,
+    );
+    canvas.drawText(options.title, chapterX, chapterY, paint, options.titleFont);
+    canvas.restore();
+  }
+
+  if (options.progress && options.progressFont && options.width > 0 && options.height > 0) {
+    const progressWidth = options.progressFont.getTextWidth(options.progress);
+    const progressX = Math.max(
+      chapterX,
+      (options.viewportWidth - options.overlayInsets.right - 18 - progressWidth * options.pageScale - options.offsetX) / options.pageScale,
+    );
+    const progressY = (Math.max(12, options.viewportHeight - 12) - options.offsetY) / options.pageScale;
+    canvas.drawText(options.progress, progressX, progressY, paint, options.progressFont);
+  }
+  paint.dispose();
+  const picture = recorder.finishRecordingAsPicture();
+  recorder.dispose();
+  return picture;
 }
