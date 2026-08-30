@@ -88,10 +88,13 @@ export function ReaderSurface({
               <Picture key={currentKey} picture={compiled.picture} />
               <PageCurlMesh
                 direction={activeTransition.direction}
+                gestureMode={interactiveTurn?.gestureMode}
                 grabX={grabX}
                 grabY={grabY}
+                heldRollTilt={interactiveTurn?.heldRollTilt}
                 height={activeTransition.from.frame.height}
                 picture={activeTransition.from.picture}
+                pressedEdgeX={interactiveTurn?.pressedEdgeX}
                 progress={progress}
                 width={activeTransition.from.frame.width}
               />

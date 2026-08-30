@@ -111,6 +111,9 @@ interface PageCurlMeshProps {
   readonly progress: SharedValue<number>;
   readonly grabX: number;
   readonly grabY: number;
+  readonly gestureMode?: 'full' | 'weak';
+  readonly pressedEdgeX?: number;
+  readonly heldRollTilt?: number;
 }
 
 function capturePictureTexture(
@@ -161,7 +164,7 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
   }, [backingSurface, height, image, picture, width]);
 
   const uniforms = useSharedValue<Uniforms>(
-    createCurlUniforms(0, props.direction, props.grabX, props.grabY, width, height),
+    createCurlUniforms(0, props.direction, props.grabX, props.grabY, width, height, props.gestureMode, props.pressedEdgeX, props.heldRollTilt),
   );
   useDerivedValue(() => {
     const next = createCurlUniforms(
@@ -171,12 +174,15 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
       props.grabY,
       width,
       height,
+      props.gestureMode,
+      props.pressedEdgeX,
+      props.heldRollTilt,
     );
     // Replace the uniform object instead of passing an anonymous callback to
     // SharedValue.modify. The latter is treated as a Remote Function by some
     // Android Worklets builds when it is created inside useDerivedValue.
     uniforms.value = next;
-  }, [height, props.direction, props.grabX, props.grabY, props.progress, uniforms, width]);
+  }, [height, props.direction, props.grabX, props.grabY, props.gestureMode, props.heldRollTilt, props.pressedEdgeX, props.progress, uniforms, width]);
 
   if (!PAGE_CURL_SHADER) {
     return <Picture picture={picture.picture} />;
@@ -214,16 +220,42 @@ function createCurlUniforms(
   grabY: number,
   width: number,
   height: number,
+  gestureMode?: 'full' | 'weak',
+  pressedEdgeX = 1,
+  heldRollTilt = 0,
 ): Uniforms {
   "worklet";
+  const minPressedEdgeX = 0.14;
   const turn = Math.min(1, Math.max(0, progress));
   const safeWidth = Math.max(1, width);
   const safeHeight = Math.max(1, height);
   const spineX = direction > 0 ? 0 : safeWidth;
   const startMaterial = Math.min(1, Math.max(0, Math.abs(grabX - spineX) / safeWidth));
-  const amplitude = Math.PI * (0.72 + 0.22 * startMaterial) * turn;
+  const pressedPose = gestureMode !== undefined && turn < 0.16 && pressedEdgeX < 0.999;
+  const gripScale = gestureMode === 'weak' ? 0.25 : 1;
+  const pressedAmplitude = 2.1266855842119465 * gripScale * Math.sqrt(
+    Math.min(1, Math.max(0, (1 - pressedEdgeX) / (1 - minPressedEdgeX))),
+  );
+  const rootAmplitude = pressedPose
+    ? pressedAmplitude
+    : Math.PI * (0.62 + 0.26 * startMaterial);
+  const swing = Math.min(1, Math.max(0, (Math.PI - rootAmplitude) / Math.PI));
+  const landingStart = swing / Math.max(1e-4, swing + 1);
+  const landing = !pressedPose && turn > landingStart;
+  const landedLength = landing
+    ? Math.min(1, Math.max(0, (turn - landingStart) / Math.max(1e-4, 1 - landingStart)))
+    : 0;
+  const retained = landing ? (1 - landedLength) ** (1 + 7 / 14) : 1;
+  const amplitude = landing
+    ? rootAmplitude * retained
+    : rootAmplitude * Math.min(1, Math.max(0, turn / Math.max(1e-4, landingStart)));
+  const rotation = pressedPose
+    ? heldRollTilt
+    : landing
+    ? Math.PI - amplitude
+    : (Math.PI - rootAmplitude) * Math.min(1, Math.max(0, turn / Math.max(1e-4, landingStart)));
+  const uniformity = 1 - retained ** 3;
   const cornerTilt = (grabY / safeHeight - 0.5) * 0.62 * turn * (1 - turn);
-  const normalizedAmplitude = Math.min(1, Math.max(0, amplitude / Math.PI));
   // RuntimeEffect uniforms are flattened by Skia's uniform processor. Use
   // ordinary number arrays here; Float32Array is treated as a single vector
   // by the Android animated-prop bridge and arrives as only four values.
@@ -238,15 +270,21 @@ function createCurlUniforms(
     const second = material + QUADRATURE_OFFSET / PROFILE_SEGMENTS;
     const firstClamped = Math.min(1, Math.max(0, first));
     const secondClamped = Math.min(1, Math.max(0, second));
-    const firstPinned = Math.cos(Math.PI * firstClamped);
-    const secondPinned = Math.cos(Math.PI * secondClamped);
-    const firstUniform = 1 - 2 * firstClamped;
-    const secondUniform = 1 - 2 * secondClamped;
-    const uniformity = 1 - (1 - normalizedAmplitude) ** 3;
+    const firstAirborne = Math.max(1e-4, 1 - landedLength);
+    const firstMaterial = landedLength > 0 && firstClamped <= landedLength
+      ? 0
+      : (firstClamped - landedLength) / firstAirborne;
+    const secondMaterial = landedLength > 0 && secondClamped <= landedLength
+      ? 0
+      : (secondClamped - landedLength) / firstAirborne;
+    const firstPinned = Math.cos(Math.PI * Math.min(1, Math.max(0, firstMaterial)));
+    const secondPinned = Math.cos(Math.PI * Math.min(1, Math.max(0, secondMaterial)));
+    const firstUniform = 1 - 2 * Math.min(1, Math.max(0, firstMaterial));
+    const secondUniform = 1 - 2 * Math.min(1, Math.max(0, secondMaterial));
     const firstCurl = firstPinned + uniformity * (firstUniform - firstPinned);
     const secondCurl = secondPinned + uniformity * (secondUniform - secondPinned);
-    const firstAngle = cornerTilt + amplitude * firstCurl;
-    const secondAngle = cornerTilt + amplitude * secondCurl;
+    const firstAngle = (landedLength > 0 && firstClamped <= landedLength ? Math.PI : rotation + amplitude * firstCurl) + cornerTilt;
+    const secondAngle = (landedLength > 0 && secondClamped <= landedLength ? Math.PI : rotation + amplitude * secondCurl) + cornerTilt;
     x += (Math.cos(firstAngle) + Math.cos(secondAngle)) * 0.5 / PROFILE_SEGMENTS;
     z += (Math.sin(firstAngle) + Math.sin(secondAngle)) * 0.5 / PROFILE_SEGMENTS;
     const offset = (segment + 1) * 4;

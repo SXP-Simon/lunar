@@ -15,6 +15,19 @@ export {
   type ReaderPageAnimationStyle,
   type ReaderSurfaceProps,
 } from './skia/rendering/reader-surface';
+export {
+  anchoredGestureFingerX,
+  bookXForGestureTravel,
+  gestureLiftRotationForFingerX,
+  gesturePressedChordForFingerX,
+  pageGestureModeForStart,
+  pageTurnStartBookXForTouch,
+  postHingeTurnProgressForFingerX,
+  shouldCommitTurn,
+  visualTurnProgressForFingerX,
+  weakGripPressedEdgeX,
+} from './skia/anime/page-turn-gesture';
+export type { PageTurnGestureMode } from './skia/anime/page-turn-gesture';
 export { createReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export type { ReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export { resolveReaderRangeOverlays, resolveReaderSearchOverlays } from './skia/rendering/overlay-renderer';

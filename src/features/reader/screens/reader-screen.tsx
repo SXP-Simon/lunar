@@ -8,7 +8,21 @@ import { useUniwind } from 'uniwind';
 
 import { IconTabBar } from '@/components/ui/icon-tab-bar';
 import type { ReaderViewport } from '@/reader';
-import { ReaderSurface, type ReaderInteractiveTurn, type ReaderPageContent } from '@/reader/native';
+import {
+  anchoredGestureFingerX,
+  bookXForGestureTravel,
+  gestureLiftRotationForFingerX,
+  gesturePressedChordForFingerX,
+  pageGestureModeForStart,
+  pageTurnStartBookXForTouch,
+  postHingeTurnProgressForFingerX,
+  ReaderSurface,
+  shouldCommitTurn,
+  type ReaderInteractiveTurn,
+  type ReaderPageContent,
+  visualTurnProgressForFingerX,
+  weakGripPressedEdgeX,
+} from '@/reader/native';
 import { useReaderStore } from '@/stores';
 import { ProgressDrawer } from '../components/bottom-tabs/progress-drawer';
 import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
@@ -20,14 +34,22 @@ import { useReaderSession } from '../hooks/use-reader-session';
 const ReaderSurfaceTopSpacing = 4;
 const ReaderSurfaceBottomSpacing = 4;
 const ReaderChapterTopSpacing = 4;
-
 interface ReaderDragState {
   readonly startSpread: number;
+  readonly startX: number;
   direction: 1 | -1;
   targetSpread: number;
+  startBookX: number;
+  mode: 'full' | 'weak';
   latestProgress: number;
+  renderProgress: number;
   grabX: number;
   grabY: number;
+  fingerX: number;
+  pressedEdgeX: number;
+  heldRollTilt: number;
+  throwVelocity: number;
+  throwAcceleration: number;
   preparing: boolean;
   prepared: boolean;
 }
@@ -65,27 +87,55 @@ export default function ReaderScreen() {
     ? undefined
     : Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
 
-  const beginDrag = useCallback(() => {
+  const beginDrag = useCallback((startX: number, startY: number) => {
     if (!isReady || !viewport) return;
     dragState.current = {
       startSpread: session.snapshot.spreadIndex,
+      startX,
       direction: 1,
       targetSpread: session.snapshot.spreadIndex + 1,
+      startBookX: 1,
+      mode: 'full',
       latestProgress: 0,
+      renderProgress: 0,
       grabX: viewport.width / 2,
-      grabY: viewport.height / 2,
+      grabY: startY,
+      fingerX: 1,
+      pressedEdgeX: 1,
+      heldRollTilt: 0,
+      throwVelocity: 0,
+      throwAcceleration: 0,
       preparing: false,
       prepared: false,
     };
   }, [isReady, session.snapshot.spreadIndex, viewport]);
 
-  const updateDrag = useCallback((translationX: number, absoluteX: number, absoluteY: number) => {
+  const updateDrag = useCallback((translationX: number, absoluteX: number, absoluteY: number, velocityX: number) => {
     const state = dragState.current;
     if (!state || !viewport || !isReady) return;
     const direction: 1 | -1 = translationX < 0 ? 1 : -1;
     const targetSpread = state.startSpread + direction;
-    const progress = Math.min(1, Math.max(0, Math.abs(translationX) / Math.max(1, viewport.width)));
-    state.latestProgress = progress;
+    state.startBookX = pageTurnStartBookXForTouch(state.startX, direction, viewport.width);
+    state.mode = pageGestureModeForStart(state.startBookX);
+    const currentBookX = bookXForGestureTravel(state.startBookX, translationX, direction, viewport.width);
+    state.fingerX = anchoredGestureFingerX(state.startBookX, currentBookX);
+    state.heldRollTilt = gestureLiftRotationForFingerX(state.fingerX);
+    state.pressedEdgeX = state.mode === 'weak'
+      ? weakGripPressedEdgeX(state.startBookX, currentBookX)
+      : gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
+    state.latestProgress = postHingeTurnProgressForFingerX(state.fingerX, state.startBookX);
+    state.renderProgress = state.mode === 'full'
+      ? Math.max(state.latestProgress, visualTurnProgressForFingerX(state.fingerX))
+      : 0;
+    const instantaneousThrowVelocity = Math.max(
+      0,
+      (direction === 1 ? -velocityX : velocityX) / Math.max(1, viewport.width),
+    );
+    state.throwAcceleration = Math.max(
+      0,
+      (instantaneousThrowVelocity - state.throwVelocity) * 60,
+    );
+    state.throwVelocity += (instantaneousThrowVelocity - state.throwVelocity) * 0.35;
     state.grabX = Math.min(viewport.width, Math.max(0, absoluteX));
     state.grabY = Math.min(viewport.height, Math.max(0, absoluteY - insets.top - ReaderSurfaceTopSpacing));
     if (state.direction !== direction || state.targetSpread !== targetSpread) {
@@ -115,35 +165,80 @@ export default function ReaderScreen() {
           progress: current.latestProgress,
           grabX: current.grabX,
           grabY: current.grabY,
+          gestureMode: current.mode,
+          pressedEdgeX: current.pressedEdgeX,
+          heldRollTilt: current.heldRollTilt,
+          fingerX: current.fingerX,
+          throwVelocity: current.throwVelocity,
+          throwAcceleration: current.throwAcceleration,
         });
       });
     }
     if (state.prepared) {
-      setInteractiveTurn((turn) => turn ? { ...turn, progress, grabX: state.grabX, grabY: state.grabY } : turn);
+      setInteractiveTurn((turn) => turn ? {
+        ...turn,
+        progress: state.renderProgress,
+        grabX: state.grabX,
+        grabY: state.grabY,
+        gestureMode: state.mode,
+        pressedEdgeX: state.pressedEdgeX,
+        heldRollTilt: state.heldRollTilt,
+        fingerX: state.fingerX,
+        throwVelocity: state.throwVelocity,
+        throwAcceleration: state.throwAcceleration,
+      } : turn);
     }
   }, [insets.top, isReady, session.runtime, session.snapshot, totalSpreads, viewport]);
 
-  const endDrag = useCallback(() => {
+  const endDrag = useCallback((releaseVelocity = 0) => {
     const state = dragState.current;
     dragState.current = undefined;
-    if (!state || !state.prepared || state.latestProgress < 0.35) {
+    if (
+      !state
+      || !state.prepared
+      || state.mode === 'weak'
+    ) {
       setInteractiveTurn(undefined);
       return;
     }
-    setInteractiveTurn((turn) => turn ? { ...turn, progress: 1 } : turn);
+    const terminalThrowVelocity = viewport
+      ? Math.max(0, (state.direction === 1 ? -releaseVelocity : releaseVelocity) / Math.max(1, viewport.width))
+      : 0;
+    const throwVelocity = Math.max(state.throwVelocity, terminalThrowVelocity);
+    if (!shouldCommitTurn(state.fingerX, throwVelocity, state.throwAcceleration)) {
+      setInteractiveTurn(undefined);
+      return;
+    }
+    const normalizedVelocity = viewport
+      ? Math.abs(releaseVelocity) / Math.max(1, viewport.width)
+      : 0;
+    setInteractiveTurn((turn) => turn ? {
+      ...turn,
+      releaseVelocity: normalizedVelocity,
+      throwVelocity,
+      settling: true,
+      settleTo: 1,
+    } : turn);
     const navigate = state.direction > 0 ? session.runtime.next() : session.runtime.previous();
-    void navigate.finally(() => setInteractiveTurn(undefined));
-  }, [session.runtime]);
+    const pageTurnStyle = animationStyle === 'page'
+      || animationStyle === 'pageCurl'
+      || animationStyle === 'simulation';
+    const baseDuration = pageTurnStyle ? 1320 : 360;
+    const releaseBoost = Math.min(pageTurnStyle ? 0.25 : 0.55, normalizedVelocity * 0.08);
+    const settleDuration = Math.max(140, Math.round(baseDuration * (1 - releaseBoost)));
+    void Promise.allSettled([navigate, waitForPageTurn(settleDuration)])
+      .then(() => setInteractiveTurn(undefined));
+  }, [animationStyle, session.runtime, viewport]);
 
   // Gesture callbacks execute after render; the ref keeps the in-flight drag
   // identity stable while React receives the prepared target asynchronously.
   /* eslint-disable react-hooks/refs */
   const panGesture = useMemo(
     () => Gesture.Pan()
-      .activeOffsetX([-8, 8])
-      .onBegin(beginDrag)
-      .onUpdate((event) => updateDrag(event.translationX, event.absoluteX, event.absoluteY))
-      .onEnd(endDrag)
+      .minDistance(2)
+      .onBegin((event) => beginDrag(event.x, event.y))
+      .onUpdate((event) => updateDrag(event.translationX, event.absoluteX, event.absoluteY, event.velocityX))
+      .onEnd((event) => endDrag(event.velocityX))
       .onFinalize(() => {
         if (dragState.current) endDrag();
       })
@@ -348,3 +443,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
 });
+
+function waitForPageTurn(duration: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, duration));
+}

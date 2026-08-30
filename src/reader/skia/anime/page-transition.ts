@@ -1,10 +1,9 @@
-import { processTransform3d, type Matrix4 } from '@shopify/react-native-skia';
+import type { Matrix4 } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   cancelAnimation,
   Easing,
   runOnJS,
-  useDerivedValue,
   useSharedValue,
   withTiming,
   type DerivedValue,
@@ -13,6 +12,8 @@ import {
 
 import type { ReaderRenderFrame, ReaderSnapshot } from '../../contracts';
 import type { CompiledReaderPicture } from '../rendering/picture-compiler';
+import { useCoverPageTransform } from './page-cover-transition';
+import { useSlidePageTransforms } from './page-slide-transition';
 
 export type ReaderPageAnimationStyle =
   | 'cover'
@@ -57,6 +58,17 @@ export interface ReaderInteractiveTurn {
   readonly progress: number;
   readonly grabX?: number;
   readonly grabY?: number;
+  /** Normalized release speed in page-widths per second. */
+  readonly releaseVelocity?: number;
+  /** Set while the finger release is being animated to its terminal pose. */
+  readonly settling?: boolean;
+  readonly settleTo?: 0 | 1;
+  readonly gestureMode?: 'full' | 'weak';
+  readonly pressedEdgeX?: number;
+  readonly heldRollTilt?: number;
+  readonly fingerX?: number;
+  readonly throwVelocity?: number;
+  readonly throwAcceleration?: number;
 }
 
 export function useReaderPageTransition(
@@ -87,26 +99,10 @@ export function useReaderPageTransition(
   const height = current?.frame.height ?? 0;
   const grabX = interactiveTurn?.grabX ?? (direction > 0 ? 0 : width);
   const grabY = interactiveTurn?.grabY ?? height / 2;
-  const coverMatrix = useDerivedValue(() => {
-    const originX = direction > 0 ? width : 0;
-    const scaleX = Math.max(0.001, progress.value);
-    return processTransform3d([
-      { translateX: originX },
-      { scaleX },
-      { translateX: -originX },
-    ]);
-  }, [direction, width]);
-  // Keep animated matrices as top-level Skia props. ReanimatedRecorder tracks
-  // those shared values safely; nested values inside `transform` arrays are
-  // interpreted as ordinary numbers by the native recorder.
-  const slideMatrix = useDerivedValue(
-    () => processTransform3d([{ translateX: direction * width * (1 - progress.value) }]),
-    [direction, width],
-  );
-  const outgoingSlideMatrix = useDerivedValue(
-    () => processTransform3d([{ translateX: -direction * width * progress.value }]),
-    [direction, width],
-  );
+  const coverMatrix = useCoverPageTransform(direction, width, progress);
+  const slideTransforms = useSlidePageTransforms(direction, width, progress);
+  const slideMatrix = slideTransforms.incoming;
+  const outgoingSlideMatrix = slideTransforms.outgoing;
   useEffect(() => {
     if (interactiveTurn) {
       interactiveCommitSpread.current = interactiveTurn.content.snapshot.spreadIndex;
@@ -156,16 +152,23 @@ export function useReaderPageTransition(
   }, [current, currentKey, displayedContent, interactiveTurn, progress, style]);
 
   useEffect(() => {
-    if (!activeTransition || interactiveTurn) return;
-    progress.set(0);
-    progress.set(withTiming(1, {
-      duration: clampDuration(animationDuration),
+    if (!activeTransition || (interactiveTurn && !interactiveTurn.settling)) return;
+    const target = interactiveTurn?.settleTo ?? 1;
+    const releaseSpeed = Math.min(6, Math.max(0, interactiveTurn?.releaseVelocity ?? 0));
+    const releaseBoost = Math.min(style === 'page' ? 0.25 : 0.55, releaseSpeed * 0.08);
+    const baseDuration = style === 'page'
+      ? Math.max(1320, clampDuration(animationDuration))
+      : clampDuration(animationDuration);
+    const duration = Math.max(140, Math.round(baseDuration * (1 - releaseBoost)));
+    if (!interactiveTurn?.settling) progress.set(0);
+    progress.set(withTiming(target, {
+      duration,
       easing: Easing.out(Easing.cubic),
     }, (finished) => {
-      if (finished) runOnJS(clearTransition)(activeTransition.toKey);
+      if (finished && !interactiveTurn) runOnJS(clearTransition)(activeTransition.toKey);
     }));
     return () => cancelAnimation(progress);
-  }, [activeTransition, animationDuration, clearTransition, interactiveTurn, progress]);
+  }, [activeTransition, animationDuration, clearTransition, interactiveTurn, progress, style]);
 
   return { transition: activeTransition, style, coverMatrix, slideMatrix, outgoingSlideMatrix, progress, grabX, grabY };
 }
