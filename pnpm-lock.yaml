@@ -4,6 +4,8 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+packageExtensionsChecksum: sha256-zEb46MsmRCh0wyZlA9t9/SqWw170cKb6uhIlkCxxcWU=
+
 importers:
 
   .:
@@ -9686,7 +9688,9 @@ snapshots:
     dependencies:
       type-fest: 0.7.1
 
-  standard-navigation@0.0.5: {}
+  standard-navigation@0.0.5:
+    dependencies:
+      react: 19.2.3
 
   statuses@1.5.0: {}
 

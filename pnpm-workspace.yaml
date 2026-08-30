@@ -13,3 +13,9 @@ allowBuilds:
   '@shopify/react-native-skia': true
   esbuild: true
   unrs-resolver: true
+
+# standard-navigation imports React without declaring it as a runtime dependency.
+packageExtensions:
+  'standard-navigation@0.0.5':
+    dependencies:
+      react: 19.2.3
