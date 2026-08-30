@@ -32,7 +32,8 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, toc }: TocDrawerProps
         <BottomSheet.Content
           backgroundClassName="rounded-t-3xl"
           bottomInset={bottomInset}
-          contentContainerClassName="h-full px-0"
+          contentContainerClassName="h-full"
+          contentContainerProps={{ style: { flex: 1, padding: 0 } }}
           detached
           enableDynamicSizing={false}
           enableOverDrag={false}
