@@ -35,11 +35,6 @@ def ritoForceRebuild = providers.gradleProperty('ritoFfiRebuild')
     .get()
 
 android {
-    externalNativeBuild {
-        cmake {
-            buildStagingDirectory '../../.cxx'
-        }
-    }
     defaultConfig {
         ndk { abiFilters 'arm64-v8a' }
         externalNativeBuild {
