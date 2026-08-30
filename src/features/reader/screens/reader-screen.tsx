@@ -33,7 +33,6 @@ import { useReaderSession } from '../hooks/use-reader-session';
 // ReaderControls overlays the surface, so only the safe-area edge gets reserved here.
 const ReaderSurfaceTopSpacing = 4;
 const ReaderSurfaceBottomSpacing = 4;
-const ReaderChapterTopSpacing = 4;
 interface ReaderDragState {
   readonly startSpread: number;
   readonly startX: number;
@@ -328,6 +327,10 @@ export default function ReaderScreen() {
           snapshot={session.snapshot}
           animationStyle={animationStyle}
           interactiveTurn={interactiveTurn}
+          chapterTitle={chapterTitle}
+          progressLabel={`${progressText}${progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}`}
+          overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}
+          overlayInsets={{ left: insets.left, right: insets.right }}
           style={StyleSheet.absoluteFill}
         />
         <GestureDetector gesture={panGesture}>
@@ -346,24 +349,6 @@ export default function ReaderScreen() {
             />
           </View>
         </GestureDetector>
-      </View>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.chapterOverlay,
-          { paddingTop: insets.top + ReaderChapterTopSpacing, paddingLeft: insets.left + 18, paddingRight: insets.right + 18 },
-        ]}>
-        <Text className="text-sm text-muted" numberOfLines={1}>{chapterTitle}</Text>
-      </View>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.progressOverlay,
-          { paddingBottom: insets.bottom + 16, paddingLeft: insets.left + 18, paddingRight: insets.right + 18 },
-        ]}>
-        <Text className="text-xs tabular-nums text-muted">
-          {progressText}{progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}
-        </Text>
       </View>
       {(controlsVisible || Boolean(session.errorMessage)) && (
         <ReaderControls
@@ -428,19 +413,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-  },
-  chapterOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-  progressOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'flex-end',
   },
 });
 

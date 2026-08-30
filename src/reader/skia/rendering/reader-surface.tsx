@@ -1,6 +1,14 @@
-import { Canvas, Group, Picture, Rect as SkiaRect, useCanvasSize } from '@shopify/react-native-skia';
+import {
+  Canvas,
+  Group,
+  Picture,
+  Rect as SkiaRect,
+  Text as SkiaText,
+  useCanvasSize,
+} from '@shopify/react-native-skia';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 
 import type { ReaderSnapshot } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
@@ -31,6 +39,11 @@ export interface ReaderSurfaceProps {
   readonly animationDuration?: number;
   /** Optional finger-controlled turn. The target picture must be prepared first. */
   readonly interactiveTurn?: ReaderInteractiveTurn;
+  /** Skia-owned reader chrome rendered in the same Canvas as the page. */
+  readonly chapterTitle?: string;
+  readonly progressLabel?: string;
+  readonly overlayColor?: string;
+  readonly overlayInsets?: Readonly<{ left: number; right: number }>;
 }
 
 export function ReaderSurface({
@@ -42,6 +55,10 @@ export function ReaderSurface({
   animationStyle = 'slide',
   animationDuration = 360,
   interactiveTurn,
+  chapterTitle,
+  progressLabel,
+  overlayColor = '#777777',
+  overlayInsets = { left: 0, right: 0 },
 }: ReaderSurfaceProps) {
   const { ref, size: viewport } = useCanvasSize();
   const compiled = snapshot.phase === 'ready'
@@ -69,6 +86,43 @@ export function ReaderSurface({
   }, [offsetX, offsetY, onTransformChange, scale]);
 
   const canRenderFrame = compiled !== undefined && frame !== undefined && snapshot.phase === 'ready';
+  const renderChrome = (
+    chromeSnapshot: ReaderSnapshot,
+    chromeFrame: { readonly width: number; readonly height: number },
+    titleOverride?: string,
+    progressOverride?: string,
+  ): ReactNode => {
+    const pageScale = Math.max(0.001, scale);
+    const title = titleOverride ?? chromeSnapshot.chapterTitle;
+    const progress = progressOverride ?? progressLabelForSnapshot(chromeSnapshot);
+    const titleFont = title ? runtime.getUiFont(14 / pageScale) : undefined;
+    const progressFont = progress ? runtime.getUiFont(12 / pageScale) : undefined;
+    const chapterX = (overlayInsets.left + 18 - offsetX) / pageScale;
+    const chapterY = (16 - offsetY) / pageScale;
+    const progressWidth = progressFont && progress ? progressFont.getTextWidth(progress) : 0;
+    const progressX = Math.max(
+      chapterX,
+      (viewport.width - overlayInsets.right - 18 - progressWidth * pageScale - offsetX) / pageScale,
+    );
+    const progressY = (Math.max(12, viewport.height - 12) - offsetY) / pageScale;
+    const chapterClipWidth = Math.max(
+      0,
+      (viewport.width - overlayInsets.right - 18 - offsetX) / pageScale - chapterX,
+    );
+    if ((!title || !titleFont) && (!progress || !progressFont)) return null;
+    return (
+      <>
+        {title && titleFont && (
+          <Group clip={{ x: chapterX, y: (0 - offsetY) / pageScale, width: chapterClipWidth, height: 24 / pageScale }}>
+            <SkiaText color={overlayColor} font={titleFont} text={title} x={chapterX} y={chapterY} />
+          </Group>
+        )}
+        {progress && progressFont && chromeFrame.width > 0 && chromeFrame.height > 0 && (
+          <SkiaText color={overlayColor} font={progressFont} text={progress} x={progressX} y={progressY} />
+        )}
+      </>
+    );
+  };
   if (canRenderFrame) {
     readerPerformanceMark('reader.canvas.render', `spread=${snapshot.spreadIndex}`);
   }
@@ -86,6 +140,7 @@ export function ReaderSurface({
           {activeTransition && resolvedAnimationStyle === 'page' ? (
             <Group>
               <Picture key={currentKey} picture={compiled.picture} />
+              {renderChrome(snapshot, frame, chapterTitle, progressLabel)}
               <PageCurlMesh
                 direction={activeTransition.direction}
                 gestureMode={interactiveTurn?.gestureMode}
@@ -98,25 +153,37 @@ export function ReaderSurface({
                 progress={progress}
                 width={activeTransition.from.frame.width}
               />
+              <Group matrix={outgoingSlideMatrix}>
+                {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
+              </Group>
             </Group>
           ) : activeTransition && resolvedAnimationStyle === 'cover' ? (
             <Group>
-              <Picture picture={activeTransition.from.picture.picture} />
+              <Group>
+                <Picture picture={activeTransition.from.picture.picture} />
+                {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
+              </Group>
               <Group matrix={coverMatrix}>
                 <Picture key={currentKey} picture={compiled.picture} />
+                {renderChrome(snapshot, frame, chapterTitle, progressLabel)}
               </Group>
             </Group>
           ) : activeTransition && resolvedAnimationStyle === 'slide' ? (
             <Group>
               <Group matrix={outgoingSlideMatrix}>
                 <Picture picture={activeTransition.from.picture.picture} />
+                {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
               </Group>
               <Group matrix={slideMatrix}>
                 <Picture key={currentKey} picture={compiled.picture} />
+                {renderChrome(snapshot, frame, chapterTitle, progressLabel)}
               </Group>
             </Group>
           ) : (
-            <Picture key={currentKey} picture={compiled.picture} />
+            <>
+              <Picture key={currentKey} picture={compiled.picture} />
+              {renderChrome(snapshot, frame, chapterTitle, progressLabel)}
+            </>
           )}
           {!activeTransition && overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
             <SkiaRect
@@ -134,4 +201,15 @@ export function ReaderSurface({
       )}
     </Canvas>
   );
+}
+
+function progressLabelForSnapshot(snapshot: ReaderSnapshot): string {
+  const totalSpreads = snapshot.totalSpreads;
+  const currentSpread = snapshot.bookSpreadIndex ?? snapshot.spreadIndex;
+  const progressText = totalSpreads === undefined
+    ? '页码计算中'
+    : `${currentSpread + 1} / ${totalSpreads}`;
+  if (totalSpreads === undefined) return progressText;
+  const progressPercentage = Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
+  return `${progressText} · ${progressPercentage}%`;
 }

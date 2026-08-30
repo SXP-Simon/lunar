@@ -1,3 +1,5 @@
+import type { SkFont } from '@shopify/react-native-skia';
+
 import type {
   ReaderLayoutRequest,
   ReaderOpenRequest,
@@ -228,6 +230,22 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
   getCurrentChapterTitle(): string | undefined {
     return this.publication?.getCurrentChapterTitle?.();
+  }
+
+  /** Resolve the registered reader font for Skia-owned chrome text. */
+  getUiFont(sizePx: number, weight = 400): SkFont | undefined {
+    const fontRegistry = this.fontRegistry;
+    if (!fontRegistry || !Number.isFinite(sizePx) || sizePx <= 0) return undefined;
+    try {
+      return fontRegistry.resolveFont({
+        family: '',
+        sizePx,
+        style: 'normal',
+        weight,
+      });
+    } catch {
+      return undefined;
+    }
   }
 
   getCurrentHitMap(spreadIndex = this.snapshot.spreadIndex) {
