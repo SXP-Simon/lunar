@@ -5,9 +5,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
 
-export const IconTabBarContentHeight = 52;
-export const IconTabBarTopPadding = 12;
-export const IconTabBarBottomPadding = 12;
+// Keep the reader's bottom navigation compact while preserving a 44pt
+// interactive target for each tab.
+export const IconTabBarContentHeight = 44;
+export const IconTabBarTopPadding = 8;
+export const IconTabBarBottomPadding = 8;
 export const IconTabBarHeight =
   IconTabBarTopPadding + IconTabBarContentHeight + IconTabBarBottomPadding;
 
@@ -45,13 +47,13 @@ export function IconTabBar({ items, activeKey, onSelect }: IconTabBarProps) {
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
               className={isActive
-                ? 'h-12 flex-1 rounded-xl bg-surface-secondary'
-                : 'h-12 flex-1 rounded-xl'}
+                ? 'h-11 flex-1 rounded-lg bg-surface-secondary'
+                : 'h-11 flex-1 rounded-lg'}
               isIconOnly
               onPress={() => onSelect(item.key)}
               size="sm"
               variant="ghost">
-              <SymbolView name={item.name} size={27} tintColor={isActive ? theme.accent : theme.textSecondary} />
+              <SymbolView name={item.name} size={24} tintColor={isActive ? theme.accent : theme.textSecondary} />
             </Button>
           );
         })}

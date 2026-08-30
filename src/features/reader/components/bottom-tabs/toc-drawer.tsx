@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ReaderTocEntry } from '@/reader';
 import type { LunarReaderRuntime } from '@/reader/native';
-import { ReaderBottomTabBarHeight } from './constants';
+import { getReaderBottomTabBarInset } from './constants';
 
 interface TocDrawerProps {
   readonly isOpen: boolean;
@@ -22,7 +22,7 @@ interface FlatTocEntry extends ReaderTocEntry {
 
 export function TocDrawer({ isOpen, onOpenChange, runtime, toc }: TocDrawerProps) {
   const insets = useSafeAreaInsets();
-  const bottomInset = insets.bottom + ReaderBottomTabBarHeight;
+  const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const entries = useMemo(() => isOpen ? flattenToc(toc) : [], [isOpen, toc]);
 
   return (
@@ -48,7 +48,8 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, toc }: TocDrawerProps
           </View>
           <BottomSheetScrollView
             contentContainerClassName="gap-1 px-3 py-4"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+            style={{ flex: 1 }}>
             {entries.map((entry, index) => (
               <Button
                 key={`${entry.href}:${index}`}
