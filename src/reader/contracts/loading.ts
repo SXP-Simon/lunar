@@ -427,12 +427,31 @@ export interface ReaderPublicationView {
   readonly getAdjacentSpreadIndex?: (currentSpreadIndex: number, direction: 'next' | 'previous') => number;
   /** Relabels private render slots after a prepared turn returns to its source. */
   readonly rebaseVisibleSpreadIndex?: (spreadIndex: number) => void;
+  /** Prepares an adjacent render artifact without changing the visible artifact. */
+  readonly prepareAdjacent?: (
+    currentSpreadIndex: number,
+    direction: 'next' | 'previous',
+  ) => Promise<ReaderPreparedAdjacent | undefined>;
+  /** Adopts the exact artifact returned by prepareAdjacent. */
+  readonly commitPreparedAdjacent?: (prepared: ReaderPreparedAdjacent) => Promise<void>;
+  /** Releases the prepared artifact and restores private render slots. */
+  readonly cancelPreparedAdjacent?: (
+    prepared: ReaderPreparedAdjacent,
+    sourceSnapshotSpreadIndex: number,
+  ) => Promise<void>;
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined;
   getImage(source: string): Uint8Array | undefined;
   /** Resolves a TOC target, paginating it on demand when necessary. */
   resolveToc(href: string): number | undefined | Promise<number | undefined>;
   resolveTextRangeGeometry?(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]>;
   search?(request: ReaderSearchRequest): Promise<ReaderSearchResponse>;
+}
+
+export interface ReaderPreparedAdjacent {
+  readonly id: number;
+  readonly direction: 'next' | 'previous';
+  readonly sourceSpreadIndex: number;
+  readonly targetSpreadIndex: number;
 }
 
 export interface LoadedReaderPublication extends ReaderPublicationView {

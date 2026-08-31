@@ -118,6 +118,7 @@ export function ReaderSurface({
         `incoming=${incomingKey ?? 'none'}`,
         `from=${activeTransition?.from.key ?? 'none'}`,
         `to=${activeTransition?.toKey ?? 'none'}`,
+        `slideForeground=${resolvedAnimationStyle === 'slide' ? (activeTransition?.from.key ?? currentKey ?? 'none') : 'none'}`,
         `mode=${activeTransition ? resolvedAnimationStyle : 'static'}`,
         `interactive=${String(Boolean(interactiveTurn))}`,
         `settling=${String(interactiveTurn?.settling === true)}`,
@@ -196,6 +197,10 @@ export function ReaderSurface({
   useEffect(() => {
     onTransformChange?.(createReaderSurfaceTransform(scale, offsetX, offsetY));
   }, [offsetX, offsetY, onTransformChange, scale]);
+
+  const slideForegroundContent = resolvedAnimationStyle === 'slide'
+    ? activeTransition?.from ?? currentContent
+    : undefined;
 
   const canRenderFrame = snapshot.phase === 'ready'
     && ((compiled !== undefined && frame !== undefined) || activeTransition !== undefined);
@@ -284,20 +289,36 @@ export function ReaderSurface({
                 {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
               </Group>
             </Group>
-          ) : activeTransition && resolvedAnimationStyle === 'slide' ? (
+          ) : resolvedAnimationStyle === 'slide' ? (
             <Group>
-              <Group matrix={incomingSlideMatrix}>
-                {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
-                {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
-              </Group>
-              <Group matrix={outgoingSlideMatrix}>
-                <Picture picture={activeTransition.from.picture.picture} />
-                {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
-                <SlidePageEdgeShadow
-                  direction={activeTransition.direction}
-                  width={activeTransition.from.frame.width}
-                  height={activeTransition.from.frame.height}
-                />
+              {activeTransition && (
+                <Group key="slide-incoming" matrix={incomingSlideMatrix}>
+                  {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                  {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
+                </Group>
+              )}
+              <Group
+                key="slide-foreground"
+                matrix={activeTransition ? outgoingSlideMatrix : undefined}>
+                {slideForegroundContent && (
+                  <Picture
+                    key={slideForegroundContent.key}
+                    picture={slideForegroundContent.picture.picture}
+                  />
+                )}
+                {slideForegroundContent && renderChrome(
+                  slideForegroundContent.snapshot,
+                  slideForegroundContent.frame,
+                  activeTransition ? undefined : chapterTitle,
+                  activeTransition ? undefined : progressLabel,
+                )}
+                {activeTransition && (
+                  <SlidePageEdgeShadow
+                    direction={activeTransition.direction}
+                    width={activeTransition.from.frame.width}
+                    height={activeTransition.from.frame.height}
+                  />
+                )}
               </Group>
             </Group>
           ) : (

@@ -410,9 +410,10 @@ export function useReaderPageTurn({
       );
       const generation = ++handoffGeneration.current;
       const preparedTurn = state.preparedTurn;
-      const restore = preparedTurn
-        ? runtime.cancelPreparedTurn(preparedTurn)
-        : Promise.resolve();
+      let notifyVisualSettle: () => void = () => undefined;
+      const visualSettle = new Promise<void>((resolve) => {
+        notifyVisualSettle = resolve;
+      });
       readerDiagnostic(
         'turn.cancel.begin',
         `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} durationMs=${settleDuration}`,
@@ -430,8 +431,22 @@ export function useReaderPageTurn({
         releaseVelocity: towardTargetVelocity,
         settling: true,
         settleTo: 0,
+        onSettleComplete: notifyVisualSettle,
       } : turn);
-      void Promise.allSettled([restore, waitForPageTurn(settleDuration)])
+      void Promise.race([
+        visualSettle,
+        waitForPageTurn(settleDuration + PAGE_TURN_SETTLE_FALLBACK_DELAY_MS),
+      ])
+        .then(() => {
+          readerDiagnostic(
+            'turn.cancel.visual-ready',
+            `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} generation=${generation}`,
+          );
+          return preparedTurn
+            ? runtime.cancelPreparedTurn(preparedTurn)
+            : Promise.resolve();
+        })
+        .catch(() => undefined)
         .then(waitForPageHandoffFrames)
         .then(() => {
           if (handoffGeneration.current !== generation) return;
@@ -700,6 +715,8 @@ export function useReaderPageTurn({
 function waitForPageTurn(duration: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, duration));
 }
+
+const PAGE_TURN_SETTLE_FALLBACK_DELAY_MS = 180;
 
 /** Allow the committed page to reach React's subscriber and the Skia canvas. */
 function waitForPageHandoffFrames(): Promise<void> {

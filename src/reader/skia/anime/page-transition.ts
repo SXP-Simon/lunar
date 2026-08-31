@@ -77,6 +77,8 @@ export interface ReaderInteractiveTurn {
   /** Set while the finger release is being animated to its terminal pose. */
   readonly settling?: boolean;
   readonly settleTo?: 0 | 1;
+  /** Runs on the RN runtime after the UI timing animation reaches its target. */
+  readonly onSettleComplete?: () => void;
   readonly pressedEdgeX?: number;
   readonly pressedEdgeXValue?: SharedValue<number>;
   readonly heldRollTilt?: number;
@@ -230,7 +232,12 @@ export function useReaderPageTransition(
           ? Easing.inOut(Easing.sin)
           : Easing.inOut(Easing.cubic),
     }, (finished) => {
-      if (finished && !interactiveTurn) scheduleOnRN(clearTransition, activeTransition.toKey);
+      if (!finished) return;
+      if (interactiveTurn?.settling && interactiveTurn.onSettleComplete) {
+        scheduleOnRN(interactiveTurn.onSettleComplete);
+      } else if (!interactiveTurn) {
+        scheduleOnRN(clearTransition, activeTransition.toKey);
+      }
     }));
     return () => cancelAnimation(animatedProgress);
   }, [activeTransition, animatedProgress, animationDuration, animationStyle, clearTransition, interactiveTurn, style]);

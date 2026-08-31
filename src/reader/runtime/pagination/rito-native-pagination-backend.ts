@@ -1,5 +1,6 @@
 import type {
-  LoadedReaderPublication, ReaderFontRegistry, ReaderImageDecoder, ReaderLayoutRequest, ReaderOpenRequest, ReaderRenderFrame,
+  LoadedReaderPublication, ReaderFontRegistry, ReaderImageDecoder, ReaderLayoutRequest, ReaderOpenRequest,
+  ReaderPreparedAdjacent, ReaderRenderFrame,
 } from '../../contracts';
 import { toReaderV1DisplayList } from '../../rito';
 import { discoverReaderInitialSpineHref } from '../../rito/epub-inspector';
@@ -20,6 +21,13 @@ export interface RitoNativePaginationBackendOptions {
 interface PublicationSlot {
   readonly artifactId: bigint;
   readonly frame?: ReaderRenderFrame;
+}
+
+interface PreparedAdjacentState extends ReaderPreparedAdjacent {
+  readonly sourceSnapshotSpreadIndex: number;
+  readonly sourceArtifactId: bigint;
+  readonly targetArtifactId: bigint;
+  readonly previousTargetSlot?: PublicationSlot;
 }
 
 // The engine enforces a hard live-artifact cap (6). Steady state keeps the
@@ -122,6 +130,8 @@ class RitoNativePublication implements LoadedReaderPublication {
    * locator cache) until the next navigation replaces it.
    */
   private lastTurnSourceId?: bigint;
+  private preparedAdjacentId = 0;
+  private preparedAdjacent?: PreparedAdjacentState;
   private closed = false;
   private visibleIndex = 0;
   private totalSpreadsValue?: number;
@@ -217,6 +227,18 @@ class RitoNativePublication implements LoadedReaderPublication {
 
   private async ensureFrameQueued(spreadIndex: number): Promise<void> {
     readerDiagnostic('nav.ensure.begin', `target=${spreadIndex} visibleIndex=${this.visibleIndex} visible=${describeArtifact(this.currentArtifact)}`);
+    if (this.preparedAdjacent?.targetSpreadIndex === spreadIndex) {
+      const slot = this.slots.get(spreadIndex);
+      const artifact = slot ? this.session.getArtifact(slot.artifactId) : undefined;
+      if (
+        artifact
+        && slot?.artifactId === this.preparedAdjacent.targetArtifactId
+        && slot.frame?.sourceKey === artifactSourceKey(artifact)
+      ) {
+        readerDiagnostic('turn.backend.prepare.hit', `candidate=${this.preparedAdjacent.id} spread=${spreadIndex} artifact=${slot.artifactId.toString()}`);
+        return;
+      }
+    }
     if (spreadIndex === this.visibleIndex) {
       const current = this.currentArtifact;
       const slot = this.slots.get(spreadIndex);
@@ -340,6 +362,143 @@ class RitoNativePublication implements LoadedReaderPublication {
       readerDiagnostic('slot.rebase', `direction=${direction} delta=${delta} requestedCurrent=${currentSpreadIndex} visibleIndex=${this.visibleIndex}`);
     }
     return this.visibleIndex + (direction === 'next' ? 1 : -1);
+  }
+  async prepareAdjacent(
+    currentSpreadIndex: number,
+    direction: 'next' | 'previous',
+  ): Promise<ReaderPreparedAdjacent | undefined> {
+    return this.operationQueue.enqueue(async () => {
+      const existing = this.preparedAdjacent;
+      if (
+        existing
+        && existing.direction === direction
+        && existing.sourceSpreadIndex === this.visibleIndex
+      ) {
+        return existing;
+      }
+      if (existing || this.visibleIndex !== currentSpreadIndex) return undefined;
+      const sourceArtifact = this.currentArtifact;
+      if (!sourceArtifact || !this.canNavigate(direction)) return undefined;
+      const targetSpreadIndex = this.getAdjacentSpreadIndex(currentSpreadIndex, direction);
+      const delta = direction === 'next' ? 1 : -1;
+      const sourceSpreadIndex = targetSpreadIndex - delta;
+      const previousTargetSlot = this.slots.get(targetSpreadIndex);
+      let candidate: RitoArtifact | undefined;
+      try {
+        candidate = await this.session.requestAdjacent({
+          sessionId: sourceArtifact.sessionId,
+          requestId: this.session.nextRequestId,
+          fromArtifactId: sourceArtifact.artifactId,
+          direction,
+          work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 16 },
+        });
+        await this.prepare(candidate, targetSpreadIndex);
+        const prepared: PreparedAdjacentState = {
+          id: ++this.preparedAdjacentId,
+          direction,
+          sourceSnapshotSpreadIndex: currentSpreadIndex,
+          sourceSpreadIndex,
+          targetSpreadIndex,
+          sourceArtifactId: sourceArtifact.artifactId,
+          targetArtifactId: candidate.artifactId,
+          previousTargetSlot,
+        };
+        this.preparedAdjacent = prepared;
+        readerDiagnostic(
+          'turn.backend.prepare.ready',
+          `candidate=${prepared.id} direction=${direction} sourceSpread=${sourceSpreadIndex} targetSpread=${targetSpreadIndex} source=${sourceArtifact.artifactId.toString()} target=${candidate.artifactId.toString()}`,
+        );
+        return prepared;
+      } catch (error) {
+        if (candidate) await this.session.releaseArtifact(candidate.artifactId).catch(() => undefined);
+        if (sourceSpreadIndex !== currentSpreadIndex) this.rebaseVisibleSpreadIndex(currentSpreadIndex);
+        readerDiagnostic('turn.backend.prepare.error', `direction=${direction} error=${describeError(error)}`);
+        throw error;
+      }
+    });
+  }
+  async commitPreparedAdjacent(prepared: ReaderPreparedAdjacent): Promise<void> {
+    await this.operationQueue.enqueue(async () => {
+      const active = this.preparedAdjacent;
+      if (!active || active.id !== prepared.id) {
+        throw new Error('Prepared Rito turn is stale.');
+      }
+      const source = this.session.getArtifact(active.sourceArtifactId);
+      const target = this.session.getArtifact(active.targetArtifactId);
+      if (!source || !target) {
+        const targetSlot = this.slots.get(active.targetSpreadIndex);
+        if (targetSlot?.artifactId === active.targetArtifactId) {
+          if (active.previousTargetSlot) {
+            this.slots.set(active.targetSpreadIndex, active.previousTargetSlot);
+          } else {
+            this.slots.delete(active.targetSpreadIndex);
+          }
+        }
+        this.preparedAdjacent = undefined;
+        this.rebaseVisibleSpreadIndex(active.sourceSnapshotSpreadIndex);
+        throw new Error('Prepared Rito turn artifacts are unavailable.');
+      }
+      try {
+        await this.session.adoptForeground({
+          sessionId: source.sessionId,
+          expectedVisibleArtifactId: source.artifactId,
+          candidateArtifactId: target.artifactId,
+        });
+      } catch (error) {
+        const targetSlot = this.slots.get(active.targetSpreadIndex);
+        if (targetSlot?.artifactId === active.targetArtifactId) {
+          if (active.previousTargetSlot) {
+            this.slots.set(active.targetSpreadIndex, active.previousTargetSlot);
+          } else {
+            this.slots.delete(active.targetSpreadIndex);
+          }
+        }
+        this.preparedAdjacent = undefined;
+        this.rebaseVisibleSpreadIndex(active.sourceSnapshotSpreadIndex);
+        throw error;
+      }
+      this.assignArtifact(active.targetSpreadIndex, target, true);
+      this.visibleIndex = active.targetSpreadIndex;
+      this.totalSpreadsValue = target.bookPageCount !== undefined
+        ? spreadCountFromBookPages(target.bookPageCount, this.spreadMode)
+        : this.totalSpreadsValue;
+      if (this.lastTurnSourceId !== undefined && this.lastTurnSourceId !== source.artifactId) {
+        const staleSource = this.session.getArtifact(this.lastTurnSourceId);
+        if (staleSource) await this.releaseAfterNavigation(staleSource);
+      }
+      this.lastTurnSourceId = source.artifactId;
+      this.preparedAdjacent = undefined;
+      this.pruneSlots();
+      readerDiagnostic(
+        'turn.backend.commit.ready',
+        `candidate=${prepared.id} spread=${this.visibleIndex} artifact=${target.artifactId.toString()}`,
+      );
+    });
+  }
+  async cancelPreparedAdjacent(
+    prepared: ReaderPreparedAdjacent,
+    sourceSnapshotSpreadIndex: number,
+  ): Promise<void> {
+    await this.operationQueue.enqueue(async () => {
+      const active = this.preparedAdjacent;
+      if (!active || active.id !== prepared.id) return;
+      const targetSlot = this.slots.get(active.targetSpreadIndex);
+      if (targetSlot?.artifactId === active.targetArtifactId) {
+        if (active.previousTargetSlot) {
+          this.slots.set(active.targetSpreadIndex, active.previousTargetSlot);
+        } else {
+          this.slots.delete(active.targetSpreadIndex);
+        }
+      }
+      this.preparedAdjacent = undefined;
+      await this.session.releaseArtifact(active.targetArtifactId).catch(() => undefined);
+      this.rebaseVisibleSpreadIndex(sourceSnapshotSpreadIndex);
+      this.pruneSlots();
+      readerDiagnostic(
+        'turn.backend.cancel.ready',
+        `candidate=${prepared.id} sourceSpread=${sourceSnapshotSpreadIndex} artifact=${active.sourceArtifactId.toString()}`,
+      );
+    });
   }
   rebaseVisibleSpreadIndex(spreadIndex: number): void {
     const target = Math.max(0, Math.round(spreadIndex));
@@ -540,10 +699,18 @@ class RitoNativePublication implements LoadedReaderPublication {
       ...this.retainedBoundaryKeepAlive,
     ]);
     if (this.lastTurnSourceId !== undefined) artifactIds.add(this.lastTurnSourceId);
+    if (this.preparedAdjacent) {
+      artifactIds.add(this.preparedAdjacent.sourceArtifactId);
+      artifactIds.add(this.preparedAdjacent.targetArtifactId);
+      if (this.preparedAdjacent.previousTargetSlot) {
+        artifactIds.add(this.preparedAdjacent.previousTargetSlot.artifactId);
+      }
+    }
     this.slots.clear();
     this.retainedBoundaryArtifacts.clear();
     this.retainedBoundaryKeepAlive.length = 0;
     this.lastTurnSourceId = undefined;
+    this.preparedAdjacent = undefined;
     for (const artifactId of artifactIds) await this.session.releaseArtifact(artifactId).catch(() => undefined);
     await this.session.dispose();
   }

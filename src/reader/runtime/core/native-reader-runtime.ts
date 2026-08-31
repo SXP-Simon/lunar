@@ -5,6 +5,7 @@ import type {
   ReaderOpenRequest,
   ReaderOpenResult,
   ReaderPosition,
+  ReaderPreparedAdjacent,
   ReaderPublicationView,
   ReaderRenderFrame,
   ReaderSnapshot,
@@ -35,6 +36,7 @@ export interface ReaderPreparedTurn {
   readonly sourcePreparedSpreadIndex: number;
   readonly targetSpreadIndex: number;
   readonly targetRenderId: number;
+  readonly publicationTurn?: ReaderPreparedAdjacent;
 }
 
 interface RetainedReaderPicture {
@@ -186,36 +188,61 @@ export class LunarReaderRuntime implements ReaderRuntime {
         return existing;
       }
       if (existing) return undefined;
-      const delta = direction === 'next' ? 1 : -1;
-      const targetSpreadIndex = publication.getAdjacentSpreadIndex?.(
-        sourceSnapshot.spreadIndex,
-        direction,
-      ) ?? sourceSnapshot.spreadIndex + delta;
-      const sourcePreparedSpreadIndex = targetSpreadIndex - delta;
       const preparedTurnId = ++this.preparedTurnId;
       const operation = this.operation;
-      readerDiagnostic(
-        'turn.runtime.prepare.begin',
-        `prepared=${preparedTurnId} direction=${direction} source=${describeSnapshot(sourceSnapshot)} sourcePreparedSpread=${sourcePreparedSpreadIndex} targetSpread=${targetSpreadIndex}`,
-      );
+      const delta = direction === 'next' ? 1 : -1;
+      let publicationTurn: ReaderPreparedAdjacent | undefined;
+      let targetSpreadIndex = sourceSnapshot.spreadIndex + delta;
+      let sourcePreparedSpreadIndex = sourceSnapshot.spreadIndex;
       try {
+        if (publication.prepareAdjacent) {
+          publicationTurn = await publication.prepareAdjacent(sourceSnapshot.spreadIndex, direction);
+          if (!publicationTurn) return undefined;
+          if (!publication.commitPreparedAdjacent || !publication.cancelPreparedAdjacent) {
+            throw new Error('Prepared publication turns require commit and cancel operations.');
+          }
+          targetSpreadIndex = publicationTurn.targetSpreadIndex;
+          sourcePreparedSpreadIndex = publicationTurn.sourceSpreadIndex;
+        } else {
+          targetSpreadIndex = publication.getAdjacentSpreadIndex?.(
+            sourceSnapshot.spreadIndex,
+            direction,
+          ) ?? targetSpreadIndex;
+          sourcePreparedSpreadIndex = targetSpreadIndex - delta;
+        }
+        readerDiagnostic(
+          'turn.runtime.prepare.begin',
+          `prepared=${preparedTurnId} direction=${direction} source=${describeSnapshot(sourceSnapshot)} sourcePreparedSpread=${sourcePreparedSpreadIndex} targetSpread=${targetSpreadIndex} candidate=${publicationTurn?.id ?? 'legacy'}`,
+        );
         await this.preparePicture(targetSpreadIndex, operation);
         this.assertCurrent(operation);
         if (
           this.snapshot.revisionId !== sourceSnapshot.revisionId
           || this.snapshot.spreadIndex !== sourceSnapshot.spreadIndex
         ) {
+          if (publicationTurn) {
+            await publication.cancelPreparedAdjacent?.(
+              publicationTurn,
+              sourceSnapshot.spreadIndex,
+            );
+            await this.preparePicture(sourceSnapshot.spreadIndex, operation);
+          }
           return undefined;
         }
         const targetRenderId = this.pictureRenderIds.get(
           pictureSlotKey(sourceSnapshot.revisionId, targetSpreadIndex),
         );
         if (targetRenderId === undefined) {
-          await this.restorePreparedSource(
-            sourcePreparedSpreadIndex,
-            sourceSnapshot.spreadIndex,
-            operation,
-          );
+          if (publicationTurn) {
+            await publication.cancelPreparedAdjacent?.(publicationTurn, sourceSnapshot.spreadIndex);
+            await this.preparePicture(sourceSnapshot.spreadIndex, operation);
+          } else {
+            await this.restorePreparedSource(
+              sourcePreparedSpreadIndex,
+              sourceSnapshot.spreadIndex,
+              operation,
+            );
+          }
           return undefined;
         }
         const preparedTurn: ReaderPreparedTurn = {
@@ -226,6 +253,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
           sourcePreparedSpreadIndex,
           targetSpreadIndex,
           targetRenderId,
+          publicationTurn,
         };
         this.preparedTurn = preparedTurn;
         readerDiagnostic(
@@ -238,11 +266,19 @@ export class LunarReaderRuntime implements ReaderRuntime {
           'turn.runtime.prepare.error',
           `prepared=${preparedTurnId} direction=${direction} targetSpread=${targetSpreadIndex} error=${describeError(error)}`,
         );
-        await this.restorePreparedSource(
-          sourcePreparedSpreadIndex,
-          sourceSnapshot.spreadIndex,
-          operation,
-        ).catch(() => undefined);
+        if (publicationTurn) {
+          await publication.cancelPreparedAdjacent?.(
+            publicationTurn,
+            sourceSnapshot.spreadIndex,
+          ).catch(() => undefined);
+          await this.preparePicture(sourceSnapshot.spreadIndex, operation).catch(() => undefined);
+        } else {
+          await this.restorePreparedSource(
+            sourcePreparedSpreadIndex,
+            sourceSnapshot.spreadIndex,
+            operation,
+          ).catch(() => undefined);
+        }
         return undefined;
       }
     });
@@ -262,6 +298,11 @@ export class LunarReaderRuntime implements ReaderRuntime {
         `prepared=${preparedTurn.id} target=${preparedTurn.revisionId}:${preparedTurn.targetSpreadIndex}:${preparedTurn.targetRenderId} snapshot=${describeSnapshot(this.snapshot)}`,
       );
       try {
+        if (preparedTurn.publicationTurn) {
+          const publication = this.publication;
+          if (!publication?.commitPreparedAdjacent) throw new Error('Prepared publication commit is unavailable.');
+          await publication.commitPreparedAdjacent(preparedTurn.publicationTurn);
+        }
         const snapshot = await this.showSpread(preparedTurn.targetSpreadIndex);
         readerDiagnostic(
           'turn.runtime.commit.ready',
@@ -289,11 +330,21 @@ export class LunarReaderRuntime implements ReaderRuntime {
         `prepared=${preparedTurn.id} sourceSnapshotSpread=${preparedTurn.sourceSnapshotSpreadIndex} sourcePreparedSpread=${preparedTurn.sourcePreparedSpreadIndex}`,
       );
       try {
-        await this.restorePreparedSource(
-          preparedTurn.sourcePreparedSpreadIndex,
-          preparedTurn.sourceSnapshotSpreadIndex,
-          operation,
-        );
+        if (preparedTurn.publicationTurn) {
+          const publication = this.publication;
+          if (!publication?.cancelPreparedAdjacent) throw new Error('Prepared publication cancellation is unavailable.');
+          await publication.cancelPreparedAdjacent(
+            preparedTurn.publicationTurn,
+            preparedTurn.sourceSnapshotSpreadIndex,
+          );
+          await this.preparePicture(preparedTurn.sourceSnapshotSpreadIndex, operation);
+        } else {
+          await this.restorePreparedSource(
+            preparedTurn.sourcePreparedSpreadIndex,
+            preparedTurn.sourceSnapshotSpreadIndex,
+            operation,
+          );
+        }
         readerDiagnostic(
           'turn.runtime.cancel.ready',
           `prepared=${preparedTurn.id} snapshot=${describeSnapshot(this.snapshot)}`,

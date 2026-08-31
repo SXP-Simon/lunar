@@ -35,7 +35,7 @@ export function getReaderPageTurnSettleDuration(
     : clampPageTurnDuration(animationDuration);
   const minimumDuration = style === 'page'
     ? targetProgress === 0 ? 220 : 160
-    : 90;
+    : targetProgress === 0 ? 180 : 90;
   const towardTarget = releaseVelocity * (targetProgress - fromProgress) > 0;
   const releaseSpeed = towardTarget
     ? Math.min(6, Math.abs(releaseVelocity))
