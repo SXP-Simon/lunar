@@ -86,6 +86,7 @@ export function readerPerformanceEnd(name: string, startedAt: number | undefined
 
 function isConciseTraceEvent(name: string): boolean {
   return conciseTraceEvents.has(name)
+    || name.startsWith('turn.')
     || name.endsWith('.error')
     || name.endsWith('.reject')
     || name.endsWith('.miss')

@@ -8,6 +8,7 @@ import type {
   LunarReaderRuntime,
   ReaderPreparedTurn,
 } from '../../runtime/core/native-reader-runtime';
+import { readerDiagnostic } from '../../runtime/core/performance';
 import {
   anchoredGestureFingerX,
   bookXForGestureTravel,
@@ -29,6 +30,7 @@ import type {
 } from './page-transition';
 
 interface ReaderDragState {
+  readonly id: number;
   readonly revisionId: number;
   readonly startSpread: number;
   readonly startX: number;
@@ -47,6 +49,15 @@ interface ReaderDragState {
   prepared: boolean;
   preparation?: Promise<ReaderPreparedTurn | undefined>;
   preparedTurn?: ReaderPreparedTurn;
+  targetUnavailableLogged?: boolean;
+}
+
+interface ReaderCommittedHandoff {
+  readonly turnId: number;
+  readonly generation: number;
+  readonly revisionId: number;
+  readonly spreadIndex: number;
+  readonly renderId: number;
 }
 
 export interface UseReaderPageTurnOptions {
@@ -76,6 +87,8 @@ export function useReaderPageTurn({
   surfaceTop = 0,
 }: UseReaderPageTurnOptions): ReaderPageTurnController {
   const dragState = useRef<ReaderDragState | undefined>(undefined);
+  const turnSequence = useRef(0);
+  const activeTurnId = useRef<number | undefined>(undefined);
   const handoffGeneration = useRef(0);
   const gestureProgress = useSharedValue(0);
   const gestureStarted = useSharedValue(false);
@@ -87,13 +100,63 @@ export function useReaderPageTurn({
   const gesturePressedEdgeX = useSharedValue(1);
   const gestureHeldRollTilt = useSharedValue(0);
   const [interactiveTurn, setInteractiveTurn] = useState<ReaderInteractiveTurn>();
+  const [committedHandoff, setCommittedHandoff] = useState<ReaderCommittedHandoff>();
   const isReady = snapshot.phase === 'ready';
   const resolvedAnimationStyle = resolveReaderPageAnimationStyle(animationStyle);
 
+  useEffect(() => {
+    if (!committedHandoff) return;
+    if (handoffGeneration.current !== committedHandoff.generation) return;
+    if (
+      snapshot.revisionId !== committedHandoff.revisionId
+      || snapshot.spreadIndex !== committedHandoff.spreadIndex
+      || snapshot.renderId !== committedHandoff.renderId
+    ) {
+      return;
+    }
+
+    readerDiagnostic(
+      'turn.handoff.snapshot-ready',
+      `turn=${committedHandoff.turnId} ui=${describeSnapshotIdentity(snapshot)} generation=${committedHandoff.generation}`,
+    );
+    // Keep the completed interactive picture mounted until the subscribed
+    // React snapshot identifies the same target. The runtime snapshot may be
+    // ahead of its subscriber during a fast release. One additional frame
+    // lets the target Canvas tree commit before the interactive layer leaves.
+    const frame = requestAnimationFrame(() => {
+      if (handoffGeneration.current !== committedHandoff.generation) return;
+      readerDiagnostic(
+        'turn.handoff.clear',
+        `turn=${committedHandoff.turnId} ui=${describeSnapshotIdentity(snapshot)} generation=${committedHandoff.generation}`,
+      );
+      activeTurnId.current = undefined;
+      setCommittedHandoff(undefined);
+      setInteractiveTurn(undefined);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [committedHandoff, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex]);
+
+  useEffect(() => {
+    if (!interactiveTurn && !committedHandoff) return;
+    readerDiagnostic(
+      'turn.ui.snapshot',
+      [
+        `turn=${committedHandoff?.turnId ?? activeTurnId.current ?? 'none'}`,
+        `ui=${describeSnapshotIdentity(snapshot)}`,
+        `target=${interactiveTurn ? describeSnapshotIdentity(interactiveTurn.content.snapshot) : 'none'}`,
+        `settling=${String(interactiveTurn?.settling === true)}`,
+        `handoff=${String(Boolean(committedHandoff))}`,
+      ].join(' '),
+    );
+  }, [committedHandoff, interactiveTurn, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex]);
+
   const beginDrag = useCallback((startX: number, startY: number) => {
     if (!isReady || !viewport || interactiveTurn?.settling) return;
+    const turnId = ++turnSequence.current;
+    activeTurnId.current = turnId;
     handoffGeneration.current += 1;
     dragState.current = {
+      id: turnId,
       revisionId: snapshot.revisionId,
       startSpread: snapshot.spreadIndex,
       startX,
@@ -111,13 +174,23 @@ export function useReaderPageTurn({
       preparing: false,
       prepared: false,
     };
-  }, [interactiveTurn?.settling, isReady, snapshot.revisionId, snapshot.spreadIndex, viewport]);
+    readerDiagnostic(
+      'turn.gesture.begin',
+      `turn=${turnId} source=${describeSnapshotIdentity(snapshot)} x=${formatTraceNumber(startX)} y=${formatTraceNumber(startY)}`,
+    );
+  }, [interactiveTurn?.settling, isReady, snapshot, viewport]);
 
   const showPreparedTurn = useCallback((
     state: ReaderDragState,
     preparedTurn: ReaderPreparedTurn,
   ): boolean => {
-    if (runtime.getSnapshot().revisionId !== preparedTurn.revisionId) return false;
+    if (runtime.getSnapshot().revisionId !== preparedTurn.revisionId) {
+      readerDiagnostic(
+        'turn.target.reject',
+        `turn=${state.id} prepared=${preparedTurn.id} reason=revision runtime=${describeSnapshotIdentity(runtime.getSnapshot())} expectedRevision=${preparedTurn.revisionId}`,
+      );
+      return false;
+    }
     state.preparedTurn = preparedTurn;
     const targetPicture = runtime.getCurrentPicture(
       preparedTurn.revisionId,
@@ -125,9 +198,22 @@ export function useReaderPageTurn({
       preparedTurn.targetRenderId,
     );
     const targetFrame = runtime.getCurrentFrame(preparedTurn.targetSpreadIndex);
-    if (!targetPicture || !targetFrame) return false;
+    if (!targetPicture || !targetFrame) {
+      if (!state.targetUnavailableLogged) {
+        state.targetUnavailableLogged = true;
+        readerDiagnostic(
+          'turn.target.unavailable',
+          `turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)} picture=${String(Boolean(targetPicture))} frame=${String(Boolean(targetFrame))}`,
+        );
+      }
+      return false;
+    }
     state.preparing = false;
     state.prepared = true;
+    readerDiagnostic(
+      'turn.target.mount',
+      `turn=${state.id} prepared=${preparedTurn.id} sourceSpread=${preparedTurn.sourceSnapshotSpreadIndex} target=${describePreparedTarget(preparedTurn)} progress=${formatTraceNumber(state.renderProgress)}`,
+    );
     setInteractiveTurn({
       content: {
         key: `${preparedTurn.revisionId}:${preparedTurn.targetSpreadIndex}:${preparedTurn.targetRenderId}:drag`,
@@ -170,6 +256,10 @@ export function useReaderPageTurn({
       if (Math.abs(translationX) < 2) return;
       state.direction = translationX < 0 ? 1 : -1;
       state.directionLocked = true;
+      readerDiagnostic(
+        'turn.gesture.direction',
+        `turn=${state.id} direction=${state.direction > 0 ? 'next' : 'previous'} translationX=${formatTraceNumber(translationX)}`,
+      );
     }
 
     const direction = state.direction;
@@ -203,6 +293,10 @@ export function useReaderPageTurn({
     if (!state.preparing && !state.prepared) {
       state.preparing = true;
       const turnDirection = direction > 0 ? 'next' : 'previous';
+      readerDiagnostic(
+        'turn.prepare.begin',
+        `turn=${state.id} direction=${turnDirection} sourceRevision=${state.revisionId} sourceSpread=${state.startSpread}`,
+      );
       const preparation = runtime.prepareAdjacent(turnDirection);
       state.preparation = preparation;
       void preparation.then((preparedTurn) => {
@@ -214,11 +308,21 @@ export function useReaderPageTurn({
           || current.direction !== direction
           || runtime.getSnapshot().revisionId !== state.revisionId
         ) {
+          readerDiagnostic(
+            'turn.prepare.stale',
+            `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} activeTurn=${current?.id ?? 'none'} runtime=${describeSnapshotIdentity(runtime.getSnapshot())}`,
+          );
           if (preparedTurn) void runtime.cancelPreparedTurn(preparedTurn);
           return;
         }
         current.preparation = undefined;
         if (preparedTurn) current.preparedTurn = preparedTurn;
+        readerDiagnostic(
+          preparedTurn ? 'turn.prepare.ready' : 'turn.prepare.empty',
+          preparedTurn
+            ? `turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)}`
+            : `turn=${state.id} direction=${turnDirection} runtime=${describeSnapshotIdentity(runtime.getSnapshot())}`,
+        );
         if (!preparedTurn || !showPreparedTurn(current, preparedTurn)) {
           current.preparing = false;
         }
@@ -244,6 +348,8 @@ export function useReaderPageTurn({
   ) => {
     if (dragState.current === state) dragState.current = undefined;
     if (!state.directionLocked) {
+      readerDiagnostic('turn.gesture.end', `turn=${state.id} decision=none reason=direction-unlocked`);
+      activeTurnId.current = undefined;
       setInteractiveTurn(undefined);
       return;
     }
@@ -277,9 +383,26 @@ export function useReaderPageTurn({
     const commit = resolvedAnimationStyle === 'page'
       ? shouldCommitTurn(state.fingerX, throwVelocity, state.throwAcceleration)
       : shouldCommitPlanarTurn(state.renderProgress, towardTargetVelocity);
+    readerDiagnostic(
+      'turn.release',
+      [
+        `turn=${state.id}`,
+        `direction=${state.direction > 0 ? 'next' : 'previous'}`,
+        `decision=${commit ? 'commit' : 'cancel'}`,
+        `progress=${formatTraceNumber(state.renderProgress)}`,
+        `velocity=${formatTraceNumber(towardTargetVelocity)}`,
+        `prepared=${String(state.prepared)}`,
+        `preparedId=${state.preparedTurn?.id ?? 'none'}`,
+      ].join(' '),
+    );
     if (!commit) {
       if (!state.prepared) {
         if (state.preparedTurn) void runtime.cancelPreparedTurn(state.preparedTurn);
+        readerDiagnostic(
+          'turn.cancel.clear',
+          `turn=${state.id} mode=without-mounted-target prepared=${state.preparedTurn?.id ?? 'none'}`,
+        );
+        activeTurnId.current = undefined;
         setInteractiveTurn(undefined);
         return;
       }
@@ -295,6 +418,10 @@ export function useReaderPageTurn({
       const restore = preparedTurn
         ? runtime.cancelPreparedTurn(preparedTurn)
         : Promise.resolve();
+      readerDiagnostic(
+        'turn.cancel.begin',
+        `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} durationMs=${settleDuration}`,
+      );
       setInteractiveTurn((turn) => turn ? {
         ...turn,
         progress: state.renderProgress,
@@ -312,19 +439,35 @@ export function useReaderPageTurn({
       void Promise.allSettled([restore, waitForPageTurn(settleDuration)])
         .then(waitForPageHandoffFrames)
         .then(() => {
-          if (handoffGeneration.current === generation) setInteractiveTurn(undefined);
+          if (handoffGeneration.current !== generation) return;
+          readerDiagnostic(
+            'turn.cancel.clear',
+            `turn=${state.id} runtime=${describeSnapshotIdentity(runtime.getSnapshot())} generation=${generation}`,
+          );
+          activeTurnId.current = undefined;
+          setInteractiveTurn(undefined);
         });
       return;
     }
 
     const preparedTurn = state.preparedTurn;
     if (!state.prepared || !preparedTurn) {
+      readerDiagnostic(
+        'turn.commit.fallback',
+        `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} mounted=${String(state.prepared)} direction=${state.direction > 0 ? 'next' : 'previous'}`,
+      );
       setInteractiveTurn(undefined);
       void (preparedTurn
         ? runtime.commitPreparedTurn(preparedTurn)
         : state.direction > 0
           ? runtime.next()
-          : runtime.previous());
+          : runtime.previous()).then((result) => {
+            readerDiagnostic(
+              'turn.commit.fallback-ready',
+              `turn=${state.id} result=${describeSnapshotIdentity(result)}`,
+            );
+            activeTurnId.current = undefined;
+          });
       return;
     }
 
@@ -349,6 +492,10 @@ export function useReaderPageTurn({
       animationDuration,
     );
     const generation = ++handoffGeneration.current;
+    readerDiagnostic(
+      'turn.commit.begin',
+      `turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)} durationMs=${settleDuration} generation=${generation}`,
+    );
     void Promise.allSettled([navigate, waitForPageTurn(settleDuration)]).then(() => {
       if (handoffGeneration.current !== generation) return;
       const currentSnapshot = runtime.getSnapshot();
@@ -357,11 +504,24 @@ export function useReaderPageTurn({
         || currentSnapshot.spreadIndex !== preparedTurn.targetSpreadIndex
         || currentSnapshot.renderId !== preparedTurn.targetRenderId
       ) {
+        readerDiagnostic(
+          'turn.commit.mismatch',
+          `turn=${state.id} prepared=${preparedTurn.id} expected=${describePreparedTarget(preparedTurn)} runtime=${describeSnapshotIdentity(currentSnapshot)}`,
+        );
+        activeTurnId.current = undefined;
         setInteractiveTurn(undefined);
         return;
       }
-      void waitForPageHandoffFrames().then(() => {
-        if (handoffGeneration.current === generation) setInteractiveTurn(undefined);
+      readerDiagnostic(
+        'turn.commit.runtime-ready',
+        `turn=${state.id} prepared=${preparedTurn.id} runtime=${describeSnapshotIdentity(currentSnapshot)} generation=${generation}`,
+      );
+      setCommittedHandoff({
+        turnId: state.id,
+        generation,
+        revisionId: preparedTurn.revisionId,
+        spreadIndex: preparedTurn.targetSpreadIndex,
+        renderId: preparedTurn.targetRenderId,
       });
     });
   }, [
@@ -382,6 +542,10 @@ export function useReaderPageTurn({
     if (!state) return;
     if (state.preparation && !state.preparedTurn) {
       const preparation = state.preparation;
+      readerDiagnostic(
+        'turn.release.wait-prepare',
+        `turn=${state.id} translationX=${formatTraceNumber(releaseTranslationX)} velocityX=${formatTraceNumber(releaseVelocity)}`,
+      );
       void preparation.then(() => {
         if (dragState.current === state) {
           finishDrag(state, releaseVelocity, releaseTranslationX);
@@ -512,6 +676,8 @@ export function useReaderPageTurn({
     handoffGeneration.current += 1;
     const preparedTurn = dragState.current?.preparedTurn;
     dragState.current = undefined;
+    activeTurnId.current = undefined;
+    setCommittedHandoff(undefined);
     setInteractiveTurn(undefined);
     return (preparedTurn ? runtime.cancelPreparedTurn(preparedTurn) : Promise.resolve())
       .then(() => runtime.next());
@@ -520,6 +686,8 @@ export function useReaderPageTurn({
     handoffGeneration.current += 1;
     const preparedTurn = dragState.current?.preparedTurn;
     dragState.current = undefined;
+    activeTurnId.current = undefined;
+    setCommittedHandoff(undefined);
     setInteractiveTurn(undefined);
     return (preparedTurn ? runtime.cancelPreparedTurn(preparedTurn) : Promise.resolve())
       .then(() => runtime.previous());
@@ -544,4 +712,16 @@ function waitForPageHandoffFrames(): Promise<void> {
   return new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
+}
+
+function describeSnapshotIdentity(snapshot: Pick<ReaderSnapshot, 'revisionId' | 'spreadIndex' | 'renderId'>): string {
+  return `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 'none'}`;
+}
+
+function describePreparedTarget(preparedTurn: ReaderPreparedTurn): string {
+  return `${preparedTurn.revisionId}:${preparedTurn.targetSpreadIndex}:${preparedTurn.targetRenderId}`;
+}
+
+function formatTraceNumber(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(3) : String(value);
 }

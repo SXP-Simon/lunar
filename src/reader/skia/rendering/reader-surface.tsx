@@ -16,7 +16,7 @@ import type { ReactNode } from 'react';
 
 import type { ReaderSnapshot } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
-import { readerPerformanceMark } from '../../runtime/core/performance';
+import { readerDiagnostic, readerPerformanceMark } from '../../runtime/core/performance';
 import {
   PageCurlMesh,
   SlidePageEdgeShadow,
@@ -104,6 +104,36 @@ export function ReaderSurface({
     grabY,
   } =
     useReaderPageTransition(currentContent, animationStyle, animationDuration, interactiveTurn);
+
+  useEffect(() => {
+    readerDiagnostic(
+      'turn.surface.state',
+      [
+        `snapshot=${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 'none'}`,
+        `current=${currentKey ?? 'none'}`,
+        `incoming=${incomingKey ?? 'none'}`,
+        `from=${activeTransition?.from.key ?? 'none'}`,
+        `to=${activeTransition?.toKey ?? 'none'}`,
+        `mode=${activeTransition ? resolvedAnimationStyle : 'static'}`,
+        `interactive=${String(Boolean(interactiveTurn))}`,
+        `settling=${String(interactiveTurn?.settling === true)}`,
+        `picture=${String(Boolean(incomingPicture))}`,
+        `frame=${String(Boolean(incomingFrame))}`,
+      ].join(' '),
+    );
+  }, [
+    activeTransition?.from.key,
+    activeTransition?.toKey,
+    currentKey,
+    incomingFrame,
+    incomingKey,
+    incomingPicture,
+    interactiveTurn,
+    resolvedAnimationStyle,
+    snapshot.renderId,
+    snapshot.revisionId,
+    snapshot.spreadIndex,
+  ]);
 
   // The moving sheet owns its chrome. Recording it into the same source
   // picture prevents a footer or chapter title from travelling on a separate

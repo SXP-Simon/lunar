@@ -1,5 +1,5 @@
 import type { Matrix4 } from '@shopify/react-native-skia';
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
   cancelAnimation,
   Easing,
@@ -58,6 +58,12 @@ interface ReaderPageTransitionValues {
   readonly grabY: number;
 }
 
+interface ReaderPageIdentity {
+  readonly revisionId: number;
+  readonly spreadIndex: number;
+  readonly renderId?: number;
+}
+
 export interface ReaderInteractiveTurn {
   readonly content: ReaderPageContent;
   readonly direction: 1 | -1;
@@ -88,11 +94,7 @@ export function useReaderPageTransition(
   interactiveTurn?: ReaderInteractiveTurn,
 ): ReaderPageTransitionValues {
   const [displayedContent, setDisplayedContent] = useState<ReaderPageContent>();
-  const interactiveCommit = useRef<Readonly<{
-    revisionId: number;
-    spreadIndex: number;
-    renderId?: number;
-  }> | undefined>(undefined);
+  const [interactiveCommit, setInteractiveCommit] = useState<ReaderPageIdentity>();
   const [transition, setTransition] = useState<ReaderPageTransitionState>();
   const progress = useSharedValue(1);
   const animatedProgress = interactiveTurn?.progressValue ?? progress;
@@ -113,6 +115,7 @@ export function useReaderPageTransition(
       interactiveContent
       || !current
       || !displayedContent
+      || samePageIdentity(current.snapshot, interactiveCommit)
       || displayedContent.key === currentKey
       || displayedContent.frame.width !== current.frame.width
       || displayedContent.frame.height !== current.frame.height
@@ -126,7 +129,7 @@ export function useReaderPageTransition(
       toKey: currentKey!,
       direction: current.snapshot.spreadIndex > displayedContent.snapshot.spreadIndex ? 1 : -1,
     };
-  }, [current, currentKey, displayedContent, interactiveContent]);
+  }, [current, currentKey, displayedContent, interactiveCommit, interactiveContent]);
   const activeTransition = interactiveTransition
     ?? (transition?.toKey === currentKey ? transition : undefined)
     ?? automaticTransition;
@@ -145,11 +148,14 @@ export function useReaderPageTransition(
   const outgoingSlideMatrix = slideTransforms.outgoing;
   useLayoutEffect(() => {
     if (interactiveTurn) {
-      interactiveCommit.current = {
+      const targetIdentity: ReaderPageIdentity = {
         revisionId: interactiveTurn.content.snapshot.revisionId,
         spreadIndex: interactiveTurn.content.snapshot.spreadIndex,
         renderId: interactiveTurn.content.snapshot.renderId,
       };
+      if (!samePageIdentity(targetIdentity, interactiveCommit)) {
+        setInteractiveCommit(targetIdentity);
+      }
       // During release the timing driver owns the shared value. Writing the
       // last React gesture sample here would jump the curl backwards whenever
       // the runtime publishes its committed snapshot.
@@ -160,19 +166,17 @@ export function useReaderPageTransition(
     }
     if (
       current &&
-      current.snapshot.revisionId === interactiveCommit.current?.revisionId &&
-      current.snapshot.spreadIndex === interactiveCommit.current.spreadIndex &&
-      current.snapshot.renderId === interactiveCommit.current.renderId &&
+      samePageIdentity(current.snapshot, interactiveCommit) &&
       current.key !== displayedContent?.key
     ) {
       setDisplayedContent(current);
-      interactiveCommit.current = undefined;
+      setInteractiveCommit(undefined);
       setTransition(undefined);
       animatedProgress.set(1);
       return;
     }
-    if (current?.key === displayedContent?.key) {
-      interactiveCommit.current = undefined;
+    if (interactiveCommit && current?.key === displayedContent?.key) {
+      setInteractiveCommit(undefined);
     }
     if (!current) {
       // The surface has no drawable content during loading/reflow; clear the
@@ -203,7 +207,7 @@ export function useReaderPageTransition(
       setTransition(undefined);
       animatedProgress.set(1);
     }
-  }, [activeTransition, animatedProgress, current, currentKey, displayedContent, interactiveTurn, style]);
+  }, [activeTransition, animatedProgress, current, currentKey, displayedContent, interactiveCommit, interactiveTurn, style]);
 
   useLayoutEffect(() => {
     if (!activeTransition || (interactiveTurn && !interactiveTurn.settling)) return;
@@ -241,4 +245,17 @@ export function useReaderPageTransition(
     grabX,
     grabY,
   };
+}
+
+function samePageIdentity(
+  left: ReaderPageIdentity | undefined,
+  right: ReaderPageIdentity | undefined,
+): boolean {
+  return Boolean(
+    left
+    && right
+    && left.revisionId === right.revisionId
+    && left.spreadIndex === right.spreadIndex
+    && left.renderId === right.renderId,
+  );
 }

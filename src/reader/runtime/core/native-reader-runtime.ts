@@ -194,6 +194,10 @@ export class LunarReaderRuntime implements ReaderRuntime {
       const sourcePreparedSpreadIndex = targetSpreadIndex - delta;
       const preparedTurnId = ++this.preparedTurnId;
       const operation = this.operation;
+      readerDiagnostic(
+        'turn.runtime.prepare.begin',
+        `prepared=${preparedTurnId} direction=${direction} source=${describeSnapshot(sourceSnapshot)} sourcePreparedSpread=${sourcePreparedSpreadIndex} targetSpread=${targetSpreadIndex}`,
+      );
       try {
         await this.preparePicture(targetSpreadIndex, operation);
         this.assertCurrent(operation);
@@ -224,8 +228,16 @@ export class LunarReaderRuntime implements ReaderRuntime {
           targetRenderId,
         };
         this.preparedTurn = preparedTurn;
+        readerDiagnostic(
+          'turn.runtime.prepare.ready',
+          `prepared=${preparedTurnId} direction=${direction} target=${preparedTurn.revisionId}:${preparedTurn.targetSpreadIndex}:${preparedTurn.targetRenderId}`,
+        );
         return preparedTurn;
-      } catch {
+      } catch (error) {
+        readerDiagnostic(
+          'turn.runtime.prepare.error',
+          `prepared=${preparedTurnId} direction=${direction} targetSpread=${targetSpreadIndex} error=${describeError(error)}`,
+        );
         await this.restorePreparedSource(
           sourcePreparedSpreadIndex,
           sourceSnapshot.spreadIndex,
@@ -238,9 +250,24 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
   async commitPreparedTurn(preparedTurn: ReaderPreparedTurn): Promise<ReaderSnapshot> {
     return this.enqueueForeground(async () => {
-      if (this.preparedTurn?.id !== preparedTurn.id) return this.snapshot;
+      if (this.preparedTurn?.id !== preparedTurn.id) {
+        readerDiagnostic(
+          'turn.runtime.commit.stale',
+          `prepared=${preparedTurn.id} active=${this.preparedTurn?.id ?? 'none'} snapshot=${describeSnapshot(this.snapshot)}`,
+        );
+        return this.snapshot;
+      }
+      readerDiagnostic(
+        'turn.runtime.commit.begin',
+        `prepared=${preparedTurn.id} target=${preparedTurn.revisionId}:${preparedTurn.targetSpreadIndex}:${preparedTurn.targetRenderId} snapshot=${describeSnapshot(this.snapshot)}`,
+      );
       try {
-        return await this.showSpread(preparedTurn.targetSpreadIndex);
+        const snapshot = await this.showSpread(preparedTurn.targetSpreadIndex);
+        readerDiagnostic(
+          'turn.runtime.commit.ready',
+          `prepared=${preparedTurn.id} snapshot=${describeSnapshot(snapshot)}`,
+        );
+        return snapshot;
       } finally {
         if (this.preparedTurn?.id === preparedTurn.id) this.preparedTurn = undefined;
       }
@@ -249,13 +276,27 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
   async cancelPreparedTurn(preparedTurn: ReaderPreparedTurn): Promise<void> {
     await this.enqueueForeground(async () => {
-      if (this.preparedTurn?.id !== preparedTurn.id) return;
+      if (this.preparedTurn?.id !== preparedTurn.id) {
+        readerDiagnostic(
+          'turn.runtime.cancel.stale',
+          `prepared=${preparedTurn.id} active=${this.preparedTurn?.id ?? 'none'} snapshot=${describeSnapshot(this.snapshot)}`,
+        );
+        return;
+      }
       const operation = this.operation;
+      readerDiagnostic(
+        'turn.runtime.cancel.begin',
+        `prepared=${preparedTurn.id} sourceSnapshotSpread=${preparedTurn.sourceSnapshotSpreadIndex} sourcePreparedSpread=${preparedTurn.sourcePreparedSpreadIndex}`,
+      );
       try {
         await this.restorePreparedSource(
           preparedTurn.sourcePreparedSpreadIndex,
           preparedTurn.sourceSnapshotSpreadIndex,
           operation,
+        );
+        readerDiagnostic(
+          'turn.runtime.cancel.ready',
+          `prepared=${preparedTurn.id} snapshot=${describeSnapshot(this.snapshot)}`,
         );
       } finally {
         if (this.preparedTurn?.id === preparedTurn.id) this.preparedTurn = undefined;
