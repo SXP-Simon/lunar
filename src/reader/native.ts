@@ -26,6 +26,11 @@ export {
   shouldCommitTurn,
   visualTurnProgressForFingerX,
 } from './skia/anime/page-turn-gesture';
+export {
+  useReaderPageTurn,
+  type ReaderPageTurnController,
+  type UseReaderPageTurnOptions,
+} from './skia/anime/use-reader-page-turn';
 export { createReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export type { ReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export { resolveReaderRangeOverlays, resolveReaderSearchOverlays } from './skia/rendering/overlay-renderer';

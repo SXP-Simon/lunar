@@ -14,6 +14,10 @@ import type { ReaderRenderFrame, ReaderSnapshot } from '../../contracts';
 import type { CompiledReaderPicture } from '../rendering/picture-compiler';
 import { useCoverPageTransform } from './page-cover-transition';
 import { useSlidePageTransforms } from './page-slide-transition';
+import {
+  getReaderPageTurnDuration,
+  resolveReaderPageAnimationStyle,
+} from './page-turn-timing';
 
 export type ReaderPageAnimationStyle =
   | 'cover'
@@ -28,9 +32,6 @@ export const READER_PAGE_ANIMATION_STYLES: readonly ReaderPageAnimationStyle[] =
   'page',
   'slide',
 ];
-
-/** The duration shared by the page shader and the reader navigation handoff. */
-export const PAGE_TURN_DURATION_MS = 520;
 
 export interface ReaderPageContent {
   readonly key: string;
@@ -86,7 +87,7 @@ export function useReaderPageTransition(
   const [transition, setTransition] = useState<ReaderPageTransitionState>();
   const progress = useSharedValue(1);
   const animatedProgress = interactiveTurn?.progressValue ?? progress;
-  const style = resolveAnimationStyle(animationStyle);
+  const style = resolveReaderPageAnimationStyle(animationStyle);
   const currentKey = current?.key;
   const interactiveContent = interactiveTurn?.content;
   const interactiveTargetSpread = interactiveContent?.snapshot.spreadIndex;
@@ -190,14 +191,11 @@ export function useReaderPageTransition(
   useLayoutEffect(() => {
     if (!activeTransition || (interactiveTurn && !interactiveTurn.settling)) return;
     const target = interactiveTurn?.settleTo ?? 1;
-    const releaseSpeed = Math.min(6, Math.max(0, interactiveTurn?.releaseVelocity ?? 0));
-    // Keep the page handoff duration constant. A velocity sample may change
-    // the terminal pose, yet it must not shorten the visible paper turn.
-    const releaseBoost = style === 'page' ? 0 : Math.min(0.55, releaseSpeed * 0.08);
-    const baseDuration = style === 'page'
-      ? PAGE_TURN_DURATION_MS
-      : clampDuration(animationDuration);
-    const duration = Math.max(140, Math.round(baseDuration * (1 - releaseBoost)));
+    const duration = getReaderPageTurnDuration(
+      animationStyle,
+      interactiveTurn?.releaseVelocity,
+      animationDuration,
+    );
     if (!interactiveTurn?.settling) animatedProgress.set(0);
     animatedProgress.set(withTiming(target, {
       duration,
@@ -206,17 +204,7 @@ export function useReaderPageTransition(
       if (finished && !interactiveTurn) scheduleOnRN(clearTransition, activeTransition.toKey);
     }));
     return () => cancelAnimation(animatedProgress);
-  }, [activeTransition, animatedProgress, animationDuration, clearTransition, interactiveTurn, style]);
+  }, [activeTransition, animatedProgress, animationDuration, animationStyle, clearTransition, interactiveTurn, style]);
 
   return { transition: activeTransition, style, coverMatrix, slideMatrix, outgoingSlideMatrix, progress: animatedProgress, grabX, grabY };
-}
-
-function resolveAnimationStyle(style: ReaderPageAnimationStyle): 'cover' | 'page' | 'slide' {
-  if (style === 'overlay') return 'cover';
-  if (style === 'pageCurl' || style === 'simulation') return 'page';
-  return style;
-}
-
-function clampDuration(value: number): number {
-  return Number.isFinite(value) ? Math.min(1200, Math.max(120, Math.round(value))) : 360;
 }
