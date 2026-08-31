@@ -1,6 +1,7 @@
 import type { ReaderPageAnimationStyle } from './page-transition';
 
-export const PAGE_TURN_DURATION_MS = 520;
+export const PAGE_TURN_DURATION_MS = 680;
+export const PAGE_TURN_REVERT_DURATION_MS = 720;
 
 export function getReaderPageTurnDuration(
   animationStyle: ReaderPageAnimationStyle,
@@ -9,7 +10,9 @@ export function getReaderPageTurnDuration(
 ): number {
   const style = resolveReaderPageAnimationStyle(animationStyle);
   const releaseSpeed = Math.min(6, Math.max(0, releaseVelocity));
-  const releaseBoost = style === 'page' ? 0 : Math.min(0.55, releaseSpeed * 0.08);
+  const releaseBoost = style === 'page'
+    ? Math.min(0.22, releaseSpeed * 0.035)
+    : Math.min(0.55, releaseSpeed * 0.08);
   const baseDuration = style === 'page'
     ? PAGE_TURN_DURATION_MS
     : clampPageTurnDuration(animationDuration);
@@ -26,14 +29,20 @@ export function getReaderPageTurnSettleDuration(
   const style = resolveReaderPageAnimationStyle(animationStyle);
   const distance = Math.abs(clampUnit(targetProgress) - clampUnit(fromProgress));
   const fullDuration = style === 'page'
-    ? PAGE_TURN_DURATION_MS
+    ? targetProgress === 0
+      ? PAGE_TURN_REVERT_DURATION_MS
+      : PAGE_TURN_DURATION_MS
     : clampPageTurnDuration(animationDuration);
-  const minimumDuration = style === 'page' ? 120 : 90;
+  const minimumDuration = style === 'page'
+    ? targetProgress === 0 ? 220 : 160
+    : 90;
   const towardTarget = releaseVelocity * (targetProgress - fromProgress) > 0;
   const releaseSpeed = towardTarget
     ? Math.min(6, Math.abs(releaseVelocity))
     : 0;
-  const releaseBoost = style === 'page' ? 0 : Math.min(0.5, releaseSpeed * 0.08);
+  const releaseBoost = style === 'page'
+    ? Math.min(0.22, releaseSpeed * 0.035)
+    : Math.min(0.5, releaseSpeed * 0.08);
   return Math.max(
     minimumDuration,
     Math.round(fullDuration * distance * (1 - releaseBoost)),

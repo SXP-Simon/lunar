@@ -17,11 +17,9 @@ import {
   pageTurnStartBookXForTouch,
   planarTurnProgressForTranslation,
   shouldCommitPlanarTurn,
-  shouldCommitTurn,
 } from './page-turn-gesture';
 import {
   getReaderPageTurnSettleDuration,
-  resolveReaderPageAnimationStyle,
 } from './page-turn-timing';
 import type {
   ReaderInteractiveTurn,
@@ -102,7 +100,6 @@ export function useReaderPageTurn({
   const [interactiveTurn, setInteractiveTurn] = useState<ReaderInteractiveTurn>();
   const [committedHandoff, setCommittedHandoff] = useState<ReaderCommittedHandoff>();
   const isReady = snapshot.phase === 'ready';
-  const resolvedAnimationStyle = resolveReaderPageAnimationStyle(animationStyle);
 
   useEffect(() => {
     if (!committedHandoff) return;
@@ -380,9 +377,7 @@ export function useReaderPageTurn({
     const towardTargetVelocity = viewport
       ? (state.direction === 1 ? -releaseVelocity : releaseVelocity) / Math.max(1, viewport.width)
       : 0;
-    const commit = resolvedAnimationStyle === 'page'
-      ? shouldCommitTurn(state.fingerX, throwVelocity, state.throwAcceleration)
-      : shouldCommitPlanarTurn(state.renderProgress, towardTargetVelocity);
+    const commit = shouldCommitPlanarTurn(state.renderProgress, towardTargetVelocity);
     readerDiagnostic(
       'turn.release',
       [
@@ -531,7 +526,6 @@ export function useReaderPageTurn({
     gestureHeldRollTilt,
     gesturePressedEdgeX,
     gestureProgress,
-    resolvedAnimationStyle,
     runtime,
     viewport,
   ]);

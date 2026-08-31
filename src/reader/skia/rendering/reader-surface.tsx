@@ -21,6 +21,7 @@ import {
   PageCurlMesh,
   SlidePageEdgeShadow,
   useReaderPageTransition,
+  usePageCurlTexture,
   type ReaderPageAnimationStyle,
   type ReaderPageContent,
   type ReaderInteractiveTurn,
@@ -82,9 +83,12 @@ export function ReaderSurface({
   const currentKey = snapshot.phase === 'ready' && compiled && frame
     ? `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 0}`
     : undefined;
-  const currentContent: ReaderPageContent | undefined = currentKey && compiled && frame
-    ? { key: currentKey, snapshot, picture: compiled, frame }
-    : undefined;
+  const currentContent = useMemo<ReaderPageContent | undefined>(
+    () => currentKey && compiled && frame
+      ? { key: currentKey, snapshot, picture: compiled, frame }
+      : undefined,
+    [compiled, currentKey, frame, snapshot],
+  );
   // During a drag the runtime snapshot intentionally remains on the source
   // spread until release. The prepared interactive content is therefore the
   // only valid picture for the incoming layer.
@@ -138,15 +142,20 @@ export function ReaderSurface({
   // The moving sheet owns its chrome. Recording it into the same source
   // picture prevents a footer or chapter title from travelling on a separate
   // linear transform while the paper follows the curl profile.
+  const pageCurlSource = resolvedAnimationStyle === 'page'
+    ? activeTransition?.from ?? currentContent
+    : undefined;
+  const pageCurlProgressText = pageCurlSource
+    ? progressLabelForSnapshot(pageCurlSource.snapshot)
+    : undefined;
   const pageCurlTexturePicture = useMemo(() => {
-    if (!activeTransition || resolvedAnimationStyle !== 'page') return undefined;
-    const source = activeTransition.from;
+    if (!pageCurlSource || !pageCurlProgressText) return undefined;
+    const source = pageCurlSource;
     const pageScale = Math.max(0.001, scale);
     const title = source.snapshot.chapterTitle;
-    const progressText = progressLabelForSnapshot(source.snapshot);
     const titleFont = title ? runtime.getUiFont(14 / pageScale) : undefined;
-    const progressFont = progressText ? runtime.getUiFont(12 / pageScale) : undefined;
-    if ((!title || !titleFont) && (!progressText || !progressFont)) return undefined;
+    const progressFont = runtime.getUiFont(12 / pageScale);
+    if ((!title || !titleFont) && !progressFont) return undefined;
     return composePageCurlPicture({
       base: source.picture.picture,
       color: overlayColor,
@@ -154,7 +163,7 @@ export function ReaderSurface({
       offsetX,
       offsetY,
       pageScale,
-      progress: progressText,
+      progress: pageCurlProgressText,
       progressFont,
       title,
       titleFont,
@@ -163,7 +172,24 @@ export function ReaderSurface({
       width: source.frame.width,
       overlayInsets: { left: overlayLeft, right: overlayRight },
     });
-  }, [activeTransition, offsetX, offsetY, overlayColor, overlayLeft, overlayRight, resolvedAnimationStyle, runtime, scale, viewport.height, viewport.width]);
+  }, [
+    offsetX,
+    offsetY,
+    overlayColor,
+    overlayLeft,
+    overlayRight,
+    pageCurlProgressText,
+    pageCurlSource,
+    runtime,
+    scale,
+    viewport.height,
+    viewport.width,
+  ]);
+  const pageCurlTexture = usePageCurlTexture(
+    pageCurlTexturePicture ?? pageCurlSource?.picture.picture,
+    pageCurlSource?.frame.width ?? 0,
+    pageCurlSource?.frame.height ?? 0,
+  );
 
   useEffect(() => () => pageCurlTexturePicture?.dispose(), [pageCurlTexturePicture]);
 
@@ -237,10 +263,12 @@ export function ReaderSurface({
                 heldRollTilt={interactiveTurn?.heldRollTilt}
                 heldRollTiltValue={interactiveTurn?.heldRollTiltValue}
                 height={activeTransition.from.frame.height}
+                initialProgress={interactiveTurn?.progress}
                 picture={activeTransition.from.picture}
                 pressedEdgeX={interactiveTurn?.pressedEdgeX}
                 pressedEdgeXValue={interactiveTurn?.pressedEdgeXValue}
                 progress={progress}
+                texture={pageCurlTexture}
                 texturePicture={pageCurlTexturePicture}
                 width={activeTransition.from.frame.width}
               />
