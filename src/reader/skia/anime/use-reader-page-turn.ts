@@ -4,7 +4,10 @@ import { useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import type { ReaderSnapshot, ReaderViewport } from '../../contracts';
-import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
+import type {
+  LunarReaderRuntime,
+  ReaderPreparedTurn,
+} from '../../runtime/core/native-reader-runtime';
 import {
   anchoredGestureFingerX,
   bookXForGestureTravel,
@@ -31,7 +34,6 @@ interface ReaderDragState {
   readonly startX: number;
   direction: 1 | -1;
   directionLocked: boolean;
-  targetSpread: number;
   startBookX: number;
   renderProgress: number;
   grabX: number;
@@ -43,6 +45,8 @@ interface ReaderDragState {
   throwAcceleration: number;
   preparing: boolean;
   prepared: boolean;
+  preparation?: Promise<ReaderPreparedTurn | undefined>;
+  preparedTurn?: ReaderPreparedTurn;
 }
 
 export interface UseReaderPageTurnOptions {
@@ -73,7 +77,6 @@ export function useReaderPageTurn({
 }: UseReaderPageTurnOptions): ReaderPageTurnController {
   const dragState = useRef<ReaderDragState | undefined>(undefined);
   const handoffGeneration = useRef(0);
-  const preparationCache = useRef(new Map<string, Promise<boolean>>());
   const gestureProgress = useSharedValue(0);
   const gestureStarted = useSharedValue(false);
   const gestureDirectionLocked = useSharedValue(false);
@@ -85,31 +88,7 @@ export function useReaderPageTurn({
   const gestureHeldRollTilt = useSharedValue(0);
   const [interactiveTurn, setInteractiveTurn] = useState<ReaderInteractiveTurn>();
   const isReady = snapshot.phase === 'ready';
-  const totalSpreads = snapshot.totalSpreads;
   const resolvedAnimationStyle = resolveReaderPageAnimationStyle(animationStyle);
-
-  const prepareTarget = useCallback((revisionId: number, spreadIndex: number) => {
-    const key = `${revisionId}:${spreadIndex}`;
-    const cached = preparationCache.current.get(key);
-    if (cached) return cached;
-    const preparation = runtime.prepareSpread(spreadIndex).then((prepared) => {
-      if (!prepared) preparationCache.current.delete(key);
-      return prepared;
-    });
-    preparationCache.current.set(key, preparation);
-    return preparation;
-  }, [runtime]);
-
-  useEffect(() => {
-    preparationCache.current.clear();
-    if (!isReady) return;
-    const candidates = [snapshot.spreadIndex + 1, snapshot.spreadIndex - 1]
-      .filter((spreadIndex) => spreadIndex >= 0)
-      .filter((spreadIndex) => totalSpreads === undefined || spreadIndex < totalSpreads);
-    for (const spreadIndex of candidates) {
-      void prepareTarget(snapshot.revisionId, spreadIndex);
-    }
-  }, [isReady, prepareTarget, snapshot.revisionId, snapshot.spreadIndex, totalSpreads]);
 
   const beginDrag = useCallback((startX: number, startY: number) => {
     if (!isReady || !viewport || interactiveTurn?.settling) return;
@@ -120,7 +99,6 @@ export function useReaderPageTurn({
       startX,
       direction: 1,
       directionLocked: false,
-      targetSpread: snapshot.spreadIndex + 1,
       startBookX: 1,
       renderProgress: 0,
       grabX: Math.min(viewport.width, Math.max(0, startX)),
@@ -137,21 +115,31 @@ export function useReaderPageTurn({
 
   const showPreparedTurn = useCallback((
     state: ReaderDragState,
-    targetSpread: number,
+    preparedTurn: ReaderPreparedTurn,
   ): boolean => {
-    if (runtime.getSnapshot().revisionId !== state.revisionId) return false;
-    const targetPicture = runtime.getCurrentPicture(state.revisionId, targetSpread);
-    const targetFrame = runtime.getCurrentFrame(targetSpread);
+    if (runtime.getSnapshot().revisionId !== preparedTurn.revisionId) return false;
+    state.preparedTurn = preparedTurn;
+    const targetPicture = runtime.getCurrentPicture(
+      preparedTurn.revisionId,
+      preparedTurn.targetSpreadIndex,
+      preparedTurn.targetRenderId,
+    );
+    const targetFrame = runtime.getCurrentFrame(preparedTurn.targetSpreadIndex);
     if (!targetPicture || !targetFrame) return false;
     state.preparing = false;
     state.prepared = true;
     setInteractiveTurn({
       content: {
-        key: `${state.revisionId}:${targetSpread}:drag`,
-        snapshot: { ...snapshot, spreadIndex: targetSpread, renderId: undefined },
+        key: `${preparedTurn.revisionId}:${preparedTurn.targetSpreadIndex}:${preparedTurn.targetRenderId}:drag`,
+        snapshot: {
+          ...snapshot,
+          spreadIndex: preparedTurn.targetSpreadIndex,
+          renderId: preparedTurn.targetRenderId,
+        },
         picture: targetPicture,
         frame: targetFrame,
       } satisfies ReaderPageContent,
+      direction: state.direction,
       progress: state.renderProgress,
       progressValue: gestureProgress,
       grabX: state.grabX,
@@ -185,7 +173,6 @@ export function useReaderPageTurn({
     }
 
     const direction = state.direction;
-    const targetSpread = state.startSpread + direction;
     state.startBookX = pageTurnStartBookXForTouch(state.startX, direction, viewport.width);
     const currentBookX = bookXForGestureTravel(
       state.startBookX,
@@ -208,31 +195,31 @@ export function useReaderPageTurn({
     state.throwVelocity += (instantaneousThrowVelocity - state.throwVelocity) * 0.35;
     state.grabY = Math.min(viewport.height, Math.max(0, absoluteY - surfaceTop));
 
-    if (state.targetSpread !== targetSpread) {
-      state.targetSpread = targetSpread;
-      state.preparing = false;
-      state.prepared = false;
-      setInteractiveTurn(undefined);
+    if (state.preparedTurn && !state.prepared) {
+      showPreparedTurn(state, state.preparedTurn);
+      return;
     }
-    if (targetSpread < 0 || (totalSpreads !== undefined && targetSpread >= totalSpreads)) return;
-
-    if (!state.prepared && showPreparedTurn(state, targetSpread)) return;
 
     if (!state.preparing && !state.prepared) {
       state.preparing = true;
-      const revisionId = state.revisionId;
-      void prepareTarget(revisionId, targetSpread).then((prepared) => {
+      const turnDirection = direction > 0 ? 'next' : 'previous';
+      const preparation = runtime.prepareAdjacent(turnDirection);
+      state.preparation = preparation;
+      void preparation.then((preparedTurn) => {
         const current = dragState.current;
         if (
           !current
-          || current.revisionId !== revisionId
-          || current.targetSpread !== targetSpread
+          || current !== state
+          || current.revisionId !== state.revisionId
           || current.direction !== direction
-          || runtime.getSnapshot().revisionId !== revisionId
+          || runtime.getSnapshot().revisionId !== state.revisionId
         ) {
+          if (preparedTurn) void runtime.cancelPreparedTurn(preparedTurn);
           return;
         }
-        if (!prepared || !showPreparedTurn(current, targetSpread)) {
+        current.preparation = undefined;
+        if (preparedTurn) current.preparedTurn = preparedTurn;
+        if (!preparedTurn || !showPreparedTurn(current, preparedTurn)) {
           current.preparing = false;
         }
       });
@@ -243,20 +230,20 @@ export function useReaderPageTurn({
     gesturePressedEdgeX,
     gestureProgress,
     isReady,
-    prepareTarget,
     runtime,
     showPreparedTurn,
     snapshot,
     surfaceTop,
-    totalSpreads,
     viewport,
   ]);
 
-  const endDrag = useCallback((releaseVelocity = 0, releaseTranslationX = 0) => {
-    if (interactiveTurn?.settling) return;
-    const state = dragState.current;
-    dragState.current = undefined;
-    if (!state?.directionLocked) {
+  const finishDrag = useCallback((
+    state: ReaderDragState,
+    releaseVelocity = 0,
+    releaseTranslationX = 0,
+  ) => {
+    if (dragState.current === state) dragState.current = undefined;
+    if (!state.directionLocked) {
       setInteractiveTurn(undefined);
       return;
     }
@@ -292,6 +279,7 @@ export function useReaderPageTurn({
       : shouldCommitPlanarTurn(state.renderProgress, towardTargetVelocity);
     if (!commit) {
       if (!state.prepared) {
+        if (state.preparedTurn) void runtime.cancelPreparedTurn(state.preparedTurn);
         setInteractiveTurn(undefined);
         return;
       }
@@ -303,6 +291,10 @@ export function useReaderPageTurn({
         animationDuration,
       );
       const generation = ++handoffGeneration.current;
+      const preparedTurn = state.preparedTurn;
+      const restore = preparedTurn
+        ? runtime.cancelPreparedTurn(preparedTurn)
+        : Promise.resolve();
       setInteractiveTurn((turn) => turn ? {
         ...turn,
         progress: state.renderProgress,
@@ -317,7 +309,7 @@ export function useReaderPageTurn({
         settling: true,
         settleTo: 0,
       } : turn);
-      void waitForPageTurn(settleDuration)
+      void Promise.allSettled([restore, waitForPageTurn(settleDuration)])
         .then(waitForPageHandoffFrames)
         .then(() => {
           if (handoffGeneration.current === generation) setInteractiveTurn(undefined);
@@ -325,9 +317,14 @@ export function useReaderPageTurn({
       return;
     }
 
-    if (!state.prepared) {
+    const preparedTurn = state.preparedTurn;
+    if (!state.prepared || !preparedTurn) {
       setInteractiveTurn(undefined);
-      void (state.direction > 0 ? runtime.next() : runtime.previous());
+      void (preparedTurn
+        ? runtime.commitPreparedTurn(preparedTurn)
+        : state.direction > 0
+          ? runtime.next()
+          : runtime.previous());
       return;
     }
 
@@ -343,7 +340,7 @@ export function useReaderPageTurn({
       settling: true,
       settleTo: 1,
     } : turn);
-    const navigate = state.direction > 0 ? runtime.next() : runtime.previous();
+    const navigate = runtime.commitPreparedTurn(preparedTurn);
     const settleDuration = getReaderPageTurnSettleDuration(
       animationStyle,
       state.renderProgress,
@@ -354,7 +351,12 @@ export function useReaderPageTurn({
     const generation = ++handoffGeneration.current;
     void Promise.allSettled([navigate, waitForPageTurn(settleDuration)]).then(() => {
       if (handoffGeneration.current !== generation) return;
-      if (runtime.getSnapshot().spreadIndex !== state.targetSpread) {
+      const currentSnapshot = runtime.getSnapshot();
+      if (
+        currentSnapshot.revisionId !== preparedTurn.revisionId
+        || currentSnapshot.spreadIndex !== preparedTurn.targetSpreadIndex
+        || currentSnapshot.renderId !== preparedTurn.targetRenderId
+      ) {
         setInteractiveTurn(undefined);
         return;
       }
@@ -369,11 +371,26 @@ export function useReaderPageTurn({
     gestureHeldRollTilt,
     gesturePressedEdgeX,
     gestureProgress,
-    interactiveTurn?.settling,
     resolvedAnimationStyle,
     runtime,
     viewport,
   ]);
+
+  const endDrag = useCallback((releaseVelocity = 0, releaseTranslationX = 0) => {
+    if (interactiveTurn?.settling) return;
+    const state = dragState.current;
+    if (!state) return;
+    if (state.preparation && !state.preparedTurn) {
+      const preparation = state.preparation;
+      void preparation.then(() => {
+        if (dragState.current === state) {
+          finishDrag(state, releaseVelocity, releaseTranslationX);
+        }
+      });
+      return;
+    }
+    finishDrag(state, releaseVelocity, releaseTranslationX);
+  }, [finishDrag, interactiveTurn?.settling]);
 
   /* eslint-disable react-hooks/refs, react-hooks/immutability */
   const viewportWidth = viewport?.width ?? 1;
@@ -493,21 +510,26 @@ export function useReaderPageTurn({
 
   const next = useCallback(() => {
     handoffGeneration.current += 1;
+    const preparedTurn = dragState.current?.preparedTurn;
     dragState.current = undefined;
     setInteractiveTurn(undefined);
-    return runtime.next();
+    return (preparedTurn ? runtime.cancelPreparedTurn(preparedTurn) : Promise.resolve())
+      .then(() => runtime.next());
   }, [runtime]);
   const previous = useCallback(() => {
     handoffGeneration.current += 1;
+    const preparedTurn = dragState.current?.preparedTurn;
     dragState.current = undefined;
     setInteractiveTurn(undefined);
-    return runtime.previous();
+    return (preparedTurn ? runtime.cancelPreparedTurn(preparedTurn) : Promise.resolve())
+      .then(() => runtime.previous());
   }, [runtime]);
 
   useEffect(() => () => {
     handoffGeneration.current += 1;
+    const preparedTurn = dragState.current?.preparedTurn;
     dragState.current = undefined;
-    preparationCache.current.clear();
+    if (preparedTurn) void runtime.cancelPreparedTurn(preparedTurn);
   }, [runtime]);
 
   return { gesture, interactiveTurn, isSettling, next, previous };

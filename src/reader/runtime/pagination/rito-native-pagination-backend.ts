@@ -341,6 +341,12 @@ class RitoNativePublication implements LoadedReaderPublication {
     }
     return this.visibleIndex + (direction === 'next' ? 1 : -1);
   }
+  rebaseVisibleSpreadIndex(spreadIndex: number): void {
+    const target = Math.max(0, Math.round(spreadIndex));
+    const delta = target - this.visibleIndex;
+    this.rebaseSlots(delta);
+    readerDiagnostic('slot.restore', `target=${target} delta=${delta} visibleIndex=${this.visibleIndex}`);
+  }
   get totalPages() {
     return Math.max(1, this.availableArtifacts.reduce((max, artifact) => {
       const end = artifact.bookPageCount

@@ -1,6 +1,8 @@
 export {
   LunarReaderRuntime,
   type ReaderBookDataLoader,
+  type ReaderPreparedTurn,
+  type ReaderTurnDirection,
 } from './runtime/core/native-reader-runtime';
 export {
   RitoNativePaginationBackend,

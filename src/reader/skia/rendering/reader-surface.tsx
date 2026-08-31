@@ -141,7 +141,8 @@ export function ReaderSurface({
     onTransformChange?.(createReaderSurfaceTransform(scale, offsetX, offsetY));
   }, [offsetX, offsetY, onTransformChange, scale]);
 
-  const canRenderFrame = compiled !== undefined && frame !== undefined && snapshot.phase === 'ready';
+  const canRenderFrame = snapshot.phase === 'ready'
+    && ((compiled !== undefined && frame !== undefined) || activeTransition !== undefined);
   const renderChrome = (
     chromeSnapshot: ReaderSnapshot,
     chromeFrame: { readonly width: number; readonly height: number },

@@ -60,6 +60,7 @@ interface ReaderPageTransitionValues {
 
 export interface ReaderInteractiveTurn {
   readonly content: ReaderPageContent;
+  readonly direction: 1 | -1;
   readonly progress: number;
   /** Shared value updated by the gesture without a React render. */
   readonly progressValue?: SharedValue<number>;
@@ -87,7 +88,11 @@ export function useReaderPageTransition(
   interactiveTurn?: ReaderInteractiveTurn,
 ): ReaderPageTransitionValues {
   const [displayedContent, setDisplayedContent] = useState<ReaderPageContent>();
-  const interactiveCommitSpread = useRef<number | undefined>(undefined);
+  const interactiveCommit = useRef<Readonly<{
+    revisionId: number;
+    spreadIndex: number;
+    renderId?: number;
+  }> | undefined>(undefined);
   const [transition, setTransition] = useState<ReaderPageTransitionState>();
   const progress = useSharedValue(1);
   const animatedProgress = interactiveTurn?.progressValue ?? progress;
@@ -99,9 +104,10 @@ export function useReaderPageTransition(
     ? {
         from: displayedContent,
         toKey: interactiveContent.key,
-        direction: (interactiveTargetSpread ?? displayedContent.snapshot.spreadIndex) > displayedContent.snapshot.spreadIndex ? 1 : -1,
+        direction: interactiveTurn?.direction
+          ?? ((interactiveTargetSpread ?? displayedContent.snapshot.spreadIndex) > displayedContent.snapshot.spreadIndex ? 1 : -1),
     }
-    : undefined, [displayedContent, interactiveContent, interactiveTargetSpread]);
+    : undefined, [displayedContent, interactiveContent, interactiveTargetSpread, interactiveTurn?.direction]);
   const automaticTransition = useMemo<ReaderPageTransitionState | undefined>(() => {
     if (
       interactiveContent
@@ -128,8 +134,9 @@ export function useReaderPageTransition(
     setTransition((value) => value?.toKey === key ? undefined : value);
   }, []);
   const direction = activeTransition?.direction ?? 1;
-  const width = current?.frame.width ?? 0;
-  const height = current?.frame.height ?? 0;
+  const transitionFrame = current?.frame ?? displayedContent?.frame ?? interactiveContent?.frame;
+  const width = transitionFrame?.width ?? 0;
+  const height = transitionFrame?.height ?? 0;
   const grabX = interactiveTurn?.grabX ?? (direction > 0 ? 0 : width);
   const grabY = interactiveTurn?.grabY ?? height / 2;
   const coverMatrix = useCoverPageTransform(direction, width, animatedProgress);
@@ -138,7 +145,11 @@ export function useReaderPageTransition(
   const outgoingSlideMatrix = slideTransforms.outgoing;
   useLayoutEffect(() => {
     if (interactiveTurn) {
-      interactiveCommitSpread.current = interactiveTurn.content.snapshot.spreadIndex;
+      interactiveCommit.current = {
+        revisionId: interactiveTurn.content.snapshot.revisionId,
+        spreadIndex: interactiveTurn.content.snapshot.spreadIndex,
+        renderId: interactiveTurn.content.snapshot.renderId,
+      };
       // During release the timing driver owns the shared value. Writing the
       // last React gesture sample here would jump the curl backwards whenever
       // the runtime publishes its committed snapshot.
@@ -149,17 +160,19 @@ export function useReaderPageTransition(
     }
     if (
       current &&
-      current.snapshot.spreadIndex === interactiveCommitSpread.current &&
-      current.snapshot.spreadIndex !== displayedContent?.snapshot.spreadIndex
+      current.snapshot.revisionId === interactiveCommit.current?.revisionId &&
+      current.snapshot.spreadIndex === interactiveCommit.current.spreadIndex &&
+      current.snapshot.renderId === interactiveCommit.current.renderId &&
+      current.key !== displayedContent?.key
     ) {
       setDisplayedContent(current);
-      interactiveCommitSpread.current = undefined;
+      interactiveCommit.current = undefined;
       setTransition(undefined);
       animatedProgress.set(1);
       return;
     }
-    if (current && current.snapshot.spreadIndex === displayedContent?.snapshot.spreadIndex) {
-      interactiveCommitSpread.current = undefined;
+    if (current?.key === displayedContent?.key) {
+      interactiveCommit.current = undefined;
     }
     if (!current) {
       // The surface has no drawable content during loading/reflow; clear the

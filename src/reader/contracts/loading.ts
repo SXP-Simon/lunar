@@ -425,6 +425,8 @@ export interface ReaderPublicationView {
   readonly canNavigate?: (direction: 'next' | 'previous') => boolean;
   /** Returns the render slot for an adjacent turn, rebasing private slots when needed. */
   readonly getAdjacentSpreadIndex?: (currentSpreadIndex: number, direction: 'next' | 'previous') => number;
+  /** Relabels private render slots after a prepared turn returns to its source. */
+  readonly rebaseVisibleSpreadIndex?: (spreadIndex: number) => void;
   getFrame(spreadIndex: number): ReaderRenderFrame | undefined;
   getImage(source: string): Uint8Array | undefined;
   /** Resolves a TOC target, paginating it on demand when necessary. */

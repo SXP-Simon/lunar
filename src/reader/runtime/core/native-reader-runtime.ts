@@ -25,6 +25,18 @@ import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPe
 
 export type ReaderBookDataLoader = (request: ReaderOpenRequest) => Promise<ArrayBuffer>;
 
+export type ReaderTurnDirection = 'next' | 'previous';
+
+export interface ReaderPreparedTurn {
+  readonly id: number;
+  readonly revisionId: number;
+  readonly direction: ReaderTurnDirection;
+  readonly sourceSnapshotSpreadIndex: number;
+  readonly sourcePreparedSpreadIndex: number;
+  readonly targetSpreadIndex: number;
+  readonly targetRenderId: number;
+}
+
 interface RetainedReaderPicture {
   readonly renderId: number;
   readonly compiled: CompiledReaderPicture;
@@ -74,6 +86,8 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private backgroundScheduled = false;
   private foregroundQueued = 0;
   private renderId = 0;
+  private preparedTurnId = 0;
+  private preparedTurn?: ReaderPreparedTurn;
   /**
    * Foreground operations share one queue. Background work has its own lane;
    * the publication queue and native compare-and-swap checks keep its result
@@ -155,15 +169,98 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.enqueueNavigation(() => this.resolveSpreadTarget(spreadIndex));
   }
 
-  /** Prepare an adjacent spread without changing the visible snapshot. */
-  async prepareSpread(spreadIndex: number): Promise<boolean> {
-    if (!this.publication || this.snapshot.phase !== 'ready') return false;
-    try {
-      await this.preparePicture(Math.round(spreadIndex), this.operation);
-      return true;
-    } catch {
-      return false;
-    }
+  async prepareAdjacent(direction: ReaderTurnDirection): Promise<ReaderPreparedTurn | undefined> {
+    if (!this.publication || this.snapshot.phase !== 'ready') return undefined;
+    return this.enqueueForeground(async () => {
+      const publication = this.publication;
+      const sourceSnapshot = this.snapshot;
+      if (!publication || sourceSnapshot.phase !== 'ready') return undefined;
+      if (publication.canNavigate?.(direction) === false) return undefined;
+      const existing = this.preparedTurn;
+      if (
+        existing
+        && existing.revisionId === sourceSnapshot.revisionId
+        && existing.sourceSnapshotSpreadIndex === sourceSnapshot.spreadIndex
+        && existing.direction === direction
+      ) {
+        return existing;
+      }
+      if (existing) return undefined;
+      const delta = direction === 'next' ? 1 : -1;
+      const targetSpreadIndex = publication.getAdjacentSpreadIndex?.(
+        sourceSnapshot.spreadIndex,
+        direction,
+      ) ?? sourceSnapshot.spreadIndex + delta;
+      const sourcePreparedSpreadIndex = targetSpreadIndex - delta;
+      const preparedTurnId = ++this.preparedTurnId;
+      const operation = this.operation;
+      try {
+        await this.preparePicture(targetSpreadIndex, operation);
+        this.assertCurrent(operation);
+        if (
+          this.snapshot.revisionId !== sourceSnapshot.revisionId
+          || this.snapshot.spreadIndex !== sourceSnapshot.spreadIndex
+        ) {
+          return undefined;
+        }
+        const targetRenderId = this.pictureRenderIds.get(
+          pictureSlotKey(sourceSnapshot.revisionId, targetSpreadIndex),
+        );
+        if (targetRenderId === undefined) {
+          await this.restorePreparedSource(
+            sourcePreparedSpreadIndex,
+            sourceSnapshot.spreadIndex,
+            operation,
+          );
+          return undefined;
+        }
+        const preparedTurn: ReaderPreparedTurn = {
+          id: preparedTurnId,
+          revisionId: sourceSnapshot.revisionId,
+          direction,
+          sourceSnapshotSpreadIndex: sourceSnapshot.spreadIndex,
+          sourcePreparedSpreadIndex,
+          targetSpreadIndex,
+          targetRenderId,
+        };
+        this.preparedTurn = preparedTurn;
+        return preparedTurn;
+      } catch {
+        await this.restorePreparedSource(
+          sourcePreparedSpreadIndex,
+          sourceSnapshot.spreadIndex,
+          operation,
+        ).catch(() => undefined);
+        return undefined;
+      }
+    });
+  }
+
+  async commitPreparedTurn(preparedTurn: ReaderPreparedTurn): Promise<ReaderSnapshot> {
+    return this.enqueueForeground(async () => {
+      if (this.preparedTurn?.id !== preparedTurn.id) return this.snapshot;
+      try {
+        return await this.showSpread(preparedTurn.targetSpreadIndex);
+      } finally {
+        if (this.preparedTurn?.id === preparedTurn.id) this.preparedTurn = undefined;
+      }
+    });
+  }
+
+  async cancelPreparedTurn(preparedTurn: ReaderPreparedTurn): Promise<void> {
+    await this.enqueueForeground(async () => {
+      if (this.preparedTurn?.id !== preparedTurn.id) return;
+      const operation = this.operation;
+      try {
+        await this.restorePreparedSource(
+          preparedTurn.sourcePreparedSpreadIndex,
+          preparedTurn.sourceSnapshotSpreadIndex,
+          operation,
+        );
+      } finally {
+        if (this.preparedTurn?.id === preparedTurn.id) this.preparedTurn = undefined;
+      }
+    });
   }
 
   async goToToc(href: string): Promise<ReaderSnapshot> {
@@ -373,6 +470,16 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.enqueueForeground(() => this.showSpread(resolveTarget()));
   }
 
+  private async restorePreparedSource(
+    sourcePreparedSpreadIndex: number,
+    sourceSnapshotSpreadIndex: number,
+    operation: number,
+  ): Promise<void> {
+    await this.preparePicture(sourcePreparedSpreadIndex, operation);
+    this.publication?.rebaseVisibleSpreadIndex?.(sourceSnapshotSpreadIndex);
+    await this.preparePicture(sourceSnapshotSpreadIndex, operation);
+  }
+
   private resolveSpreadTarget(requestedSpreadIndex: number): number {
     const requested = Math.round(Number.isFinite(requestedSpreadIndex) ? requestedSpreadIndex : 0);
     const currentBookSpread = this.snapshot.bookSpreadIndex;
@@ -390,7 +497,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.enqueueForeground(async () => this.showSpread(await resolveTarget()));
   }
 
-  private enqueueForeground(action: () => Promise<ReaderSnapshot>): Promise<ReaderSnapshot> {
+  private enqueueForeground<T>(action: () => Promise<T>): Promise<T> {
     this.foregroundQueued += 1;
     return this.enqueueAction(async () => {
       try {
@@ -450,7 +557,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   private scheduleBackground(operation: number): void {
-    if (!this.publication || this.snapshot.phase !== 'ready' || this.backgroundScheduled || this.paginationComplete || this.foregroundQueued > 0 || operation !== this.operation || this.abortController?.signal.aborted) {
+    if (!this.publication || this.snapshot.phase !== 'ready' || this.backgroundScheduled || this.paginationComplete || this.foregroundQueued > 0 || this.preparedTurn || operation !== this.operation || this.abortController?.signal.aborted) {
       return;
     }
     this.backgroundScheduled = true;
@@ -651,6 +758,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.textMeasurer?.dispose();
     this.textMeasurer = undefined;
     this.publication = undefined;
+    this.preparedTurn = undefined;
     this.paginationComplete = false;
     this.backgroundScheduled = false;
     this.fontRegistry = undefined;
