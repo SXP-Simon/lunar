@@ -13,7 +13,7 @@ import { useEffect } from 'react';
 import { useDerivedValue, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { runOnUI } from 'react-native-worklets';
 
-import type { CompiledReaderPicture } from '../rendering/picture-compiler';
+import type { CompiledReaderPicture } from '../../rendering/picture-compiler';
 
 /**
  * Continuous page surface adapted from react-native-natural-page-turn.

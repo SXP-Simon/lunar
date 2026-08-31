@@ -12,8 +12,8 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import type { ReaderRenderFrame, ReaderSnapshot } from '../../contracts';
 import type { CompiledReaderPicture } from '../rendering/picture-compiler';
-import { useCoverPageTransform } from './page-cover-transition';
-import { useSlidePageTransforms } from './page-slide-transition';
+import { useCoverPageTransform } from './effect/cover';
+import { useSlidePageTransforms } from './effect/slide';
 import {
   getReaderPageTurnDuration,
   resolveReaderPageAnimationStyle,
