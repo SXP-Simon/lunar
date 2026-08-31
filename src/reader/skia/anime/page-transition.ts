@@ -59,6 +59,8 @@ interface ReaderPageTransitionValues {
 export interface ReaderInteractiveTurn {
   readonly content: ReaderPageContent;
   readonly progress: number;
+  /** Shared value updated by the gesture without a React render. */
+  readonly progressValue?: SharedValue<number>;
   readonly grabX?: number;
   readonly grabY?: number;
   /** Normalized release speed in page-widths per second. */
@@ -83,6 +85,7 @@ export function useReaderPageTransition(
   const interactiveCommitSpread = useRef<number | undefined>(undefined);
   const [transition, setTransition] = useState<ReaderPageTransitionState>();
   const progress = useSharedValue(1);
+  const animatedProgress = interactiveTurn?.progressValue ?? progress;
   const style = resolveAnimationStyle(animationStyle);
   const currentKey = current?.key;
   const interactiveContent = interactiveTurn?.content;
@@ -124,8 +127,8 @@ export function useReaderPageTransition(
   const height = current?.frame.height ?? 0;
   const grabX = interactiveTurn?.grabX ?? (direction > 0 ? 0 : width);
   const grabY = interactiveTurn?.grabY ?? height / 2;
-  const coverMatrix = useCoverPageTransform(direction, width, progress);
-  const slideTransforms = useSlidePageTransforms(direction, width, progress);
+  const coverMatrix = useCoverPageTransform(direction, width, animatedProgress);
+  const slideTransforms = useSlidePageTransforms(direction, width, animatedProgress);
   const slideMatrix = slideTransforms.incoming;
   const outgoingSlideMatrix = slideTransforms.outgoing;
   useLayoutEffect(() => {
@@ -134,8 +137,8 @@ export function useReaderPageTransition(
       // During release the timing driver owns the shared value. Writing the
       // last React gesture sample here would jump the curl backwards whenever
       // the runtime publishes its committed snapshot.
-      if (!interactiveTurn.settling) {
-        progress.set(Math.min(1, Math.max(0, interactiveTurn.progress)));
+      if (!interactiveTurn.settling && !interactiveTurn.progressValue) {
+        animatedProgress.set(Math.min(1, Math.max(0, interactiveTurn.progress)));
       }
       return;
     }
@@ -147,7 +150,7 @@ export function useReaderPageTransition(
       setDisplayedContent(current);
       interactiveCommitSpread.current = undefined;
       setTransition(undefined);
-      progress.set(1);
+      animatedProgress.set(1);
       return;
     }
     if (current && current.snapshot.spreadIndex === displayedContent?.snapshot.spreadIndex) {
@@ -158,7 +161,7 @@ export function useReaderPageTransition(
       // retained page before the next ready frame is considered.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayedContent(undefined);
-      progress.set(1);
+      animatedProgress.set(1);
       return;
     }
     if (displayedContent?.key === current.key) return;
@@ -180,9 +183,9 @@ export function useReaderPageTransition(
       });
     } else {
       setTransition(undefined);
-      progress.set(1);
+      animatedProgress.set(1);
     }
-  }, [activeTransition, current, currentKey, displayedContent, interactiveTurn, progress, style]);
+  }, [activeTransition, animatedProgress, current, currentKey, displayedContent, interactiveTurn, style]);
 
   useLayoutEffect(() => {
     if (!activeTransition || (interactiveTurn && !interactiveTurn.settling)) return;
@@ -195,17 +198,17 @@ export function useReaderPageTransition(
       ? PAGE_TURN_DURATION_MS
       : clampDuration(animationDuration);
     const duration = Math.max(140, Math.round(baseDuration * (1 - releaseBoost)));
-    if (!interactiveTurn?.settling) progress.set(0);
-    progress.set(withTiming(target, {
+    if (!interactiveTurn?.settling) animatedProgress.set(0);
+    animatedProgress.set(withTiming(target, {
       duration,
       easing: style === 'page' ? Easing.inOut(Easing.sin) : Easing.inOut(Easing.cubic),
     }, (finished) => {
       if (finished && !interactiveTurn) scheduleOnRN(clearTransition, activeTransition.toKey);
     }));
-    return () => cancelAnimation(progress);
-  }, [activeTransition, animationDuration, clearTransition, interactiveTurn, progress, style]);
+    return () => cancelAnimation(animatedProgress);
+  }, [activeTransition, animatedProgress, animationDuration, clearTransition, interactiveTurn, style]);
 
-  return { transition: activeTransition, style, coverMatrix, slideMatrix, outgoingSlideMatrix, progress, grabX, grabY };
+  return { transition: activeTransition, style, coverMatrix, slideMatrix, outgoingSlideMatrix, progress: animatedProgress, grabX, grabY };
 }
 
 function resolveAnimationStyle(style: ReaderPageAnimationStyle): 'cover' | 'page' | 'slide' {

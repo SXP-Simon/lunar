@@ -3,6 +3,8 @@ import { Spinner } from 'heroui-native/spinner';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { PixelRatio, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useSharedValue } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
@@ -70,6 +72,13 @@ export default function ReaderScreen() {
     theme: readerTheme,
   });
   const dragState = useRef<ReaderDragState | undefined>(undefined);
+  const handoffGeneration = useRef(0);
+  const gestureProgress = useSharedValue(0);
+  const gestureStarted = useSharedValue(false);
+  const gestureDirectionLocked = useSharedValue(false);
+  const gestureDirection = useSharedValue<1 | -1>(1);
+  const gestureStartX = useSharedValue(0);
+  const gestureStartBookX = useSharedValue(1);
   const [interactiveTurn, setInteractiveTurn] = useState<ReaderInteractiveTurn>();
   const isReady = session.snapshot.phase === 'ready';
   const chapterTitle = session.snapshot.chapterTitle
@@ -86,7 +95,8 @@ export default function ReaderScreen() {
     : Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
 
   const beginDrag = useCallback((startX: number, startY: number) => {
-    if (!isReady || !viewport) return;
+    if (!isReady || !viewport || interactiveTurn?.settling) return;
+    handoffGeneration.current += 1;
     dragState.current = {
       startSpread: session.snapshot.spreadIndex,
       startX,
@@ -109,7 +119,7 @@ export default function ReaderScreen() {
       preparing: false,
       prepared: false,
     };
-  }, [isReady, session.snapshot.spreadIndex, viewport]);
+  }, [interactiveTurn?.settling, isReady, session.snapshot.spreadIndex, viewport]);
 
   const updateDrag = useCallback((translationX: number, absoluteY: number, velocityX: number) => {
     const state = dragState.current;
@@ -166,6 +176,7 @@ export default function ReaderScreen() {
           // finger. `latestProgress` only describes the post-hinge commit
           // stage and is intentionally near zero while the sheet is lifting.
           progress: current.renderProgress,
+          progressValue: gestureProgress,
           grabX: current.grabX,
           grabY: current.grabY,
           pressedEdgeX: current.pressedEdgeX,
@@ -189,14 +200,15 @@ export default function ReaderScreen() {
         throwAcceleration: state.throwAcceleration,
       } : turn);
     }
-  }, [insets.top, isReady, session.runtime, session.snapshot, totalSpreads, viewport]);
+  }, [gestureProgress, insets.top, isReady, session.runtime, session.snapshot, totalSpreads, viewport]);
 
   const endDrag = useCallback((releaseVelocity = 0, releaseTranslationX = 0) => {
+    if (interactiveTurn?.settling) return;
     const state = dragState.current;
     dragState.current = undefined;
     if (
       !state
-      || !state.prepared
+      || !state.directionLocked
     ) {
       setInteractiveTurn(undefined);
       return;
@@ -228,9 +240,18 @@ export default function ReaderScreen() {
     const normalizedVelocity = viewport
       ? Math.abs(releaseVelocity) / Math.max(1, viewport.width)
       : 0;
+    if (!state.prepared) {
+      // The target picture may still be compiling when a fast release arrives.
+      // Let runtime navigation finish the preparation; its normal transition
+      // will take over once the ready snapshot is published.
+      setInteractiveTurn(undefined);
+      void (state.direction > 0 ? session.runtime.next() : session.runtime.previous());
+      return;
+    }
     setInteractiveTurn((turn) => turn ? {
       ...turn,
       progress: state.renderProgress,
+      progressValue: gestureProgress,
       pressedEdgeX: state.pressedEdgeX,
       heldRollTilt: state.heldRollTilt,
       fingerX: state.fingerX,
@@ -246,26 +267,117 @@ export default function ReaderScreen() {
     const baseDuration = pageTurnStyle ? PAGE_TURN_DURATION_MS : 360;
     const releaseBoost = pageTurnStyle ? 0 : Math.min(0.55, normalizedVelocity * 0.08);
     const settleDuration = Math.max(140, Math.round(baseDuration * (1 - releaseBoost)));
-    void Promise.allSettled([navigate, waitForPageTurn(settleDuration)])
-      .then(() => setInteractiveTurn(undefined));
-  }, [animationStyle, session.runtime, viewport]);
+    const generation = ++handoffGeneration.current;
+    void Promise.allSettled([
+      navigate,
+      waitForPageTurn(settleDuration),
+    ])
+      .then(() => {
+        if (handoffGeneration.current !== generation) return;
+        if (session.runtime.getSnapshot().spreadIndex !== state.targetSpread) {
+          setInteractiveTurn(undefined);
+          return;
+        }
+        void waitForPageHandoffFrames().then(() => {
+          if (handoffGeneration.current === generation) setInteractiveTurn(undefined);
+        });
+      });
+  }, [animationStyle, gestureProgress, interactiveTurn?.settling, session.runtime, viewport]);
 
-  // Gesture callbacks execute after render; the ref keeps the in-flight drag
-  // identity stable while React receives the prepared target asynchronously.
-  /* eslint-disable react-hooks/refs */
+  // Horizontal progress is calculated on the UI runtime. JS callbacks only
+  // prepare the adjacent picture and commit the navigation result.
+  /* eslint-disable react-hooks/refs, react-hooks/immutability */
+  const viewportWidth = viewport?.width ?? 1;
+  const isInteractiveSettling = interactiveTurn?.settling === true;
   const panGesture = useMemo(
     () => Gesture.Pan()
       .minDistance(2)
-      .onBegin((event) => beginDrag(event.x, event.y))
-      .onUpdate((event) => updateDrag(event.translationX, event.absoluteY, event.velocityX))
-      .onEnd((event) => endDrag(event.velocityX, event.translationX))
-      .onFinalize(() => {
-        if (dragState.current) endDrag();
+      .onBegin((event) => {
+        'worklet';
+        if (isInteractiveSettling) {
+          gestureStarted.value = false;
+          return;
+        }
+        gestureStarted.value = true;
+        gestureDirectionLocked.value = false;
+        gestureDirection.value = 1;
+        gestureStartX.value = event.x;
+        gestureStartBookX.value = 1;
+        gestureProgress.value = 0;
+        scheduleOnRN(beginDrag, event.x, event.y);
       })
-      .runOnJS(true),
-    [beginDrag, endDrag, updateDrag],
+      .onUpdate((event) => {
+        'worklet';
+        if (!gestureStarted.value) return;
+        if (!gestureDirectionLocked.value) {
+          if (Math.abs(event.translationX) < 2) return;
+          const direction: 1 | -1 = event.translationX < 0 ? 1 : -1;
+          gestureDirection.value = direction;
+          gestureDirectionLocked.value = true;
+          gestureStartBookX.value = pageTurnStartBookXForTouch(
+            gestureStartX.value,
+            direction,
+            viewportWidth,
+          );
+        }
+        const direction = gestureDirection.value;
+        const startBookX = gestureStartBookX.value;
+        const currentBookX = bookXForGestureTravel(
+          startBookX,
+          event.translationX,
+          direction,
+          viewportWidth,
+        );
+        const fingerX = anchoredGestureFingerX(startBookX, currentBookX);
+        gestureProgress.value = Math.max(
+          postHingeTurnProgressForFingerX(fingerX, startBookX),
+          visualTurnProgressForFingerX(fingerX),
+        );
+        scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
+      })
+      .onEnd((event) => {
+        'worklet';
+        if (!gestureStarted.value) return;
+        const direction = gestureDirection.value;
+        const startBookX = gestureStartBookX.value;
+        const currentBookX = bookXForGestureTravel(
+          startBookX,
+          event.translationX,
+          direction,
+          viewportWidth,
+        );
+        const fingerX = anchoredGestureFingerX(startBookX, currentBookX);
+        gestureProgress.value = Math.max(
+          postHingeTurnProgressForFingerX(fingerX, startBookX),
+          visualTurnProgressForFingerX(fingerX),
+        );
+        gestureStarted.value = false;
+        gestureDirectionLocked.value = false;
+        scheduleOnRN(endDrag, event.velocityX, event.translationX);
+      })
+      .onFinalize(() => {
+        'worklet';
+        if (gestureStarted.value) {
+          gestureStarted.value = false;
+          gestureDirectionLocked.value = false;
+          scheduleOnRN(endDrag, 0, 0);
+        }
+      }),
+    [
+      beginDrag,
+      endDrag,
+      gestureDirection,
+      gestureDirectionLocked,
+      gestureProgress,
+      gestureStartBookX,
+      gestureStartX,
+      gestureStarted,
+      updateDrag,
+      isInteractiveSettling,
+      viewportWidth,
+    ],
   );
-  /* eslint-enable react-hooks/refs */
+  /* eslint-enable react-hooks/refs, react-hooks/immutability */
   const canvasBackground = isReady
     ? session.runtime.getBackgroundColor()
     : readerTheme === 'dark'
@@ -288,18 +400,20 @@ export default function ReaderScreen() {
 
   const handleReadingPress = useCallback(
     (x: number) => {
-      if (!viewport || !isReady) {
+      if (!viewport || !isReady || interactiveTurn?.settling) {
         return;
       }
       if (x < viewport.width * 0.3) {
+        handoffGeneration.current += 1;
         void session.runtime.previous();
       } else if (x > viewport.width * 0.7) {
+        handoffGeneration.current += 1;
         void session.runtime.next();
       } else {
         setControlsVisible((value) => !value);
       }
     },
-    [isReady, session.runtime, viewport],
+    [interactiveTurn?.settling, isReady, session.runtime, viewport],
   );
 
   const handleTabSelect = useCallback((key: string) => {
@@ -439,4 +553,12 @@ const styles = StyleSheet.create({
 
 function waitForPageTurn(duration: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, duration));
+}
+
+/** Give React's external-store subscriber and Skia two frames to paint the
+ * committed target before removing the interactive source layer. */
+function waitForPageHandoffFrames(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
 }

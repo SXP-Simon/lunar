@@ -7,7 +7,8 @@ export const VISUAL_TURN_TRAVEL = 0.38;
 export const GESTURE_HINGE_BEND_AMPLITUDE = 2.1266855842119465;
 export const GESTURE_HINGE_ROTATION = 0.4 * 0.997;
 export const GESTURE_HINGE_CHORD_X = MIN_PRESSED_EDGE_X / Math.cos(GESTURE_HINGE_ROTATION);
-export const SLOW_COMMIT_EDGE_X = -0.2165937167398107;
+/** Commit still requires a longer travel than the visual curl trigger. */
+export const GESTURE_COMMIT_TRAVEL = 0.58;
 export const DEFAULT_GESTURE_COMMIT_THRESHOLD = 0.78;
 
 export function clampUnit(value: number): number {
@@ -92,7 +93,7 @@ export function turnCommitScore(
   pageWeight = 1,
 ): number {
   'worklet';
-  const distance = Math.min(1.2, Math.max(0, (1 - fingerX) / (1 - SLOW_COMMIT_EDGE_X)));
+  const distance = Math.min(1.2, Math.max(0, (1 - fingerX) / GESTURE_COMMIT_TRAVEL));
   const velocity = Math.min(3.2, Math.max(0, throwVelocity)) * 0.18;
   const acceleration = Math.min(10, Math.max(0, throwAcceleration)) * 0.035;
   return (distance + velocity + acceleration) / Math.min(6, Math.max(0.1, pageWeight));
