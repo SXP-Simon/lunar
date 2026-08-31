@@ -10,6 +10,8 @@ export const GESTURE_HINGE_CHORD_X = MIN_PRESSED_EDGE_X / Math.cos(GESTURE_HINGE
 /** Commit still requires a longer travel than the visual curl trigger. */
 export const GESTURE_COMMIT_TRAVEL = 0.58;
 export const DEFAULT_GESTURE_COMMIT_THRESHOLD = 0.78;
+export const PLANAR_COMMIT_PROGRESS = 0.5;
+export const PLANAR_RELEASE_PROJECTION_SECONDS = 0.18;
 
 export function clampUnit(value: number): number {
   'worklet';
@@ -84,6 +86,31 @@ export function postHingeTurnProgressForFingerX(
 export function visualTurnProgressForFingerX(fingerX: number): number {
   'worklet';
   return clampUnit((1 - Math.min(1, Math.max(-1, fingerX))) / VISUAL_TURN_TRAVEL);
+}
+
+export function planarTurnProgressForTranslation(
+  translationX: number,
+  pageWidth: number,
+): number {
+  'worklet';
+  return clampUnit(Math.abs(translationX) / Math.max(1, pageWidth));
+}
+
+export function projectedPlanarTurnProgress(
+  progress: number,
+  towardTargetVelocity: number,
+): number {
+  'worklet';
+  return clampUnit(progress)
+    + towardTargetVelocity * PLANAR_RELEASE_PROJECTION_SECONDS;
+}
+
+export function shouldCommitPlanarTurn(
+  progress: number,
+  towardTargetVelocity: number,
+): boolean {
+  'worklet';
+  return projectedPlanarTurnProgress(progress, towardTargetVelocity) >= PLANAR_COMMIT_PROGRESS;
 }
 
 export function turnCommitScore(

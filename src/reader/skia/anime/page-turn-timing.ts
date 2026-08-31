@@ -16,6 +16,30 @@ export function getReaderPageTurnDuration(
   return Math.max(140, Math.round(baseDuration * (1 - releaseBoost)));
 }
 
+export function getReaderPageTurnSettleDuration(
+  animationStyle: ReaderPageAnimationStyle,
+  fromProgress: number,
+  targetProgress: 0 | 1,
+  releaseVelocity = 0,
+  animationDuration = 360,
+): number {
+  const style = resolveReaderPageAnimationStyle(animationStyle);
+  const distance = Math.abs(clampUnit(targetProgress) - clampUnit(fromProgress));
+  const fullDuration = style === 'page'
+    ? PAGE_TURN_DURATION_MS
+    : clampPageTurnDuration(animationDuration);
+  const minimumDuration = style === 'page' ? 120 : 90;
+  const towardTarget = releaseVelocity * (targetProgress - fromProgress) > 0;
+  const releaseSpeed = towardTarget
+    ? Math.min(6, Math.abs(releaseVelocity))
+    : 0;
+  const releaseBoost = style === 'page' ? 0 : Math.min(0.5, releaseSpeed * 0.08);
+  return Math.max(
+    minimumDuration,
+    Math.round(fullDuration * distance * (1 - releaseBoost)),
+  );
+}
+
 export function resolveReaderPageAnimationStyle(
   style: ReaderPageAnimationStyle,
 ): 'cover' | 'page' | 'slide' {
@@ -26,4 +50,8 @@ export function resolveReaderPageAnimationStyle(
 
 function clampPageTurnDuration(value: number): number {
   return Number.isFinite(value) ? Math.min(1200, Math.max(120, Math.round(value))) : 360;
+}
+
+function clampUnit(value: number): number {
+  return Math.min(1, Math.max(0, value));
 }

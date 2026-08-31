@@ -19,6 +19,7 @@ import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtim
 import { readerPerformanceMark } from '../../runtime/core/performance';
 import {
   PageCurlMesh,
+  SlidePageEdgeShadow,
   useReaderPageTransition,
   type ReaderPageAnimationStyle,
   type ReaderPageContent,
@@ -92,7 +93,16 @@ export function ReaderSurface({
   const incomingSnapshot = incomingContent?.snapshot ?? snapshot;
   const incomingFrame = incomingContent?.frame ?? frame;
   const incomingKey = incomingContent?.key ?? currentKey;
-  const { transition: activeTransition, style: resolvedAnimationStyle, coverMatrix, slideMatrix, outgoingSlideMatrix, progress, grabX, grabY } =
+  const {
+    transition: activeTransition,
+    style: resolvedAnimationStyle,
+    coverMatrix,
+    incomingSlideMatrix,
+    outgoingSlideMatrix,
+    progress,
+    grabX,
+    grabY,
+  } =
     useReaderPageTransition(currentContent, animationStyle, animationDuration, interactiveTurn);
 
   // The moving sheet owns its chrome. Recording it into the same source
@@ -188,13 +198,17 @@ export function ReaderSurface({
               {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
               {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
               <PageCurlMesh
+                key={activeTransition.from.key}
                 direction={activeTransition.direction}
                 grabX={grabX}
                 grabY={grabY}
+                grabYValue={interactiveTurn?.grabYValue}
                 heldRollTilt={interactiveTurn?.heldRollTilt}
+                heldRollTiltValue={interactiveTurn?.heldRollTiltValue}
                 height={activeTransition.from.frame.height}
                 picture={activeTransition.from.picture}
                 pressedEdgeX={interactiveTurn?.pressedEdgeX}
+                pressedEdgeXValue={interactiveTurn?.pressedEdgeXValue}
                 progress={progress}
                 texturePicture={pageCurlTexturePicture}
                 width={activeTransition.from.frame.width}
@@ -213,13 +227,18 @@ export function ReaderSurface({
             </Group>
           ) : activeTransition && resolvedAnimationStyle === 'slide' ? (
             <Group>
+              <Group matrix={incomingSlideMatrix}>
+                {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
+              </Group>
               <Group matrix={outgoingSlideMatrix}>
                 <Picture picture={activeTransition.from.picture.picture} />
                 {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
-              </Group>
-              <Group matrix={slideMatrix}>
-                {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
-                {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
+                <SlidePageEdgeShadow
+                  direction={activeTransition.direction}
+                  width={activeTransition.from.frame.width}
+                  height={activeTransition.from.frame.height}
+                />
               </Group>
             </Group>
           ) : (

@@ -11,11 +11,14 @@ import {
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
   pageTurnStartBookXForTouch,
-  postHingeTurnProgressForFingerX,
+  planarTurnProgressForTranslation,
+  shouldCommitPlanarTurn,
   shouldCommitTurn,
-  visualTurnProgressForFingerX,
 } from './page-turn-gesture';
-import { getReaderPageTurnDuration } from './page-turn-timing';
+import {
+  getReaderPageTurnSettleDuration,
+  resolveReaderPageAnimationStyle,
+} from './page-turn-timing';
 import type {
   ReaderInteractiveTurn,
   ReaderPageAnimationStyle,
@@ -30,7 +33,6 @@ interface ReaderDragState {
   directionLocked: boolean;
   targetSpread: number;
   startBookX: number;
-  latestProgress: number;
   renderProgress: number;
   grabX: number;
   grabY: number;
@@ -71,15 +73,43 @@ export function useReaderPageTurn({
 }: UseReaderPageTurnOptions): ReaderPageTurnController {
   const dragState = useRef<ReaderDragState | undefined>(undefined);
   const handoffGeneration = useRef(0);
+  const preparationCache = useRef(new Map<string, Promise<boolean>>());
   const gestureProgress = useSharedValue(0);
   const gestureStarted = useSharedValue(false);
   const gestureDirectionLocked = useSharedValue(false);
   const gestureDirection = useSharedValue<1 | -1>(1);
   const gestureStartX = useSharedValue(0);
   const gestureStartBookX = useSharedValue(1);
+  const gestureGrabY = useSharedValue(0);
+  const gesturePressedEdgeX = useSharedValue(1);
+  const gestureHeldRollTilt = useSharedValue(0);
   const [interactiveTurn, setInteractiveTurn] = useState<ReaderInteractiveTurn>();
   const isReady = snapshot.phase === 'ready';
   const totalSpreads = snapshot.totalSpreads;
+  const resolvedAnimationStyle = resolveReaderPageAnimationStyle(animationStyle);
+
+  const prepareTarget = useCallback((revisionId: number, spreadIndex: number) => {
+    const key = `${revisionId}:${spreadIndex}`;
+    const cached = preparationCache.current.get(key);
+    if (cached) return cached;
+    const preparation = runtime.prepareSpread(spreadIndex).then((prepared) => {
+      if (!prepared) preparationCache.current.delete(key);
+      return prepared;
+    });
+    preparationCache.current.set(key, preparation);
+    return preparation;
+  }, [runtime]);
+
+  useEffect(() => {
+    preparationCache.current.clear();
+    if (!isReady) return;
+    const candidates = [snapshot.spreadIndex + 1, snapshot.spreadIndex - 1]
+      .filter((spreadIndex) => spreadIndex >= 0)
+      .filter((spreadIndex) => totalSpreads === undefined || spreadIndex < totalSpreads);
+    for (const spreadIndex of candidates) {
+      void prepareTarget(snapshot.revisionId, spreadIndex);
+    }
+  }, [isReady, prepareTarget, snapshot.revisionId, snapshot.spreadIndex, totalSpreads]);
 
   const beginDrag = useCallback((startX: number, startY: number) => {
     if (!isReady || !viewport || interactiveTurn?.settling) return;
@@ -92,7 +122,6 @@ export function useReaderPageTurn({
       directionLocked: false,
       targetSpread: snapshot.spreadIndex + 1,
       startBookX: 1,
-      latestProgress: 0,
       renderProgress: 0,
       grabX: Math.min(viewport.width, Math.max(0, startX)),
       grabY: startY,
@@ -105,6 +134,46 @@ export function useReaderPageTurn({
       prepared: false,
     };
   }, [interactiveTurn?.settling, isReady, snapshot.revisionId, snapshot.spreadIndex, viewport]);
+
+  const showPreparedTurn = useCallback((
+    state: ReaderDragState,
+    targetSpread: number,
+  ): boolean => {
+    if (runtime.getSnapshot().revisionId !== state.revisionId) return false;
+    const targetPicture = runtime.getCurrentPicture(state.revisionId, targetSpread);
+    const targetFrame = runtime.getCurrentFrame(targetSpread);
+    if (!targetPicture || !targetFrame) return false;
+    state.preparing = false;
+    state.prepared = true;
+    setInteractiveTurn({
+      content: {
+        key: `${state.revisionId}:${targetSpread}:drag`,
+        snapshot: { ...snapshot, spreadIndex: targetSpread, renderId: undefined },
+        picture: targetPicture,
+        frame: targetFrame,
+      } satisfies ReaderPageContent,
+      progress: state.renderProgress,
+      progressValue: gestureProgress,
+      grabX: state.grabX,
+      grabY: state.grabY,
+      grabYValue: gestureGrabY,
+      pressedEdgeX: state.pressedEdgeX,
+      pressedEdgeXValue: gesturePressedEdgeX,
+      heldRollTilt: state.heldRollTilt,
+      heldRollTiltValue: gestureHeldRollTilt,
+      fingerX: state.fingerX,
+      throwVelocity: state.throwVelocity,
+      throwAcceleration: state.throwAcceleration,
+    });
+    return true;
+  }, [
+    gestureGrabY,
+    gestureHeldRollTilt,
+    gesturePressedEdgeX,
+    gestureProgress,
+    runtime,
+    snapshot,
+  ]);
 
   const updateDrag = useCallback((translationX: number, absoluteY: number, velocityX: number) => {
     const state = dragState.current;
@@ -127,11 +196,7 @@ export function useReaderPageTurn({
     state.fingerX = anchoredGestureFingerX(state.startBookX, currentBookX);
     state.heldRollTilt = gestureLiftRotationForFingerX(state.fingerX);
     state.pressedEdgeX = gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
-    state.latestProgress = postHingeTurnProgressForFingerX(state.fingerX, state.startBookX);
-    state.renderProgress = Math.max(
-      state.latestProgress,
-      visualTurnProgressForFingerX(state.fingerX),
-    );
+    state.renderProgress = planarTurnProgressForTranslation(translationX, viewport.width);
     const instantaneousThrowVelocity = Math.max(
       0,
       (direction === 1 ? -velocityX : velocityX) / Math.max(1, viewport.width),
@@ -151,14 +216,15 @@ export function useReaderPageTurn({
     }
     if (targetSpread < 0 || (totalSpreads !== undefined && targetSpread >= totalSpreads)) return;
 
+    if (!state.prepared && showPreparedTurn(state, targetSpread)) return;
+
     if (!state.preparing && !state.prepared) {
       state.preparing = true;
       const revisionId = state.revisionId;
-      void runtime.prepareSpread(targetSpread).then((prepared) => {
+      void prepareTarget(revisionId, targetSpread).then((prepared) => {
         const current = dragState.current;
         if (
-          !prepared
-          || !current
+          !current
           || current.revisionId !== revisionId
           || current.targetSpread !== targetSpread
           || current.direction !== direction
@@ -166,44 +232,25 @@ export function useReaderPageTurn({
         ) {
           return;
         }
-        const targetPicture = runtime.getCurrentPicture(revisionId, targetSpread);
-        const targetFrame = runtime.getCurrentFrame(targetSpread);
-        if (!targetPicture || !targetFrame) return;
-        current.prepared = true;
-        setInteractiveTurn({
-          content: {
-            key: `${revisionId}:${targetSpread}:drag`,
-            snapshot: { ...snapshot, spreadIndex: targetSpread, renderId: undefined },
-            picture: targetPicture,
-            frame: targetFrame,
-          } satisfies ReaderPageContent,
-          progress: current.renderProgress,
-          progressValue: gestureProgress,
-          grabX: current.grabX,
-          grabY: current.grabY,
-          pressedEdgeX: current.pressedEdgeX,
-          heldRollTilt: current.heldRollTilt,
-          fingerX: current.fingerX,
-          throwVelocity: current.throwVelocity,
-          throwAcceleration: current.throwAcceleration,
-        });
+        if (!prepared || !showPreparedTurn(current, targetSpread)) {
+          current.preparing = false;
+        }
       });
     }
-
-    if (state.prepared) {
-      setInteractiveTurn((turn) => turn ? {
-        ...turn,
-        progress: state.renderProgress,
-        grabX: state.grabX,
-        grabY: state.grabY,
-        pressedEdgeX: state.pressedEdgeX,
-        heldRollTilt: state.heldRollTilt,
-        fingerX: state.fingerX,
-        throwVelocity: state.throwVelocity,
-        throwAcceleration: state.throwAcceleration,
-      } : turn);
-    }
-  }, [gestureProgress, isReady, runtime, snapshot, surfaceTop, totalSpreads, viewport]);
+  }, [
+    gestureGrabY,
+    gestureHeldRollTilt,
+    gesturePressedEdgeX,
+    gestureProgress,
+    isReady,
+    prepareTarget,
+    runtime,
+    showPreparedTurn,
+    snapshot,
+    surfaceTop,
+    totalSpreads,
+    viewport,
+  ]);
 
   const endDrag = useCallback((releaseVelocity = 0, releaseTranslationX = 0) => {
     if (interactiveTurn?.settling) return;
@@ -224,10 +271,9 @@ export function useReaderPageTurn({
       state.fingerX = anchoredGestureFingerX(state.startBookX, currentBookX);
       state.heldRollTilt = gestureLiftRotationForFingerX(state.fingerX);
       state.pressedEdgeX = gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
-      state.latestProgress = postHingeTurnProgressForFingerX(state.fingerX, state.startBookX);
-      state.renderProgress = Math.max(
-        state.latestProgress,
-        visualTurnProgressForFingerX(state.fingerX),
+      state.renderProgress = planarTurnProgressForTranslation(
+        releaseTranslationX,
+        viewport.width,
       );
     }
 
@@ -238,14 +284,47 @@ export function useReaderPageTurn({
         )
       : 0;
     const throwVelocity = Math.max(state.throwVelocity, terminalThrowVelocity);
-    if (!shouldCommitTurn(state.fingerX, throwVelocity, state.throwAcceleration)) {
-      setInteractiveTurn(undefined);
+    const towardTargetVelocity = viewport
+      ? (state.direction === 1 ? -releaseVelocity : releaseVelocity) / Math.max(1, viewport.width)
+      : 0;
+    const commit = resolvedAnimationStyle === 'page'
+      ? shouldCommitTurn(state.fingerX, throwVelocity, state.throwAcceleration)
+      : shouldCommitPlanarTurn(state.renderProgress, towardTargetVelocity);
+    if (!commit) {
+      if (!state.prepared) {
+        setInteractiveTurn(undefined);
+        return;
+      }
+      const settleDuration = getReaderPageTurnSettleDuration(
+        animationStyle,
+        state.renderProgress,
+        0,
+        towardTargetVelocity,
+        animationDuration,
+      );
+      const generation = ++handoffGeneration.current;
+      setInteractiveTurn((turn) => turn ? {
+        ...turn,
+        progress: state.renderProgress,
+        progressValue: gestureProgress,
+        grabY: state.grabY,
+        grabYValue: gestureGrabY,
+        pressedEdgeX: state.pressedEdgeX,
+        pressedEdgeXValue: gesturePressedEdgeX,
+        heldRollTilt: state.heldRollTilt,
+        heldRollTiltValue: gestureHeldRollTilt,
+        releaseVelocity: towardTargetVelocity,
+        settling: true,
+        settleTo: 0,
+      } : turn);
+      void waitForPageTurn(settleDuration)
+        .then(waitForPageHandoffFrames)
+        .then(() => {
+          if (handoffGeneration.current === generation) setInteractiveTurn(undefined);
+        });
       return;
     }
 
-    const normalizedVelocity = viewport
-      ? Math.abs(releaseVelocity) / Math.max(1, viewport.width)
-      : 0;
     if (!state.prepared) {
       setInteractiveTurn(undefined);
       void (state.direction > 0 ? runtime.next() : runtime.previous());
@@ -259,15 +338,17 @@ export function useReaderPageTurn({
       pressedEdgeX: state.pressedEdgeX,
       heldRollTilt: state.heldRollTilt,
       fingerX: state.fingerX,
-      releaseVelocity: normalizedVelocity,
+      releaseVelocity: towardTargetVelocity,
       throwVelocity,
       settling: true,
       settleTo: 1,
     } : turn);
     const navigate = state.direction > 0 ? runtime.next() : runtime.previous();
-    const settleDuration = getReaderPageTurnDuration(
+    const settleDuration = getReaderPageTurnSettleDuration(
       animationStyle,
-      normalizedVelocity,
+      state.renderProgress,
+      1,
+      towardTargetVelocity,
       animationDuration,
     );
     const generation = ++handoffGeneration.current;
@@ -281,10 +362,22 @@ export function useReaderPageTurn({
         if (handoffGeneration.current === generation) setInteractiveTurn(undefined);
       });
     });
-  }, [animationDuration, animationStyle, gestureProgress, interactiveTurn?.settling, runtime, viewport]);
+  }, [
+    animationDuration,
+    animationStyle,
+    gestureGrabY,
+    gestureHeldRollTilt,
+    gesturePressedEdgeX,
+    gestureProgress,
+    interactiveTurn?.settling,
+    resolvedAnimationStyle,
+    runtime,
+    viewport,
+  ]);
 
   /* eslint-disable react-hooks/refs, react-hooks/immutability */
   const viewportWidth = viewport?.width ?? 1;
+  const viewportHeight = viewport?.height ?? 1;
   const isSettling = interactiveTurn?.settling === true;
   const gesture = useMemo(
     () => Gesture.Pan()
@@ -301,6 +394,9 @@ export function useReaderPageTurn({
         gestureStartX.value = event.x;
         gestureStartBookX.value = 1;
         gestureProgress.value = 0;
+        gestureGrabY.value = event.y;
+        gesturePressedEdgeX.value = 1;
+        gestureHeldRollTilt.value = 0;
         scheduleOnRN(beginDrag, event.x, event.y);
       })
       .onUpdate((event) => {
@@ -326,10 +422,17 @@ export function useReaderPageTurn({
           viewportWidth,
         );
         const fingerX = anchoredGestureFingerX(startBookX, currentBookX);
-        gestureProgress.value = Math.max(
-          postHingeTurnProgressForFingerX(fingerX, startBookX),
-          visualTurnProgressForFingerX(fingerX),
+        const heldRollTilt = gestureLiftRotationForFingerX(fingerX);
+        gestureProgress.value = planarTurnProgressForTranslation(
+          event.translationX,
+          viewportWidth,
         );
+        gestureGrabY.value = Math.min(
+          viewportHeight,
+          Math.max(0, event.absoluteY - surfaceTop),
+        );
+        gestureHeldRollTilt.value = heldRollTilt;
+        gesturePressedEdgeX.value = gesturePressedChordForFingerX(fingerX, heldRollTilt);
         scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
       })
       .onEnd((event) => {
@@ -344,10 +447,17 @@ export function useReaderPageTurn({
           viewportWidth,
         );
         const fingerX = anchoredGestureFingerX(startBookX, currentBookX);
-        gestureProgress.value = Math.max(
-          postHingeTurnProgressForFingerX(fingerX, startBookX),
-          visualTurnProgressForFingerX(fingerX),
+        const heldRollTilt = gestureLiftRotationForFingerX(fingerX);
+        gestureProgress.value = planarTurnProgressForTranslation(
+          event.translationX,
+          viewportWidth,
         );
+        gestureGrabY.value = Math.min(
+          viewportHeight,
+          Math.max(0, event.absoluteY - surfaceTop),
+        );
+        gestureHeldRollTilt.value = heldRollTilt;
+        gesturePressedEdgeX.value = gesturePressedChordForFingerX(fingerX, heldRollTilt);
         gestureStarted.value = false;
         gestureDirectionLocked.value = false;
         scheduleOnRN(endDrag, event.velocityX, event.translationX);
@@ -357,7 +467,7 @@ export function useReaderPageTurn({
         if (gestureStarted.value) {
           gestureStarted.value = false;
           gestureDirectionLocked.value = false;
-          scheduleOnRN(endDrag, 0, 0);
+          scheduleOnRN(endDrag, 0, Number.NaN);
         }
       }),
     [
@@ -365,12 +475,17 @@ export function useReaderPageTurn({
       endDrag,
       gestureDirection,
       gestureDirectionLocked,
+      gestureGrabY,
+      gestureHeldRollTilt,
+      gesturePressedEdgeX,
       gestureProgress,
       gestureStartBookX,
       gestureStartX,
       gestureStarted,
       isSettling,
+      surfaceTop,
       updateDrag,
+      viewportHeight,
       viewportWidth,
     ],
   );
@@ -392,6 +507,7 @@ export function useReaderPageTurn({
   useEffect(() => () => {
     handoffGeneration.current += 1;
     dragState.current = undefined;
+    preparationCache.current.clear();
   }, [runtime]);
 
   return { gesture, interactiveTurn, isSettling, next, previous };

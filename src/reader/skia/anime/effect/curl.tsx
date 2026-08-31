@@ -9,9 +9,10 @@ import {
   type SkSurface,
   type Uniforms,
 } from '@shopify/react-native-skia';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { PixelRatio } from 'react-native';
 import { useDerivedValue, useSharedValue, type SharedValue } from 'react-native-reanimated';
-import { runOnUI } from 'react-native-worklets';
+import { runOnUI, scheduleOnRN } from 'react-native-worklets';
 
 import type { CompiledReaderPicture } from '../../rendering/picture-compiler';
 
@@ -27,6 +28,8 @@ const PROFILE_RUNS = 4;
 const QUADRATURE_OFFSET = 0.5 / Math.sqrt(3);
 const CAMERA_DISTANCE = 4;
 const MAX_PERSPECTIVE_SCALE = 1.34;
+const CURL_LIFT_END_PROGRESS = 0.56;
+const DEVICE_TEXTURE_SCALE = Math.min(3, Math.max(1, PixelRatio.get()));
 
 const PAGE_CURL_SHADER = Skia.RuntimeEffect.Make(`
 uniform shader frontTexture;
@@ -114,8 +117,11 @@ interface PageCurlMeshProps {
   readonly progress: SharedValue<number>;
   readonly grabX: number;
   readonly grabY: number;
+  readonly grabYValue?: SharedValue<number>;
   readonly pressedEdgeX?: number;
+  readonly pressedEdgeXValue?: SharedValue<number>;
   readonly heldRollTilt?: number;
+  readonly heldRollTiltValue?: SharedValue<number>;
 }
 
 function capturePictureTexture(
@@ -124,14 +130,20 @@ function capturePictureTexture(
   picture: SkPicture,
   width: number,
   height: number,
+  textureScale: number,
+  onReady: () => void,
 ): void {
   "worklet";
-  const surface = Skia.Surface.MakeOffscreen(Math.max(1, Math.round(width)), Math.max(1, Math.round(height)));
+  const surface = Skia.Surface.MakeOffscreen(
+    Math.max(1, Math.round(width * textureScale)),
+    Math.max(1, Math.round(height * textureScale)),
+  );
   if (!surface) {
     return;
   }
   const canvas = surface.getCanvas();
   canvas.clear(Skia.Color('transparent'));
+  canvas.scale(textureScale, textureScale);
   canvas.drawPicture(picture);
   surface.flush();
   const nextTexture = surface.makeImageSnapshot();
@@ -146,6 +158,7 @@ function capturePictureTexture(
   backingSurface.value = surface;
   previousTexture?.dispose();
   previousSurface?.dispose();
+  scheduleOnRN(onReady);
 }
 
 function disposePictureTexture(
@@ -163,13 +176,23 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
   const { picture, width, height } = props;
   const image = useSharedValue<SkImage | null>(null);
   const backingSurface = useSharedValue<SkSurface | null>(null);
+  const [textureReady, setTextureReady] = useState(false);
+  const markTextureReady = useCallback(() => setTextureReady(true), []);
 
   // SkPicture and SkImage are native host objects. Keep the rasterisation on
   // the UI runtime, as the reference implementation does, instead of sending
   // the image through React state on the JS runtime.
   useEffect(() => {
-    runOnUI(capturePictureTexture)(image, backingSurface, props.texturePicture ?? picture.picture, width, height);
-  }, [backingSurface, height, image, picture, props.texturePicture, width]);
+    runOnUI(capturePictureTexture)(
+      image,
+      backingSurface,
+      props.texturePicture ?? picture.picture,
+      width,
+      height,
+      DEVICE_TEXTURE_SCALE,
+      markTextureReady,
+    );
+  }, [backingSurface, height, image, markTextureReady, picture, props.texturePicture, width]);
 
   useEffect(() => () => runOnUI(disposePictureTexture)(image, backingSurface), [backingSurface, image]);
 
@@ -181,19 +204,32 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
       props.progress.value,
       props.direction,
       props.grabX,
-      props.grabY,
+      props.grabYValue?.value ?? props.grabY,
       width,
       height,
-      props.pressedEdgeX,
-      props.heldRollTilt,
+      props.pressedEdgeXValue?.value ?? props.pressedEdgeX,
+      props.heldRollTiltValue?.value ?? props.heldRollTilt,
     );
     // Replace the uniform object instead of passing an anonymous callback to
     // SharedValue.modify. The latter is treated as a Remote Function by some
     // Android Worklets builds when it is created inside useDerivedValue.
     uniforms.value = next;
-  }, [height, props.direction, props.grabX, props.grabY, props.heldRollTilt, props.pressedEdgeX, props.progress, uniforms, width]);
+  }, [
+    height,
+    props.direction,
+    props.grabX,
+    props.grabY,
+    props.grabYValue,
+    props.heldRollTilt,
+    props.heldRollTiltValue,
+    props.pressedEdgeX,
+    props.pressedEdgeXValue,
+    props.progress,
+    uniforms,
+    width,
+  ]);
 
-  if (!PAGE_CURL_SHADER) {
+  if (!PAGE_CURL_SHADER || !textureReady) {
     return <Picture picture={props.texturePicture ?? picture.picture} />;
   }
 
@@ -239,30 +275,31 @@ function createCurlUniforms(
   const safeHeight = Math.max(1, height);
   const spineX = direction > 0 ? 0 : safeWidth;
   const startMaterial = Math.min(1, Math.max(0, Math.abs(grabX - spineX) / safeWidth));
-  const pressedPose = turn < 0.16 && pressedEdgeX < 0.999;
-  const pressedAmplitude = 2.1266855842119465 * Math.sqrt(
-    Math.min(1, Math.max(0, (1 - pressedEdgeX) / (1 - minPressedEdgeX))),
+  const liftLinear = Math.min(1, turn / CURL_LIFT_END_PROGRESS);
+  const liftProgress = 1 - (1 - liftLinear) ** 2;
+  const turnProgress = Math.min(
+    1,
+    Math.max(0, (turn - CURL_LIFT_END_PROGRESS) / (1 - CURL_LIFT_END_PROGRESS)),
   );
-  const rootAmplitude = pressedPose
-    ? pressedAmplitude
-    : Math.PI * (0.62 + 0.26 * startMaterial);
-  const swing = Math.min(1, Math.max(0, (Math.PI - rootAmplitude) / Math.PI));
-  const landingStart = swing / Math.max(1e-4, swing + 1);
-  const landing = !pressedPose && turn > landingStart;
-  const landedLength = landing
-    ? Math.min(1, Math.max(0, (turn - landingStart) / Math.max(1e-4, 1 - landingStart)))
-    : 0;
-  const retained = landing ? (1 - landedLength) ** (1 + 7 / 14) : 1;
-  const amplitude = landing
+  const sampledCompression = Math.min(
+    1,
+    Math.max(0, (1 - pressedEdgeX) / (1 - minPressedEdgeX)),
+  );
+  const compression = Math.max(liftProgress, sampledCompression * liftLinear);
+  const rootAmplitude = Math.PI * (0.62 + 0.26 * startMaterial);
+  const liftedAmplitude = rootAmplitude * Math.sqrt(compression);
+  const retained = (1 - turnProgress) ** (1 + 7 / 14);
+  const amplitude = turnProgress > 0
     ? rootAmplitude * retained
-    : rootAmplitude * Math.min(1, Math.max(0, turn / Math.max(1e-4, landingStart)));
-  const rotation = pressedPose
-    ? heldRollTilt
-    : landing
-    ? Math.PI - amplitude
-    : (Math.PI - rootAmplitude) * Math.min(1, Math.max(0, turn / Math.max(1e-4, landingStart)));
+    : liftedAmplitude;
+  const liftedRotation = Math.max(0.4 * liftProgress, heldRollTilt * liftLinear);
+  const rotation = liftedRotation + (Math.PI - liftedRotation) * turnProgress;
+  const landedLength = turnProgress ** 1.35;
   const uniformity = 1 - retained ** 3;
-  const cornerTilt = (grabY / safeHeight - 0.5) * 0.62 * turn * (1 - turn);
+  const cornerTilt = (grabY / safeHeight - 0.5)
+    * 0.62
+    * liftProgress
+    * (1 - turnProgress);
   // RuntimeEffect uniforms are flattened by Skia's uniform processor. Use
   // ordinary number arrays here; Float32Array is treated as a single vector
   // by the Android animated-prop bridge and arrives as only four values.

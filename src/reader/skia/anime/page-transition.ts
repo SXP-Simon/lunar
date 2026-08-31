@@ -16,6 +16,7 @@ import { useCoverPageTransform } from './effect/cover';
 import { useSlidePageTransforms } from './effect/slide';
 import {
   getReaderPageTurnDuration,
+  getReaderPageTurnSettleDuration,
   resolveReaderPageAnimationStyle,
 } from './page-turn-timing';
 
@@ -50,7 +51,7 @@ interface ReaderPageTransitionValues {
   readonly transition?: ReaderPageTransitionState;
   readonly style: 'cover' | 'page' | 'slide';
   readonly coverMatrix: DerivedValue<Matrix4>;
-  readonly slideMatrix: DerivedValue<Matrix4>;
+  readonly incomingSlideMatrix: DerivedValue<Matrix4>;
   readonly outgoingSlideMatrix: DerivedValue<Matrix4>;
   readonly progress: SharedValue<number>;
   readonly grabX: number;
@@ -64,13 +65,16 @@ export interface ReaderInteractiveTurn {
   readonly progressValue?: SharedValue<number>;
   readonly grabX?: number;
   readonly grabY?: number;
-  /** Normalized release speed in page-widths per second. */
+  /** Signed release speed in page-widths per second; positive points toward the target. */
   readonly releaseVelocity?: number;
   /** Set while the finger release is being animated to its terminal pose. */
   readonly settling?: boolean;
   readonly settleTo?: 0 | 1;
   readonly pressedEdgeX?: number;
+  readonly pressedEdgeXValue?: SharedValue<number>;
   readonly heldRollTilt?: number;
+  readonly heldRollTiltValue?: SharedValue<number>;
+  readonly grabYValue?: SharedValue<number>;
   readonly fingerX?: number;
   readonly throwVelocity?: number;
   readonly throwAcceleration?: number;
@@ -130,7 +134,7 @@ export function useReaderPageTransition(
   const grabY = interactiveTurn?.grabY ?? height / 2;
   const coverMatrix = useCoverPageTransform(direction, width, animatedProgress);
   const slideTransforms = useSlidePageTransforms(direction, width, animatedProgress);
-  const slideMatrix = slideTransforms.incoming;
+  const incomingSlideMatrix = slideTransforms.incoming;
   const outgoingSlideMatrix = slideTransforms.outgoing;
   useLayoutEffect(() => {
     if (interactiveTurn) {
@@ -191,20 +195,37 @@ export function useReaderPageTransition(
   useLayoutEffect(() => {
     if (!activeTransition || (interactiveTurn && !interactiveTurn.settling)) return;
     const target = interactiveTurn?.settleTo ?? 1;
-    const duration = getReaderPageTurnDuration(
-      animationStyle,
-      interactiveTurn?.releaseVelocity,
-      animationDuration,
-    );
+    const duration = interactiveTurn
+      ? getReaderPageTurnSettleDuration(
+          animationStyle,
+          interactiveTurn.progress,
+          target,
+          interactiveTurn.releaseVelocity,
+          animationDuration,
+        )
+      : getReaderPageTurnDuration(animationStyle, 0, animationDuration);
     if (!interactiveTurn?.settling) animatedProgress.set(0);
     animatedProgress.set(withTiming(target, {
       duration,
-      easing: style === 'page' ? Easing.inOut(Easing.sin) : Easing.inOut(Easing.cubic),
+      easing: target === 0
+        ? Easing.out(Easing.cubic)
+        : style === 'page'
+          ? Easing.inOut(Easing.sin)
+          : Easing.inOut(Easing.cubic),
     }, (finished) => {
       if (finished && !interactiveTurn) scheduleOnRN(clearTransition, activeTransition.toKey);
     }));
     return () => cancelAnimation(animatedProgress);
   }, [activeTransition, animatedProgress, animationDuration, animationStyle, clearTransition, interactiveTurn, style]);
 
-  return { transition: activeTransition, style, coverMatrix, slideMatrix, outgoingSlideMatrix, progress: animatedProgress, grabX, grabY };
+  return {
+    transition: activeTransition,
+    style,
+    coverMatrix,
+    incomingSlideMatrix,
+    outgoingSlideMatrix,
+    progress: animatedProgress,
+    grabX,
+    grabY,
+  };
 }
