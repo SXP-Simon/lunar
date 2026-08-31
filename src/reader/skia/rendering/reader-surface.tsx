@@ -84,6 +84,14 @@ export function ReaderSurface({
   const currentContent: ReaderPageContent | undefined = currentKey && compiled && frame
     ? { key: currentKey, snapshot, picture: compiled, frame }
     : undefined;
+  // During a drag the runtime snapshot intentionally remains on the source
+  // spread until release. The prepared interactive content is therefore the
+  // only valid picture for the incoming layer.
+  const incomingContent = interactiveTurn?.content ?? currentContent;
+  const incomingPicture = incomingContent?.picture.picture ?? compiled?.picture;
+  const incomingSnapshot = incomingContent?.snapshot ?? snapshot;
+  const incomingFrame = incomingContent?.frame ?? frame;
+  const incomingKey = incomingContent?.key ?? currentKey;
   const { transition: activeTransition, style: resolvedAnimationStyle, coverMatrix, slideMatrix, outgoingSlideMatrix, progress, grabX, grabY } =
     useReaderPageTransition(currentContent, animationStyle, animationDuration, interactiveTurn);
 
@@ -177,8 +185,8 @@ export function ReaderSurface({
         <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
           {activeTransition && resolvedAnimationStyle === 'page' ? (
             <Group>
-              <Picture key={currentKey} picture={compiled.picture} />
-              {renderChrome(snapshot, frame, chapterTitle, progressLabel)}
+              {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+              {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
               <PageCurlMesh
                 direction={activeTransition.direction}
                 grabX={grabX}
@@ -199,8 +207,8 @@ export function ReaderSurface({
                 {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
               </Group>
               <Group matrix={coverMatrix}>
-                <Picture key={currentKey} picture={compiled.picture} />
-                {renderChrome(snapshot, frame, chapterTitle, progressLabel)}
+                {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
               </Group>
             </Group>
           ) : activeTransition && resolvedAnimationStyle === 'slide' ? (
@@ -210,14 +218,14 @@ export function ReaderSurface({
                 {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
               </Group>
               <Group matrix={slideMatrix}>
-                <Picture key={currentKey} picture={compiled.picture} />
-                {renderChrome(snapshot, frame, chapterTitle, progressLabel)}
+                {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
               </Group>
             </Group>
           ) : (
             <>
-              <Picture key={currentKey} picture={compiled.picture} />
-              {renderChrome(snapshot, frame, chapterTitle, progressLabel)}
+              {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+              {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
             </>
           )}
           {!activeTransition && overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
