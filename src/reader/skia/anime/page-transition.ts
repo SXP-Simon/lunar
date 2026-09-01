@@ -16,6 +16,7 @@ import { useCoverPageTransform } from './effect/cover';
 import { useSlidePageTransforms } from './effect/slide';
 import {
   getReaderPageTurnDuration,
+  getReaderPageTurnHandoffProgress,
   getReaderPageTurnSettleDuration,
   resolveReaderPageAnimationStyle,
 } from './page-turn-timing';
@@ -213,7 +214,11 @@ export function useReaderPageTransition(
 
   useLayoutEffect(() => {
     if (!activeTransition || (interactiveTurn && !interactiveTurn.settling)) return;
-    const target = interactiveTurn?.settleTo ?? 1;
+    const handoffProgress = getReaderPageTurnHandoffProgress(
+      interactiveTurn?.settling === true,
+      interactiveTurn?.settleTo,
+    );
+    const target = handoffProgress ?? 1;
     const duration = interactiveTurn
       ? getReaderPageTurnSettleDuration(
           animationStyle,
@@ -223,6 +228,9 @@ export function useReaderPageTransition(
           animationDuration,
         )
       : getReaderPageTurnDuration(animationStyle, 0, animationDuration);
+    // React Skia can observe the driver swap before it removes the interactive
+    // nodes. Keep both drivers at the same terminal pose during that frame.
+    if (handoffProgress !== undefined) progress.set(handoffProgress);
     if (!interactiveTurn?.settling) animatedProgress.set(0);
     animatedProgress.set(withTiming(target, {
       duration,
@@ -240,7 +248,7 @@ export function useReaderPageTransition(
       }
     }));
     return () => cancelAnimation(animatedProgress);
-  }, [activeTransition, animatedProgress, animationDuration, animationStyle, clearTransition, interactiveTurn, style]);
+  }, [activeTransition, animatedProgress, animationDuration, animationStyle, clearTransition, interactiveTurn, progress, style]);
 
   return {
     transition: activeTransition,

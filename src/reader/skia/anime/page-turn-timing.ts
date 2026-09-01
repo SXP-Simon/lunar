@@ -49,6 +49,13 @@ export function getReaderPageTurnSettleDuration(
   );
 }
 
+export function getReaderPageTurnHandoffProgress(
+  settling: boolean,
+  settleTo?: 0 | 1,
+): 0 | 1 | undefined {
+  return settling ? settleTo ?? 1 : undefined;
+}
+
 export function resolveReaderPageAnimationStyle(
   style: ReaderPageAnimationStyle,
 ): 'cover' | 'page' | 'slide' {
