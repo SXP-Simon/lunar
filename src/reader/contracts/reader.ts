@@ -1,4 +1,9 @@
-import type { ReaderTheme, ReaderTypography, ReaderViewport } from './typography';
+import type {
+  ReaderContentInsets,
+  ReaderTheme,
+  ReaderTypography,
+  ReaderViewport,
+} from './typography';
 
 export interface ReaderSourcePoint {
   readonly nodePath: readonly number[];
@@ -62,6 +67,7 @@ export interface ReaderOpenRequest {
   readonly bookId: string;
   readonly fileUri: string;
   readonly viewport: ReaderViewport;
+  readonly contentInsets?: ReaderContentInsets;
   readonly typography: ReaderTypography;
   readonly theme: ReaderTheme;
   readonly restorePosition?: ReaderPosition;
@@ -69,6 +75,7 @@ export interface ReaderOpenRequest {
 
 export interface ReaderLayoutRequest {
   readonly viewport: ReaderViewport;
+  readonly contentInsets?: ReaderContentInsets;
   readonly typography: ReaderTypography;
   readonly theme: ReaderTheme;
 }

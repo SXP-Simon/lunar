@@ -49,7 +49,7 @@ export interface ReaderSurfaceProps {
   readonly chapterTitle?: string;
   readonly progressLabel?: string;
   readonly overlayColor?: string;
-  readonly overlayInsets?: Readonly<{ left: number; right: number }>;
+  readonly overlayInsets?: Readonly<{ top: number; right: number; bottom: number; left: number }>;
 }
 
 export function ReaderSurface({
@@ -65,7 +65,7 @@ export function ReaderSurface({
   chapterTitle,
   progressLabel,
   overlayColor = '#777777',
-  overlayInsets = { left: 0, right: 0 },
+  overlayInsets = { top: 0, right: 0, bottom: 0, left: 0 },
 }: ReaderSurfaceProps) {
   const { ref, size: viewport } = useCanvasSize();
   const compiled = snapshot.phase === 'ready'
@@ -79,6 +79,8 @@ export function ReaderSurface({
     : 1;
   const overlayLeft = overlayInsets.left;
   const overlayRight = overlayInsets.right;
+  const overlayTop = overlayInsets.top;
+  const overlayBottom = overlayInsets.bottom;
   const offsetX = frame ? (viewport.width - frame.width * scale) / 2 : 0;
   const offsetY = frame ? (viewport.height - frame.height * scale) / 2 : 0;
   const currentKey = snapshot.phase === 'ready' && compiled && frame
@@ -192,14 +194,21 @@ export function ReaderSurface({
       viewportHeight: viewport.height,
       viewportWidth: viewport.width,
       width: source.frame.width,
-      overlayInsets: { left: overlayLeft, right: overlayRight },
+      overlayInsets: {
+        top: overlayTop,
+        right: overlayRight,
+        bottom: overlayBottom,
+        left: overlayLeft,
+      },
     });
   }, [
     offsetX,
     offsetY,
     overlayColor,
+    overlayBottom,
     overlayLeft,
     overlayRight,
+    overlayTop,
     pageCurlProgressText,
     pageCurlSource,
     runtime,
@@ -244,13 +253,15 @@ export function ReaderSurface({
     const titleFont = title ? runtime.getUiFont(14 / pageScale) : undefined;
     const progressFont = progress ? runtime.getUiFont(12 / pageScale) : undefined;
     const chapterX = (overlayInsets.left + 18 - offsetX) / pageScale;
-    const chapterY = (16 - offsetY) / pageScale;
+    const chapterY = (overlayInsets.top + 16 - offsetY) / pageScale;
     const progressWidth = progressFont && progress ? progressFont.getTextWidth(progress) : 0;
     const progressX = Math.max(
       chapterX,
       (viewport.width - overlayInsets.right - 18 - progressWidth * pageScale - offsetX) / pageScale,
     );
-    const progressY = (Math.max(12, viewport.height - 12) - offsetY) / pageScale;
+    const progressY = (
+      Math.max(overlayInsets.top + 12, viewport.height - overlayInsets.bottom - 12) - offsetY
+    ) / pageScale;
     const chapterClipWidth = Math.max(
       0,
       (viewport.width - overlayInsets.right - 18 - offsetX) / pageScale - chapterX,
@@ -259,7 +270,7 @@ export function ReaderSurface({
     return (
       <>
         {title && titleFont && (
-          <Group clip={{ x: chapterX, y: (0 - offsetY) / pageScale, width: chapterClipWidth, height: 24 / pageScale }}>
+          <Group clip={{ x: chapterX, y: (overlayInsets.top - offsetY) / pageScale, width: chapterClipWidth, height: 24 / pageScale }}>
             <SkiaText color={overlayColor} font={titleFont} text={title} x={chapterX} y={chapterY} />
           </Group>
         )}
@@ -394,7 +405,7 @@ interface PageCurlPictureOptions {
   readonly height: number;
   readonly offsetX: number;
   readonly offsetY: number;
-  readonly overlayInsets: Readonly<{ left: number; right: number }>;
+  readonly overlayInsets: Readonly<{ top: number; right: number; bottom: number; left: number }>;
   readonly pageScale: number;
   readonly progress: string;
   readonly progressFont?: SkFont;
@@ -414,7 +425,7 @@ function composePageCurlPicture(options: PageCurlPictureOptions): SkPicture {
   paint.setColor(Skia.Color(options.color));
 
   const chapterX = (options.overlayInsets.left + 18 - options.offsetX) / options.pageScale;
-  const chapterY = (16 - options.offsetY) / options.pageScale;
+  const chapterY = (options.overlayInsets.top + 16 - options.offsetY) / options.pageScale;
   const chapterClipWidth = Math.max(
     0,
     (options.viewportWidth - options.overlayInsets.right - 18 - options.offsetX) / options.pageScale - chapterX,
@@ -422,7 +433,12 @@ function composePageCurlPicture(options: PageCurlPictureOptions): SkPicture {
   if (options.title && options.titleFont && chapterClipWidth > 0) {
     canvas.save();
     canvas.clipRect(
-      Skia.XYWHRect(chapterX, -options.offsetY / options.pageScale, chapterClipWidth, 24 / options.pageScale),
+      Skia.XYWHRect(
+        chapterX,
+        (options.overlayInsets.top - options.offsetY) / options.pageScale,
+        chapterClipWidth,
+        24 / options.pageScale,
+      ),
       ClipOp.Intersect,
       true,
     );
@@ -436,7 +452,12 @@ function composePageCurlPicture(options: PageCurlPictureOptions): SkPicture {
       chapterX,
       (options.viewportWidth - options.overlayInsets.right - 18 - progressWidth * options.pageScale - options.offsetX) / options.pageScale,
     );
-    const progressY = (Math.max(12, options.viewportHeight - 12) - options.offsetY) / options.pageScale;
+    const progressY = (
+      Math.max(
+        options.overlayInsets.top + 12,
+        options.viewportHeight - options.overlayInsets.bottom - 12,
+      ) - options.offsetY
+    ) / options.pageScale;
     canvas.drawText(options.progress, progressX, progressY, paint, options.progressFont);
   }
   paint.dispose();

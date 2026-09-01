@@ -1,9 +1,16 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { NavigationBar } from 'expo-navigation-bar';
+import { StatusBar } from 'expo-status-bar';
 import { Spinner } from 'heroui-native/spinner';
 import { useCallback, useMemo, useState } from 'react';
 import { PixelRatio, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaListener,
+  useSafeAreaInsets,
+  type EdgeInsets,
+  type SafeAreaListenerProps,
+} from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
 import { IconTabBar } from '@/components/ui/icon-tab-bar';
@@ -16,7 +23,7 @@ import { TypographyDrawer } from '../components/bottom-tabs/typography-drawer';
 import { ReaderControls } from '../components/reader-controls';
 import { useReaderSession } from '../hooks/use-reader-session';
 
-// ReaderControls overlays the surface, so only the safe-area edge gets reserved here.
+// The canvas covers the window; these values only keep page content away from its edges.
 const ReaderSurfaceTopSpacing = 4;
 const ReaderSurfaceBottomSpacing = 4;
 
@@ -24,6 +31,7 @@ export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [reservedInsets, setReservedInsets] = useState(insets);
   const { theme } = useUniwind();
   const [viewport, setViewport] = useState<ReaderViewport>();
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -33,13 +41,18 @@ export default function ReaderScreen() {
   const readerTheme = theme === 'dark' ? 'dark' : 'light';
   const animationStyle = useReaderStore((state) => state.animationStyle);
   const spreadMode = useReaderStore((state) => state.typography.spreadMode);
+  const contentInsets = useMemo(() => ({
+    top: reservedInsets.top + ReaderSurfaceTopSpacing,
+    right: reservedInsets.right,
+    bottom: reservedInsets.bottom + ReaderSurfaceBottomSpacing,
+    left: reservedInsets.left,
+  }), [reservedInsets]);
   const session = useReaderSession({
     bookId: bookId ?? '',
     viewport,
+    contentInsets,
     theme: readerTheme,
   });
-  const surfaceTopInset = insets.top + ReaderSurfaceTopSpacing;
-  const surfaceBottomInset = insets.bottom + ReaderSurfaceBottomSpacing;
   const {
     gesture: pageTurnGesture,
     interactiveTurn,
@@ -52,7 +65,7 @@ export default function ReaderScreen() {
     viewport,
     animationStyle,
     spreadMode,
-    surfaceTop: surfaceTopInset,
+    surfaceTop: 0,
   });
   const isReady = session.snapshot.phase === 'ready';
   const chapterTitle = session.snapshot.chapterTitle
@@ -72,6 +85,13 @@ export default function ReaderScreen() {
     : readerTheme === 'dark'
       ? '#151515'
       : '#FAF9F6';
+  const readerChromeVisible = controlsVisible || Boolean(session.errorMessage);
+  const handleSafeAreaChange = useCallback<SafeAreaListenerProps['onChange']>(
+    ({ insets: nextInsets }) => {
+      setReservedInsets((current) => preserveLargestInsets(current, nextInsets));
+    },
+    [],
+  );
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -136,9 +156,24 @@ export default function ReaderScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: canvasBackground }]}>
+      <SafeAreaListener
+        onChange={handleSafeAreaChange}
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+      />
+      <StatusBar
+        animated
+        hidden={!readerChromeVisible}
+        style={readerTheme === 'dark' ? 'light' : 'dark'}
+      />
+      <NavigationBar
+        hidden={!readerChromeVisible}
+        style={readerTheme === 'dark' ? 'dark' : 'light'}
+      />
+
       <View
         onLayout={handleLayout}
-        style={[styles.surfaceRegion, { top: surfaceTopInset, bottom: surfaceBottomInset }]}>
+        style={StyleSheet.absoluteFill}>
         <ReaderSurface
           runtime={session.runtime}
           snapshot={session.snapshot}
@@ -148,7 +183,7 @@ export default function ReaderScreen() {
           chapterTitle={chapterTitle}
           progressLabel={`${progressText}${progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}`}
           overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}
-          overlayInsets={{ left: insets.left, right: insets.right }}
+          overlayInsets={contentInsets}
           style={StyleSheet.absoluteFill}
         />
         <GestureDetector gesture={pageTurnGesture}>
@@ -169,9 +204,10 @@ export default function ReaderScreen() {
         </GestureDetector>
       </View>
 
-      {(controlsVisible || Boolean(session.errorMessage)) && (
+      {readerChromeVisible && (
         <ReaderControls
           onBack={() => router.back()}
+          safeAreaInsets={reservedInsets}
           title={chapterTitle}
         />
       )}
@@ -185,6 +221,7 @@ export default function ReaderScreen() {
             { key: 'typography', accessibilityLabel: '打开阅读设置', name: { ios: 'textformat.size', android: 'format_size', web: 'format_size' } },
           ]}
           onSelect={handleTabSelect}
+          safeAreaInsets={reservedInsets}
         />
       )}
 
@@ -228,9 +265,19 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
-  surfaceRegion: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-  },
 });
+
+function preserveLargestInsets(current: EdgeInsets, next: EdgeInsets): EdgeInsets {
+  const preserved = {
+    top: Math.max(current.top, next.top),
+    right: Math.max(current.right, next.right),
+    bottom: Math.max(current.bottom, next.bottom),
+    left: Math.max(current.left, next.left),
+  };
+  return preserved.top === current.top
+    && preserved.right === current.right
+    && preserved.bottom === current.bottom
+    && preserved.left === current.left
+    ? current
+    : preserved;
+}

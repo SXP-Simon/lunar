@@ -1,6 +1,7 @@
 import '@/global.css';
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import { useUniwind } from 'uniwind';
 
@@ -13,6 +14,7 @@ export default function RootLayout() {
     <AppProviders>
       <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
+        <NavigationBar hidden={false} style={isDark ? 'dark' : 'light'} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="reader/[bookId]" />

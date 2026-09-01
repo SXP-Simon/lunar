@@ -8,6 +8,13 @@ export interface ReaderViewport {
   readonly pixelRatio: number;
 }
 
+export interface ReaderContentInsets {
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly left: number;
+}
+
 export interface ReaderTypography {
   readonly fontFamily?: string;
   readonly fontSize: number;

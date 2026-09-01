@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { findLibraryBookById, type LibraryBookRecord } from '@/features/library';
 import {
   createReaderTypographyKey,
+  type ReaderContentInsets,
   type ReaderSnapshot,
   type ReaderOpenResult,
   type ReaderTheme,
@@ -21,10 +22,11 @@ import { findReaderReadingState, saveReaderReadingState } from '../services/read
 export interface ReaderSessionOptions {
   readonly bookId: string;
   readonly viewport?: ReaderViewport;
+  readonly contentInsets?: ReaderContentInsets;
   readonly theme: ReaderTheme;
 }
 
-export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptions) {
+export function useReaderSession({ bookId, viewport, contentInsets, theme }: ReaderSessionOptions) {
   const typography = useReaderStore((state) => state.typography);
   const runtime = useMemo(
     () =>
@@ -126,6 +128,10 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
       viewport.width,
       viewport.height,
       viewport.pixelRatio,
+      contentInsets?.top ?? 0,
+      contentInsets?.right ?? 0,
+      contentInsets?.bottom ?? 0,
+      contentInsets?.left ?? 0,
       theme,
       createReaderTypographyKey(typography),
     ].join(':');
@@ -136,6 +142,7 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
 
     const layout = {
       viewport,
+      contentInsets,
       typography,
       theme,
     };
@@ -154,7 +161,7 @@ export function useReaderSession({ bookId, viewport, theme }: ReaderSessionOptio
       })
       .then((result) => setOpenResult({ bookId: currentBook.id, result }))
       .catch(() => undefined);
-  }, [bookId, currentBook, readingState, runtime, theme, typography, viewport]);
+  }, [bookId, contentInsets, currentBook, readingState, runtime, theme, typography, viewport]);
 
   useEffect(() => {
     persistSnapshot(snapshot);

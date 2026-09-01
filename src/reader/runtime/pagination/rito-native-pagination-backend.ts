@@ -987,8 +987,9 @@ function toReaderSemanticNode(node: import('../../../../modules/rito-rn/src/prot
 
 function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutRequest, revisionId: number, operationId: number, initialHref: string): import('../../rito/rito-native').RitoArtifactRequest {
   const typography = request.typography;
+  const margins = resolveLayoutMargins(layout);
   const locator = request.restorePosition?.locator;
-  const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, marginTop: typography.marginVertical, marginRight: typography.marginHorizontal, marginBottom: typography.marginVertical, marginLeft: typography.marginHorizontal, spreadMode: typography.spreadMode, firstPageAlone: typography.spreadMode === 'double', spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily };
+  const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, ...margins, spreadMode: typography.spreadMode, firstPageAlone: typography.spreadMode === 'double', spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily };
   return {
     sessionId: BigInt(Math.max(1, revisionId)),
     requestId: BigInt(Math.max(1, operationId)),
@@ -1017,6 +1018,7 @@ function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutR
 
 function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../../contracts').ReaderLayoutParameters {
   const typography = layout.typography;
+  const margins = resolveLayoutMargins(layout);
   const palette = layout.theme === 'dark'
     ? { backgroundColor: '#000000', foregroundColor: '#FFFFFF', spreadBodyBackgroundColor: '#000000' }
     : layout.theme === 'paper'
@@ -1028,15 +1030,25 @@ function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../../co
     pageWidth: layout.viewport.width,
     pageHeight: layout.viewport.height,
     pixelRatio: layout.viewport.pixelRatio,
-    marginTop: typography.marginVertical,
-    marginRight: typography.marginHorizontal,
-    marginBottom: typography.marginVertical,
-    marginLeft: typography.marginHorizontal,
+    ...margins,
     spreadMode: typography.spreadMode,
     spreadGap: 0,
     rootFontSize: typography.fontSize,
     lineHeight: typography.lineHeight,
     fontFamily: typography.fontFamily,
     palette,
+  };
+}
+
+function resolveLayoutMargins(layout: ReaderLayoutRequest): Pick<
+  import('../../contracts').ReaderLayoutParameters,
+  'marginTop' | 'marginRight' | 'marginBottom' | 'marginLeft'
+> {
+  const { contentInsets, typography } = layout;
+  return {
+    marginTop: typography.marginVertical + Math.max(0, contentInsets?.top ?? 0),
+    marginRight: typography.marginHorizontal + Math.max(0, contentInsets?.right ?? 0),
+    marginBottom: typography.marginVertical + Math.max(0, contentInsets?.bottom ?? 0),
+    marginLeft: typography.marginHorizontal + Math.max(0, contentInsets?.left ?? 0),
   };
 }

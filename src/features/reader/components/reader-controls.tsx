@@ -1,7 +1,7 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, type EdgeInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
 
@@ -10,13 +10,16 @@ const ControlHorizontalPadding = 12;
 interface ReaderControlsProps {
   readonly title: string;
   readonly onBack: () => void;
+  readonly safeAreaInsets?: EdgeInsets;
 }
 
 export function ReaderControls({
   title,
   onBack,
+  safeAreaInsets,
 }: ReaderControlsProps) {
-  const insets = useSafeAreaInsets();
+  const contextInsets = useSafeAreaInsets();
+  const insets = safeAreaInsets ?? contextInsets;
 
   return (
     <View className="absolute inset-0 overflow-hidden" pointerEvents="box-none">

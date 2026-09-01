@@ -1,7 +1,7 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, type EdgeInsets } from 'react-native-safe-area-context';
 import { useCSSVariable } from 'uniwind';
 
 import { useTheme } from '@/hooks/use-theme';
@@ -24,10 +24,12 @@ interface IconTabBarProps {
   readonly items: readonly IconTabBarItem[];
   readonly activeKey?: string;
   readonly onSelect: (key: string) => void;
+  readonly safeAreaInsets?: EdgeInsets;
 }
 
-export function IconTabBar({ items, activeKey, onSelect }: IconTabBarProps) {
-  const insets = useSafeAreaInsets();
+export function IconTabBar({ items, activeKey, onSelect, safeAreaInsets }: IconTabBarProps) {
+  const contextInsets = useSafeAreaInsets();
+  const insets = safeAreaInsets ?? contextInsets;
   const theme = useTheme();
   const activeColor = useCSSVariable('--color-navigation-active') as string;
 
