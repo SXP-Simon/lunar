@@ -10,7 +10,7 @@ import {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import type { ReaderRenderFrame, ReaderSnapshot } from '../../contracts';
+import type { ReaderRenderFrame, ReaderSnapshot, ReaderSpreadMode } from '../../contracts';
 import type { CompiledReaderPicture } from '../rendering/picture-compiler';
 import { useCoverPageTransform } from './effect/cover';
 import { useSlidePageTransforms } from './effect/slide';
@@ -95,6 +95,7 @@ export function useReaderPageTransition(
   animationStyle: ReaderPageAnimationStyle = 'slide',
   animationDuration = 360,
   interactiveTurn?: ReaderInteractiveTurn,
+  spreadMode: ReaderSpreadMode = 'double',
 ): ReaderPageTransitionValues {
   const [displayedContent, setDisplayedContent] = useState<ReaderPageContent>();
   const [interactiveCommit, setInteractiveCommit] = useState<ReaderPageIdentity>();
@@ -136,6 +137,9 @@ export function useReaderPageTransition(
   const activeTransition = interactiveTransition
     ?? (transition?.toKey === currentKey ? transition : undefined)
     ?? automaticTransition;
+  const incomingPageLanding = style === 'page'
+    && spreadMode === 'single'
+    && activeTransition?.direction === -1;
   const clearTransition = useCallback((key: string) => {
     setTransition((value) => value?.toKey === key ? undefined : value);
   }, []);
@@ -149,6 +153,7 @@ export function useReaderPageTransition(
   const slideTransforms = useSlidePageTransforms(direction, width, animatedProgress);
   const incomingSlideMatrix = slideTransforms.incoming;
   const outgoingSlideMatrix = slideTransforms.outgoing;
+  /* eslint-disable react-hooks/set-state-in-effect */
   useLayoutEffect(() => {
     if (interactiveTurn) {
       const targetIdentity: ReaderPageIdentity = {
@@ -184,7 +189,6 @@ export function useReaderPageTransition(
     if (!current) {
       // The surface has no drawable content during loading/reflow; clear the
       // retained page before the next ready frame is considered.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayedContent(undefined);
       animatedProgress.set(1);
       return;
@@ -212,6 +216,8 @@ export function useReaderPageTransition(
     }
   }, [activeTransition, animatedProgress, current, currentKey, displayedContent, interactiveCommit, interactiveTurn, style]);
 
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   useLayoutEffect(() => {
     if (!activeTransition || (interactiveTurn && !interactiveTurn.settling)) return;
     const handoffProgress = getReaderPageTurnHandoffProgress(
@@ -236,9 +242,11 @@ export function useReaderPageTransition(
       duration,
       easing: target === 0
         ? Easing.out(Easing.cubic)
-        : style === 'page'
-          ? Easing.inOut(Easing.sin)
-          : Easing.inOut(Easing.cubic),
+        : incomingPageLanding
+          ? Easing.out(Easing.quad)
+          : style === 'page'
+            ? Easing.inOut(Easing.sin)
+            : Easing.inOut(Easing.cubic),
     }, (finished) => {
       if (!finished) return;
       if (interactiveTurn?.settling && interactiveTurn.onSettleComplete) {
@@ -248,7 +256,7 @@ export function useReaderPageTransition(
       }
     }));
     return () => cancelAnimation(animatedProgress);
-  }, [activeTransition, animatedProgress, animationDuration, animationStyle, clearTransition, interactiveTurn, progress, style]);
+  }, [activeTransition, animatedProgress, animationDuration, animationStyle, clearTransition, incomingPageLanding, interactiveTurn, progress, style]);
 
   return {
     transition: activeTransition,

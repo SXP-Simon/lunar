@@ -32,6 +32,7 @@ export default function ReaderScreen() {
   const [isTypographyOpen, setIsTypographyOpen] = useState(false);
   const readerTheme = theme === 'dark' ? 'dark' : 'light';
   const animationStyle = useReaderStore((state) => state.animationStyle);
+  const spreadMode = useReaderStore((state) => state.typography.spreadMode);
   const session = useReaderSession({
     bookId: bookId ?? '',
     viewport,
@@ -50,6 +51,7 @@ export default function ReaderScreen() {
     snapshot: session.snapshot,
     viewport,
     animationStyle,
+    spreadMode,
     surfaceTop: surfaceTopInset,
   });
   const isReady = session.snapshot.phase === 'ready';
@@ -141,6 +143,7 @@ export default function ReaderScreen() {
           runtime={session.runtime}
           snapshot={session.snapshot}
           animationStyle={animationStyle}
+          spreadMode={spreadMode}
           interactiveTurn={interactiveTurn}
           chapterTitle={chapterTitle}
           progressLabel={`${progressText}${progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}`}

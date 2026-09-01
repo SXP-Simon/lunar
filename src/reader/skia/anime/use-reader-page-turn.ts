@@ -3,7 +3,7 @@ import { Gesture, type PanGesture } from 'react-native-gesture-handler';
 import { useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import type { ReaderSnapshot, ReaderViewport } from '../../contracts';
+import type { ReaderSnapshot, ReaderSpreadMode, ReaderViewport } from '../../contracts';
 import type {
   LunarReaderRuntime,
   ReaderPreparedTurn,
@@ -15,6 +15,7 @@ import {
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
   pageTurnStartBookXForTouch,
+  pageTurnRenderProgress,
   planarTurnProgressForTranslation,
   shouldCommitPlanarTurn,
 } from './page-turn-gesture';
@@ -35,6 +36,7 @@ interface ReaderDragState {
   direction: 1 | -1;
   directionLocked: boolean;
   startBookX: number;
+  physicalProgress: number;
   renderProgress: number;
   grabX: number;
   grabY: number;
@@ -64,6 +66,7 @@ export interface UseReaderPageTurnOptions {
   readonly viewport?: ReaderViewport;
   readonly animationStyle?: ReaderPageAnimationStyle;
   readonly animationDuration?: number;
+  readonly spreadMode?: ReaderSpreadMode;
   /** Vertical viewport offset of the reader surface, used with absolute gesture coordinates. */
   readonly surfaceTop?: number;
 }
@@ -82,6 +85,7 @@ export function useReaderPageTurn({
   viewport,
   animationStyle = 'slide',
   animationDuration = 360,
+  spreadMode = 'double',
   surfaceTop = 0,
 }: UseReaderPageTurnOptions): ReaderPageTurnController {
   const dragState = useRef<ReaderDragState | undefined>(undefined);
@@ -160,6 +164,7 @@ export function useReaderPageTurn({
       direction: 1,
       directionLocked: false,
       startBookX: 1,
+      physicalProgress: 0,
       renderProgress: 0,
       grabX: Math.min(viewport.width, Math.max(0, startX)),
       grabY: startY,
@@ -270,7 +275,12 @@ export function useReaderPageTurn({
     state.fingerX = anchoredGestureFingerX(state.startBookX, currentBookX);
     state.heldRollTilt = gestureLiftRotationForFingerX(state.fingerX);
     state.pressedEdgeX = gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
-    state.renderProgress = planarTurnProgressForTranslation(translationX, viewport.width);
+    state.physicalProgress = planarTurnProgressForTranslation(translationX, viewport.width);
+    state.renderProgress = pageTurnRenderProgress(
+      state.physicalProgress,
+      direction,
+      spreadMode,
+    );
     const instantaneousThrowVelocity = Math.max(
       0,
       (direction === 1 ? -velocityX : velocityX) / Math.max(1, viewport.width),
@@ -334,6 +344,7 @@ export function useReaderPageTurn({
     runtime,
     showPreparedTurn,
     snapshot,
+    spreadMode,
     surfaceTop,
     viewport,
   ]);
@@ -361,9 +372,14 @@ export function useReaderPageTurn({
       state.fingerX = anchoredGestureFingerX(state.startBookX, currentBookX);
       state.heldRollTilt = gestureLiftRotationForFingerX(state.fingerX);
       state.pressedEdgeX = gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
-      state.renderProgress = planarTurnProgressForTranslation(
+      state.physicalProgress = planarTurnProgressForTranslation(
         releaseTranslationX,
         viewport.width,
+      );
+      state.renderProgress = pageTurnRenderProgress(
+        state.physicalProgress,
+        state.direction,
+        spreadMode,
       );
     }
 
@@ -377,14 +393,15 @@ export function useReaderPageTurn({
     const towardTargetVelocity = viewport
       ? (state.direction === 1 ? -releaseVelocity : releaseVelocity) / Math.max(1, viewport.width)
       : 0;
-    const commit = shouldCommitPlanarTurn(state.renderProgress, towardTargetVelocity);
+    const commit = shouldCommitPlanarTurn(state.physicalProgress, towardTargetVelocity);
     readerDiagnostic(
       'turn.release',
       [
         `turn=${state.id}`,
         `direction=${state.direction > 0 ? 'next' : 'previous'}`,
         `decision=${commit ? 'commit' : 'cancel'}`,
-        `progress=${formatTraceNumber(state.renderProgress)}`,
+        `physicalProgress=${formatTraceNumber(state.physicalProgress)}`,
+        `renderProgress=${formatTraceNumber(state.renderProgress)}`,
         `velocity=${formatTraceNumber(towardTargetVelocity)}`,
         `prepared=${String(state.prepared)}`,
         `preparedId=${state.preparedTurn?.id ?? 'none'}`,
@@ -542,6 +559,7 @@ export function useReaderPageTurn({
     gesturePressedEdgeX,
     gestureProgress,
     runtime,
+    spreadMode,
     viewport,
   ]);
 
@@ -613,9 +631,10 @@ export function useReaderPageTurn({
         );
         const fingerX = anchoredGestureFingerX(startBookX, currentBookX);
         const heldRollTilt = gestureLiftRotationForFingerX(fingerX);
-        gestureProgress.value = planarTurnProgressForTranslation(
-          event.translationX,
-          viewportWidth,
+        gestureProgress.value = pageTurnRenderProgress(
+          planarTurnProgressForTranslation(event.translationX, viewportWidth),
+          direction,
+          spreadMode,
         );
         gestureGrabY.value = Math.min(
           viewportHeight,
@@ -638,9 +657,10 @@ export function useReaderPageTurn({
         );
         const fingerX = anchoredGestureFingerX(startBookX, currentBookX);
         const heldRollTilt = gestureLiftRotationForFingerX(fingerX);
-        gestureProgress.value = planarTurnProgressForTranslation(
-          event.translationX,
-          viewportWidth,
+        gestureProgress.value = pageTurnRenderProgress(
+          planarTurnProgressForTranslation(event.translationX, viewportWidth),
+          direction,
+          spreadMode,
         );
         gestureGrabY.value = Math.min(
           viewportHeight,
@@ -673,6 +693,7 @@ export function useReaderPageTurn({
       gestureStartX,
       gestureStarted,
       isSettling,
+      spreadMode,
       surfaceTop,
       updateDrag,
       viewportHeight,

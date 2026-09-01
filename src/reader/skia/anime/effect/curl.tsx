@@ -15,6 +15,10 @@ import { useDerivedValue, useSharedValue, type SharedValue } from 'react-native-
 import { runOnUI, scheduleOnRN } from 'react-native-worklets';
 
 import type { CompiledReaderPicture } from '../../rendering/picture-compiler';
+import {
+  singlePreviousCurlProgress,
+  singlePreviousCurlRevealProgress,
+} from '../page-turn-gesture';
 
 /**
  * Continuous page surface adapted from react-native-natural-page-turn.
@@ -31,10 +35,19 @@ const MAX_PERSPECTIVE_SCALE = 1.34;
 const CURL_LIFT_END_PROGRESS = 0.22;
 const CURL_LANDING_START_PROGRESS = 0.32;
 const CURL_BACK_FACE_OPACITY = 0.62;
+// Reverse single-page turns use the reference incoming-sheet release chord.
+const INCOMING_PAGE_RELEASE_X = 0.6;
+const INCOMING_PAGE_START_AMPLITUDE = 1.338178886715422;
+const INCOMING_PAGE_CURVATURE_RELAXATION = 10;
 const DEVICE_TEXTURE_SCALE = Math.min(3, Math.max(1, PixelRatio.get()));
 
-const PAGE_CURL_SHADER = Skia.RuntimeEffect.Make(`
+const PAGE_CURL_SHADER = createPageCurlShader(false);
+const PAGE_CURL_TWO_SIDED_SHADER = createPageCurlShader(true);
+
+function createPageCurlShader(twoSided: boolean) {
+  return Skia.RuntimeEffect.Make(`
 uniform shader frontTexture;
+${twoSided ? 'uniform shader backTexture;' : ''}
 uniform float2 pageSize;
 uniform float4 geometry;
 uniform float4 perspective;
@@ -91,7 +104,12 @@ float4 sampleRun(float bookX, float4 run) {
   bool screenFront = deltaX > 0.0;
   bool sourceFront = (screenFront ? 1.0 : -1.0) * perspective.w > 0.0;
   float shade = (1.0 - normalZ) * 0.16;
-  return float4(material, 1.0 - min(0.2, shade), depth, sourceFront ? 1.0 : -1.0);
+  return float4(
+    material,
+    1.0 - min(0.2, shade),
+    depth,
+    ${twoSided ? 'screenFront' : 'sourceFront'} ? 1.0 : -1.0
+  );
 }
 
 half4 main(float2 position) {
@@ -104,15 +122,21 @@ half4 main(float2 position) {
   float sourceY = 0.5 + (position.y / pageSize.y - 0.5) / perspectiveScale(visible.z);
   float sourceMaterial = visible.w > 0.0 ? visible.x : 1.0 - visible.x;
   float2 source = float2(clamp(sourceMaterial, 0.0, 1.0), clamp(sourceY, 0.0, 1.0));
+  ${twoSided ? `
+  half4 paper = visible.w > 0.0
+    ? frontTexture.eval(source)
+    : backTexture.eval(source);
+  return half4(paper.rgb * visible.y, paper.a);` : `
   half4 paper = frontTexture.eval(source);
   if (visible.w < 0.0) {
     half4 stock = frontTexture.eval(float2(0.02, 0.02));
     half3 back = mix(stock.rgb, paper.rgb, 0.18) * visible.y;
     return half4(back, max(stock.a, paper.a) * ${CURL_BACK_FACE_OPACITY});
   }
-  return half4(paper.rgb * visible.y, paper.a);
+  return half4(paper.rgb * visible.y, paper.a);`}
 }
 `);
+}
 
 export interface PageCurlTexture {
   readonly image: SharedValue<SkImage | null>;
@@ -137,6 +161,8 @@ interface PageCurlMeshProps {
   readonly heldRollTilt?: number;
   readonly heldRollTiltValue?: SharedValue<number>;
   readonly texture: PageCurlTexture;
+  readonly backTexture?: PageCurlTexture;
+  readonly phase?: 'full' | 'incoming-landing';
 }
 
 function capturePictureTexture(
@@ -147,7 +173,8 @@ function capturePictureTexture(
   height: number,
   textureScale: number,
   captureId: number,
-  onReady: (captureId: number) => void,
+  textureIdentity: string,
+  onReady: (captureId: number, textureIdentity: string) => void,
 ): void {
   "worklet";
   const surface = Skia.Surface.MakeOffscreen(
@@ -174,7 +201,7 @@ function capturePictureTexture(
   backingSurface.value = surface;
   previousTexture?.dispose();
   previousSurface?.dispose();
-  scheduleOnRN(onReady, captureId);
+  scheduleOnRN(onReady, captureId, textureIdentity);
 }
 
 function disposePictureTexture(
@@ -191,7 +218,11 @@ function disposePictureTexture(
 export function PageCurlMesh(props: PageCurlMeshProps) {
   const { picture, texture, width, height } = props;
   const image = texture.image;
-  const textureReady = texture.ready;
+  const backImage = props.backTexture?.image;
+  const twoSided = props.backTexture !== undefined;
+  const shader = twoSided ? PAGE_CURL_TWO_SIDED_SHADER : PAGE_CURL_SHADER;
+  const textureReady = texture.ready && (!props.backTexture || props.backTexture.ready);
+  const incomingLanding = props.phase === 'incoming-landing';
 
   const uniforms = useSharedValue<Uniforms>(
     createCurlUniforms(
@@ -203,6 +234,7 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
       height,
       props.pressedEdgeX,
       props.heldRollTilt,
+      props.phase,
     ),
   );
   useDerivedValue(() => {
@@ -215,6 +247,7 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
       height,
       props.pressedEdgeXValue?.value ?? props.pressedEdgeX,
       props.heldRollTiltValue?.value ?? props.heldRollTilt,
+      props.phase,
     );
     // Replace the uniform object instead of passing an anonymous callback to
     // SharedValue.modify. The latter is treated as a Remote Function by some
@@ -231,17 +264,25 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
     props.pressedEdgeX,
     props.pressedEdgeXValue,
     props.progress,
+    props.phase,
     uniforms,
     width,
   ]);
 
-  if (!PAGE_CURL_SHADER || !textureReady) {
-    return <Picture picture={props.texturePicture ?? picture.picture} />;
+  if (!shader) {
+    return incomingLanding
+      ? null
+      : <Picture picture={props.texturePicture ?? picture.picture} />;
+  }
+  if (!textureReady) {
+    return incomingLanding
+      ? null
+      : <Picture picture={props.texturePicture ?? picture.picture} />;
   }
 
   return (
     <Rect x={0} y={0} width={width} height={height}>
-      <Shader source={PAGE_CURL_SHADER} uniforms={uniforms}>
+      <Shader source={shader} uniforms={uniforms}>
         <ImageShader
           fit="fill"
           image={image}
@@ -253,6 +294,19 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
           x={0}
           y={0}
         />
+        {backImage && (
+          <ImageShader
+            fit="fill"
+            image={backImage}
+            height={1}
+            sampling={{ B: 0, C: 0.5 }}
+            tx="clamp"
+            ty="clamp"
+            width={1}
+            x={0}
+            y={0}
+          />
+        )}
       </Shader>
     </Rect>
   );
@@ -262,19 +316,29 @@ export function usePageCurlTexture(
   picture: SkPicture | undefined,
   width: number,
   height: number,
+  identity?: string,
 ): PageCurlTexture {
   const image = useSharedValue<SkImage | null>(null);
   const backingSurface = useSharedValue<SkSurface | null>(null);
-  const [textureReady, setTextureReady] = useState(false);
+  const textureIdentity = identity ?? `${width}:${height}`;
+  const [readyIdentity, setReadyIdentity] = useState<string>();
   const captureId = useRef(0);
-  const markTextureReady = useCallback((completedCaptureId: number) => {
-    if (captureId.current === completedCaptureId) setTextureReady(true);
+  const markTextureReady = useCallback((
+    completedCaptureId: number,
+    completedIdentity: string,
+  ) => {
+    if (captureId.current === completedCaptureId) setReadyIdentity(completedIdentity);
   }, []);
+  const textureReady = Boolean(
+    picture
+    && width > 0
+    && height > 0
+    && readyIdentity === textureIdentity,
+  );
 
   useEffect(() => {
     captureId.current += 1;
     const nextCaptureId = captureId.current;
-    setTextureReady(false);
     if (!picture || width <= 0 || height <= 0) return;
     // SkPicture and SkImage are native host objects. Keep the rasterisation on
     // the UI runtime and prepare the current page before a gesture starts.
@@ -286,9 +350,10 @@ export function usePageCurlTexture(
       height,
       DEVICE_TEXTURE_SCALE,
       nextCaptureId,
+      textureIdentity,
       markTextureReady,
     );
-  }, [backingSurface, height, image, markTextureReady, picture, width]);
+  }, [backingSurface, height, image, markTextureReady, picture, textureIdentity, width]);
 
   useEffect(() => () => {
     captureId.current += 1;
@@ -313,14 +378,21 @@ function createCurlUniforms(
   height: number,
   pressedEdgeX = 1,
   heldRollTilt = 0,
+  phase: PageCurlMeshProps['phase'] = 'full',
 ): Uniforms {
   "worklet";
   const minPressedEdgeX = 0.2;
-  const turn = Math.min(1, Math.max(0, progress));
+  const animationProgress = Math.min(1, Math.max(0, progress));
+  const incomingLanding = phase === 'incoming-landing';
+  const turn = incomingLanding
+    ? singlePreviousCurlProgress(animationProgress)
+    : animationProgress;
   const safeWidth = Math.max(1, width);
   const safeHeight = Math.max(1, height);
-  const spineX = direction > 0 ? 0 : safeWidth;
-  const startMaterial = Math.min(1, Math.max(0, Math.abs(grabX - spineX) / safeWidth));
+  const spineX = incomingLanding ? 0 : direction > 0 ? 0 : safeWidth;
+  const startMaterial = incomingLanding
+    ? INCOMING_PAGE_RELEASE_X
+    : Math.min(1, Math.max(0, Math.abs(grabX - spineX) / safeWidth));
   const liftLinear = Math.min(1, turn / CURL_LIFT_END_PROGRESS);
   const liftProgress = liftLinear * liftLinear * (3 - 2 * liftLinear);
   const landingProgress = Math.min(
@@ -332,20 +404,42 @@ function createCurlUniforms(
     Math.max(0, (1 - pressedEdgeX) / (1 - minPressedEdgeX)),
   );
   const compression = Math.max(liftProgress, sampledCompression * liftLinear);
-  const rootAmplitude = Math.PI * (0.62 + 0.26 * startMaterial);
-  const liftedAmplitude = rootAmplitude * Math.sqrt(compression);
-  const retained = (1 - turn) ** (1 + 7 / 14);
-  const amplitude = liftedAmplitude * retained;
-  const liftedRotation = Math.max(0.4 * liftProgress, heldRollTilt * liftLinear);
-  // Rotation follows normalized horizontal travel across the whole gesture;
-  // the short lift only controls how quickly the sheet acquires curvature.
-  const rotation = liftedRotation + (Math.PI - liftedRotation) * turn;
-  const landedLength = landingProgress ** 1.25;
-  const uniformity = 1 - (1 - landingProgress) ** 3;
-  const cornerTilt = (grabY / safeHeight - 0.5)
-    * 0.62
-    * liftProgress
-    * (1 - turn);
+  let amplitude: number;
+  let rotation: number;
+  let landedLength: number;
+  let uniformity: number;
+  let cornerTilt: number;
+  if (incomingLanding) {
+    const rootTangent = INCOMING_PAGE_START_AMPLITUDE;
+    const swing = Math.min(1, Math.max(0, (Math.PI - rootTangent) / Math.PI));
+    const incomingLandingStart = swing / (swing + 1);
+    const landing = turn > incomingLandingStart;
+    landedLength = landing
+      ? (turn - incomingLandingStart) / (1 - incomingLandingStart)
+      : 0;
+    const retained = (1 - landedLength) ** (1 + INCOMING_PAGE_CURVATURE_RELAXATION / 14);
+    amplitude = INCOMING_PAGE_START_AMPLITUDE * retained;
+    rotation = landing
+      ? Math.PI - amplitude
+      : (Math.PI - rootTangent) * (turn / Math.max(0.000001, incomingLandingStart));
+    uniformity = 1 - retained ** 3;
+    cornerTilt = 0;
+  } else {
+    const rootAmplitude = Math.PI * (0.62 + 0.26 * startMaterial);
+    const liftedAmplitude = rootAmplitude * Math.sqrt(compression);
+    const retained = (1 - turn) ** (1 + 7 / 14);
+    amplitude = liftedAmplitude * retained;
+    const liftedRotation = Math.max(0.4 * liftProgress, heldRollTilt * liftLinear);
+    // Rotation follows normalized horizontal travel across the whole gesture;
+    // the short lift only controls how quickly the sheet acquires curvature.
+    rotation = liftedRotation + (Math.PI - liftedRotation) * turn;
+    landedLength = landingProgress ** 1.25;
+    uniformity = 1 - (1 - landingProgress) ** 3;
+    cornerTilt = (grabY / safeHeight - 0.5)
+      * 0.62
+      * liftProgress
+      * (1 - turn);
+  }
   // RuntimeEffect uniforms are flattened by Skia's uniform processor. Use
   // ordinary number arrays here; Float32Array is treated as a single vector
   // by the Android animated-prop bridge and arrives as only four values.
@@ -402,6 +496,19 @@ function createCurlUniforms(
     projected[offset + 1] = depth;
     projected[offset + 2] = profile[offset + 2]! * direction;
     projected[offset + 3] = profile[offset + 3]!;
+  }
+  if (incomingLanding) {
+    const reveal = singlePreviousCurlRevealProgress(animationProgress);
+    if (reveal < 1) {
+      let maximumX = Number.NEGATIVE_INFINITY;
+      for (let index = 0; index < PROFILE_POINTS; index += 1) {
+        maximumX = Math.max(maximumX, projected[index * 4]!);
+      }
+      const revealOffset = -Math.max(0, maximumX) * (1 - reveal);
+      for (let index = 0; index < PROFILE_POINTS; index += 1) {
+        projected[index * 4] = projected[index * 4]! + revealOffset;
+      }
+    }
   }
 
   const runs = new Array<number>(PROFILE_RUNS * 4).fill(0);

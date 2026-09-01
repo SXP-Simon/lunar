@@ -14,7 +14,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 
-import type { ReaderSnapshot } from '../../contracts';
+import type { ReaderSnapshot, ReaderSpreadMode } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
 import { readerDiagnostic, readerPerformanceMark } from '../../runtime/core/performance';
 import {
@@ -43,6 +43,7 @@ export interface ReaderSurfaceProps {
   readonly animationStyle?: ReaderPageAnimationStyle;
   /** Duration in milliseconds for a page turn. */
   readonly animationDuration?: number;
+  readonly spreadMode?: ReaderSpreadMode;
   /** Optional finger-controlled turn. The target picture must be prepared first. */
   readonly interactiveTurn?: ReaderInteractiveTurn;
   /** Skia-owned reader chrome rendered in the same Canvas as the page. */
@@ -60,6 +61,7 @@ export function ReaderSurface({
   onTransformChange,
   animationStyle = 'slide',
   animationDuration = 360,
+  spreadMode = 'double',
   interactiveTurn,
   chapterTitle,
   progressLabel,
@@ -107,7 +109,13 @@ export function ReaderSurface({
     grabX,
     grabY,
   } =
-    useReaderPageTransition(currentContent, animationStyle, animationDuration, interactiveTurn);
+    useReaderPageTransition(
+      currentContent,
+      animationStyle,
+      animationDuration,
+      interactiveTurn,
+      spreadMode,
+    );
 
   useEffect(() => {
     readerDiagnostic(
@@ -143,8 +151,22 @@ export function ReaderSurface({
   // The moving sheet owns its chrome. Recording it into the same source
   // picture prevents a footer or chapter title from travelling on a separate
   // linear transform while the paper follows the curl profile.
+  const isSinglePreviousPageTurn = resolvedAnimationStyle === 'page'
+    && spreadMode === 'single'
+    && activeTransition?.direction === -1;
   const pageCurlSource = resolvedAnimationStyle === 'page'
-    ? activeTransition?.from ?? currentContent
+    ? activeTransition
+      ? isSinglePreviousPageTurn
+        ? incomingContent
+        : activeTransition.from
+      : currentContent
+    : undefined;
+  const pageCurlWidth = pageCurlSource?.frame.width ?? activeTransition?.from.frame.width ?? 0;
+  const pageCurlHeight = pageCurlSource?.frame.height ?? activeTransition?.from.frame.height ?? 0;
+  const pageCurlBackSource = resolvedAnimationStyle === 'page' && spreadMode === 'single'
+    ? isSinglePreviousPageTurn
+      ? activeTransition?.from
+      : currentContent
     : undefined;
   const pageCurlProgressText = pageCurlSource
     ? progressLabelForSnapshot(pageCurlSource.snapshot)
@@ -190,6 +212,13 @@ export function ReaderSurface({
     pageCurlTexturePicture ?? pageCurlSource?.picture.picture,
     pageCurlSource?.frame.width ?? 0,
     pageCurlSource?.frame.height ?? 0,
+    pageCurlSource?.key,
+  );
+  const pageCurlBackTexture = usePageCurlTexture(
+    pageCurlBackSource?.picture.picture,
+    pageCurlBackSource?.frame.width ?? 0,
+    pageCurlBackSource?.frame.height ?? 0,
+    pageCurlBackSource ? `${pageCurlBackSource.key}:curl-back` : undefined,
   );
 
   useEffect(() => () => pageCurlTexturePicture?.dispose(), [pageCurlTexturePicture]);
@@ -257,25 +286,36 @@ export function ReaderSurface({
         <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
           {activeTransition && resolvedAnimationStyle === 'page' ? (
             <Group>
-              {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
-              {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
+              {isSinglePreviousPageTurn ? (
+                <>
+                  <Picture picture={activeTransition.from.picture.picture} />
+                  {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
+                </>
+              ) : (
+                <>
+                  {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                  {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
+                </>
+              )}
               <PageCurlMesh
-                key={activeTransition.from.key}
+                backTexture={isSinglePreviousPageTurn ? pageCurlBackTexture : undefined}
+                key={pageCurlSource?.key ?? activeTransition.from.key}
                 direction={activeTransition.direction}
-                grabX={grabX}
-                grabY={grabY}
-                grabYValue={interactiveTurn?.grabYValue}
-                heldRollTilt={interactiveTurn?.heldRollTilt}
-                heldRollTiltValue={interactiveTurn?.heldRollTiltValue}
-                height={activeTransition.from.frame.height}
+                grabX={isSinglePreviousPageTurn ? pageCurlWidth * 0.6 : grabX}
+                grabY={isSinglePreviousPageTurn ? pageCurlHeight / 2 : grabY}
+                grabYValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.grabYValue}
+                heldRollTilt={isSinglePreviousPageTurn ? undefined : interactiveTurn?.heldRollTilt}
+                heldRollTiltValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.heldRollTiltValue}
+                height={pageCurlHeight}
                 initialProgress={interactiveTurn?.progress}
-                picture={activeTransition.from.picture}
-                pressedEdgeX={interactiveTurn?.pressedEdgeX}
-                pressedEdgeXValue={interactiveTurn?.pressedEdgeXValue}
+                phase={isSinglePreviousPageTurn ? 'incoming-landing' : 'full'}
+                picture={pageCurlSource?.picture ?? activeTransition.from.picture}
+                pressedEdgeX={isSinglePreviousPageTurn ? undefined : interactiveTurn?.pressedEdgeX}
+                pressedEdgeXValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.pressedEdgeXValue}
                 progress={progress}
                 texture={pageCurlTexture}
                 texturePicture={pageCurlTexturePicture}
-                width={activeTransition.from.frame.width}
+                width={pageCurlWidth}
               />
             </Group>
           ) : activeTransition && resolvedAnimationStyle === 'cover' ? (

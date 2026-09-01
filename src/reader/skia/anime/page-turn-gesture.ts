@@ -96,6 +96,33 @@ export function planarTurnProgressForTranslation(
   return clampUnit(Math.abs(translationX) / Math.max(1, pageWidth));
 }
 
+export function pageTurnRenderProgress(
+  physicalProgress: number,
+  direction: 1 | -1,
+  spreadMode: 'single' | 'double',
+): number {
+  'worklet';
+  const progress = clampUnit(physicalProgress);
+  return spreadMode === 'single' && direction === 1
+    ? progress * 0.5
+    : progress;
+}
+
+export function singlePreviousCurlProgress(progress: number): number {
+  'worklet';
+  const revealEnd = 0.1;
+  const landingStart = 0.15;
+  const safeProgress = clampUnit(progress);
+  if (safeProgress <= revealEnd) return landingStart;
+  const landingProgress = (safeProgress - revealEnd) / (1 - revealEnd);
+  return landingStart + (1 - landingStart) * landingProgress;
+}
+
+export function singlePreviousCurlRevealProgress(progress: number): number {
+  'worklet';
+  return clampUnit(progress / 0.1);
+}
+
 export function projectedPlanarTurnProgress(
   progress: number,
   towardTargetVelocity: number,
