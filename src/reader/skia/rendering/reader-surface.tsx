@@ -19,7 +19,6 @@ import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtim
 import { readerDiagnostic, readerPerformanceMark } from '../../runtime/core/performance';
 import {
   PageCurlMesh,
-  SlidePageEdgeShadow,
   useReaderPageTransition,
   usePageCurlTexture,
   type ReaderPageAnimationStyle,
@@ -351,13 +350,6 @@ export function ReaderSurface({
                   slideForegroundContent.frame,
                   activeTransition ? undefined : chapterTitle,
                   activeTransition ? undefined : progressLabel,
-                )}
-                {activeTransition && (
-                  <SlidePageEdgeShadow
-                    direction={activeTransition.direction}
-                    width={activeTransition.from.frame.width}
-                    height={activeTransition.from.frame.height}
-                  />
                 )}
               </Group>
             </Group>
