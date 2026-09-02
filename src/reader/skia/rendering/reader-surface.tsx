@@ -319,6 +319,10 @@ export function ReaderSurface({
                 height={pageCurlHeight}
                 initialProgress={interactiveTurn?.progress}
                 phase={isSinglePreviousPageTurn ? 'incoming-landing' : 'full'}
+                spreadMode={spreadMode}
+                gestureDriven={Boolean(interactiveTurn)}
+                settling={interactiveTurn?.settling}
+                settleTo={interactiveTurn?.settleTo}
                 picture={pageCurlSource?.picture ?? activeTransition.from.picture}
                 pressedEdgeX={isSinglePreviousPageTurn ? undefined : interactiveTurn?.pressedEdgeX}
                 pressedEdgeXValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.pressedEdgeXValue}

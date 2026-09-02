@@ -16,9 +16,11 @@ import { runOnUI, scheduleOnRN } from 'react-native-worklets';
 
 import type { CompiledReaderPicture } from '../../rendering/picture-compiler';
 import {
+  MIN_PRESSED_EDGE_X,
   singlePreviousCurlProgress,
   singlePreviousCurlRevealProgress,
 } from '../page-turn-gesture';
+import { createGestureCurlProfile } from './curl-geometry';
 
 /**
  * Continuous page surface adapted from react-native-natural-page-turn.
@@ -163,6 +165,10 @@ interface PageCurlMeshProps {
   readonly texture: PageCurlTexture;
   readonly backTexture?: PageCurlTexture;
   readonly phase?: 'full' | 'incoming-landing';
+  readonly spreadMode?: 'single' | 'double';
+  readonly gestureDriven?: boolean;
+  readonly settling?: boolean;
+  readonly settleTo?: 0 | 1;
 }
 
 function capturePictureTexture(
@@ -235,6 +241,11 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
       props.pressedEdgeX,
       props.heldRollTilt,
       props.phase,
+      props.spreadMode,
+      props.gestureDriven,
+      props.settling,
+      props.settleTo,
+      props.initialProgress,
     ),
   );
   useDerivedValue(() => {
@@ -248,6 +259,11 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
       props.pressedEdgeXValue?.value ?? props.pressedEdgeX,
       props.heldRollTiltValue?.value ?? props.heldRollTilt,
       props.phase,
+      props.spreadMode,
+      props.gestureDriven,
+      props.settling,
+      props.settleTo,
+      props.initialProgress,
     );
     // Replace the uniform object instead of passing an anonymous callback to
     // SharedValue.modify. The latter is treated as a Remote Function by some
@@ -265,6 +281,11 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
     props.pressedEdgeXValue,
     props.progress,
     props.phase,
+    props.spreadMode,
+    props.gestureDriven,
+    props.settling,
+    props.settleTo,
+    props.initialProgress,
     uniforms,
     width,
   ]);
@@ -379,9 +400,13 @@ function createCurlUniforms(
   pressedEdgeX = 1,
   heldRollTilt = 0,
   phase: PageCurlMeshProps['phase'] = 'full',
+  spreadMode: PageCurlMeshProps['spreadMode'] = 'double',
+  gestureDriven = false,
+  settling = false,
+  settleTo: 0 | 1 = 1,
+  initialProgress = progress,
 ): Uniforms {
   "worklet";
-  const minPressedEdgeX = 0.2;
   const animationProgress = Math.min(1, Math.max(0, progress));
   const incomingLanding = phase === 'incoming-landing';
   const turn = incomingLanding
@@ -399,11 +424,6 @@ function createCurlUniforms(
     1,
     Math.max(0, (turn - CURL_LANDING_START_PROGRESS) / (1 - CURL_LANDING_START_PROGRESS)),
   );
-  const sampledCompression = Math.min(
-    1,
-    Math.max(0, (1 - pressedEdgeX) / (1 - minPressedEdgeX)),
-  );
-  const compression = Math.max(liftProgress, sampledCompression * liftLinear);
   let amplitude: number;
   let rotation: number;
   let landedLength: number;
@@ -424,7 +444,31 @@ function createCurlUniforms(
       : (Math.PI - rootTangent) * (turn / Math.max(0.000001, incomingLandingStart));
     uniformity = 1 - retained ** 3;
     cornerTilt = 0;
+  } else if (gestureDriven) {
+    const gestureProfile = createGestureCurlProfile({
+      progress: animationProgress,
+      direction,
+      startBookX: startMaterial,
+      pressedEdgeX,
+      heldRollTilt,
+      spreadMode,
+      settling,
+      settleTo,
+      releaseProgress: initialProgress,
+    });
+    amplitude = gestureProfile.amplitude;
+    rotation = gestureProfile.rotation;
+    landedLength = gestureProfile.landedLength;
+    uniformity = gestureProfile.uniformity;
+    // The reference renderer models an inextensible strip. Vertical movement
+    // contributes to release intent but does not rotate the entire strip.
+    cornerTilt = 0;
   } else {
+    const sampledCompression = Math.min(
+      1,
+      Math.max(0, (1 - pressedEdgeX) / (1 - MIN_PRESSED_EDGE_X)),
+    );
+    const compression = Math.max(liftProgress, sampledCompression * liftLinear);
     const rootAmplitude = Math.PI * (0.62 + 0.26 * startMaterial);
     const liftedAmplitude = rootAmplitude * Math.sqrt(compression);
     const retained = (1 - turn) ** (1 + 7 / 14);
@@ -443,11 +487,11 @@ function createCurlUniforms(
   // RuntimeEffect uniforms are flattened by Skia's uniform processor. Use
   // ordinary number arrays here; Float32Array is treated as a single vector
   // by the Android animated-prop bridge and arrives as only four values.
-  const profile = new Array<number>(PROFILE_POINTS * 4).fill(0);
+  const projected = new Array<number>(PROFILE_POINTS * 4).fill(0);
   let x = 0;
   let z = 0;
-  profile[0] = 0;
-  profile[1] = 0;
+  projected[0] = 0;
+  projected[1] = 0;
   for (let segment = 0; segment < PROFILE_SEGMENTS; segment += 1) {
     const material = (segment + 0.5) / PROFILE_SEGMENTS;
     const first = material - QUADRATURE_OFFSET / PROFILE_SEGMENTS;
@@ -472,30 +516,31 @@ function createCurlUniforms(
     x += (Math.cos(firstAngle) + Math.cos(secondAngle)) * 0.5 / PROFILE_SEGMENTS;
     z += (Math.sin(firstAngle) + Math.sin(secondAngle)) * 0.5 / PROFILE_SEGMENTS;
     const offset = (segment + 1) * 4;
-    profile[offset] = x;
-    profile[offset + 1] = z;
+    projected[offset] = x;
+    projected[offset + 1] = z;
   }
   for (let index = 0; index < PROFILE_POINTS; index += 1) {
     const before = Math.max(0, index - 1) * 4;
     const after = Math.min(PROFILE_POINTS - 1, index + 1) * 4;
     const offset = index * 4;
-    const tangentX = profile[after]! - profile[before]!;
-    const tangentZ = profile[after + 1]! - profile[before + 1]!;
+    const tangentX = projected[after]! - projected[before]!;
+    const tangentZ = projected[after + 1]! - projected[before + 1]!;
     const length = Math.max(1e-7, Math.hypot(tangentX, tangentZ));
-    profile[offset + 2] = -tangentZ / length;
-    profile[offset + 3] = tangentX / length;
+    projected[offset + 2] = -tangentZ / length;
+    projected[offset + 3] = tangentX / length;
   }
 
-  const projected = new Array<number>(PROFILE_POINTS * 4).fill(0);
   for (let index = 0; index < PROFILE_POINTS; index += 1) {
     const offset = index * 4;
-    const physicalX = profile[offset]! * direction;
-    const depth = Math.max(0, profile[offset + 1]!);
+    const physicalX = projected[offset]! * direction;
+    const depth = Math.max(0, projected[offset + 1]!);
+    const normalX = projected[offset + 2]! * direction;
+    const normalZ = projected[offset + 3]!;
     const scale = Math.min(MAX_PERSPECTIVE_SCALE, CAMERA_DISTANCE / Math.max(0.001, CAMERA_DISTANCE - depth));
     projected[offset] = 0.5 + (physicalX - 0.5) * scale;
     projected[offset + 1] = depth;
-    projected[offset + 2] = profile[offset + 2]! * direction;
-    projected[offset + 3] = profile[offset + 3]!;
+    projected[offset + 2] = normalX;
+    projected[offset + 3] = normalZ;
   }
   if (incomingLanding) {
     const reveal = singlePreviousCurlRevealProgress(animationProgress);
