@@ -15,6 +15,15 @@ const INVERSE_BESSEL_CHEBYSHEV = [
   -0.0000003841457726910674, 0.00000009309814723863693,
 ] as const;
 const INVERSE_BESSEL_MIN_CHORD = 0.035;
+const AUTOMATIC_RELEASE_X = 0.9;
+const AUTOMATIC_CURVATURE_RELAXATION = 10;
+const AUTOMATIC_REVERSE_RELEASE_X = 0.4;
+const AUTOMATIC_PRESS_DURATION_MS = 120;
+const AUTOMATIC_PROPAGATION_SPEED = 0.5 * 4 * 1.15;
+export const AUTOMATIC_PAGE_TURN_DURATION_MS = Math.ceil(
+  AUTOMATIC_PRESS_DURATION_MS
+    + ((AUTOMATIC_RELEASE_X + 1) / AUTOMATIC_PROPAGATION_SPEED) * 1000,
+);
 
 export interface GestureCurlProfile {
   readonly amplitude: number;
@@ -61,6 +70,67 @@ export function bendAmplitudeForChord(chord: number): number {
     - beforePrevious
     + INVERSE_BESSEL_CHEBYSHEV[0]!;
   return normalized * Math.sqrt(Math.max(0, 1 - safeChord));
+}
+
+function createTurnCurlProfile(
+  progress: number,
+  startAmplitude: number,
+  startRotation: number,
+  curvatureRelaxation: number,
+): GestureCurlProfile {
+  'worklet';
+  const rootTangent = startRotation + startAmplitude;
+  const swing = Math.min(1, Math.max(0, (Math.PI - rootTangent) / Math.PI));
+  const landingStart = swing / (swing + 1);
+  const landing = progress > landingStart;
+  const landedLength = landing
+    ? (progress - landingStart) / Math.max(0.000001, 1 - landingStart)
+    : 0;
+  const retained = (1 - landedLength) ** (1 + curvatureRelaxation / 14);
+  const amplitude = startAmplitude * retained;
+  return {
+    amplitude,
+    rotation: landing
+      ? Math.PI - amplitude
+      : startRotation
+        + (Math.PI - rootTangent)
+          * (progress / Math.max(0.000001, landingStart)),
+    landedLength,
+    uniformity: 1 - retained ** 3,
+  };
+}
+
+export function createAutomaticCurlProfile(progress: number): GestureCurlProfile {
+  'worklet';
+  const animationProgress = clampUnit(progress);
+  const pressFraction = AUTOMATIC_PRESS_DURATION_MS / AUTOMATIC_PAGE_TURN_DURATION_MS;
+  if (animationProgress <= pressFraction) {
+    const pressProgress = animationProgress / Math.max(0.000001, pressFraction);
+    const edgeX = 1 + (AUTOMATIC_RELEASE_X - 1) * pressProgress;
+    return {
+      amplitude: bendAmplitudeForChord(edgeX),
+      rotation: 0,
+      landedLength: 0,
+      uniformity: 0,
+    };
+  }
+  const turnProgress = (animationProgress - pressFraction) / (1 - pressFraction);
+  return createTurnCurlProfile(
+    turnProgress,
+    bendAmplitudeForChord(AUTOMATIC_RELEASE_X),
+    0,
+    AUTOMATIC_CURVATURE_RELAXATION,
+  );
+}
+
+export function createIncomingCurlProfile(progress: number): GestureCurlProfile {
+  'worklet';
+  return createTurnCurlProfile(
+    clampUnit(progress),
+    bendAmplitudeForChord(AUTOMATIC_REVERSE_RELEASE_X),
+    0,
+    AUTOMATIC_CURVATURE_RELAXATION,
+  );
 }
 
 export function createGestureCurlProfile({
@@ -111,23 +181,10 @@ export function createGestureCurlProfile({
     };
   }
 
-  const rootTangent = profileHeldRollTilt + startAmplitude;
-  const swing = Math.min(1, Math.max(0, (Math.PI - rootTangent) / Math.PI));
-  const landingStart = swing / (swing + 1);
-  const landing = profileProgress > landingStart;
-  const landedLength = landing
-    ? (profileProgress - landingStart) / Math.max(0.000001, 1 - landingStart)
-    : 0;
-  const retained = (1 - landedLength) ** (1 + CURVATURE_RELAXATION / 14);
-  const amplitude = startAmplitude * retained;
-  return {
-    amplitude,
-    rotation: landing
-      ? Math.PI - amplitude
-      : profileHeldRollTilt
-        + (Math.PI - rootTangent)
-          * (profileProgress / Math.max(0.000001, landingStart)),
-    landedLength,
-    uniformity: 1 - retained ** 3,
-  };
+  return createTurnCurlProfile(
+    profileProgress,
+    startAmplitude,
+    profileHeldRollTilt,
+    CURVATURE_RELAXATION,
+  );
 }

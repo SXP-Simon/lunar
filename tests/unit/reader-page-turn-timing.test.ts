@@ -11,6 +11,7 @@ describe('reader page turn timing', () => {
   it('keeps paper animations on their fixed duration', () => {
     expect(getReaderPageTurnDuration('page', 6)).toBe(PAGE_TURN_DURATION_MS);
     expect(getReaderPageTurnDuration('simulation', 2)).toBe(PAGE_TURN_DURATION_MS);
+    expect(getReaderPageTurnDuration('page', 0, 360, true)).toBe(854);
   });
 
   it('shortens planar animations according to release speed', () => {

@@ -233,14 +233,21 @@ export function useReaderPageTransition(
           interactiveTurn.releaseVelocity,
           animationDuration,
         )
-      : getReaderPageTurnDuration(animationStyle, 0, animationDuration);
+      : getReaderPageTurnDuration(
+          animationStyle,
+          0,
+          animationDuration,
+          incomingPageLanding,
+        );
     // React Skia can observe the driver swap before it removes the interactive
     // nodes. Keep both drivers at the same terminal pose during that frame.
     if (handoffProgress !== undefined) progress.set(handoffProgress);
     if (!interactiveTurn?.settling) animatedProgress.set(0);
     animatedProgress.set(withTiming(target, {
       duration,
-      easing: target === 0
+      easing: !interactiveTurn && style === 'page'
+        ? Easing.linear
+        : target === 0
         ? Easing.out(Easing.cubic)
         : incomingPageLanding
           ? Easing.out(Easing.quad)

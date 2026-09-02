@@ -16,11 +16,15 @@ import { runOnUI, scheduleOnRN } from 'react-native-worklets';
 
 import type { CompiledReaderPicture } from '../../rendering/picture-compiler';
 import {
-  MIN_PRESSED_EDGE_X,
+  automaticSinglePreviousCurlProgress,
   singlePreviousCurlProgress,
   singlePreviousCurlRevealProgress,
 } from '../page-turn-gesture';
-import { createGestureCurlProfile } from './curl-geometry';
+import {
+  createAutomaticCurlProfile,
+  createGestureCurlProfile,
+  createIncomingCurlProfile,
+} from './curl-geometry';
 
 /**
  * Continuous page surface adapted from react-native-natural-page-turn.
@@ -34,13 +38,7 @@ const PROFILE_RUNS = 4;
 const QUADRATURE_OFFSET = 0.5 / Math.sqrt(3);
 const CAMERA_DISTANCE = 4;
 const MAX_PERSPECTIVE_SCALE = 1.34;
-const CURL_LIFT_END_PROGRESS = 0.22;
-const CURL_LANDING_START_PROGRESS = 0.32;
 const CURL_BACK_FACE_OPACITY = 0.62;
-// Reverse single-page turns use the reference incoming-sheet release chord.
-const INCOMING_PAGE_RELEASE_X = 0.6;
-const INCOMING_PAGE_START_AMPLITUDE = 1.338178886715422;
-const INCOMING_PAGE_CURVATURE_RELAXATION = 10;
 const DEVICE_TEXTURE_SCALE = Math.min(3, Math.max(1, PixelRatio.get()));
 
 const PAGE_CURL_SHADER = createPageCurlShader(false);
@@ -230,26 +228,10 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
   const textureReady = texture.ready && (!props.backTexture || props.backTexture.ready);
   const incomingLanding = props.phase === 'incoming-landing';
 
-  const uniforms = useSharedValue<Uniforms>(
+  // Worklets freezes each published uniform tree. Build fresh nested arrays
+  // so the next frame never mutates values already consumed by Skia.
+  const uniforms = useDerivedValue<Uniforms>(() =>
     createCurlUniforms(
-      props.initialProgress ?? 0,
-      props.direction,
-      props.grabX,
-      props.grabY,
-      width,
-      height,
-      props.pressedEdgeX,
-      props.heldRollTilt,
-      props.phase,
-      props.spreadMode,
-      props.gestureDriven,
-      props.settling,
-      props.settleTo,
-      props.initialProgress,
-    ),
-  );
-  useDerivedValue(() => {
-    const next = createCurlUniforms(
       props.progress.value,
       props.direction,
       props.grabX,
@@ -264,12 +246,8 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
       props.settling,
       props.settleTo,
       props.initialProgress,
-    );
-    // Replace the uniform object instead of passing an anonymous callback to
-    // SharedValue.modify. The latter is treated as a Remote Function by some
-    // Android Worklets builds when it is created inside useDerivedValue.
-    uniforms.value = next;
-  }, [
+    ),
+  [
     height,
     props.direction,
     props.grabX,
@@ -286,7 +264,6 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
     props.settling,
     props.settleTo,
     props.initialProgress,
-    uniforms,
     width,
   ]);
 
@@ -410,39 +387,27 @@ function createCurlUniforms(
   const animationProgress = Math.min(1, Math.max(0, progress));
   const incomingLanding = phase === 'incoming-landing';
   const turn = incomingLanding
-    ? singlePreviousCurlProgress(animationProgress)
+    ? gestureDriven
+      ? singlePreviousCurlProgress(animationProgress)
+      : automaticSinglePreviousCurlProgress(animationProgress)
     : animationProgress;
   const safeWidth = Math.max(1, width);
   const safeHeight = Math.max(1, height);
   const spineX = incomingLanding ? 0 : direction > 0 ? 0 : safeWidth;
   const startMaterial = incomingLanding
-    ? INCOMING_PAGE_RELEASE_X
+    ? 0.4
     : Math.min(1, Math.max(0, Math.abs(grabX - spineX) / safeWidth));
-  const liftLinear = Math.min(1, turn / CURL_LIFT_END_PROGRESS);
-  const liftProgress = liftLinear * liftLinear * (3 - 2 * liftLinear);
-  const landingProgress = Math.min(
-    1,
-    Math.max(0, (turn - CURL_LANDING_START_PROGRESS) / (1 - CURL_LANDING_START_PROGRESS)),
-  );
   let amplitude: number;
   let rotation: number;
   let landedLength: number;
   let uniformity: number;
   let cornerTilt: number;
   if (incomingLanding) {
-    const rootTangent = INCOMING_PAGE_START_AMPLITUDE;
-    const swing = Math.min(1, Math.max(0, (Math.PI - rootTangent) / Math.PI));
-    const incomingLandingStart = swing / (swing + 1);
-    const landing = turn > incomingLandingStart;
-    landedLength = landing
-      ? (turn - incomingLandingStart) / (1 - incomingLandingStart)
-      : 0;
-    const retained = (1 - landedLength) ** (1 + INCOMING_PAGE_CURVATURE_RELAXATION / 14);
-    amplitude = INCOMING_PAGE_START_AMPLITUDE * retained;
-    rotation = landing
-      ? Math.PI - amplitude
-      : (Math.PI - rootTangent) * (turn / Math.max(0.000001, incomingLandingStart));
-    uniformity = 1 - retained ** 3;
+    const incomingProfile = createIncomingCurlProfile(turn);
+    amplitude = incomingProfile.amplitude;
+    rotation = incomingProfile.rotation;
+    landedLength = incomingProfile.landedLength;
+    uniformity = incomingProfile.uniformity;
     cornerTilt = 0;
   } else if (gestureDriven) {
     const gestureProfile = createGestureCurlProfile({
@@ -464,25 +429,12 @@ function createCurlUniforms(
     // contributes to release intent but does not rotate the entire strip.
     cornerTilt = 0;
   } else {
-    const sampledCompression = Math.min(
-      1,
-      Math.max(0, (1 - pressedEdgeX) / (1 - MIN_PRESSED_EDGE_X)),
-    );
-    const compression = Math.max(liftProgress, sampledCompression * liftLinear);
-    const rootAmplitude = Math.PI * (0.62 + 0.26 * startMaterial);
-    const liftedAmplitude = rootAmplitude * Math.sqrt(compression);
-    const retained = (1 - turn) ** (1 + 7 / 14);
-    amplitude = liftedAmplitude * retained;
-    const liftedRotation = Math.max(0.4 * liftProgress, heldRollTilt * liftLinear);
-    // Rotation follows normalized horizontal travel across the whole gesture;
-    // the short lift only controls how quickly the sheet acquires curvature.
-    rotation = liftedRotation + (Math.PI - liftedRotation) * turn;
-    landedLength = landingProgress ** 1.25;
-    uniformity = 1 - (1 - landingProgress) ** 3;
-    cornerTilt = (grabY / safeHeight - 0.5)
-      * 0.62
-      * liftProgress
-      * (1 - turn);
+    const automaticProfile = createAutomaticCurlProfile(turn);
+    amplitude = automaticProfile.amplitude;
+    rotation = automaticProfile.rotation;
+    landedLength = automaticProfile.landedLength;
+    uniformity = automaticProfile.uniformity;
+    cornerTilt = 0;
   }
   // RuntimeEffect uniforms are flattened by Skia's uniform processor. Use
   // ordinary number arrays here; Float32Array is treated as a single vector

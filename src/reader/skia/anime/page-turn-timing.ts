@@ -1,21 +1,24 @@
 import type { ReaderPageAnimationStyle } from './page-transition';
+import { AUTOMATIC_PAGE_TURN_DURATION_MS } from './effect/curl-geometry';
 
-export const PAGE_TURN_DURATION_MS = 680;
+export const PAGE_TURN_DURATION_MS = AUTOMATIC_PAGE_TURN_DURATION_MS;
+export const PAGE_TURN_GESTURE_SETTLE_DURATION_MS = 520;
+export const PAGE_TURN_REVERSE_DURATION_MS = 854;
 export const PAGE_TURN_REVERT_DURATION_MS = 720;
 
 export function getReaderPageTurnDuration(
   animationStyle: ReaderPageAnimationStyle,
   releaseVelocity = 0,
   animationDuration = 360,
+  incomingPageLanding = false,
 ): number {
   const style = resolveReaderPageAnimationStyle(animationStyle);
+  if (style === 'page') {
+    return incomingPageLanding ? PAGE_TURN_REVERSE_DURATION_MS : PAGE_TURN_DURATION_MS;
+  }
   const releaseSpeed = Math.min(6, Math.max(0, releaseVelocity));
-  const releaseBoost = style === 'page'
-    ? Math.min(0.22, releaseSpeed * 0.035)
-    : Math.min(0.55, releaseSpeed * 0.08);
-  const baseDuration = style === 'page'
-    ? PAGE_TURN_DURATION_MS
-    : clampPageTurnDuration(animationDuration);
+  const releaseBoost = Math.min(0.55, releaseSpeed * 0.08);
+  const baseDuration = clampPageTurnDuration(animationDuration);
   return Math.max(140, Math.round(baseDuration * (1 - releaseBoost)));
 }
 
@@ -31,7 +34,7 @@ export function getReaderPageTurnSettleDuration(
   const fullDuration = style === 'page'
     ? targetProgress === 0
       ? PAGE_TURN_REVERT_DURATION_MS
-      : PAGE_TURN_DURATION_MS
+      : PAGE_TURN_GESTURE_SETTLE_DURATION_MS
     : clampPageTurnDuration(animationDuration);
   const minimumDuration = style === 'page'
     ? targetProgress === 0 ? 220 : 160

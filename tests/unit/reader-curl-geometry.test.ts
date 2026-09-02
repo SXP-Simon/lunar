@@ -5,7 +5,9 @@ import {
   gesturePressedChordForFingerX,
 } from '../../src/reader/skia/anime/page-turn-gesture';
 import {
+  AUTOMATIC_PAGE_TURN_DURATION_MS,
   bendAmplitudeForChord,
+  createAutomaticCurlProfile,
   createGestureCurlProfile,
 } from '../../src/reader/skia/anime/effect/curl-geometry';
 
@@ -92,5 +94,26 @@ describe('gesture curl geometry', () => {
 
   it('restores physical finger travel for single-page forward gestures', () => {
     expect(profile(0.5)).toEqual(profile(0.25, { spreadMode: 'single' }));
+  });
+});
+
+describe('automatic curl geometry', () => {
+  it('holds rotation during the reference press interval', () => {
+    const pressEnd = 120 / AUTOMATIC_PAGE_TURN_DURATION_MS;
+    const pressed = createAutomaticCurlProfile(pressEnd);
+    const turning = createAutomaticCurlProfile(pressEnd + 0.01);
+
+    expect(AUTOMATIC_PAGE_TURN_DURATION_MS).toBe(947);
+    expect(pressed.amplitude).toBeCloseTo(bendAmplitudeForChord(0.9), 6);
+    expect(pressed.rotation).toBe(0);
+    expect(turning.rotation).toBeGreaterThan(0);
+  });
+
+  it('finishes as a flat sheet on the destination side', () => {
+    const completed = createAutomaticCurlProfile(1);
+
+    expect(completed.amplitude).toBeCloseTo(0, 8);
+    expect(completed.rotation).toBeCloseTo(Math.PI, 8);
+    expect(completed.landedLength).toBeCloseTo(1, 8);
   });
 });

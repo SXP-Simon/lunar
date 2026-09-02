@@ -25,11 +25,11 @@ describe('reader planar page turn gesture', () => {
     expect(pageTurnRenderProgress(0.5, -1, 'single')).toBe(0.5);
     expect(singlePreviousCurlProgress(0)).toBe(0.15);
     expect(singlePreviousCurlProgress(0.1)).toBe(0.15);
-    expect(singlePreviousCurlProgress(0.55)).toBeCloseTo(0.575);
+    expect(singlePreviousCurlProgress(0.55)).toBeCloseTo(0.5335365854);
     expect(singlePreviousCurlProgress(1)).toBe(1);
     expect(singlePreviousCurlRevealProgress(0)).toBe(0);
-    expect(singlePreviousCurlRevealProgress(0.05)).toBe(0.5);
-    expect(singlePreviousCurlRevealProgress(0.1)).toBe(1);
+    expect(singlePreviousCurlRevealProgress(0.09)).toBe(0.5);
+    expect(singlePreviousCurlRevealProgress(0.18)).toBe(1);
   });
 
   it('commits a slow drag after crossing half of the page', () => {
