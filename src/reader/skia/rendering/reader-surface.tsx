@@ -10,8 +10,8 @@ import {
   type SkPicture,
   useCanvasSize,
 } from '@shopify/react-native-skia';
-import type { StyleProp, ViewStyle } from 'react-native';
-import { memo, useEffect, useMemo } from 'react';
+import { PixelRatio, Platform, processColor, type StyleProp, type ViewStyle } from 'react-native';
+import { memo, useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import {
   cancelAnimation,
@@ -28,6 +28,7 @@ import {
   PageCurlMesh,
   automaticPageTurnPaintOrder,
   getReaderPageTurnDuration,
+  useNativeAutomaticPageTurns,
   useReaderPageTransition,
   usePageCurlTexture,
   type ReaderAutomaticTurn,
@@ -154,6 +155,86 @@ export function ReaderSurface({
   const automaticPageTurnsVisible = resolvedAnimationStyle === 'page'
     && automaticTurns.length > 0;
 
+  const paperColor = runtime.getBackgroundColor();
+  const processedPaperColor = processColor(paperColor);
+  const nativePaperColor = typeof processedPaperColor === 'number'
+    ? processedPaperColor >>> 0
+    : 0xffffffff;
+  const nativeTextureScale = Math.min(3, Math.max(1, PixelRatio.get()));
+  const nativePixelWidth = Math.max(1, Math.round(viewport.width * nativeTextureScale));
+  const nativePixelHeight = Math.max(1, Math.round(viewport.height * nativeTextureScale));
+  const createNativePagePicture = useCallback((content: ReaderPageContent) => {
+    const pageScale = Math.max(0.001, scale);
+    const title = content.snapshot.chapterTitle;
+    const pagePicture = composePageCurlPicture({
+      base: content.picture.picture,
+      color: overlayColor,
+      height: content.frame.height,
+      offsetX,
+      offsetY,
+      overlayInsets: {
+        top: overlayTop,
+        right: overlayRight,
+        bottom: overlayBottom,
+        left: overlayLeft,
+      },
+      pageScale,
+      progress: progressLabelForSnapshot(content.snapshot),
+      progressFont: runtime.getUiFont(12 / pageScale),
+      title,
+      titleFont: title ? runtime.getUiFont(14 / pageScale) : undefined,
+      viewportHeight: viewport.height,
+      viewportWidth: viewport.width,
+      width: content.frame.width,
+    });
+    try {
+      return recordNativeViewportPicture({
+        pagePicture,
+        paperColor,
+        pageScale,
+        offsetX,
+        offsetY,
+        pixelHeight: nativePixelHeight,
+        pixelWidth: nativePixelWidth,
+        textureScale: nativeTextureScale,
+      });
+    } finally {
+      pagePicture.dispose();
+    }
+  }, [
+    nativePixelHeight,
+    nativePixelWidth,
+    nativeTextureScale,
+    offsetX,
+    offsetY,
+    overlayBottom,
+    overlayColor,
+    overlayLeft,
+    overlayRight,
+    overlayTop,
+    paperColor,
+    runtime,
+    scale,
+    viewport.height,
+    viewport.width,
+  ]);
+  const nativeAutomaticPageTurnsEnabled = useNativeAutomaticPageTurns({
+    canvasRef: ref,
+    enabled: resolvedAnimationStyle === 'page'
+      && spreadMode === 'single'
+      && onAutomaticTurnComplete !== undefined,
+    turns: automaticTurns,
+    pixelWidth: nativePixelWidth,
+    pixelHeight: nativePixelHeight,
+    paperColor: nativePaperColor,
+    createPicture: createNativePagePicture,
+    onComplete: onAutomaticTurnComplete,
+  });
+  const nativeAutomaticPageTurnsVisible = automaticPageTurnsVisible
+    && nativeAutomaticPageTurnsEnabled;
+  const fallbackAutomaticPageTurnsVisible = automaticPageTurnsVisible
+    && !nativeAutomaticPageTurnsEnabled;
+
   useEffect(() => {
     readerDiagnostic(
       'turn.surface.state',
@@ -191,7 +272,7 @@ export function ReaderSurface({
   const isSinglePreviousPageTurn = resolvedAnimationStyle === 'page'
     && spreadMode === 'single'
     && activeTransition?.direction === -1;
-  const pageCurlSource = resolvedAnimationStyle === 'page'
+  const pageCurlSource = resolvedAnimationStyle === 'page' && !automaticNavigationActive
     ? activeTransition
       ? isSinglePreviousPageTurn
         ? incomingContent
@@ -200,7 +281,9 @@ export function ReaderSurface({
     : undefined;
   const pageCurlWidth = pageCurlSource?.frame.width ?? activeTransition?.from.frame.width ?? 0;
   const pageCurlHeight = pageCurlSource?.frame.height ?? activeTransition?.from.frame.height ?? 0;
-  const pageCurlBackSource = resolvedAnimationStyle === 'page' && spreadMode === 'single'
+  const pageCurlBackSource = resolvedAnimationStyle === 'page'
+    && spreadMode === 'single'
+    && !automaticNavigationActive
     ? isSinglePreviousPageTurn
       ? activeTransition?.from
       : currentContent
@@ -329,12 +412,21 @@ export function ReaderSurface({
       accessible={false}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
+      opaque={Platform.OS === 'android'}
       pointerEvents="none"
       ref={ref}
       style={style}>
       {canRenderFrame && (
         <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
-          {automaticPageTurnsVisible && automaticBackgroundContent ? (
+          {nativeAutomaticPageTurnsVisible && automaticTurns[0] ? (
+            <Group>
+              <Picture picture={automaticTurns[0].from.picture.picture} />
+              {renderChrome(
+                automaticTurns[0].from.snapshot,
+                automaticTurns[0].from.frame,
+              )}
+            </Group>
+          ) : fallbackAutomaticPageTurnsVisible && automaticBackgroundContent ? (
             <Group>
               <Picture picture={automaticBackgroundContent.picture.picture} />
               {renderChrome(
@@ -660,4 +752,32 @@ function composePageCurlPicture(options: PageCurlPictureOptions): SkPicture {
   const picture = recorder.finishRecordingAsPicture();
   recorder.dispose();
   return picture;
+}
+
+interface NativeViewportPictureOptions {
+  readonly pagePicture: SkPicture;
+  readonly paperColor: string;
+  readonly pageScale: number;
+  readonly offsetX: number;
+  readonly offsetY: number;
+  readonly pixelWidth: number;
+  readonly pixelHeight: number;
+  readonly textureScale: number;
+}
+
+function recordNativeViewportPicture(options: NativeViewportPictureOptions): SkPicture {
+  const recorder = Skia.PictureRecorder();
+  try {
+    const canvas = recorder.beginRecording(
+      Skia.XYWHRect(0, 0, options.pixelWidth, options.pixelHeight),
+    );
+    canvas.clear(Skia.Color(options.paperColor));
+    canvas.scale(options.textureScale, options.textureScale);
+    canvas.translate(options.offsetX, options.offsetY);
+    canvas.scale(options.pageScale, options.pageScale);
+    canvas.drawPicture(options.pagePicture);
+    return recorder.finishRecordingAsPicture();
+  } finally {
+    recorder.dispose();
+  }
 }
