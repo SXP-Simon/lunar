@@ -13,6 +13,7 @@ export {
   PAGE_TURN_DURATION_MS,
   READER_PAGE_ANIMATION_STYLES,
   ReaderSurface,
+  type ReaderAutomaticTurn,
   type ReaderInteractiveTurn,
   type ReaderPageContent,
   type ReaderPageAnimationStyle,

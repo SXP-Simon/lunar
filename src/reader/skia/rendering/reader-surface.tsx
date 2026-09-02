@@ -11,16 +11,26 @@ import {
   useCanvasSize,
 } from '@shopify/react-native-skia';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { useEffect, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
+import {
+  cancelAnimation,
+  Easing,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import type { ReaderSnapshot, ReaderSpreadMode } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
 import { readerDiagnostic, readerPerformanceMark } from '../../runtime/core/performance';
 import {
   PageCurlMesh,
+  automaticPageTurnPaintOrder,
+  getReaderPageTurnDuration,
   useReaderPageTransition,
   usePageCurlTexture,
+  type ReaderAutomaticTurn,
   type ReaderPageAnimationStyle,
   type ReaderPageContent,
   type ReaderInteractiveTurn,
@@ -30,7 +40,12 @@ import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './sur
 
 export type { ReaderSurfaceTransform } from './surface-transform';
 export { PAGE_TURN_DURATION_MS, READER_PAGE_ANIMATION_STYLES } from '../anime';
-export type { ReaderInteractiveTurn, ReaderPageAnimationStyle, ReaderPageContent } from '../anime';
+export type {
+  ReaderAutomaticTurn,
+  ReaderInteractiveTurn,
+  ReaderPageAnimationStyle,
+  ReaderPageContent,
+} from '../anime';
 
 export interface ReaderSurfaceProps {
   readonly runtime: LunarReaderRuntime;
@@ -45,6 +60,10 @@ export interface ReaderSurfaceProps {
   readonly spreadMode?: ReaderSpreadMode;
   /** Optional finger-controlled turn. The target picture must be prepared first. */
   readonly interactiveTurn?: ReaderInteractiveTurn;
+  /** Independently animated paper layers created by repeated page taps. */
+  readonly automaticTurns?: readonly ReaderAutomaticTurn[];
+  readonly automaticNavigationActive?: boolean;
+  readonly onAutomaticTurnComplete?: (turnId: number) => void;
   /** Skia-owned reader chrome rendered in the same Canvas as the page. */
   readonly chapterTitle?: string;
   readonly progressLabel?: string;
@@ -62,6 +81,9 @@ export function ReaderSurface({
   animationDuration = 360,
   spreadMode = 'double',
   interactiveTurn,
+  automaticTurns = [],
+  automaticNavigationActive = false,
+  onAutomaticTurnComplete,
   chapterTitle,
   progressLabel,
   overlayColor = '#777777',
@@ -116,7 +138,21 @@ export function ReaderSurface({
       animationDuration,
       interactiveTurn,
       spreadMode,
+      automaticNavigationActive,
     );
+
+  const automaticDirection = automaticTurns[0]?.direction ?? 1;
+  const automaticBackgroundContent = automaticTurns.length === 0
+    ? undefined
+    : automaticDirection > 0
+      ? automaticTurns.at(-1)?.to
+      : automaticTurns[0]?.from;
+  const automaticPaintTurns = useMemo(
+    () => automaticPageTurnPaintOrder(automaticTurns, automaticDirection),
+    [automaticDirection, automaticTurns],
+  );
+  const automaticPageTurnsVisible = resolvedAnimationStyle === 'page'
+    && automaticTurns.length > 0;
 
   useEffect(() => {
     readerDiagnostic(
@@ -240,7 +276,11 @@ export function ReaderSurface({
     : undefined;
 
   const canRenderFrame = snapshot.phase === 'ready'
-    && ((compiled !== undefined && frame !== undefined) || activeTransition !== undefined);
+    && (
+      (compiled !== undefined && frame !== undefined)
+      || activeTransition !== undefined
+      || automaticPageTurnsVisible
+    );
   const renderChrome = (
     chromeSnapshot: ReaderSnapshot,
     chromeFrame: { readonly width: number; readonly height: number },
@@ -294,7 +334,32 @@ export function ReaderSurface({
       style={style}>
       {canRenderFrame && (
         <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
-          {activeTransition && resolvedAnimationStyle === 'page' ? (
+          {automaticPageTurnsVisible && automaticBackgroundContent ? (
+            <Group>
+              <Picture picture={automaticBackgroundContent.picture.picture} />
+              {renderChrome(
+                automaticBackgroundContent.snapshot,
+                automaticBackgroundContent.frame,
+              )}
+              {automaticPaintTurns.map((turn) => (
+                <AutomaticPageCurlLayer
+                  key={turn.id}
+                  animationDuration={animationDuration}
+                  offsetX={offsetX}
+                  offsetY={offsetY}
+                  onComplete={onAutomaticTurnComplete}
+                  overlayColor={overlayColor}
+                  overlayInsets={overlayInsets}
+                  runtime={runtime}
+                  scale={scale}
+                  spreadMode={spreadMode}
+                  turn={turn}
+                  viewportHeight={viewport.height}
+                  viewportWidth={viewport.width}
+                />
+              ))}
+            </Group>
+          ) : activeTransition && resolvedAnimationStyle === 'page' ? (
             <Group>
               {isSinglePreviousPageTurn ? (
                 <>
@@ -374,7 +439,7 @@ export function ReaderSurface({
               {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
             </>
           )}
-          {!activeTransition && overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
+          {!activeTransition && !automaticPageTurnsVisible && overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
             <SkiaRect
               key={`${index}:${overlay.bounds.x}:${overlay.bounds.y}`}
               x={overlay.bounds.x}
@@ -391,6 +456,133 @@ export function ReaderSurface({
     </Canvas>
   );
 }
+
+interface AutomaticPageCurlLayerProps {
+  readonly animationDuration: number;
+  readonly offsetX: number;
+  readonly offsetY: number;
+  readonly onComplete?: (turnId: number) => void;
+  readonly overlayColor: string;
+  readonly overlayInsets: Readonly<{ top: number; right: number; bottom: number; left: number }>;
+  readonly runtime: LunarReaderRuntime;
+  readonly scale: number;
+  readonly spreadMode: ReaderSpreadMode;
+  readonly turn: ReaderAutomaticTurn;
+  readonly viewportHeight: number;
+  readonly viewportWidth: number;
+}
+
+const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
+  animationDuration,
+  offsetX,
+  offsetY,
+  onComplete,
+  overlayColor,
+  overlayInsets,
+  runtime,
+  scale,
+  spreadMode,
+  turn,
+  viewportHeight,
+  viewportWidth,
+}: AutomaticPageCurlLayerProps) {
+  const { direction, id: turnId } = turn;
+  const incomingLanding = spreadMode === 'single' && direction < 0;
+  const source = incomingLanding ? turn.to : turn.from;
+  const backSource = incomingLanding ? turn.from : undefined;
+  const progressText = progressLabelForSnapshot(source.snapshot);
+  const texturePicture = useMemo(() => {
+    const pageScale = Math.max(0.001, scale);
+    const title = source.snapshot.chapterTitle;
+    const titleFont = title ? runtime.getUiFont(14 / pageScale) : undefined;
+    const progressFont = runtime.getUiFont(12 / pageScale);
+    if ((!title || !titleFont) && !progressFont) return undefined;
+    return composePageCurlPicture({
+      base: source.picture.picture,
+      color: overlayColor,
+      height: source.frame.height,
+      offsetX,
+      offsetY,
+      overlayInsets,
+      pageScale,
+      progress: progressText,
+      progressFont,
+      title,
+      titleFont,
+      viewportHeight,
+      viewportWidth,
+      width: source.frame.width,
+    });
+  }, [
+    offsetX,
+    offsetY,
+    overlayColor,
+    overlayInsets,
+    progressText,
+    runtime,
+    scale,
+    source,
+    viewportHeight,
+    viewportWidth,
+  ]);
+  const texture = usePageCurlTexture(
+    texturePicture ?? source.picture.picture,
+    source.frame.width,
+    source.frame.height,
+    `${source.key}:automatic:${turnId}`,
+  );
+  const backTexture = usePageCurlTexture(
+    backSource?.picture.picture,
+    backSource?.frame.width ?? 0,
+    backSource?.frame.height ?? 0,
+    backSource ? `${backSource.key}:automatic-back:${turnId}` : undefined,
+  );
+  const progress = useSharedValue(0);
+  const texturesReady = texture.ready && (!backSource || backTexture.ready);
+
+  useEffect(() => () => texturePicture?.dispose(), [texturePicture]);
+
+  useEffect(() => {
+    if (!texturesReady) return;
+    const duration = getReaderPageTurnDuration(
+      'page',
+      0,
+      animationDuration,
+      incomingLanding,
+    );
+    progress.set(withTiming(1, {
+      duration,
+      easing: Easing.linear,
+    }, (finished) => {
+      if (finished && onComplete) scheduleOnRN(onComplete, turnId);
+    }));
+    return () => cancelAnimation(progress);
+  }, [
+    animationDuration,
+    incomingLanding,
+    onComplete,
+    progress,
+    texturesReady,
+    turnId,
+  ]);
+
+  return (
+    <PageCurlMesh
+      backTexture={backSource ? backTexture : undefined}
+      direction={direction}
+      grabX={incomingLanding ? source.frame.width * 0.6 : direction > 0 ? 0 : source.frame.width}
+      grabY={source.frame.height / 2}
+      height={source.frame.height}
+      phase={incomingLanding ? 'incoming-landing' : 'full'}
+      picture={source.picture}
+      progress={progress}
+      spreadMode={spreadMode}
+      texture={texture}
+      texturePicture={texturePicture}
+      width={source.frame.width}
+    />
+  );
+});
 
 function progressLabelForSnapshot(snapshot: ReaderSnapshot): string {
   const totalSpreads = snapshot.totalSpreads;

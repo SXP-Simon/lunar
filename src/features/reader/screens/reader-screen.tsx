@@ -56,7 +56,10 @@ export default function ReaderScreen() {
   const {
     gesture: pageTurnGesture,
     interactiveTurn,
+    automaticTurns,
+    automaticNavigationActive,
     isSettling,
+    completeAutomaticTurn,
     next,
     previous,
   } = useReaderPageTurn({
@@ -180,6 +183,9 @@ export default function ReaderScreen() {
           animationStyle={animationStyle}
           spreadMode={spreadMode}
           interactiveTurn={interactiveTurn}
+          automaticTurns={automaticTurns}
+          automaticNavigationActive={automaticNavigationActive}
+          onAutomaticTurnComplete={completeAutomaticTurn}
           chapterTitle={chapterTitle}
           progressLabel={`${progressText}${progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}`}
           overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}

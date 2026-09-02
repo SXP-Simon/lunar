@@ -90,12 +90,20 @@ export interface ReaderInteractiveTurn {
   readonly throwAcceleration?: number;
 }
 
+export interface ReaderAutomaticTurn {
+  readonly id: number;
+  readonly from: ReaderPageContent;
+  readonly to: ReaderPageContent;
+  readonly direction: 1 | -1;
+}
+
 export function useReaderPageTransition(
   current: ReaderPageContent | undefined,
   animationStyle: ReaderPageAnimationStyle = 'slide',
   animationDuration = 360,
   interactiveTurn?: ReaderInteractiveTurn,
   spreadMode: ReaderSpreadMode = 'double',
+  suppressAutomaticTransition = false,
 ): ReaderPageTransitionValues {
   const [displayedContent, setDisplayedContent] = useState<ReaderPageContent>();
   const [interactiveCommit, setInteractiveCommit] = useState<ReaderPageIdentity>();
@@ -116,6 +124,8 @@ export function useReaderPageTransition(
     : undefined, [displayedContent, interactiveContent, interactiveTargetSpread, interactiveTurn?.direction]);
   const automaticTransition = useMemo<ReaderPageTransitionState | undefined>(() => {
     if (
+      suppressAutomaticTransition
+      ||
       interactiveContent
       || !current
       || !displayedContent
@@ -133,7 +143,7 @@ export function useReaderPageTransition(
       toKey: currentKey!,
       direction: current.snapshot.spreadIndex > displayedContent.snapshot.spreadIndex ? 1 : -1,
     };
-  }, [current, currentKey, displayedContent, interactiveCommit, interactiveContent]);
+  }, [current, currentKey, displayedContent, interactiveCommit, interactiveContent, suppressAutomaticTransition]);
   const activeTransition = interactiveTransition
     ?? (transition?.toKey === currentKey ? transition : undefined)
     ?? automaticTransition;
@@ -195,6 +205,13 @@ export function useReaderPageTransition(
     }
     if (displayedContent?.key === current.key) return;
 
+    if (suppressAutomaticTransition) {
+      setDisplayedContent(current);
+      setTransition(undefined);
+      animatedProgress.set(1);
+      return;
+    }
+
     const previous = displayedContent;
     setDisplayedContent(current);
     const sameSurface = previous
@@ -214,7 +231,7 @@ export function useReaderPageTransition(
       setTransition(undefined);
       animatedProgress.set(1);
     }
-  }, [activeTransition, animatedProgress, current, currentKey, displayedContent, interactiveCommit, interactiveTurn, style]);
+  }, [activeTransition, animatedProgress, current, currentKey, displayedContent, interactiveCommit, interactiveTurn, style, suppressAutomaticTransition]);
 
   /* eslint-enable react-hooks/set-state-in-effect */
 
