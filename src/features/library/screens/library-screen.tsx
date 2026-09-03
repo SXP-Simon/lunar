@@ -1,7 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import { Button } from 'heroui-native/button';
-import { Dialog } from 'heroui-native/dialog';
 import { useThemeColor } from 'heroui-native/hooks';
 import { SearchField } from 'heroui-native/search-field';
 import { Spinner } from 'heroui-native/spinner';
@@ -19,6 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { APP_TAB_BAR_HEIGHT } from '@/components/ui/app-tabs';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import {
   FloatingActionToolbar,
   type FloatingToolbarAction,
@@ -70,6 +70,12 @@ export default function LibraryScreen() {
   const { toast } = useToast();
   const [gridSelectionSession] = useState(() => new LibraryGridSelectionSession());
   const gridContainerRef = useRef<View>(null);
+  const selectedBookIdsRef = useRef(selectedBookIds);
+  const slidingSelectionValueRef = useRef(true);
+
+  useEffect(() => {
+    selectedBookIdsRef.current = selectedBookIds;
+  }, [selectedBookIds]);
 
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -216,29 +222,27 @@ export default function LibraryScreen() {
     router.push(`/reader/${encodeURIComponent(book.id)}` as Href);
   }, [isSelectionMode, router, selectedBookIds, updateBookSelection]);
 
-  const handleBookLongPress = useCallback((bookId: string) => {
-    setIsSelectionMode(true);
-    updateBookSelection([bookId], true);
-  }, [updateBookSelection]);
-
   const selectBooksAtGridPoint = useCallback((x: number, y: number) => {
     const newlyVisitedIds = gridSelectionSession.continueFromWindow({ x, y });
     if (newlyVisitedIds.length > 0) {
       setIsSelectionMode(true);
-      updateBookSelection(newlyVisitedIds, true);
+      updateBookSelection(newlyVisitedIds, slidingSelectionValueRef.current);
     }
   }, [gridSelectionSession, updateBookSelection]);
 
   const beginSlidingSelection = useCallback((x: number, y: number) => {
     const newlyVisitedIds = gridSelectionSession.beginFromWindow({ x, y });
     if (newlyVisitedIds.length > 0) {
+      const shouldSelect = !selectedBookIdsRef.current.has(newlyVisitedIds[0]);
+      slidingSelectionValueRef.current = shouldSelect;
       setIsSelectionMode(true);
-      updateBookSelection(newlyVisitedIds, true);
+      updateBookSelection(newlyVisitedIds, shouldSelect);
     }
   }, [gridSelectionSession, updateBookSelection]);
 
   const finishSlidingSelection = useCallback(() => {
     gridSelectionSession.finish();
+    slidingSelectionValueRef.current = true;
   }, [gridSelectionSession]);
 
   const closeSelectionMode = useCallback(() => {
@@ -423,7 +427,6 @@ export default function LibraryScreen() {
                     book={item.book}
                     isSelected={selectedBookIds.has(item.book.id)}
                     isSelectionMode={isSelectionMode}
-                    onLongPress={() => handleBookLongPress(item.book.id)}
                     onPress={() => handleBookPress(item.book)}
                     onSelectionGestureFinish={finishSlidingSelection}
                     onSelectionGestureMove={selectBooksAtGridPoint}
@@ -461,40 +464,17 @@ export default function LibraryScreen() {
         />
       )}
 
-      <Dialog
+      <ConfirmModal
+        confirmLabel="删除"
+        confirmingLabel="正在删除"
+        description={`将移除 ${selectedBookIds.size} 本书及其阅读进度和书签`}
+        isConfirming={isDeleting}
+        isDestructive
         isOpen={isDeleteDialogOpen}
-        onOpenChange={(isOpen) => {
-          if (!isDeleting) {
-            setIsDeleteDialogOpen(isOpen);
-          }
-        }}>
-        <Dialog.Portal>
-          <Dialog.Overlay />
-          <Dialog.Content className="mx-5 max-w-md gap-4 rounded-2xl p-5">
-            <Dialog.Close accessibilityLabel="关闭删除确认" />
-            <Dialog.Title>删除选中的书籍？</Dialog.Title>
-            <Dialog.Description>
-              将移除 {selectedBookIds.size} 本书及其阅读进度和书签。
-            </Dialog.Description>
-            <View style={styles.dialogActions}>
-              <Button
-                className="flex-1"
-                isDisabled={isDeleting}
-                onPress={() => setIsDeleteDialogOpen(false)}
-                variant="tertiary">
-                取消
-              </Button>
-              <Button
-                className="flex-1"
-                isDisabled={isDeleting}
-                onPress={() => void handleDeleteSelectedBooks()}
-                variant="danger">
-                {isDeleting ? '正在删除' : '删除'}
-              </Button>
-            </View>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog>
+        onConfirm={() => void handleDeleteSelectedBooks()}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="删除选中的书籍？"
+      />
     </View>
   );
 }
@@ -575,9 +555,5 @@ const styles = StyleSheet.create({
   emptyBody: {
     marginTop: 8,
     fontSize: 13,
-  },
-  dialogActions: {
-    flexDirection: 'row',
-    gap: Spacing.two,
   },
 });

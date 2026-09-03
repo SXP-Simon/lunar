@@ -24,7 +24,6 @@ type BookCardProps = {
   book: LibraryBook;
   isSelected?: boolean;
   isSelectionMode?: boolean;
-  onLongPress?: () => void;
   onPress?: () => void;
   onSelectionGestureFinish?: () => void;
   onSelectionGestureMove?: (absoluteX: number, absoluteY: number) => void;
@@ -68,7 +67,6 @@ export function BookCard({
   book,
   isSelected = false,
   isSelectionMode = false,
-  onLongPress,
   onPress,
   onSelectionGestureFinish,
   onSelectionGestureMove,
@@ -99,8 +97,6 @@ export function BookCard({
             : `打开《${book.title}》`
         }
         accessibilityState={{ selected: isSelectionMode ? isSelected : undefined }}
-        delayLongPress={LONG_PRESS_DURATION}
-        onLongPress={onLongPress}
         onPress={onPress}
         className="mb-6 w-1/3 px-[6px] active:opacity-80">
         <View

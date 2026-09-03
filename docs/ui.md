@@ -32,6 +32,14 @@
 
 [MUST] 仅由单一业务使用的组件归属对应 `src/features/<feature>/components`。
 
+## 确认弹窗
+
+[MUST] 需要用户确认后方可执行的操作使用 `src/components/ui/confirm-modal` 提供的 `ConfirmModal`。
+
+[MUST] 确认弹窗的标题、说明与操作文案由调用业务提供，`ConfirmModal` 不持有业务文案、业务状态或业务数据类型。
+
+[MUST] 确认操作执行期间禁用取消、确认与关闭行为，直至调用业务更新处理状态。
+
 ## 可访问性
 
 [MUST] 交互组件具备与用途一致的可访问性角色、名称、状态与触控区域。
