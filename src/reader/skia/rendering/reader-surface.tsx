@@ -139,6 +139,7 @@ export function ReaderSurface({
       interactiveTurn,
       spreadMode,
       automaticTurns[0],
+      automaticTurns.length,
       automaticNavigationActive,
       onAutomaticTurnComplete,
     );
@@ -274,6 +275,8 @@ export function ReaderSurface({
         `slideForeground=${resolvedAnimationStyle === 'slide' ? (activeTransition?.from.key ?? currentKey ?? 'none') : 'none'}`,
         `mode=${transitionActive ? resolvedAnimationStyle : 'static'}`,
         `interactive=${String(Boolean(interactiveTurn))}`,
+        `automatic=${automaticTurns.length}`,
+        `automaticTurn=${automaticTurns[0]?.id ?? 'none'}`,
         `settling=${String(interactiveTurn?.settling === true)}`,
         `picture=${String(Boolean(incomingPicture))}`,
         `frame=${String(Boolean(incomingFrame))}`,
@@ -282,6 +285,7 @@ export function ReaderSurface({
   }, [
     activeTransition?.from.key,
     activeTransition?.toKey,
+    automaticTurns,
     currentKey,
     incomingFrame,
     incomingKey,

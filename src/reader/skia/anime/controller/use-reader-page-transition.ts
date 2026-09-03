@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   cancelAnimation,
   Easing,
@@ -12,6 +12,7 @@ import { useCoverPageTransform } from '../effects/cover';
 import { useSlidePageTransforms } from '../effects/slide';
 import { automaticPageTurnTransition } from '../core/page-turn-concurrency';
 import {
+  getAutomaticPlanarPageTurnDuration,
   getReaderPageTurnDuration,
   getReaderPageTurnHandoffProgress,
   getReaderPageTurnSettleDuration,
@@ -39,12 +40,14 @@ export function useReaderPageTransition(
   interactiveTurn?: ReaderInteractiveTurn,
   spreadMode: ReaderSpreadMode = 'double',
   automaticTurn?: ReaderAutomaticTurn,
+  automaticTurnCount = 0,
   suppressAutomaticTransition = false,
   onAutomaticTurnComplete?: (turnId: number) => void,
 ): ReaderPageTransitionValues {
   const [displayedContent, setDisplayedContent] = useState<ReaderPageContent>();
   const [interactiveCommit, setInteractiveCommit] = useState<ReaderPageIdentity>();
   const [transition, setTransition] = useState<ReaderPageTransitionState>();
+  const animatedAutomaticTurnId = useRef<number | undefined>(undefined);
   const progress = useSharedValue(1);
   const animatedProgress = interactiveTurn?.progressValue ?? progress;
   const style = resolveReaderPageAnimationStyle(animationStyle);
@@ -123,6 +126,15 @@ export function useReaderPageTransition(
     if (interactiveCommit && current?.key === displayedContent?.key) {
       setInteractiveCommit(undefined);
     }
+    // Runtime navigation can publish several later snapshots while this
+    // retained adjacent pair is still moving. Keep its timing driver intact.
+    if (automaticTransition && automaticTurn) {
+      if (displayedContent?.key !== automaticTurn.to.key) {
+        setDisplayedContent(automaticTurn.to);
+      }
+      if (transition) setTransition(undefined);
+      return;
+    }
     if (!current) {
       // The surface has no drawable content during loading/reflow; clear the
       // retained page before the next ready frame is considered.
@@ -159,7 +171,17 @@ export function useReaderPageTransition(
       setTransition(undefined);
       animatedProgress.set(1);
     }
-  }, [animatedProgress, current, displayedContent, interactiveCommit, interactiveTurn, suppressAutomaticTransition]);
+  }, [
+    animatedProgress,
+    automaticTransition,
+    automaticTurn,
+    current,
+    displayedContent,
+    interactiveCommit,
+    interactiveTurn,
+    suppressAutomaticTransition,
+    transition,
+  ]);
 
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -176,6 +198,11 @@ export function useReaderPageTransition(
       interactiveTurn?.settleTo,
     );
     const target = handoffProgress ?? 1;
+    const automaticTurnContinues = automaticTurn !== undefined
+      && animatedAutomaticTurnId.current === automaticTurn.id;
+    const automaticStartProgress = automaticTurnContinues
+      ? Math.min(1, Math.max(0, progress.value))
+      : 0;
     const duration = interactiveTurn
       ? getReaderPageTurnSettleDuration(
           animationStyle,
@@ -184,7 +211,14 @@ export function useReaderPageTransition(
           interactiveTurn.releaseVelocity,
           animationDuration,
         )
-      : getReaderPageTurnDuration(
+      : automaticTransition
+        ? getAutomaticPlanarPageTurnDuration(
+            animationStyle,
+            automaticTurnCount,
+            automaticStartProgress,
+            animationDuration,
+          )
+        : getReaderPageTurnDuration(
           animationStyle,
           0,
           animationDuration,
@@ -193,7 +227,16 @@ export function useReaderPageTransition(
     // React Skia can observe the driver swap before it removes the interactive
     // nodes. Keep both drivers at the same terminal pose during that frame.
     if (handoffProgress !== undefined) progress.set(handoffProgress);
-    if (!interactiveTurn?.settling && animatedProgress.value !== 0) {
+    if (automaticTurn && !automaticTurnContinues) {
+      animatedAutomaticTurnId.current = automaticTurn.id;
+    } else if (!automaticTurn) {
+      animatedAutomaticTurnId.current = undefined;
+    }
+    if (
+      !interactiveTurn?.settling
+      && !automaticTurnContinues
+      && animatedProgress.value !== 0
+    ) {
       animatedProgress.set(0);
     }
     animatedProgress.set(withTiming(target, {
@@ -225,6 +268,7 @@ export function useReaderPageTransition(
     animationStyle,
     automaticTransition,
     automaticTurn,
+    automaticTurnCount,
     clearTransition,
     incomingPageLanding,
     interactiveTurn,

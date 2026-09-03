@@ -56,11 +56,11 @@ export function useAutomaticPageTurnNavigation({
 
   const enqueue = useCallback((turnDirection: 1 | -1) => {
     const paperAnimation = resolveReaderPageAnimationStyle(animationStyle) === 'page';
+    if (pendingCount.current + turnsRef.current.length >= AUTOMATIC_PAGE_TURN_MAX_LANES) {
+      return Promise.resolve(runtime.getSnapshot());
+    }
     if (paperAnimation) {
       if (direction.current !== undefined && direction.current !== turnDirection) {
-        return Promise.resolve(runtime.getSnapshot());
-      }
-      if (pendingCount.current + turnsRef.current.length >= AUTOMATIC_PAGE_TURN_MAX_LANES) {
         return Promise.resolve(runtime.getSnapshot());
       }
       direction.current = turnDirection;

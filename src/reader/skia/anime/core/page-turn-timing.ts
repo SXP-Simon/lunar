@@ -5,6 +5,7 @@ export const PAGE_TURN_DURATION_MS = AUTOMATIC_PAGE_TURN_DURATION_MS;
 export const PAGE_TURN_GESTURE_SETTLE_DURATION_MS = 520;
 export const PAGE_TURN_REVERSE_DURATION_MS = 854;
 export const PAGE_TURN_REVERT_DURATION_MS = 720;
+export const AUTOMATIC_PLANAR_PAGE_TURN_MIN_DURATION_MS = 100;
 
 export function getReaderPageTurnDuration(
   animationStyle: ReaderPageAnimationStyle,
@@ -49,6 +50,28 @@ export function getReaderPageTurnSettleDuration(
   return Math.max(
     minimumDuration,
     Math.round(fullDuration * distance * (1 - releaseBoost)),
+  );
+}
+
+export function getAutomaticPlanarPageTurnDuration(
+  animationStyle: ReaderPageAnimationStyle,
+  queuedTurnCount: number,
+  fromProgress = 0,
+  animationDuration = 360,
+): number {
+  const queuedTurns = Math.max(1, Math.floor(queuedTurnCount));
+  const baseDuration = getReaderPageTurnDuration(
+    animationStyle,
+    0,
+    animationDuration,
+  );
+  const turnDuration = Math.max(
+    AUTOMATIC_PLANAR_PAGE_TURN_MIN_DURATION_MS,
+    Math.round(baseDuration / Math.min(4, queuedTurns)),
+  );
+  return Math.max(
+    32,
+    Math.round(turnDuration * (1 - clampUnit(fromProgress))),
   );
 }
 

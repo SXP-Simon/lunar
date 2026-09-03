@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  AUTOMATIC_PLANAR_PAGE_TURN_MIN_DURATION_MS,
+  getAutomaticPlanarPageTurnDuration,
   getReaderPageTurnDuration,
   getReaderPageTurnSettleDuration,
   PAGE_TURN_DURATION_MS,
@@ -30,5 +32,13 @@ describe('reader page turn timing', () => {
     expect(getReaderPageTurnSettleDuration('slide', 0.7, 1, 0, 360)).toBe(108);
     expect(getReaderPageTurnSettleDuration('slide', 0.7, 0, 0, 360)).toBe(252);
     expect(getReaderPageTurnSettleDuration('page', 0.5, 1)).toBe(260);
+  });
+
+  it('accelerates queued planar turns without restarting their completed progress', () => {
+    expect(getAutomaticPlanarPageTurnDuration('slide', 1, 0, 360)).toBe(360);
+    expect(getAutomaticPlanarPageTurnDuration('slide', 2, 0, 360)).toBe(180);
+    expect(getAutomaticPlanarPageTurnDuration('slide', 4, 0, 360))
+      .toBe(AUTOMATIC_PLANAR_PAGE_TURN_MIN_DURATION_MS);
+    expect(getAutomaticPlanarPageTurnDuration('slide', 4, 0.5, 360)).toBe(50);
   });
 });
