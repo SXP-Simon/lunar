@@ -547,15 +547,19 @@ export function ReaderSurface({
                 key="slide-current"
                 matrix={activeTransition ? incomingSlideMatrix : undefined}>
                 {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
-                {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
               </Group>
               {activeTransition && (
                 <Group
                   key={`slide-outgoing:${activeTransition.from.key}`}
                   matrix={outgoingSlideMatrix}>
                   <Picture picture={activeTransition.from.picture.picture} />
-                  {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
                 </Group>
+              )}
+              {incomingFrame && renderChrome(
+                incomingSnapshot,
+                incomingFrame,
+                chapterTitle,
+                interactiveTurn ? undefined : progressLabel,
               )}
             </Group>
           ) : (
