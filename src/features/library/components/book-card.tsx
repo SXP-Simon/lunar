@@ -10,9 +10,6 @@ export type LibraryBook = {
   readingProgress?: number;
   cover: {
     imageUri?: string;
-    background: string;
-    accent: string;
-    foreground: string;
     mark: string;
   };
 };
@@ -37,24 +34,10 @@ export function BookCard({ book, onPress }: BookCardProps) {
             style={[
               styles.cover,
               {
-                backgroundColor: book.cover.background,
-                shadowColor: book.cover.background,
+                backgroundColor: theme.backgroundElement,
+                shadowColor: theme.border,
               },
             ]}>
-            <View style={[styles.coverRule, { backgroundColor: book.cover.accent }]} />
-            <Text style={[styles.coverAuthor, { color: book.cover.foreground }]}>
-              {book.author}
-            </Text>
-            <Text style={[styles.coverMark, { color: book.cover.accent }]}>
-              {book.cover.mark}
-            </Text>
-            <View style={[styles.coverFooter, { borderTopColor: book.cover.accent }]}>
-              <Text
-                style={[styles.coverTitle, { color: book.cover.foreground }]}
-                numberOfLines={2}>
-                {book.title}
-              </Text>
-            </View>
             {book.cover.imageUri && (
               <Image
                 accessible={false}
@@ -65,6 +48,11 @@ export function BookCard({ book, onPress }: BookCardProps) {
                 style={styles.coverImage}
                 transition={120}
               />
+            )}
+            {!book.cover.imageUri && (
+              <Text style={[styles.coverMark, { color: theme.textSecondary }]}>
+                {book.cover.mark}
+              </Text>
             )}
             <View style={[styles.progressBadge, { backgroundColor: theme.text }]}>
               <Text style={[styles.progressText, { color: theme.background }]}>
@@ -111,18 +99,12 @@ const styles = StyleSheet.create({
     aspectRatio: 2 / 3,
     overflow: 'hidden',
     borderRadius: 4,
-    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.22,
     shadowRadius: 10,
     elevation: 4,
-  },
-  coverRule: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: 5,
-    height: '100%',
   },
   coverImage: {
     position: 'absolute',
@@ -133,30 +115,10 @@ const styles = StyleSheet.create({
     inset: 0,
     opacity: 0.12,
   },
-  coverAuthor: {
-    alignSelf: 'flex-end',
-    fontSize: 8,
-    letterSpacing: 1.2,
-    opacity: 0.78,
-  },
   coverMark: {
-    flex: 1,
-    textAlignVertical: 'center',
-    textAlign: 'center',
     fontFamily: Fonts.serif,
-    fontSize: 46,
-    fontWeight: '300',
-    opacity: 0.95,
-  },
-  coverFooter: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 8,
-  },
-  coverTitle: {
-    fontFamily: Fonts.serif,
-    fontSize: 13,
-    lineHeight: 17,
-    fontWeight: '700',
+    fontSize: 52,
+    fontWeight: '400',
   },
   bookName: {
     marginTop: 7,

@@ -36,39 +36,6 @@ type LibraryItem =
   | { readonly kind: 'book'; readonly book: LibraryBook }
   | { readonly kind: 'importing'; readonly book: ImportingBook };
 
-const COVER_PALETTES: readonly LibraryBook['cover'][] = [
-  {
-    background: '#1D2726',
-    accent: '#DCA659',
-    foreground: '#F5EBD5',
-    mark: '',
-  },
-  {
-    background: '#C8D2C6',
-    accent: '#354B42',
-    foreground: '#23312C',
-    mark: '',
-  },
-  {
-    background: '#B95035',
-    accent: '#F1C86B',
-    foreground: '#FFF5DF',
-    mark: '',
-  },
-  {
-    background: '#D8CBB0',
-    accent: '#61715A',
-    foreground: '#2D382C',
-    mark: '',
-  },
-  {
-    background: '#D9E2E7',
-    accent: '#667986',
-    foreground: '#24343D',
-    mark: '',
-  },
-];
-
 export default function LibraryScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -286,18 +253,12 @@ export default function LibraryScreen() {
 }
 
 function toLibraryBook(record: Awaited<ReturnType<typeof listLibraryBooks>>[number]): LibraryBook {
-  const seed = Array.from(record.sha256).reduce(
-    (value, character) => value + character.charCodeAt(0),
-    0,
-  );
-  const palette = COVER_PALETTES[seed % COVER_PALETTES.length] ?? COVER_PALETTES[0]!;
   return {
     id: record.id,
     title: record.title,
     author: record.author ?? '未知作者',
     readingProgress: record.readingProgress ?? 0,
     cover: {
-      ...palette,
       imageUri: record.coverUri,
       mark: Array.from(record.title.trim())[0] ?? '书',
     },
