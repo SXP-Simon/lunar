@@ -6,26 +6,21 @@ export interface PickedEpub {
   readonly fileSize?: number;
 }
 
-export async function pickEpub(): Promise<PickedEpub | undefined> {
+export async function pickEpubs(): Promise<readonly PickedEpub[]> {
   const result = await DocumentPicker.getDocumentAsync({
     type: ['application/epub+zip', 'application/octet-stream'],
     copyToCacheDirectory: true,
-    multiple: false,
+    multiple: true,
     base64: false,
   });
 
   if (result.canceled) {
-    return undefined;
+    return [];
   }
 
-  const asset = result.assets[0];
-  if (!asset) {
-    return undefined;
-  }
-
-  return {
+  return result.assets.map((asset) => ({
     uri: asset.uri,
     fileName: asset.name,
     fileSize: asset.size,
-  };
+  }));
 }

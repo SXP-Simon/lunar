@@ -88,6 +88,34 @@ describe('BookImportService', () => {
     expect(files.removeBook).toHaveBeenCalledWith(managedFile);
   });
 
+  it('reports import progress through file processing and persistence', async () => {
+    const data = readFixture();
+    const managedFile: ManagedBookFile = {
+      bookId: 'progress-sha256',
+      uri: 'file:///documents/books/progress-sha256/book.epub',
+      fileName: fixtureName!,
+      fileSize: data.byteLength,
+      sha256: 'progress-sha256',
+    };
+    const files: BookFileService = {
+      importEpub: vi.fn(async (_sourceUri, _fileName, onProgress) => {
+        onProgress?.(0.5);
+        return managedFile;
+      }),
+      readBook: vi.fn(async () => data),
+      saveCover: vi.fn(async () => 'file:///documents/books/progress-sha256/cover.jpg'),
+      removeBook: vi.fn(async () => undefined),
+    };
+    const importer = new BookImportService({ files, books: new MemoryBookRepository() });
+    const progress: number[] = [];
+
+    await importer.import('file:///cache/fixture.epub', fixtureName!, (value) => {
+      progress.push(value);
+    });
+
+    expect(progress).toEqual([0, 0.45, 0.92, 0.95, 0.97, 0.985, 1]);
+  });
+
   it('adds a cover to a book imported by an earlier app version', async () => {
     const data = readFixture();
     const existing: LibraryBookRecord = {

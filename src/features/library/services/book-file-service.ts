@@ -20,8 +20,14 @@ export interface ManagedBookCover {
   readonly fileExtension: string;
 }
 
+export type BookImportProgressHandler = (progress: number) => void;
+
 export interface BookFileService {
-  importEpub(sourceUri: string, fileName: string): Promise<ManagedBookFile>;
+  importEpub(
+    sourceUri: string,
+    fileName: string,
+    onProgress?: BookImportProgressHandler,
+  ): Promise<ManagedBookFile>;
   readBook(book: ManagedBookFile): Promise<ArrayBuffer>;
   saveCover(book: ManagedBookFile, cover: ManagedBookCover): Promise<string>;
   removeBook(book: ManagedBookFile): Promise<void>;

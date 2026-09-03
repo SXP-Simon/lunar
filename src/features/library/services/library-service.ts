@@ -2,24 +2,27 @@ import { getLunarDatabase } from '../../../db';
 
 import type { LibraryBookRecord } from '../domain/library-book';
 import { ExpoBookFileService } from '../infrastructure/expo-book-file-service';
-import { pickEpub } from '../infrastructure/epub-picker';
+import { pickEpubs, type PickedEpub } from '../infrastructure/epub-picker';
 import { SQLiteBookRepository } from '../repositories/sqlite-book-repository';
 import { SQLiteBookAssetRepository } from '../repositories/sqlite-book-asset-repository';
 import { BookImportService } from './book-import-service';
+import type { BookImportProgressHandler } from './book-file-service';
 
-export async function pickAndImportEpub(): Promise<LibraryBookRecord | undefined> {
-  const picked = await pickEpub();
-  if (!picked) {
-    return undefined;
-  }
+export async function selectEpubFiles(): Promise<readonly PickedEpub[]> {
+  return pickEpubs();
+}
 
+export async function importEpubFile(
+  file: PickedEpub,
+  onProgress?: BookImportProgressHandler,
+): Promise<LibraryBookRecord> {
   const database = await getLunarDatabase();
   const importer = new BookImportService({
     files: new ExpoBookFileService(),
     books: new SQLiteBookRepository(database),
     assets: new SQLiteBookAssetRepository(database),
   });
-  return importer.import(picked.uri, picked.fileName);
+  return importer.import(file.uri, file.fileName, onProgress);
 }
 
 export async function listLibraryBooks(): Promise<readonly LibraryBookRecord[]> {

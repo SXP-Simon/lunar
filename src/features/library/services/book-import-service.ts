@@ -6,7 +6,11 @@ import {
 import type { LibraryBookRecord } from '../domain/library-book';
 import type { BookRepository } from '../repositories/book-repository';
 import type { BookAssetRepository } from '../repositories/book-asset-repository';
-import type { BookFileService, ManagedBookFile } from './book-file-service';
+import type {
+  BookFileService,
+  BookImportProgressHandler,
+  ManagedBookFile,
+} from './book-file-service';
 
 export const CURRENT_BOOK_METADATA_VERSION = 2;
 
@@ -35,17 +39,27 @@ export class BookImportService {
     this.now = options.now ?? Date.now;
   }
 
-  async import(sourceUri: string, fileName: string): Promise<LibraryBookRecord> {
-    const managedFile = await this.files.importEpub(sourceUri, fileName);
+  async import(
+    sourceUri: string,
+    fileName: string,
+    onProgress?: BookImportProgressHandler,
+  ): Promise<LibraryBookRecord> {
+    onProgress?.(0);
+    const managedFile = await this.files.importEpub(sourceUri, fileName, (progress) => {
+      onProgress?.(progress * 0.9);
+    });
+    onProgress?.(0.92);
     const previous = await this.books.findBySha256(managedFile.sha256);
     let savedBook = false;
     let savedBookId: string | undefined;
 
     try {
       const inspection = this.inspectEpub(await this.files.readBook(managedFile));
+      onProgress?.(0.95);
       const coverUri = inspection.cover
         ? await this.files.saveCover(managedFile, inspection.cover)
         : previous?.coverUri;
+      onProgress?.(0.97);
       const timestamp = this.now();
       const book = toLibraryBook(
         managedFile,
@@ -57,9 +71,11 @@ export class BookImportService {
       await this.books.save(book);
       savedBook = true;
       savedBookId = book.id;
+      onProgress?.(0.985);
       if (this.assets && managedFile.assets) {
         await this.assets.saveMany(book.id, managedFile.assets);
       }
+      onProgress?.(1);
       return book;
     } catch (error) {
       if (savedBook && !previous && savedBookId) {

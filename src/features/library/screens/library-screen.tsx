@@ -15,10 +15,26 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BookCard, type LibraryBook } from '@/features/library/components/book-card';
+import { ImportingBookCard } from '@/features/library/components/importing-book-card';
 import { Fonts, MaxContentWidth, Spacing, useTheme } from '@/hooks/use-theme';
-import { listLibraryBooks, pickAndImportEpub } from '../services/library-service';
+import {
+  importEpubFile,
+  listLibraryBooks,
+  selectEpubFiles,
+} from '../services/library-service';
 
 const AppTabBarHeight = 58;
+
+type ImportingBook = {
+  readonly id: string;
+  readonly title: string;
+  readonly progress: number;
+  readonly isWaiting: boolean;
+};
+
+type LibraryItem =
+  | { readonly kind: 'book'; readonly book: LibraryBook }
+  | { readonly kind: 'importing'; readonly book: ImportingBook };
 
 const COVER_PALETTES: readonly LibraryBook['cover'][] = [
   {
@@ -57,17 +73,13 @@ export default function LibraryScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [libraryBooks, setLibraryBooks] = useState<LibraryBook[]>([]);
+  const [importingBooks, setImportingBooks] = useState<readonly ImportingBook[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const importIconColor = useThemeColor('accent-foreground');
   const { toast } = useToast();
-
-  const loadBooks = useCallback(async () => {
-    const records = await listLibraryBooks();
-    setLibraryBooks(records.map(toLibraryBook));
-  }, []);
 
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -104,34 +116,79 @@ export default function LibraryScreen() {
 
     setIsImporting(true);
     try {
-      const imported = await pickAndImportEpub();
-      if (imported) {
-        await loadBooks();
-        toast.show({
-          variant: 'success',
-          label: 'EPUB 导入完成',
-          description: imported.title,
-        });
+      const selectedFiles = await selectEpubFiles();
+      if (selectedFiles.length === 0) {
+        return;
+      }
+
+      const tasks = selectedFiles.map((file, index) => ({
+        id: `import-${Date.now()}-${index}`,
+        file,
+      }));
+      setImportingBooks(tasks.map(({ id, file }) => ({
+        id,
+        title: fileNameWithoutExtension(file.fileName),
+        progress: 0,
+        isWaiting: true,
+      })));
+
+      for (const task of tasks) {
+        setImportingBooks((current) => current.map((book) => (
+          book.id === task.id
+            ? { ...book, isWaiting: false, progress: Math.max(book.progress, 0.01) }
+            : book
+        )));
+        try {
+          const imported = await importEpubFile(task.file, (progress) => {
+            setImportingBooks((current) => current.map((book) => (
+              book.id === task.id
+                ? { ...book, progress: Math.max(book.progress, progress) }
+                : book
+            )));
+          });
+          setImportingBooks((current) => current.filter((book) => book.id !== task.id));
+          setLibraryBooks((current) => [
+            toLibraryBook(imported),
+            ...current.filter((book) => book.id !== imported.id),
+          ]);
+          toast.show({
+            variant: 'success',
+            label: 'EPUB 导入完成',
+            description: imported.title,
+          });
+        } catch (error) {
+          setImportingBooks((current) => current.filter((book) => book.id !== task.id));
+          toast.show({
+            variant: 'danger',
+            label: 'EPUB 导入失败',
+            description: `${task.file.fileName}：${getErrorMessage(error)}`,
+          });
+        }
       }
     } catch (error) {
       toast.show({
         variant: 'danger',
-        label: 'EPUB 导入失败',
+        label: '无法选择 EPUB',
         description: getErrorMessage(error),
       });
     } finally {
       setIsImporting(false);
     }
-  }, [isImporting, loadBooks, toast]);
+  }, [isImporting, toast]);
 
-  const books = useMemo(() => {
+  const items = useMemo<readonly LibraryItem[]>(() => {
     const keyword = query.trim().toLocaleLowerCase();
-    if (!keyword) return libraryBooks;
+    const filteredBooks = keyword
+      ? libraryBooks.filter((book) =>
+        `${book.title} ${book.author}`.toLocaleLowerCase().includes(keyword),
+      )
+      : libraryBooks;
 
-    return libraryBooks.filter((book) =>
-      `${book.title} ${book.author}`.toLocaleLowerCase().includes(keyword),
-    );
-  }, [libraryBooks, query]);
+    return [
+      ...importingBooks.map((book) => ({ kind: 'importing' as const, book })),
+      ...filteredBooks.map((book) => ({ kind: 'book' as const, book })),
+    ];
+  }, [importingBooks, libraryBooks, query]);
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
@@ -180,8 +237,8 @@ export default function LibraryScreen() {
           </View>
 
           <FlatList
-            data={books}
-            keyExtractor={(book) => book.id}
+            data={items}
+            keyExtractor={(item) => item.book.id}
             numColumns={3}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -191,10 +248,18 @@ export default function LibraryScreen() {
               { paddingBottom: AppTabBarHeight + insets.bottom + Spacing.four },
             ]}
             renderItem={({ item }) => (
-              <BookCard
-                book={item}
-                onPress={() => router.push(`/reader/${encodeURIComponent(item.id)}` as Href)}
-              />
+              item.kind === 'importing' ? (
+                <ImportingBookCard
+                  isWaiting={item.book.isWaiting}
+                  progress={item.book.progress}
+                  title={item.book.title}
+                />
+              ) : (
+                <BookCard
+                  book={item.book}
+                  onPress={() => router.push(`/reader/${encodeURIComponent(item.book.id)}` as Href)}
+                />
+              )
             )}
             ListEmptyComponent={
               <View style={styles.emptyState}>
@@ -241,6 +306,10 @@ function toLibraryBook(record: Awaited<ReturnType<typeof listLibraryBooks>>[numb
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : '发生了未知错误。';
+}
+
+function fileNameWithoutExtension(fileName: string): string {
+  return fileName.replace(/\.epub$/i, '') || fileName;
 }
 
 const styles = StyleSheet.create({

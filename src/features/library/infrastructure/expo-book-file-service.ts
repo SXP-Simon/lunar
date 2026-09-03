@@ -4,6 +4,7 @@ import { unzipSync, zipSync } from 'fflate';
 
 import type {
   BookFileService,
+  BookImportProgressHandler,
   ManagedBookCover,
   ManagedBookFile,
 } from '../services/book-file-service';
@@ -15,7 +16,12 @@ const MAX_ENTRY_UNCOMPRESSED_BYTES = 64 * 1024 * 1024;
 const MAX_ENTRIES = 5_000;
 
 export class ExpoBookFileService implements BookFileService {
-  async importEpub(sourceUri: string, fileName: string): Promise<ManagedBookFile> {
+  async importEpub(
+    sourceUri: string,
+    fileName: string,
+    onProgress?: BookImportProgressHandler,
+  ): Promise<ManagedBookFile> {
+    onProgress?.(0.04);
     assertEpubFileName(fileName);
 
     const source = new File(sourceUri);
@@ -24,6 +30,7 @@ export class ExpoBookFileService implements BookFileService {
     }
 
     const data = await source.arrayBuffer();
+    onProgress?.(0.18);
     const fileSize = data.byteLength;
     if (fileSize > MAX_EPUB_ARCHIVE_BYTES) {
       throw new RangeError(
@@ -34,6 +41,7 @@ export class ExpoBookFileService implements BookFileService {
     const sha256 = bytesToHex(
       await digest(CryptoDigestAlgorithm.SHA256, new Uint8Array(data)),
     );
+    onProgress?.(0.28);
     const bookId = sha256;
     const booksDirectory = new Directory(Paths.document, 'books');
     booksDirectory.create({ intermediates: true, idempotent: true });
@@ -45,12 +53,15 @@ export class ExpoBookFileService implements BookFileService {
     if (!target.exists) {
       await source.copy(target);
     }
+    onProgress?.(0.36);
 
     const entriesDirectory = new Directory(bookDirectory, 'entries');
     entriesDirectory.create({ intermediates: true, idempotent: true });
     let entries: Awaited<ReturnType<typeof extractEntries>>;
     try {
-      entries = await extractEntries(data, entriesDirectory);
+      entries = await extractEntries(data, entriesDirectory, (progress) => {
+        onProgress?.(0.36 + progress * 0.46);
+      });
     } catch (error) {
       if (!hadManagedArchive) {
         try {
@@ -72,6 +83,7 @@ export class ExpoBookFileService implements BookFileService {
         .map((entry) => [entry.path, entry.bytes]),
     );
     target.write(zipSync(archiveEntries, { level: 0 }));
+    onProgress?.(0.9);
 
     return {
       bookId,
@@ -115,15 +127,21 @@ export class ExpoBookFileService implements BookFileService {
 async function extractEntries(
   data: ArrayBuffer,
   entriesDirectory: Directory,
+  onProgress?: BookImportProgressHandler,
 ): Promise<readonly { path: string; uri: string; bytes: Uint8Array; sha256: string }[]> {
   const archive = unzipSync(new Uint8Array(data));
-  const names = Object.keys(archive);
+  const archiveEntries = Object.entries(archive);
+  const names = archiveEntries.map(([path]) => path);
   if (names.length > MAX_ENTRIES) throw new Error('The EPUB archive contains too many entries.');
   const result: { path: string; uri: string; bytes: Uint8Array; sha256: string }[] = [];
   let totalBytes = 0;
-  for (const [rawPath, bytes] of Object.entries(archive)) {
+  const totalEntries = Math.max(archiveEntries.length, 1);
+  for (const [index, [rawPath, bytes]] of archiveEntries.entries()) {
     const path = normalizeEntryPath(rawPath);
-    if (!path || rawPath.endsWith('/')) continue;
+    if (!path || rawPath.endsWith('/')) {
+      onProgress?.((index + 1) / totalEntries);
+      continue;
+    }
     if (bytes.byteLength > MAX_ENTRY_UNCOMPRESSED_BYTES) {
       throw new Error(`The EPUB entry ${path} exceeds the size limit.`);
     }
@@ -144,6 +162,7 @@ async function extractEntries(
     file.write(bytes);
     const sha256 = bytesToHex(await digest(CryptoDigestAlgorithm.SHA256, bytes));
     result.push({ path, uri: file.uri, bytes, sha256 });
+    onProgress?.((index + 1) / totalEntries);
   }
   return result;
 }
