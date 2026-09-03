@@ -76,6 +76,9 @@ export default function ReaderScreen() {
     ?? session.metadata?.title
     ?? session.book?.title
     ?? '正在读取章节';
+  const bookTitle = session.book?.title
+    ?? session.metadata?.title
+    ?? '正在读取书籍';
   const totalSpreads = session.snapshot.totalSpreads;
   const currentSpread = session.snapshot.bookSpreadIndex ?? session.snapshot.spreadIndex;
   const progressText = totalSpreads === undefined
@@ -216,7 +219,7 @@ export default function ReaderScreen() {
         <ReaderControls
           onBack={() => router.back()}
           safeAreaInsets={reservedInsets}
-          title={chapterTitle}
+          bookTitle={bookTitle}
         />
       )}
 
@@ -253,6 +256,7 @@ export default function ReaderScreen() {
         isOpen={isTocOpen}
         onOpenChange={setIsTocOpen}
         runtime={session.runtime}
+        snapshot={session.snapshot}
         toc={session.toc}
       />
       <ProgressDrawer

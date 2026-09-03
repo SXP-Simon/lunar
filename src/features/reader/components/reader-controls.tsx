@@ -8,13 +8,13 @@ import { useTheme } from '@/hooks/use-theme';
 const ControlHorizontalPadding = 12;
 
 interface ReaderControlsProps {
-  readonly title: string;
+  readonly bookTitle: string;
   readonly onBack: () => void;
   readonly safeAreaInsets?: EdgeInsets;
 }
 
 export function ReaderControls({
-  title,
+  bookTitle,
   onBack,
   safeAreaInsets,
 }: ReaderControlsProps) {
@@ -39,7 +39,7 @@ export function ReaderControls({
           <Text
             className="min-w-0 flex-1 text-center text-base font-semibold text-foreground"
             numberOfLines={1}>
-            {title}
+            {bookTitle}
           </Text>
           <View className="size-10" />
         </View>
