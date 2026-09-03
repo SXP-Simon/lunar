@@ -3,7 +3,7 @@
 #include <rito_ffi.h>
 
 /*
- * rito-ffi V1 exposes pinned-font opening from Rust. The 1.0.0 public header
+ * rito-ffi V1 exposes pinned-font opening from Rust. The 1.0.1 public header
  * predates that exported symbol, so this declaration mirrors the repr(C)
  * Rust contract until the upstream header carries it. The upstream PR adds
  * the same declaration to crates/rito-ffi/include/rito_ffi.h.

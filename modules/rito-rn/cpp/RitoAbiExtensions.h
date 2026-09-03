@@ -3,7 +3,7 @@
 #include <rito_ffi.h>
 
 /*
- * Rito 1.0.0 exports these two reader operations, while the checked-in
+ * Rito 1.0.1 exports these two reader operations, while the checked-in
  * public header predates their declarations. Keep the declarations local to
  * the bridge until the upstream header contains the same ABI definitions.
  */

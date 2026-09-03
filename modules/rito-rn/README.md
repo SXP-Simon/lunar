@@ -1,6 +1,6 @@
 # @ritojs/react-native
 
-`@ritojs/react-native` 为 React Native 提供 Rito 1.0.0 阅读内核的 Turbo Module 绑定。模块把 React Native 的 TypeScript 会话封装连接到 Rito 的 `rito-ffi`，并将二进制协议、原生内存管理和异步执行集中在一个可复用的程序包中。
+`@ritojs/react-native` 为 React Native 提供 Rito 1.0.1 阅读内核的 Turbo Module 绑定。模块把 React Native 的 TypeScript 会话封装连接到 Rito 的 `rito-ffi`，并将二进制协议、原生内存管理和异步执行集中在一个可复用的程序包中。
 
 ## 模块作用
 
@@ -8,7 +8,7 @@
 
 | 层次 | 作用 |
 | --- | --- |
-| TypeScript | 编码和解码 Rito 1.0.0 协议，校验会话、请求和工件身份，提供 `RitoReaderSession`。 |
+| TypeScript | 编码和解码 Rito 1.0.1 协议，校验会话、请求和工件身份，提供 `RitoReaderSession`。 |
 | 共享 C++ | 实现 `NativeRitoReader` Turbo Module、串行执行器、返回缓冲区复制与释放，以及 `bigint` 到十进制字符串的转换。 |
 | Rito FFI | 调用模块内 `native/rito` 的 Rust `rito-ffi`，完成 EPUB 打开、排版、资源读取、搜索和交互计算。 |
 
@@ -20,7 +20,7 @@ ReaderRuntime
     -> NativeRitoReader Turbo Module
     -> shared C++
     -> rito-ffi
-    -> Rito 1.0.0 Rust 内核
+    -> Rito 1.0.1 Rust 内核
 ```
 
 模块本身只负责阅读内核和原生桥接，未引入 Skia。Lunar 的渲染适配位于 `src/reader/runtime/pagination/rito-native-pagination-backend.ts`，负责把 Rito DisplayList 转换为阅读界面使用的帧数据。
@@ -41,13 +41,13 @@ ReaderRuntime
 
 | 目录或文件 | 内容 |
 | --- | --- |
-| `src/protocol` | Rito 1.0.0 的二进制协议、模型和编解码器。 |
+| `src/protocol` | Rito 1.0.1 的二进制协议、模型和编解码器。 |
 | `src/session.ts` | TypeScript 会话生命周期和请求封装。 |
 | `specs/NativeRitoReader.ts` | React Native Codegen 模块规范。 |
 | `cpp` | Android 与 iOS 共用的 Turbo Module、执行器和缓冲区代码。 |
 | `android-pure-cxx` | Android Pure C++ 自动链接使用的 CMake 目标。 |
 | `ios` | CocoaPods 配置和 Objective-C++ Module Provider。 |
-| `native/rito` | Rito 1.0.0 `rito-ffi` 所需的最小 Rust 工作区，包含 `rito-core` 及其依赖 crate。 |
+| `native/rito` | Rito 1.0.1 `rito-ffi` 所需的最小 Rust 工作区，包含 `rito-core` 及其依赖 crate。 |
 | `scripts` | Codegen 生成脚本。 |
 
 Android 采用 Pure C++ 自动链接，因此模块没有传统 Android Gradle 子工程，也没有 `android/` 目录。React Native 生成的 `autolinking.cpp` 负责注册 `NativeRitoReader`，CMake 目标负责加入共享 C++ 源码和 Rito 静态库。
@@ -70,7 +70,7 @@ Android 采用 Pure C++ 自动链接，因此模块没有传统 Android Gradle �
 | `cargo-ndk` | 4.1.2 |
 | CMake | 4.0.0 |
 | Android NDK | 27.1.12297006 |
-| Rito 源码 | 模块内 `native/rito`，来源为 Rito 1.0.0 提交 `3c938c0b70580da484cadfbfa86dd598fb5eec49`。 |
+| Rito 源码 | 模块内 `native/rito`，来源为 Rito 1.0.1 提交 `2733ea907762d424eb0c1cb1a8b069e262c3f60a`。 |
 
 Android 构建默认使用模块内 Rust 工作区。源码更新时，可从本地 Rito 副本同步：
 
@@ -88,64 +88,4 @@ cd android
 
 模块发布内容包含 `native/rito` 的 Rust 源码、Cargo 清单和锁定文件，安装 npm 程序包后可以在宿主工程中编译。EAS 构建通过 `scripts/eas-install-rito-toolchain.sh` 安装 Rust 1.95.0 和 `cargo-ndk`；本机的 `native/rito/target` 仍由 `.gitignore` 和 `.easignore` 排除，远程构建会在构建机上生成新的目标文件。
 
-## 构建验证记录
-
-| 检查项 | 平台 | 状态 | 记录 |
-| --- | --- | --- | --- |
-| `cargo check --manifest-path crates/rito-ffi/Cargo.toml` | Windows 宿主 | 通过 | Rito FFI Rust 源码检查完成。 |
-| `pnpm run sync:rito-native` | Windows 宿主 | 通过 | 从 `lib/Rito` 同步最小 Rust 工作区到模块目录。 |
-| `:app:buildRitoFfiArm64` 复用已有静态库 | Windows 宿主 | 通过 | 检测到 `native/rito/target` 中的 `librito_ffi.a` 时跳过 Cargo 编译，仅复制到应用构建目录。 |
-| `cargo +1.95.0 ndk -t arm64-v8a build --release -p rito-ffi` | Android `arm64-v8a` | 通过 | 生成 `librito_ffi.a`。 |
-| `pnpm run typecheck` | TypeScript | 通过 | 根项目类型检查完成。 |
-| `pnpm run test` | TypeScript | 通过 | 8 个测试文件，27 项断言全部通过。 |
-| Expo prebuild | Android | 通过 | Expo 配置插件可以生成原生工程。 |
-| React Native Codegen | Android | 通过 | `RitoReactNativeSpec` 生成成功。 |
-| Pure C++ 自动链接检查 | Android | 通过 | `isPureCxxDependency` 为 `true`，生成的 `autolinking.cpp` 包含 `NativeRitoReader` provider。 |
-| C++ arm64 语法检查 | Android `arm64-v8a` | 通过 | `NativeRitoReader.cpp`、`RitoExecutor.cpp` 和 `RitoOwnedBuffer.cpp` 使用 Android NDK 编译器检查通过。 |
-| 独立 CMake 配置与目标编译 | Android `arm64-v8a` | 通过 | `rito_react_native` 目标包含共享 C++ 和 Rito FFI 静态库。 |
-| `:app:assembleDebug` | Android | 环境限制 | Rito 原生目标可以编译；应用整体构建受到 Windows 文件名长度限制以及现有第三方模块重复生成的影响。 |
-| Android 设备打开测试 EPUB 并绘制首帧 | Android `arm64-v8a` | 待验证 | 需要在设备上完成会话创建、资源读取和页面绘制检查。 |
-| CocoaPods、Xcode、iOS Rust 目标 | iOS | 待验证 | 当前开发机未完成 Apple 工具链检查。 |
-
-## 与 `rito_flutter` 的差异
-
-`rito_flutter` 包含较完整的 Flutter 阅读会话层、字体注册、图片缓存、工件资源准备、邻页预览与提交、后台候选管理以及 Flutter Canvas 绘制辅助。React Native 模块目前覆盖协议和原生桥接的主要部分，差异集中在宿主层能力：
-
-| 能力 | React Native 模块 | `rito_flutter` 对应能力 |
-| --- | --- | --- |
-| 协议编解码 | 覆盖 Rito 1.0.0 的核心请求、响应和 DisplayList。 | 同等协议覆盖，并提供 Flutter 模型。 |
-| 精确定位与相邻请求 | `requestArtifact`、`requestAdjacent`、`peekAdjacent`、`commitPeekedArtifact`、`turn` 可用。 | 具有 `peek`、`turn`，支持预览后零排版提交。 |
-| 前台与后台 | 提供原生调用、候选提交和 Lunar 后台分页适配。 | `advanceBackground` 与 `adoptBackground` 具有完整候选生命周期管理。 |
-| 字体 | 支持固定字体参数和 EPUB 字体登记；Skia 注册按 Rito 指纹缓存。 | 进程级字体缓存、字体声明校验、并发准备和 Flutter 注册已经存在。 |
-| 图片 | Rito 资源读取、解码去重、租约和字节预算已经存在。 | 图片缓存、引用计数、租约和预算管理已经存在。 |
-| 搜索、文字几何、脚注 | 提供协议和会话方法。 | Flutter 层提供相同调用，并连接阅读 UI。 |
-| 绘制适配 | 输出转换为 Lunar `ReaderRenderFrame`，Skia 层处理扩展颜色、边框、背景重复和圆角数据。 | Flutter 侧包含 Canvas 绘制、背景平铺和资源准备辅助。 |
-| 资源生命周期 | 提供基础工件释放和会话销毁。 | 对候选工件、图片租约和字体资源有更完整的生命周期约束。 |
-
-## 本次补充
-
-| 能力 | 状态 | 内容 |
-| --- | --- | --- |
-| 邻页预览和翻页快捷方法 | 完成 | TypeScript 会话提供 `peekAdjacent`、`commitPeekedArtifact` 和 `turn`，原生层加入对应 Rito FFI 调用。 |
-| 预览工件释放 | 完成 | 新的前台请求会清理旧预览，提交前台或后台工件时会释放其余预览。 |
-| 资源读取去重 | 完成 | 同一工件、类型和资源地址的并发读取共享一个 Promise，工件释放时清理缓存。 |
-| 字体注册缓存 | 完成 | React Native Skia 字体登记按族名、字重、样式和 Rito 指纹去重，并校验声明长度；并发登记共享同一个 Promise。 |
-| 字体声明检查 | 完成 | 读取登记工件的字体资源时校验字节长度，并将指纹和声明长度传递给阅读层字体注册器。 |
-| 图片缓存、租约和预算 | 完成 | 图片读取和解码按地址去重，缓存提供引用租约，租约持有期间跳过淘汰，并按字节预算清理最近最少使用的资源。 |
-| DisplayList 扩展绘制类型 | 完成 | 解码器支持完整颜色空间标签、背景重复模式、全部边框样式和四角圆角数据；Skia 适配器提供 sRGB、HSL、HWB、线性 sRGB 的绘制转换，其他颜色空间保留受限通道转换。 |
-| 出版物适配层 | 完成 | 原生出版物保存脊柱与完整目录，提供递归目录、已分页章节范围和已加载目标的目录定位。 |
-| 前台与后台并发控制 | 完成 | 活跃前台请求拥有导航令牌；新请求会标记旧请求，旧候选会释放；后台推进在前台候选提交前暂停；释放失败会使会话进入失效状态。 |
-
-## 未完成部分
-
-以下事项仍需补充，按优先级排列：
-
-1. 补充搜索结果到阅读界面的高亮、脚注展示和文字选择交互。
-2. 增加协议夹具、原生内存释放、会话销毁和设备首帧绘制测试。
-
-## 后续事项
-
-1. 完成 iOS CocoaPods、Rust 静态库、模拟器与真机验证；Android 其他 ABI 仍按后续平台范围另行安排。
-2. `rito_ffi.h` 当前缺少固定字体导出声明，模块暂时使用 `cpp/RitoPinnedFontAbi.h` 保持 ABI 对接；上游头文件补充后需要移除临时声明。
-
-完成上述事项后，React Native 侧的会话能力、资源管理和页面交互可以达到 `rito_flutter` 的主要功能范围，Lunar 的 Skia 绘制仍保持在应用层。
+`rito_ffi.h` 当前缺少固定字体导出声明，模块暂时使用 `cpp/RitoPinnedFontAbi.h` 保持 ABI 对接；上游头文件补充后需要移除临时声明。
