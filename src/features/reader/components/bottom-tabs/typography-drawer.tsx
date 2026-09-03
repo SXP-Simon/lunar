@@ -77,10 +77,8 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
           <View className="gap-5 px-5 pb-5 pt-3">
             <View className="gap-1">
               <BottomSheet.Title className="text-xl text-foreground">阅读设置</BottomSheet.Title>
-              <BottomSheet.Description className="text-sm text-muted">排版与翻页动画</BottomSheet.Description>
             </View>
             <View className="gap-2">
-              <Text className="text-sm text-muted">翻页动画</Text>
               <View className="flex-row gap-2">
                 {ANIMATION_OPTIONS.map((option) => {
                   const selected = animationStyle === option.style;

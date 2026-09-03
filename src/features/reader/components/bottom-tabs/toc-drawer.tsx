@@ -45,7 +45,6 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, toc }: TocDrawerProps
                 {entries.length > 0 ? `共 ${entries.length} 项` : '这本书没有提供目录'}
               </BottomSheet.Description>
             </View>
-            <BottomSheet.Close accessibilityLabel="关闭目录" />
           </View>
           <BottomSheetScrollView
             contentContainerClassName="gap-1 px-3"
