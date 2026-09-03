@@ -2,7 +2,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import { Spinner } from 'heroui-native/spinner';
-import { useCallback, useMemo, useState } from 'react';
+import { useToast } from 'heroui-native/toast';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PixelRatio, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import {
@@ -31,6 +32,7 @@ export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { toast } = useToast();
   const [reservedInsets, setReservedInsets] = useState(insets);
   const { theme } = useUniwind();
   const [viewport, setViewport] = useState<ReaderViewport>();
@@ -38,6 +40,7 @@ export default function ReaderScreen() {
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [isProgressOpen, setIsProgressOpen] = useState(false);
   const [isTypographyOpen, setIsTypographyOpen] = useState(false);
+  const errorToastKey = useRef<string | undefined>(undefined);
   const readerTheme = theme === 'dark' ? 'dark' : 'light';
   const animationStyle = useReaderStore((state) => state.animationStyle);
   const spreadMode = useReaderStore((state) => state.typography.spreadMode);
@@ -99,6 +102,25 @@ export default function ReaderScreen() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!session.errorMessage) {
+      errorToastKey.current = undefined;
+      return;
+    }
+
+    const nextErrorToastKey = `${bookId ?? ''}:${session.errorMessage}`;
+    if (errorToastKey.current === nextErrorToastKey) {
+      return;
+    }
+
+    errorToastKey.current = nextErrorToastKey;
+    toast.show({
+      variant: 'danger',
+      label: '阅读器加载失败',
+      description: session.errorMessage,
+    });
+  }, [bookId, session.errorMessage, toast]);
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;

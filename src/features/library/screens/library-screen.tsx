@@ -4,9 +4,9 @@ import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
 import { SearchField } from 'heroui-native/search-field';
 import { Spinner } from 'heroui-native/spinner';
+import { useToast } from 'heroui-native/toast';
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -62,6 +62,7 @@ export default function LibraryScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const importIconColor = useThemeColor('accent-foreground');
+  const { toast } = useToast();
 
   const loadBooks = useCallback(async () => {
     const records = await listLibraryBooks();
@@ -78,7 +79,11 @@ export default function LibraryScreen() {
       })
       .catch((error: unknown) => {
         if (active) {
-          Alert.alert('书架加载失败', getErrorMessage(error));
+          toast.show({
+            variant: 'danger',
+            label: '书架加载失败',
+            description: getErrorMessage(error),
+          });
         }
       })
       .finally(() => {
@@ -90,7 +95,7 @@ export default function LibraryScreen() {
     return () => {
       active = false;
     };
-  }, []));
+  }, [toast]));
 
   const handleImport = useCallback(async () => {
     if (isImporting) {
@@ -102,13 +107,22 @@ export default function LibraryScreen() {
       const imported = await pickAndImportEpub();
       if (imported) {
         await loadBooks();
+        toast.show({
+          variant: 'success',
+          label: 'EPUB 导入完成',
+          description: imported.title,
+        });
       }
     } catch (error) {
-      Alert.alert('EPUB 导入失败', getErrorMessage(error));
+      toast.show({
+        variant: 'danger',
+        label: 'EPUB 导入失败',
+        description: getErrorMessage(error),
+      });
     } finally {
       setIsImporting(false);
     }
-  }, [isImporting, loadBooks]);
+  }, [isImporting, loadBooks, toast]);
 
   const books = useMemo(() => {
     const keyword = query.trim().toLocaleLowerCase();
