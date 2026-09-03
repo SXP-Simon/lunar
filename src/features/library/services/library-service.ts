@@ -48,3 +48,51 @@ export async function findLibraryBookById(
   const database = await getLunarDatabase();
   return new SQLiteBookRepository(database).findById(bookId);
 }
+
+export interface RemoveLibraryBooksResult {
+  readonly removedIds: readonly string[];
+  readonly fileCleanupFailedIds: readonly string[];
+}
+
+export async function removeLibraryBooks(
+  bookIds: readonly string[],
+): Promise<RemoveLibraryBooksResult> {
+  const uniqueIds = Array.from(new Set(bookIds));
+  if (uniqueIds.length === 0) {
+    return { removedIds: [], fileCleanupFailedIds: [] };
+  }
+
+  const database = await getLunarDatabase();
+  const books = new SQLiteBookRepository(database);
+  const records = (
+    await Promise.all(uniqueIds.map((bookId) => books.findById(bookId)))
+  ).filter((record): record is LibraryBookRecord => record !== undefined);
+
+  await database.withExclusiveTransactionAsync(async (transaction) => {
+    const transactionBooks = new SQLiteBookRepository(transaction);
+    for (const bookId of uniqueIds) {
+      await transactionBooks.remove(bookId);
+    }
+  });
+
+  const files = new ExpoBookFileService();
+  const fileCleanupFailedIds: string[] = [];
+  for (const record of records) {
+    try {
+      await files.removeBook({
+        bookId: record.id,
+        uri: record.fileUri,
+        fileName: record.fileName,
+        fileSize: record.fileSize,
+        sha256: record.sha256,
+      });
+    } catch {
+      fileCleanupFailedIds.push(record.id);
+    }
+  }
+
+  return {
+    removedIds: uniqueIds,
+    fileCleanupFailedIds,
+  };
+}

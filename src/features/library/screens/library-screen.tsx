@@ -1,29 +1,46 @@
 import { SymbolView } from 'expo-symbols';
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import { Button } from 'heroui-native/button';
+import { Dialog } from 'heroui-native/dialog';
 import { useThemeColor } from 'heroui-native/hooks';
 import { SearchField } from 'heroui-native/search-field';
 import { Spinner } from 'heroui-native/spinner';
 import { useToast } from 'heroui-native/toast';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { APP_TAB_BAR_HEIGHT } from '@/components/ui/app-tabs';
+import {
+  FloatingActionToolbar,
+  type FloatingToolbarAction,
+} from '@/components/ui/floating-action-toolbar';
 import { BookCard, type LibraryBook } from '@/features/library/components/book-card';
 import { ImportingBookCard } from '@/features/library/components/importing-book-card';
+import {
+  LIBRARY_GRID_HORIZONTAL_PADDING,
+  LIBRARY_GRID_TOP_PADDING,
+  LibraryGridSelectionSession,
+} from '@/features/library/components/library-grid-selection';
 import { Fonts, MaxContentWidth, Spacing, useTheme } from '@/hooks/use-theme';
 import {
   importEpubFile,
   listLibraryBooks,
+  removeLibraryBooks,
   selectEpubFiles,
 } from '../services/library-service';
 
-const AppTabBarHeight = 58;
+const LONG_PRESS_DURATION = 360;
+const SELECTION_TOOLBAR_HEIGHT = 64;
 
 type ImportingBook = {
   readonly id: string;
@@ -43,10 +60,17 @@ export default function LibraryScreen() {
   const [importingBooks, setImportingBooks] = useState<readonly ImportingBook[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedBookIds, setSelectedBookIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const importIconColor = useThemeColor('accent-foreground');
   const { toast } = useToast();
+  const [gridSelectionSession] = useState(() => new LibraryGridSelectionSession());
 
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -157,6 +181,171 @@ export default function LibraryScreen() {
     ];
   }, [importingBooks, libraryBooks, query]);
 
+  const visibleBookIds = useMemo(
+    () => items.flatMap((item) => item.kind === 'book' ? [item.book.id] : []),
+    [items],
+  );
+  const allVisibleBooksSelected =
+    visibleBookIds.length > 0
+    && visibleBookIds.every((bookId) => selectedBookIds.has(bookId));
+
+  useEffect(() => {
+    gridSelectionSession.update({
+      itemIds: items.map((item) => item.kind === 'book' ? item.book.id : undefined),
+    });
+  }, [gridSelectionSession, items]);
+
+  const updateBookSelection = useCallback((bookIds: readonly string[], selected: boolean) => {
+    setSelectedBookIds((current) => {
+      const next = new Set(current);
+      for (const bookId of bookIds) {
+        if (selected) {
+          next.add(bookId);
+        } else {
+          next.delete(bookId);
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  const handleBookPress = useCallback((book: LibraryBook) => {
+    if (isSelectionMode) {
+      updateBookSelection([book.id], !selectedBookIds.has(book.id));
+      return;
+    }
+    router.push(`/reader/${encodeURIComponent(book.id)}` as Href);
+  }, [isSelectionMode, router, selectedBookIds, updateBookSelection]);
+
+  const handleBookLongPress = useCallback((bookId: string) => {
+    setIsSelectionMode(true);
+    updateBookSelection([bookId], true);
+  }, [updateBookSelection]);
+
+  const selectBooksAtGridPoint = useCallback((x: number, y: number) => {
+    const newlyVisitedIds = gridSelectionSession.continue({ x, y });
+    if (newlyVisitedIds.length > 0) {
+      setIsSelectionMode(true);
+      updateBookSelection(newlyVisitedIds, true);
+    }
+  }, [gridSelectionSession, updateBookSelection]);
+
+  const beginSlidingSelection = useCallback((x: number, y: number) => {
+    const newlyVisitedIds = gridSelectionSession.begin({ x, y });
+    if (newlyVisitedIds.length > 0) {
+      setIsSelectionMode(true);
+      updateBookSelection(newlyVisitedIds, true);
+    }
+  }, [gridSelectionSession, updateBookSelection]);
+
+  const finishSlidingSelection = useCallback(() => {
+    gridSelectionSession.finish();
+  }, [gridSelectionSession]);
+
+  const slidingSelectionGesture = useMemo(
+    () => Gesture.Pan()
+      .activateAfterLongPress(LONG_PRESS_DURATION)
+      .minDistance(0)
+      .averageTouches(true)
+      .runOnJS(true)
+      .onStart((event) => beginSlidingSelection(event.x, event.y))
+      .onUpdate((event) => selectBooksAtGridPoint(event.x, event.y))
+      .onFinalize(finishSlidingSelection),
+    [beginSlidingSelection, finishSlidingSelection, selectBooksAtGridPoint],
+  );
+
+  const closeSelectionMode = useCallback(() => {
+    setIsSelectionMode(false);
+    setSelectedBookIds(new Set());
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (allVisibleBooksSelected) {
+      updateBookSelection(visibleBookIds, false);
+    } else {
+      updateBookSelection(visibleBookIds, true);
+    }
+  }, [allVisibleBooksSelected, updateBookSelection, visibleBookIds]);
+
+  const handleDeleteSelectedBooks = useCallback(async () => {
+    const ids = Array.from(selectedBookIds);
+    if (ids.length === 0 || isDeleting) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const result = await removeLibraryBooks(ids);
+      const removedIdSet = new Set(result.removedIds);
+      setLibraryBooks((current) => current.filter((book) => !removedIdSet.has(book.id)));
+      setIsDeleteDialogOpen(false);
+      closeSelectionMode();
+      toast.show({
+        variant: 'success',
+        label: `已删除 ${result.removedIds.length} 本书`,
+      });
+      if (result.fileCleanupFailedIds.length > 0) {
+        toast.show({
+          variant: 'danger',
+          label: '部分书籍文件清理失败',
+          description: '书架记录已经移除，可稍后清理应用存储。',
+        });
+      }
+    } catch (error) {
+      toast.show({
+        variant: 'danger',
+        label: '书籍删除失败',
+        description: getErrorMessage(error),
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [closeSelectionMode, isDeleting, selectedBookIds, toast]);
+
+  const toolbarActions = useMemo<readonly FloatingToolbarAction[]>(() => [
+    {
+      key: 'select-all',
+      label: allVisibleBooksSelected ? '取消全选' : '全选',
+      icon: {
+        ios: allVisibleBooksSelected ? 'checkmark.circle.fill' : 'checkmark.circle',
+        android: 'select_all',
+        web: 'select_all',
+      },
+      isDisabled: visibleBookIds.length === 0 || isDeleting,
+      onPress: handleSelectAll,
+    },
+    {
+      key: 'delete',
+      label: selectedBookIds.size > 0 ? `删除 ${selectedBookIds.size}` : '删除',
+      icon: { ios: 'trash', android: 'delete', web: 'delete' },
+      isDisabled: selectedBookIds.size === 0 || isDeleting,
+      isDestructive: true,
+      onPress: () => setIsDeleteDialogOpen(true),
+    },
+    {
+      key: 'close',
+      label: '关闭',
+      icon: { ios: 'xmark', android: 'close', web: 'close' },
+      isDisabled: isDeleting,
+      onPress: closeSelectionMode,
+    },
+  ], [
+    allVisibleBooksSelected,
+    closeSelectionMode,
+    handleSelectAll,
+    isDeleting,
+    selectedBookIds.size,
+    visibleBookIds.length,
+  ]);
+
+  const handleGridLayout = useCallback((event: LayoutChangeEvent) => {
+    gridSelectionSession.update({ viewportWidth: event.nativeEvent.layout.width });
+  }, [gridSelectionSession]);
+
+  const handleGridScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    gridSelectionSession.update({ scrollOffset: event.nativeEvent.contentOffset.y });
+  }, [gridSelectionSession]);
+
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
       <View
@@ -203,51 +392,110 @@ export default function LibraryScreen() {
             </Button>
           </View>
 
-          <FlatList
-            data={items}
-            keyExtractor={(item) => item.book.id}
-            numColumns={3}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            columnWrapperStyle={styles.row}
-            contentContainerStyle={[
-              styles.grid,
-              { paddingBottom: AppTabBarHeight + insets.bottom + Spacing.four },
-            ]}
-            renderItem={({ item }) => (
-              item.kind === 'importing' ? (
-                <ImportingBookCard
-                  isWaiting={item.book.isWaiting}
-                  progress={item.book.progress}
-                  title={item.book.title}
-                />
-              ) : (
-                <BookCard
-                  book={item.book}
-                  onPress={() => router.push(`/reader/${encodeURIComponent(item.book.id)}` as Href)}
-                />
-              )
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                {isLoadingLibrary && <Spinner color="default" size="md" />}
-                <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                  {isLoadingLibrary
-                    ? '正在读取书架'
-                    : query.trim()
-                      ? '没有找到相关书籍'
-                      : '书架还是空的'}
-                </Text>
-                {!isLoadingLibrary && (
-                  <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
-                    {query.trim() ? '尝试搜索其他书名或作者' : '使用右上角的添加按钮导入 EPUB'}
-                  </Text>
+          <GestureDetector gesture={slidingSelectionGesture}>
+            <View style={styles.gridContainer} onLayout={handleGridLayout}>
+              <FlatList
+                data={items}
+                extraData={selectedBookIds}
+                keyExtractor={(item) => item.book.id}
+                numColumns={3}
+                keyboardShouldPersistTaps="handled"
+                onScroll={handleGridScroll}
+                scrollEventThrottle={16}
+                showsVerticalScrollIndicator={false}
+                columnWrapperStyle={styles.row}
+                contentContainerStyle={[
+                  styles.grid,
+                  {
+                    paddingBottom:
+                      APP_TAB_BAR_HEIGHT
+                      + insets.bottom
+                      + Spacing.four
+                      + (isSelectionMode ? SELECTION_TOOLBAR_HEIGHT + Spacing.two : 0),
+                  },
+                ]}
+                renderItem={({ item }) => (
+                  item.kind === 'importing' ? (
+                    <ImportingBookCard
+                      isWaiting={item.book.isWaiting}
+                      progress={item.book.progress}
+                      title={item.book.title}
+                    />
+                  ) : (
+                    <BookCard
+                      book={item.book}
+                      isSelected={selectedBookIds.has(item.book.id)}
+                      isSelectionMode={isSelectionMode}
+                      onLongPress={() => handleBookLongPress(item.book.id)}
+                      onPress={() => handleBookPress(item.book)}
+                    />
+                  )
                 )}
-              </View>
-            }
-          />
+                ListEmptyComponent={
+                  <View style={styles.emptyState}>
+                    {isLoadingLibrary && <Spinner color="default" size="md" />}
+                    <Text style={[styles.emptyTitle, { color: theme.text }]}>
+                      {isLoadingLibrary
+                        ? '正在读取书架'
+                        : query.trim()
+                          ? '没有找到相关书籍'
+                          : '书架还是空的'}
+                    </Text>
+                    {!isLoadingLibrary && (
+                      <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
+                        {query.trim() ? '尝试搜索其他书名或作者' : '使用右上角的添加按钮导入 EPUB'}
+                      </Text>
+                    )}
+                  </View>
+                }
+              />
+            </View>
+          </GestureDetector>
         </View>
       </View>
+
+      {isSelectionMode && (
+        <FloatingActionToolbar
+          accessibilityLabel={`书架多选工具栏，已选择 ${selectedBookIds.size} 本书`}
+          actions={toolbarActions}
+          bottom={APP_TAB_BAR_HEIGHT + insets.bottom + Spacing.two}
+        />
+      )}
+
+      <Dialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={(isOpen) => {
+          if (!isDeleting) {
+            setIsDeleteDialogOpen(isOpen);
+          }
+        }}>
+        <Dialog.Portal>
+          <Dialog.Overlay />
+          <Dialog.Content className="mx-5 max-w-md gap-4 rounded-2xl p-5">
+            <Dialog.Close accessibilityLabel="关闭删除确认" />
+            <Dialog.Title>删除选中的书籍？</Dialog.Title>
+            <Dialog.Description>
+              将移除 {selectedBookIds.size} 本书及其阅读进度和书签。
+            </Dialog.Description>
+            <View style={styles.dialogActions}>
+              <Button
+                className="flex-1"
+                isDisabled={isDeleting}
+                onPress={() => setIsDeleteDialogOpen(false)}
+                variant="tertiary">
+                取消
+              </Button>
+              <Button
+                className="flex-1"
+                isDisabled={isDeleting}
+                onPress={() => void handleDeleteSelectedBooks()}
+                variant="danger">
+                {isDeleting ? '正在删除' : '删除'}
+              </Button>
+            </View>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
     </View>
   );
 }
@@ -286,6 +534,9 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
+  gridContainer: {
+    flex: 1,
+  },
   searchArea: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -306,8 +557,8 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   grid: {
-    paddingHorizontal: 10,
-    paddingTop: Spacing.two,
+    paddingHorizontal: LIBRARY_GRID_HORIZONTAL_PADDING,
+    paddingTop: LIBRARY_GRID_TOP_PADDING,
   },
   row: {
     alignItems: 'flex-start',
@@ -325,5 +576,9 @@ const styles = StyleSheet.create({
   emptyBody: {
     marginTop: 8,
     fontSize: 13,
+  },
+  dialogActions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
   },
 });

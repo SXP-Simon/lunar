@@ -1,7 +1,13 @@
 import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
+import { useThemeColor } from 'heroui-native/hooks';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Fonts, Spacing, useTheme } from '@/hooks/use-theme';
+import {
+  BOOK_CARD_COVER_ASPECT_RATIO,
+  BOOK_CARD_HORIZONTAL_PADDING,
+} from './library-grid-selection';
 
 export type LibraryBook = {
   id: string;
@@ -16,16 +22,33 @@ export type LibraryBook = {
 
 type BookCardProps = {
   book: LibraryBook;
+  isSelected?: boolean;
+  isSelectionMode?: boolean;
+  onLongPress?: () => void;
   onPress?: () => void;
 };
 
-export function BookCard({ book, onPress }: BookCardProps) {
+export function BookCard({
+  book,
+  isSelected = false,
+  isSelectionMode = false,
+  onLongPress,
+  onPress,
+}: BookCardProps) {
   const theme = useTheme();
+  const selectedIconColor = useThemeColor('accent-foreground');
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`打开《${book.title}》`}
+      accessibilityLabel={
+        isSelectionMode
+          ? `${isSelected ? '取消选择' : '选择'}《${book.title}》`
+          : `打开《${book.title}》`
+      }
+      accessibilityState={{ selected: isSelectionMode ? isSelected : undefined }}
+      delayLongPress={360}
+      onLongPress={onLongPress}
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       {({ pressed }) => (
@@ -33,8 +56,10 @@ export function BookCard({ book, onPress }: BookCardProps) {
           <View
             style={[
               styles.cover,
+              isSelected && styles.coverSelected,
               {
                 backgroundColor: theme.backgroundElement,
+                borderColor: isSelected ? theme.accent : 'transparent',
                 shadowColor: theme.border,
               },
             ]}>
@@ -54,11 +79,35 @@ export function BookCard({ book, onPress }: BookCardProps) {
                 {book.cover.mark}
               </Text>
             )}
-            <View style={[styles.progressBadge, { backgroundColor: theme.text }]}>
+            <View
+              style={[
+                styles.progressBadge,
+                isSelected ? styles.progressBadgeSelected : styles.progressBadgeDefault,
+                { backgroundColor: theme.text },
+              ]}>
               <Text style={[styles.progressText, { color: theme.background }]}>
                 {Math.round((book.readingProgress ?? 0) * 100)}%
               </Text>
             </View>
+            {isSelected && (
+              <View
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={[styles.selectionBadge, { backgroundColor: theme.accent }]}>
+                <SymbolView
+                  name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                  size={17}
+                  tintColor={selectedIconColor}
+                  weight="bold"
+                />
+              </View>
+            )}
+            {isSelected && (
+              <View
+                pointerEvents="none"
+                style={[styles.selectedOverlay, { backgroundColor: theme.text }]}
+              />
+            )}
             {pressed && (
               <View
                 pointerEvents="none"
@@ -88,7 +137,7 @@ export function BookCard({ book, onPress }: BookCardProps) {
 const styles = StyleSheet.create({
   card: {
     width: '33.3333%',
-    paddingHorizontal: 6,
+    paddingHorizontal: BOOK_CARD_HORIZONTAL_PADDING,
     marginBottom: Spacing.four,
   },
   cardPressed: {
@@ -96,7 +145,7 @@ const styles = StyleSheet.create({
   },
   cover: {
     width: '100%',
-    aspectRatio: 2 / 3,
+    aspectRatio: BOOK_CARD_COVER_ASPECT_RATIO,
     overflow: 'hidden',
     borderRadius: 4,
     alignItems: 'center',
@@ -106,6 +155,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
+  coverSelected: {
+    borderWidth: 3,
+  },
   coverImage: {
     position: 'absolute',
     inset: 0,
@@ -114,6 +166,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     inset: 0,
     opacity: 0.12,
+  },
+  selectedOverlay: {
+    position: 'absolute',
+    inset: 0,
+    opacity: 0.1,
   },
   coverMark: {
     fontFamily: Fonts.serif,
@@ -133,11 +190,27 @@ const styles = StyleSheet.create({
   },
   progressBadge: {
     position: 'absolute',
-    right: 6,
     bottom: 6,
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 8,
+  },
+  progressBadgeDefault: {
+    right: 6,
+  },
+  progressBadgeSelected: {
+    left: 6,
+  },
+  selectionBadge: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 27,
+    height: 27,
+    zIndex: 2,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   progressText: {
     fontSize: 9,
