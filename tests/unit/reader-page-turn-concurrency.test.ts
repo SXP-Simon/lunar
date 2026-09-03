@@ -5,6 +5,7 @@ import {
   AUTOMATIC_PAGE_TURN_START_INTERVAL_MS,
   appendAutomaticPageTurn,
   automaticPageTurnPaintOrder,
+  automaticPageTurnTransition,
 } from '../../src/reader/skia/anime/core/page-turn-concurrency';
 import type {
   ReaderAutomaticTurn,
@@ -43,5 +44,29 @@ describe('reader page turn concurrency', () => {
       .toEqual([3, 2, 1]);
     expect(automaticPageTurnPaintOrder(turns, -1).map((value) => value.id))
       .toEqual([1, 2, 3]);
+  });
+
+  it('preserves an explicit previous direction when pagination reuses the spread slot', () => {
+    const from = {
+      key: '2:0:1',
+      snapshot: { revisionId: 2, spreadIndex: 0, renderId: 1 },
+    } as ReaderPageContent;
+    const to = {
+      key: '2:0:2',
+      snapshot: { revisionId: 2, spreadIndex: 0, renderId: 2 },
+    } as ReaderPageContent;
+
+    const transition = automaticPageTurnTransition({
+      id: 1,
+      from,
+      to,
+      direction: -1,
+    });
+
+    expect(transition).toEqual({
+      from,
+      toKey: '2:0:2',
+      direction: -1,
+    });
   });
 });

@@ -65,7 +65,7 @@ export interface ReaderSurfaceProps {
   readonly spreadMode?: ReaderSpreadMode;
   /** Optional finger-controlled turn. The target picture must be prepared first. */
   readonly interactiveTurn?: ReaderInteractiveTurn;
-  /** Independently animated paper layers created by repeated page taps. */
+  /** Automatic page turns retained until their visual transition completes. */
   readonly automaticTurns?: readonly ReaderAutomaticTurn[];
   readonly automaticNavigationActive?: boolean;
   readonly onAutomaticTurnComplete?: (turnId: number) => void;
@@ -138,7 +138,9 @@ export function ReaderSurface({
       animationDuration,
       interactiveTurn,
       spreadMode,
+      automaticTurns[0],
       automaticNavigationActive,
+      onAutomaticTurnComplete,
     );
   // The transition hook retains the source page until the animation tree has
   // its start pose. Interactive turns supply their prepared target here.

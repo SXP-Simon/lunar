@@ -64,9 +64,9 @@ export function useAutomaticPageTurnNavigation({
         return Promise.resolve(runtime.getSnapshot());
       }
       direction.current = turnDirection;
-      pendingCount.current += 1;
-      setPendingRequests(pendingCount.current);
     }
+    pendingCount.current += 1;
+    setPendingRequests(pendingCount.current);
     const requestGeneration = generation.current;
     return new Promise<ReaderSnapshot>((resolve, reject) => {
       const run = async () => {
@@ -85,13 +85,10 @@ export function useAutomaticPageTurnNavigation({
           }
           await beforeNavigate();
           const before = runtime.getSnapshot();
-          const from = paperAnimation
-            ? readerPageContentForSnapshot(runtime, before)
-            : undefined;
+          const from = readerPageContentForSnapshot(runtime, before);
           const result = turnDirection > 0 ? await runtime.next() : await runtime.previous();
           if (
-            paperAnimation
-            && generation.current === requestGeneration
+            generation.current === requestGeneration
             && from
             && !sameSnapshotIdentity(before, result)
           ) {
@@ -106,19 +103,19 @@ export function useAutomaticPageTurnNavigation({
               const nextTurns = appendAutomaticPageTurn(turnsRef.current, turn);
               turnsRef.current = nextTurns;
               setTurns(nextTurns);
-              nextStartAt.current = Date.now() + AUTOMATIC_PAGE_TURN_START_INTERVAL_MS;
+              if (paperAnimation) {
+                nextStartAt.current = Date.now() + AUTOMATIC_PAGE_TURN_START_INTERVAL_MS;
+              }
             }
           }
           resolve(result);
         } catch (error) {
           reject(error);
         } finally {
-          if (paperAnimation) {
-            pendingCount.current = Math.max(0, pendingCount.current - 1);
-            setPendingRequests(pendingCount.current);
-            if (pendingCount.current === 0 && turnsRef.current.length === 0) {
-              direction.current = undefined;
-            }
+          pendingCount.current = Math.max(0, pendingCount.current - 1);
+          setPendingRequests(pendingCount.current);
+          if (pendingCount.current === 0 && turnsRef.current.length === 0) {
+            direction.current = undefined;
           }
         }
       };

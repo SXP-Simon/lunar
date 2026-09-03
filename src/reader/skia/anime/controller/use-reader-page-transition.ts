@@ -10,6 +10,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import type { ReaderSpreadMode } from '../../../contracts';
 import { useCoverPageTransform } from '../effects/cover';
 import { useSlidePageTransforms } from '../effects/slide';
+import { automaticPageTurnTransition } from '../core/page-turn-concurrency';
 import {
   getReaderPageTurnDuration,
   getReaderPageTurnHandoffProgress,
@@ -17,6 +18,7 @@ import {
   resolveReaderPageAnimationStyle,
 } from '../core/page-turn-timing';
 import type {
+  ReaderAutomaticTurn,
   ReaderInteractiveTurn,
   ReaderPageAnimationStyle,
   ReaderPageContent,
@@ -36,7 +38,9 @@ export function useReaderPageTransition(
   animationDuration = 360,
   interactiveTurn?: ReaderInteractiveTurn,
   spreadMode: ReaderSpreadMode = 'double',
+  automaticTurn?: ReaderAutomaticTurn,
   suppressAutomaticTransition = false,
+  onAutomaticTurnComplete?: (turnId: number) => void,
 ): ReaderPageTransitionValues {
   const [displayedContent, setDisplayedContent] = useState<ReaderPageContent>();
   const [interactiveCommit, setInteractiveCommit] = useState<ReaderPageIdentity>();
@@ -55,9 +59,17 @@ export function useReaderPageTransition(
           ?? ((interactiveTargetSpread ?? displayedContent.snapshot.spreadIndex) > displayedContent.snapshot.spreadIndex ? 1 : -1),
     }
     : undefined, [displayedContent, interactiveContent, interactiveTargetSpread, interactiveTurn?.direction]);
+  const automaticTransition = useMemo(
+    () => automaticTurn && style !== 'page'
+      ? automaticPageTurnTransition(automaticTurn)
+      : undefined,
+    [automaticTurn, style],
+  );
   const activeTransition = interactiveTransition
+    ?? automaticTransition
     ?? (transition?.toKey === currentKey ? transition : undefined);
   const visibleContent = interactiveContent
+    ?? (automaticTransition ? automaticTurn?.to : undefined)
     ?? (activeTransition ? current : displayedContent ?? current);
   const incomingPageLanding = style === 'page'
     && spreadMode === 'single'
@@ -66,7 +78,10 @@ export function useReaderPageTransition(
     setTransition((value) => value?.toKey === key ? undefined : value);
   }, []);
   const direction = activeTransition?.direction ?? 1;
-  const transitionFrame = current?.frame ?? displayedContent?.frame ?? interactiveContent?.frame;
+  const transitionFrame = interactiveContent?.frame
+    ?? automaticTurn?.to.frame
+    ?? current?.frame
+    ?? displayedContent?.frame;
   const width = transitionFrame?.width ?? 0;
   const height = transitionFrame?.height ?? 0;
   const grabX = interactiveTurn?.grabX ?? (direction > 0 ? 0 : width);
@@ -196,12 +211,27 @@ export function useReaderPageTransition(
       if (!finished) return;
       if (interactiveTurn?.settling && interactiveTurn.onSettleComplete) {
         scheduleOnRN(interactiveTurn.onSettleComplete);
+      } else if (automaticTransition && automaticTurn && onAutomaticTurnComplete) {
+        scheduleOnRN(onAutomaticTurnComplete, automaticTurn.id);
       } else if (!interactiveTurn) {
         scheduleOnRN(clearTransition, activeTransition.toKey);
       }
     }));
     return () => cancelAnimation(animatedProgress);
-  }, [activeTransition, animatedProgress, animationDuration, animationStyle, clearTransition, incomingPageLanding, interactiveTurn, progress, style]);
+  }, [
+    activeTransition,
+    animatedProgress,
+    animationDuration,
+    animationStyle,
+    automaticTransition,
+    automaticTurn,
+    clearTransition,
+    incomingPageLanding,
+    interactiveTurn,
+    onAutomaticTurnComplete,
+    progress,
+    style,
+  ]);
 
   return {
     transition: activeTransition,
