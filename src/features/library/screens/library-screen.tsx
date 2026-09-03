@@ -6,7 +6,7 @@ import { useThemeColor } from 'heroui-native/hooks';
 import { SearchField } from 'heroui-native/search-field';
 import { Spinner } from 'heroui-native/spinner';
 import { useToast } from 'heroui-native/toast';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   type LayoutChangeEvent,
@@ -16,7 +16,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { APP_TAB_BAR_HEIGHT } from '@/components/ui/app-tabs';
@@ -39,7 +38,6 @@ import {
   selectEpubFiles,
 } from '../services/library-service';
 
-const LONG_PRESS_DURATION = 360;
 const SELECTION_TOOLBAR_HEIGHT = 64;
 
 type ImportingBook = {
@@ -71,6 +69,7 @@ export default function LibraryScreen() {
   const importIconColor = useThemeColor('accent-foreground');
   const { toast } = useToast();
   const [gridSelectionSession] = useState(() => new LibraryGridSelectionSession());
+  const gridContainerRef = useRef<View>(null);
 
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -223,7 +222,7 @@ export default function LibraryScreen() {
   }, [updateBookSelection]);
 
   const selectBooksAtGridPoint = useCallback((x: number, y: number) => {
-    const newlyVisitedIds = gridSelectionSession.continue({ x, y });
+    const newlyVisitedIds = gridSelectionSession.continueFromWindow({ x, y });
     if (newlyVisitedIds.length > 0) {
       setIsSelectionMode(true);
       updateBookSelection(newlyVisitedIds, true);
@@ -231,7 +230,7 @@ export default function LibraryScreen() {
   }, [gridSelectionSession, updateBookSelection]);
 
   const beginSlidingSelection = useCallback((x: number, y: number) => {
-    const newlyVisitedIds = gridSelectionSession.begin({ x, y });
+    const newlyVisitedIds = gridSelectionSession.beginFromWindow({ x, y });
     if (newlyVisitedIds.length > 0) {
       setIsSelectionMode(true);
       updateBookSelection(newlyVisitedIds, true);
@@ -241,18 +240,6 @@ export default function LibraryScreen() {
   const finishSlidingSelection = useCallback(() => {
     gridSelectionSession.finish();
   }, [gridSelectionSession]);
-
-  const slidingSelectionGesture = useMemo(
-    () => Gesture.Pan()
-      .activateAfterLongPress(LONG_PRESS_DURATION)
-      .minDistance(0)
-      .averageTouches(true)
-      .runOnJS(true)
-      .onStart((event) => beginSlidingSelection(event.x, event.y))
-      .onUpdate((event) => selectBooksAtGridPoint(event.x, event.y))
-      .onFinalize(finishSlidingSelection),
-    [beginSlidingSelection, finishSlidingSelection, selectBooksAtGridPoint],
-  );
 
   const closeSelectionMode = useCallback(() => {
     setIsSelectionMode(false);
@@ -340,6 +327,13 @@ export default function LibraryScreen() {
 
   const handleGridLayout = useCallback((event: LayoutChangeEvent) => {
     gridSelectionSession.update({ viewportWidth: event.nativeEvent.layout.width });
+    gridContainerRef.current?.measureInWindow((x, y, width) => {
+      gridSelectionSession.update({
+        viewportWidth: width,
+        windowOriginX: x,
+        windowOriginY: y,
+      });
+    });
   }, [gridSelectionSession]);
 
   const handleGridScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -392,65 +386,70 @@ export default function LibraryScreen() {
             </Button>
           </View>
 
-          <GestureDetector gesture={slidingSelectionGesture}>
-            <View style={styles.gridContainer} onLayout={handleGridLayout}>
-              <FlatList
-                data={items}
-                extraData={selectedBookIds}
-                keyExtractor={(item) => item.book.id}
-                numColumns={3}
-                keyboardShouldPersistTaps="handled"
-                onScroll={handleGridScroll}
-                scrollEventThrottle={16}
-                showsVerticalScrollIndicator={false}
-                columnWrapperStyle={styles.row}
-                contentContainerStyle={[
-                  styles.grid,
-                  {
-                    paddingBottom:
-                      APP_TAB_BAR_HEIGHT
-                      + insets.bottom
-                      + Spacing.four
-                      + (isSelectionMode ? SELECTION_TOOLBAR_HEIGHT + Spacing.two : 0),
-                  },
-                ]}
-                renderItem={({ item }) => (
-                  item.kind === 'importing' ? (
-                    <ImportingBookCard
-                      isWaiting={item.book.isWaiting}
-                      progress={item.book.progress}
-                      title={item.book.title}
-                    />
-                  ) : (
-                    <BookCard
-                      book={item.book}
-                      isSelected={selectedBookIds.has(item.book.id)}
-                      isSelectionMode={isSelectionMode}
-                      onLongPress={() => handleBookLongPress(item.book.id)}
-                      onPress={() => handleBookPress(item.book)}
-                    />
-                  )
-                )}
-                ListEmptyComponent={
-                  <View style={styles.emptyState}>
-                    {isLoadingLibrary && <Spinner color="default" size="md" />}
-                    <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                      {isLoadingLibrary
-                        ? '正在读取书架'
-                        : query.trim()
-                          ? '没有找到相关书籍'
-                          : '书架还是空的'}
+          <View
+            ref={gridContainerRef}
+            collapsable={false}
+            style={styles.gridContainer}
+            onLayout={handleGridLayout}>
+            <FlatList
+              data={items}
+              extraData={selectedBookIds}
+              keyExtractor={(item) => item.book.id}
+              numColumns={3}
+              keyboardShouldPersistTaps="handled"
+              onScroll={handleGridScroll}
+              scrollEventThrottle={16}
+              showsVerticalScrollIndicator={false}
+              columnWrapperStyle={styles.row}
+              contentContainerStyle={[
+                styles.grid,
+                {
+                  paddingBottom:
+                    APP_TAB_BAR_HEIGHT
+                    + insets.bottom
+                    + Spacing.four
+                    + (isSelectionMode ? SELECTION_TOOLBAR_HEIGHT + Spacing.two : 0),
+                },
+              ]}
+              renderItem={({ item }) => (
+                item.kind === 'importing' ? (
+                  <ImportingBookCard
+                    isWaiting={item.book.isWaiting}
+                    progress={item.book.progress}
+                    title={item.book.title}
+                  />
+                ) : (
+                  <BookCard
+                    book={item.book}
+                    isSelected={selectedBookIds.has(item.book.id)}
+                    isSelectionMode={isSelectionMode}
+                    onLongPress={() => handleBookLongPress(item.book.id)}
+                    onPress={() => handleBookPress(item.book)}
+                    onSelectionGestureFinish={finishSlidingSelection}
+                    onSelectionGestureMove={selectBooksAtGridPoint}
+                    onSelectionGestureStart={beginSlidingSelection}
+                  />
+                )
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  {isLoadingLibrary && <Spinner color="default" size="md" />}
+                  <Text style={[styles.emptyTitle, { color: theme.text }]}>
+                    {isLoadingLibrary
+                      ? '正在读取书架'
+                      : query.trim()
+                        ? '没有找到相关书籍'
+                        : '书架还是空的'}
+                  </Text>
+                  {!isLoadingLibrary && (
+                    <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
+                      {query.trim() ? '尝试搜索其他书名或作者' : '使用右上角的添加按钮导入 EPUB'}
                     </Text>
-                    {!isLoadingLibrary && (
-                      <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
-                        {query.trim() ? '尝试搜索其他书名或作者' : '使用右上角的添加按钮导入 EPUB'}
-                      </Text>
-                    )}
-                  </View>
-                }
-              />
-            </View>
-          </GestureDetector>
+                  )}
+                </View>
+              }
+            />
+          </View>
         </View>
       </View>
 

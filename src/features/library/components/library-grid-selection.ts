@@ -15,6 +15,8 @@ interface GridSelectionSessionOptions {
   readonly itemIds: readonly (string | undefined)[];
   readonly scrollOffset: number;
   readonly viewportWidth: number;
+  readonly windowOriginX: number;
+  readonly windowOriginY: number;
 }
 
 interface LibraryGridHitTestOptions {
@@ -68,6 +70,8 @@ export class LibraryGridSelectionSession {
   private itemIds: readonly (string | undefined)[] = [];
   private scrollOffset = 0;
   private viewportWidth = 0;
+  private windowOriginX = 0;
+  private windowOriginY = 0;
   private lastIndex: number | undefined;
   private readonly visitedBookIds = new Set<string>();
 
@@ -81,6 +85,20 @@ export class LibraryGridSelectionSession {
     if (options.viewportWidth !== undefined) {
       this.viewportWidth = options.viewportWidth;
     }
+    if (options.windowOriginX !== undefined) {
+      this.windowOriginX = options.windowOriginX;
+    }
+    if (options.windowOriginY !== undefined) {
+      this.windowOriginY = options.windowOriginY;
+    }
+  }
+
+  beginFromWindow(point: GridPoint): readonly string[] {
+    return this.begin(this.toLocalPoint(point));
+  }
+
+  continueFromWindow(point: GridPoint): readonly string[] {
+    return this.continue(this.toLocalPoint(point));
   }
 
   begin(point: GridPoint): readonly string[] {
@@ -96,6 +114,13 @@ export class LibraryGridSelectionSession {
   finish(): void {
     this.lastIndex = undefined;
     this.visitedBookIds.clear();
+  }
+
+  private toLocalPoint(point: GridPoint): GridPoint {
+    return {
+      x: point.x - this.windowOriginX,
+      y: point.y - this.windowOriginY,
+    };
   }
 
   private visit(point: GridPoint): readonly string[] {

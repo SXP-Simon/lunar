@@ -1,13 +1,13 @@
-import { Image } from 'expo-image';
+import { Image as ExpoImage } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { useThemeColor } from 'heroui-native/hooks';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { memo, useMemo } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { withUniwind } from 'uniwind';
 
-import { Fonts, Spacing, useTheme } from '@/hooks/use-theme';
-import {
-  BOOK_CARD_COVER_ASPECT_RATIO,
-  BOOK_CARD_HORIZONTAL_PADDING,
-} from './library-grid-selection';
+import { Fonts, useTheme } from '@/hooks/use-theme';
+import { BOOK_CARD_COVER_ASPECT_RATIO } from './library-grid-selection';
 
 export type LibraryBook = {
   id: string;
@@ -26,7 +26,43 @@ type BookCardProps = {
   isSelectionMode?: boolean;
   onLongPress?: () => void;
   onPress?: () => void;
+  onSelectionGestureFinish?: () => void;
+  onSelectionGestureMove?: (absoluteX: number, absoluteY: number) => void;
+  onSelectionGestureStart?: (absoluteX: number, absoluteY: number) => void;
 };
+
+const LONG_PRESS_DURATION = 360;
+const Image = withUniwind(ExpoImage);
+
+type BookCoverArtworkProps = {
+  imageUri?: string;
+  mark: string;
+};
+
+const BookCoverArtwork = memo(function BookCoverArtwork({
+  imageUri,
+  mark,
+}: BookCoverArtworkProps) {
+  return (
+    <View className="absolute inset-0 items-center justify-center overflow-hidden rounded bg-surface-secondary">
+      {imageUri ? (
+        <Image
+          accessible={false}
+          cachePolicy="memory-disk"
+          className="absolute inset-0 h-full w-full"
+          contentFit="cover"
+          source={imageUri}
+        />
+      ) : (
+        <Text
+          className="text-[52px] font-normal text-muted"
+          style={{ fontFamily: Fonts.serif }}>
+          {mark}
+        </Text>
+      )}
+    </View>
+  );
+});
 
 export function BookCard({
   book,
@@ -34,187 +70,96 @@ export function BookCard({
   isSelectionMode = false,
   onLongPress,
   onPress,
+  onSelectionGestureFinish,
+  onSelectionGestureMove,
+  onSelectionGestureStart,
 }: BookCardProps) {
   const theme = useTheme();
   const selectedIconColor = useThemeColor('accent-foreground');
+  const selectionGesture = useMemo(
+    () => Gesture.Pan()
+      .activateAfterLongPress(LONG_PRESS_DURATION)
+      .minDistance(0)
+      .averageTouches(true)
+      .cancelsTouchesInView(true)
+      .runOnJS(true)
+      .onStart((event) => onSelectionGestureStart?.(event.absoluteX, event.absoluteY))
+      .onUpdate((event) => onSelectionGestureMove?.(event.absoluteX, event.absoluteY))
+      .onFinalize(() => onSelectionGestureFinish?.()),
+    [onSelectionGestureFinish, onSelectionGestureMove, onSelectionGestureStart],
+  );
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={
-        isSelectionMode
-          ? `${isSelected ? '取消选择' : '选择'}《${book.title}》`
-          : `打开《${book.title}》`
-      }
-      accessibilityState={{ selected: isSelectionMode ? isSelected : undefined }}
-      delayLongPress={360}
-      onLongPress={onLongPress}
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-      {({ pressed }) => (
-        <>
+    <GestureDetector gesture={selectionGesture}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          isSelectionMode
+            ? `${isSelected ? '取消选择' : '选择'}《${book.title}》`
+            : `打开《${book.title}》`
+        }
+        accessibilityState={{ selected: isSelectionMode ? isSelected : undefined }}
+        delayLongPress={LONG_PRESS_DURATION}
+        onLongPress={onLongPress}
+        onPress={onPress}
+        className="mb-6 w-1/3 px-[6px] active:opacity-80">
+        <View
+          className="relative w-full rounded bg-surface-secondary"
+          style={{
+            aspectRatio: BOOK_CARD_COVER_ASPECT_RATIO,
+            elevation: 4,
+            shadowColor: theme.border,
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.22,
+            shadowRadius: 10,
+          }}>
+          <BookCoverArtwork imageUri={book.cover.imageUri} mark={book.cover.mark} />
           <View
-            style={[
-              styles.cover,
-              isSelected && styles.coverSelected,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: isSelected ? theme.accent : 'transparent',
-                shadowColor: theme.border,
-              },
-            ]}>
-            {book.cover.imageUri && (
-              <Image
-                accessible={false}
-                cachePolicy="disk"
-                contentFit="cover"
-                recyclingKey={book.id}
-                source={book.cover.imageUri}
-                style={styles.coverImage}
-                transition={120}
-              />
-            )}
-            {!book.cover.imageUri && (
-              <Text style={[styles.coverMark, { color: theme.textSecondary }]}>
-                {book.cover.mark}
-              </Text>
-            )}
-            <View
-              style={[
-                styles.progressBadge,
-                isSelected ? styles.progressBadgeSelected : styles.progressBadgeDefault,
-                { backgroundColor: theme.text },
-              ]}>
-              <Text style={[styles.progressText, { color: theme.background }]}>
-                {Math.round((book.readingProgress ?? 0) * 100)}%
-              </Text>
-            </View>
-            {isSelected && (
-              <View
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-                style={[styles.selectionBadge, { backgroundColor: theme.accent }]}>
-                <SymbolView
-                  name={{ ios: 'checkmark', android: 'check', web: 'check' }}
-                  size={17}
-                  tintColor={selectedIconColor}
-                  weight="bold"
-                />
-              </View>
-            )}
-            {isSelected && (
-              <View
-                pointerEvents="none"
-                style={[styles.selectedOverlay, { backgroundColor: theme.text }]}
-              />
-            )}
-            {pressed && (
-              <View
-                pointerEvents="none"
-                style={[
-                  styles.coverPressedOverlay,
-                  { backgroundColor: theme.text },
-                ]}
-              />
-            )}
+            pointerEvents="none"
+            className={isSelected
+              ? 'absolute inset-0 rounded bg-foreground opacity-10'
+              : 'absolute inset-0 rounded bg-foreground opacity-0'}
+          />
+          <View
+            className={isSelected
+              ? 'absolute bottom-1.5 left-1.5 rounded-lg bg-foreground px-[5px] py-0.5'
+              : 'absolute right-1.5 bottom-1.5 rounded-lg bg-foreground px-[5px] py-0.5'}>
+            <Text className="text-[9px] font-semibold leading-3 text-background">
+              {Math.round((book.readingProgress ?? 0) * 100)}%
+            </Text>
           </View>
+          <View
+            pointerEvents="none"
+            className={isSelected
+              ? 'absolute inset-0 rounded border-[3px] border-accent opacity-100'
+              : 'absolute inset-0 rounded border-[3px] border-accent opacity-0'}
+          />
+          <View
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            pointerEvents="none"
+            className={isSelected
+              ? 'absolute right-1.5 bottom-1.5 z-20 size-[27px] items-center justify-center rounded-full bg-accent opacity-100'
+              : 'absolute right-1.5 bottom-1.5 z-20 size-[27px] items-center justify-center rounded-full bg-accent opacity-0'}>
+            <SymbolView
+              name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+              size={17}
+              tintColor={selectedIconColor}
+              weight="bold"
+            />
+          </View>
+        </View>
 
-          <Text
-            numberOfLines={1}
-            ellipsizeMode="tail"
-            style={[styles.bookName, { color: theme.text }]}>
-            {book.title}
-          </Text>
-          <Text numberOfLines={1} style={[styles.bookAuthor, { color: theme.textSecondary }]}>
-            {book.author}
-          </Text>
-        </>
-      )}
-    </Pressable>
+        <Text
+          className="mt-[7px] text-xs font-semibold leading-4 text-foreground"
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          {book.title}
+        </Text>
+        <Text className="mt-px text-[10px] leading-[14px] text-muted" numberOfLines={1}>
+          {book.author}
+        </Text>
+      </Pressable>
+    </GestureDetector>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    width: '33.3333%',
-    paddingHorizontal: BOOK_CARD_HORIZONTAL_PADDING,
-    marginBottom: Spacing.four,
-  },
-  cardPressed: {
-    transform: [{ scale: 0.985 }],
-  },
-  cover: {
-    width: '100%',
-    aspectRatio: BOOK_CARD_COVER_ASPECT_RATIO,
-    overflow: 'hidden',
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  coverSelected: {
-    borderWidth: 3,
-  },
-  coverImage: {
-    position: 'absolute',
-    inset: 0,
-  },
-  coverPressedOverlay: {
-    position: 'absolute',
-    inset: 0,
-    opacity: 0.12,
-  },
-  selectedOverlay: {
-    position: 'absolute',
-    inset: 0,
-    opacity: 0.1,
-  },
-  coverMark: {
-    fontFamily: Fonts.serif,
-    fontSize: 52,
-    fontWeight: '400',
-  },
-  bookName: {
-    marginTop: 7,
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '600',
-  },
-  bookAuthor: {
-    marginTop: 1,
-    fontSize: 10,
-    lineHeight: 14,
-  },
-  progressBadge: {
-    position: 'absolute',
-    bottom: 6,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  progressBadgeDefault: {
-    right: 6,
-  },
-  progressBadgeSelected: {
-    left: 6,
-  },
-  selectionBadge: {
-    position: 'absolute',
-    right: 6,
-    bottom: 6,
-    width: 27,
-    height: 27,
-    zIndex: 2,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressText: {
-    fontSize: 9,
-    lineHeight: 12,
-    fontWeight: '600',
-  },
-});

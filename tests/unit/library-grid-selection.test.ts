@@ -38,6 +38,25 @@ describe('library grid selection', () => {
     session.finish();
     expect(session.begin({ x: 260, y: 105 })).toEqual(['b']);
   });
+
+  it('converts window coordinates before selecting crossed books', () => {
+    const session = new LibraryGridSelectionSession();
+    session.update({
+      itemIds: ['a', 'b', 'c', 'd', 'e', 'f'],
+      viewportWidth: VIEWPORT_WIDTH,
+      windowOriginX: 20,
+      windowOriginY: 80,
+    });
+
+    expect(session.beginFromWindow({ x: 80, y: 185 })).toEqual(['a']);
+    expect(session.continueFromWindow({ x: 280, y: 379 })).toEqual([
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+    ]);
+  });
 });
 
 function indexAt(
