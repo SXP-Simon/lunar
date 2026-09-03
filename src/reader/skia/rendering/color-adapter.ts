@@ -13,6 +13,15 @@ export function skiaColor(value: ReaderColor | string): ReturnType<typeof Skia.C
   return new Float32Array([clamp(r), clamp(g), clamp(b), value.none.alpha ? 0 : clamp(value.alpha)]);
 }
 
+export function isGrayscaleColor(value: ReaderColor | string): boolean {
+  const color = skiaColor(value);
+  const red = color[0] ?? 0;
+  const green = color[1] ?? 0;
+  const blue = color[2] ?? 0;
+  const alpha = color[3] ?? 1;
+  return alpha > 0 && Math.max(red, green, blue) - Math.min(red, green, blue) <= 0.0001;
+}
+
 function toSrgb(space: ReaderColorSpace, c0: number, c1: number, c2: number): [number, number, number] {
   if (space === 'srgb') return [c0, c1, c2];
   if (space === 'hsl') return hsl(c0, c1 / 100, c2 / 100);

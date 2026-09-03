@@ -1,5 +1,5 @@
 import type { ReaderColor, ReaderRect } from '../../contracts';
-import { skiaColor } from './color-adapter';
+import { isGrayscaleColor, skiaColor } from './color-adapter';
 
 export interface SkiaColorOverride {
   readonly backgroundColor: ReaderColor | string;
@@ -29,12 +29,7 @@ export function effectiveTextColor(
   const ink = skiaColor(original);
   const ground = skiaColor(override.backgroundColor);
   if (contrastRatio(ink, ground) >= 4.5) return original;
-  const [hue, saturation] = rgbToHsl(ink);
-  if (saturation <= 0.05) return override.foregroundColor;
-  const foreground = skiaColor(override.foregroundColor);
-  const [, , lightness] = rgbToHsl(foreground);
-  const relit = hslToString(hue, saturation, lightness);
-  return contrastRatio(skiaColor(relit), ground) >= 4.5 ? relit : override.foregroundColor;
+  return isGrayscaleColor(original) ? override.foregroundColor : original;
 }
 
 export function declaredGroundFor(
@@ -63,30 +58,4 @@ function contrastRatio(first: ArrayLike<number>, second: ArrayLike<number>): num
 function relativeLuminance(color: ArrayLike<number>): number {
   const channel = (value: number) => value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
   return 0.2126 * channel(color[0] ?? 0) + 0.7152 * channel(color[1] ?? 0) + 0.0722 * channel(color[2] ?? 0);
-}
-
-function rgbToHsl(color: ArrayLike<number>): [number, number, number] {
-  const r = Math.round((color[0] ?? 0) * 255) / 255;
-  const g = Math.round((color[1] ?? 0) * 255) / 255;
-  const b = Math.round((color[2] ?? 0) * 255) / 255;
-  const max = Math.max(r, g, b); const min = Math.min(r, g, b); const lightness = (max + min) / 2;
-  if (max === min) return [0, 0, lightness];
-  const delta = max - min;
-  const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
-  const hue = max === r ? (g - b) / delta + (g < b ? 6 : 0) : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
-  return [hue * 60, saturation, lightness];
-}
-
-function hslToString(hue: number, saturation: number, lightness: number): string {
-  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
-  const second = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
-  const match = lightness - chroma / 2;
-  let channels: [number, number, number];
-  if (hue < 60) channels = [chroma, second, 0];
-  else if (hue < 120) channels = [second, chroma, 0];
-  else if (hue < 180) channels = [0, chroma, second];
-  else if (hue < 240) channels = [0, second, chroma];
-  else if (hue < 300) channels = [second, 0, chroma];
-  else channels = [chroma, 0, second];
-  return `rgba(${Math.round((channels[0] + match) * 255)}, ${Math.round((channels[1] + match) * 255)}, ${Math.round((channels[2] + match) * 255)}, 1)`;
 }

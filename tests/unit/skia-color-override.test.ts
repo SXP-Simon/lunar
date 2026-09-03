@@ -11,7 +11,7 @@ import {
   effectiveTextColor,
   isBookOwnedPageGround,
 } from '../../src/reader/skia/rendering/color-override';
-import { skiaColor } from '../../src/reader/skia/rendering/color-adapter';
+import { isGrayscaleColor, skiaColor } from '../../src/reader/skia/rendering/color-adapter';
 
 describe('Skia reader color override', () => {
   it('distinguishes a designed dark page from white paper', () => {
@@ -24,6 +24,18 @@ describe('Skia reader color override', () => {
       backgroundColor: '#000000',
       foregroundColor: '#ffffff',
     })).toBe('#ffffff');
+  });
+
+  it('recognizes opaque grayscale colors after adapting them to sRGB', () => {
+    expect(isGrayscaleColor('#000000')).toBe(true);
+    expect(isGrayscaleColor('#808080')).toBe(true);
+    expect(isGrayscaleColor('#59b4d8')).toBe(false);
+  });
+
+  it('preserves colored ink even when it has insufficient contrast with the theme ground', () => {
+    const override = { backgroundColor: '#ffffff', foregroundColor: '#000000' };
+    expect(effectiveTextColor('#59b4d8', override)).toBe('#59b4d8');
+    expect(effectiveTextColor('#dc5a91', override)).toBe('#dc5a91');
   });
 
   it('preserves the typesetter color when a declared ground contains the run', () => {
