@@ -32,6 +32,7 @@ export {
 export {
   useReaderPageTurn,
   type ReaderPageTurnController,
+  type ReaderPageTurnSurfaceBinding,
   type UseReaderPageTurnOptions,
 } from './skia/anime/use-reader-page-turn';
 export { createReaderSurfaceTransform } from './skia/rendering/surface-transform';

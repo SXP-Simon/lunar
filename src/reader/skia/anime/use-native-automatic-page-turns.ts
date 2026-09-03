@@ -8,16 +8,25 @@ import {
 import {
   nativeAutomaticPageTurnFaces,
   nativeAutomaticPageTurnId,
+  nativeInteractivePageTurnStockId,
   readerAutomaticPageTurnId,
 } from './native-page-turn';
 import { getReaderPageTurnDuration } from './page-turn-timing';
-import type { ReaderAutomaticTurn, ReaderPageContent } from './page-transition';
+import type {
+  ReaderAutomaticTurn,
+  ReaderInteractiveTurn,
+  ReaderPageContent,
+} from './page-transition';
+import type { ReaderPageTurnSurfaceBinding } from './use-reader-page-turn';
 import {
+  configureNativePagerInput,
   configureNativePagerMotion,
   enqueueNativePagerPictureTurn,
   nativePagerCanvasReady,
   nativePagerCompositorAvailable,
   resetNativePagerCompositor,
+  setNativePagerAnchor,
+  stockNativePagerPicture,
   takeNativePagerEvents,
   type NativePagerMotionTuning,
 } from './native-pager-compositor';
@@ -68,6 +77,10 @@ interface NativeAutomaticPageTurnsOptions {
   readonly paperColor: number;
   readonly createPicture: (content: ReaderPageContent) => SkPicture;
   readonly onComplete?: (turnId: number) => void;
+  readonly currentContent?: ReaderPageContent;
+  readonly interactiveSource?: ReaderPageContent;
+  readonly interactiveTurn?: ReaderInteractiveTurn;
+  readonly surfaceBinding?: ReaderPageTurnSurfaceBinding;
 }
 
 interface NativeAutomaticPageTurnsState {
@@ -84,6 +97,10 @@ export function useNativeAutomaticPageTurns({
   paperColor,
   createPicture,
   onComplete,
+  currentContent,
+  interactiveSource,
+  interactiveTurn,
+  surfaceBinding,
 }: NativeAutomaticPageTurnsOptions): NativeAutomaticPageTurnsState {
   const supported = useMemo(
     () => enabled && nativePagerCompositorAvailable(),
@@ -91,14 +108,22 @@ export function useNativeAutomaticPageTurns({
   );
   const [ready, setReady] = useState(false);
   const active = supported && ready;
+  const automaticActive = active && onComplete !== undefined;
   const submittedTurnIds = useRef(new Set<number>());
   const presentedTurnIds = useRef(new Set<number>());
+  const submittedGestureStockIds = useRef(new Set<string>());
+  const anchorKey = useRef<string | undefined>(undefined);
   const [presentedTurnCount, setPresentedTurnCount] = useState(0);
   const onCompleteRef = useRef(onComplete);
+  const surfaceBindingRef = useRef(surfaceBinding);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
+
+  useEffect(() => {
+    surfaceBindingRef.current = surfaceBinding;
+  }, [surfaceBinding]);
 
   useEffect(() => {
     const liveTurnIds = new Set(turns.map((turn) => turn.id));
@@ -138,23 +163,149 @@ export function useNativeAutomaticPageTurns({
   }, [canvasRef, ready, supported, turns.length]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      surfaceBinding?.nativeId.set(-1);
+      surfaceBinding?.inputReady.set(false);
+      surfaceBinding?.stockedGestureToken.set(0);
+      return;
+    }
     const canvas = canvasRef.current;
     if (!canvas) return;
     const submitted = submittedTurnIds.current;
     const presented = presentedTurnIds.current;
+    const submittedGestureStocks = submittedGestureStockIds.current;
+    const nativeId = canvas.getNativeId();
+    const inputReady = surfaceBinding
+      ? configureNativePagerInput(canvas, true)
+      : false;
+    surfaceBinding?.nativeId.set(nativeId);
+    surfaceBinding?.inputReady.set(inputReady);
     return () => {
+      configureNativePagerInput(canvas, false);
       resetNativePagerCompositor(canvas);
       submitted.clear();
+      submittedGestureStocks.clear();
+      anchorKey.current = undefined;
+      surfaceBinding?.nativeId.set(-1);
+      surfaceBinding?.inputReady.set(false);
+      surfaceBinding?.stockedGestureToken.set(0);
       if (presented.size > 0) {
         presented.clear();
         setPresentedTurnCount(0);
       }
     };
-  }, [active, canvasRef]);
+  }, [active, canvasRef, surfaceBinding]);
 
   useEffect(() => {
-    if (!active || turns.length === 0 || pixelWidth <= 0 || pixelHeight <= 0) {
+    if (!active || !surfaceBinding || turns.length > 0) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const source = interactiveSource ?? currentContent;
+    if (!source || interactiveTurn?.nativeGesture?.driven) return;
+    if (anchorKey.current === source.key) return;
+    if (!setNativePagerAnchor(canvas, source.key)) {
+      surfaceBinding.inputReady.set(false);
+      return;
+    }
+    surfaceBinding.inputReady.set(configureNativePagerInput(canvas, true));
+    anchorKey.current = source.key;
+    submittedGestureStockIds.current.clear();
+    surfaceBinding.stockedGestureToken.set(0);
+  }, [
+    active,
+    canvasRef,
+    currentContent,
+    interactiveSource,
+    interactiveTurn?.nativeGesture?.driven,
+    surfaceBinding,
+    turns.length,
+  ]);
+
+  useEffect(() => {
+    const nativeGesture = interactiveTurn?.nativeGesture;
+    if (
+      !active
+      || !surfaceBinding
+      || !nativeGesture
+      || nativeGesture.driven
+      || !interactiveSource
+      || pixelWidth <= 0
+      || pixelHeight <= 0
+    ) {
+      if (!interactiveTurn) surfaceBinding?.stockedGestureToken.set(0);
+      return;
+    }
+    const canvas = canvasRef.current;
+    if (!canvas || anchorKey.current !== interactiveSource.key) return;
+    const stockId = nativeInteractivePageTurnStockId(
+      nativeGesture.token,
+      nativeGesture.preparedTurnId,
+    );
+    if (submittedGestureStockIds.current.has(stockId)) {
+      surfaceBinding.stockedGestureToken.set(nativeGesture.token);
+      return;
+    }
+
+    let sourcePicture: SkPicture | undefined;
+    let targetPicture: SkPicture | undefined;
+    let accepted = false;
+    try {
+      sourcePicture = createPicture(interactiveSource);
+      targetPicture = createPicture(interactiveTurn.content);
+      const forward = interactiveTurn.direction > 0;
+      accepted = stockNativePagerPicture(canvas, {
+        id: stockId,
+        fromPageKey: interactiveSource.key,
+        toPageKey: interactiveTurn.content.key,
+        frontPageKey: forward ? interactiveSource.key : interactiveTurn.content.key,
+        backPageKey: forward ? undefined : interactiveSource.key,
+        backgroundLeftPageKey: forward
+          ? interactiveTurn.content.key
+          : interactiveSource.key,
+        frontPicture: forward ? sourcePicture : targetPicture,
+        backPicture: forward ? undefined : sourcePicture,
+        backgroundLeftPicture: forward ? targetPicture : sourcePicture,
+        pixelWidth,
+        pixelHeight,
+        direction: interactiveTurn.direction,
+        spread: false,
+        contentRevision: interactiveTurn.content.snapshot.revisionId,
+        durationMs: getReaderPageTurnDuration(
+          'page',
+          0,
+          undefined,
+          interactiveTurn.direction < 0,
+        ),
+        rapidDurationMs: getReaderPageTurnDuration('page'),
+        launchIntervalMs: AUTOMATIC_PAGE_TURN_START_INTERVAL_MS,
+        paperColor,
+      });
+    } catch {
+      accepted = false;
+    } finally {
+      sourcePicture?.dispose();
+      targetPicture?.dispose();
+    }
+    if (!accepted) {
+      surfaceBinding.inputReady.set(false);
+      return;
+    }
+    submittedGestureStockIds.current.add(stockId);
+    surfaceBinding.stockedGestureToken.set(nativeGesture.token);
+  }, [
+    active,
+    canvasRef,
+    createPicture,
+    interactiveSource,
+    interactiveTurn,
+    paperColor,
+    pixelHeight,
+    pixelWidth,
+    surfaceBinding,
+  ]);
+
+  useEffect(() => {
+    if (!automaticActive || turns.length === 0 || pixelWidth <= 0 || pixelHeight <= 0) {
       return;
     }
     const canvas = canvasRef.current;
@@ -199,16 +350,17 @@ export function useNativeAutomaticPageTurns({
       }
       submittedTurnIds.current.add(turn.id);
     }
-  }, [active, canvasRef, createPicture, paperColor, pixelHeight, pixelWidth, turns]);
+  }, [automaticActive, canvasRef, createPicture, paperColor, pixelHeight, pixelWidth, turns]);
 
   useEffect(() => {
-    if (!active || turns.length === 0) return;
+    if (!active || (!automaticActive && !interactiveTurn)) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const drainEvents = () => {
       for (const event of takeNativePagerEvents(canvas)) {
         const turnId = readerAutomaticPageTurnId(event.id);
         if (turnId === undefined || !submittedTurnIds.current.has(turnId)) {
+          surfaceBindingRef.current?.onNativeEvent(event);
           continue;
         }
         if (event.event === 'started') {
@@ -229,10 +381,10 @@ export function useNativeAutomaticPageTurns({
       clearInterval(timer);
       drainEvents();
     };
-  }, [active, canvasRef, turns.length]);
+  }, [active, automaticActive, canvasRef, interactiveTurn, turns.length]);
 
   return {
-    enabled: active,
+    enabled: automaticActive,
     hasPresentedTurn: presentedTurnCount > 0,
   };
 }

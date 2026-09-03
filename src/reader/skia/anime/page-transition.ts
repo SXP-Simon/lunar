@@ -89,6 +89,15 @@ export interface ReaderInteractiveTurn {
   readonly fingerX?: number;
   readonly throwVelocity?: number;
   readonly throwAcceleration?: number;
+  readonly nativeGesture?: ReaderNativeGestureState;
+}
+
+export interface ReaderNativeGestureState {
+  readonly token: number;
+  readonly preparedTurnId: number;
+  readonly driven: boolean;
+  readonly settling: boolean;
+  readonly consumed: boolean;
 }
 
 export interface ReaderAutomaticTurn {
@@ -217,7 +226,13 @@ export function useReaderPageTransition(
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useLayoutEffect(() => {
-    if (!activeTransition || (interactiveTurn && !interactiveTurn.settling)) return;
+    if (
+      !activeTransition
+      || (interactiveTurn && (
+        !interactiveTurn.settling
+        || interactiveTurn.nativeGesture?.driven
+      ))
+    ) return;
     const handoffProgress = getReaderPageTurnHandoffProgress(
       interactiveTurn?.settling === true,
       interactiveTurn?.settleTo,

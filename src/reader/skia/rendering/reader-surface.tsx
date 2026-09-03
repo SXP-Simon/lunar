@@ -30,6 +30,7 @@ import {
   automaticPageTurnPaintOrder,
   getReaderPageTurnDuration,
   nativeAutomaticPageTurnBaseContent,
+  nativeInteractivePageTurnBaseContent,
   useNativeAutomaticPageTurns,
   useReaderPageTransition,
   usePageCurlTexture,
@@ -37,6 +38,7 @@ import {
   type ReaderPageAnimationStyle,
   type ReaderPageContent,
   type ReaderInteractiveTurn,
+  type ReaderPageTurnSurfaceBinding,
 } from '../anime';
 import type { ReaderOverlayRect } from './overlay-renderer';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
@@ -67,6 +69,7 @@ export interface ReaderSurfaceProps {
   readonly automaticTurns?: readonly ReaderAutomaticTurn[];
   readonly automaticNavigationActive?: boolean;
   readonly onAutomaticTurnComplete?: (turnId: number) => void;
+  readonly pageTurnSurfaceBinding?: ReaderPageTurnSurfaceBinding;
   /** Skia-owned reader chrome rendered in the same Canvas as the page. */
   readonly chapterTitle?: string;
   readonly progressLabel?: string;
@@ -87,6 +90,7 @@ export function ReaderSurface({
   automaticTurns = [],
   automaticNavigationActive = false,
   onAutomaticTurnComplete,
+  pageTurnSurfaceBinding,
   chapterTitle,
   progressLabel,
   overlayColor = '#777777',
@@ -224,19 +228,32 @@ export function ReaderSurface({
     canvasRef: ref,
     enabled: resolvedAnimationStyle === 'page'
       && spreadMode === 'single'
-      && onAutomaticTurnComplete !== undefined,
+      && (
+        onAutomaticTurnComplete !== undefined
+        || pageTurnSurfaceBinding !== undefined
+      ),
     turns: automaticTurns,
     pixelWidth: nativePixelWidth,
     pixelHeight: nativePixelHeight,
     paperColor: nativePaperColor,
     createPicture: createNativePagePicture,
     onComplete: onAutomaticTurnComplete,
+    currentContent,
+    interactiveTurn,
+    interactiveSource: activeTransition?.from,
+    surfaceBinding: pageTurnSurfaceBinding,
   });
   const nativeAutomaticPageTurnsVisible = automaticPageTurnsVisible
     && nativeAutomaticPageTurnState.enabled;
   const fallbackAutomaticPageTurnsVisible = automaticPageTurnsVisible
     && !nativeAutomaticPageTurnState.enabled;
   const transitionActive = activeTransition !== undefined;
+  const nativeInteractiveGestureDriven = interactiveTurn?.nativeGesture?.driven === true;
+  const nativeInteractiveBaseContent = nativeInteractivePageTurnBaseContent(
+    activeTransition?.from,
+    interactiveTurn?.content,
+    interactiveTurn?.nativeGesture,
+  );
   const nativeAutomaticBaseContent = nativeAutomaticPageTurnBaseContent(
     automaticTurns,
     currentContent,
@@ -281,7 +298,9 @@ export function ReaderSurface({
   const isSinglePreviousPageTurn = resolvedAnimationStyle === 'page'
     && spreadMode === 'single'
     && activeTransition?.direction === -1;
-  const pageCurlSource = resolvedAnimationStyle === 'page' && !automaticNavigationActive
+  const pageCurlSource = resolvedAnimationStyle === 'page'
+    && !automaticNavigationActive
+    && !nativeInteractiveGestureDriven
     ? activeTransition
       ? isSinglePreviousPageTurn
         ? incomingContent
@@ -458,16 +477,28 @@ export function ReaderSurface({
           ) : resolvedAnimationStyle === 'page' ? (
             <Group key="page-content">
               <Group key="page-current">
-                {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
-                {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
+                {nativeInteractiveBaseContent ? (
+                  <>
+                    <Picture picture={nativeInteractiveBaseContent.picture.picture} />
+                    {renderChrome(
+                      nativeInteractiveBaseContent.snapshot,
+                      nativeInteractiveBaseContent.frame,
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                    {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
+                  </>
+                )}
               </Group>
-              {activeTransition && isSinglePreviousPageTurn && (
+              {activeTransition && !nativeInteractiveGestureDriven && isSinglePreviousPageTurn && (
                 <Group key={`page-source:${activeTransition.from.key}`}>
                   <Picture picture={activeTransition.from.picture.picture} />
                   {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
                 </Group>
               )}
-              {activeTransition && (
+              {activeTransition && !nativeInteractiveGestureDriven && (
                 <PageCurlMesh
                   backTexture={isSinglePreviousPageTurn ? pageCurlBackTexture : undefined}
                   key={pageCurlSource?.key ?? activeTransition.from.key}

@@ -74,9 +74,15 @@
 
 [MUST] 原生 composer 的协议适配限定于 `src/reader/skia/anime` 与项目维护的 React Native Skia 补丁，业务层不得调用原生 composer 接口。
 
-[MUST] 当前自动卷页可以由原生 composer 绘制；拖拽卷页由 Reanimated 共享值持续驱动声明式 Skia 画面。两类动画共享 Canvas 时必须采用兼容声明式逐帧更新的显示调度。
+[MUST] 自动卷页可以由原生 composer 绘制；单页拖拽卷页在相邻目标画面完成预备并加入原生库存后，可以将后续手势采样、释放动画与回弹动画交给原生 composer。目标库存准备期间、原生命令被拒绝时以及双页模式下，拖拽卷页必须继续使用 Reanimated 共享值驱动声明式 Skia 画面。
 
-[MUST] Android 拖拽卷页仍由声明式 Skia 驱动期间，阅读 Canvas 必须保持 TextureView 呈现，不得通过 `opaque` 切换至独立渲染线程的 SurfaceView。该组合会使手势采样产生的中间画面无法持续呈现，并表现为源页静止至提交时瞬间切换目标页。
+[MUST] 原生手势卷页必须关联同一次 `prepareAdjacent()` 返回的预备操作；原生 `consumed`、`completed` 与 `cancelled` 事件只能提交或取消该预备操作，禁止重新执行独立的相邻页导航。
+
+[MUST] 原生手势卷页完成提交后，composer 保留的目标画面必须等待订阅方提交匹配的修订标识、页序位置与画面标识，并收到呈现确认后释放。
+
+[MUST] 原生手势卷页发送 `consumed` 事件后，声明式 Canvas 的底层画面必须立即使用该预备操作的目标画面，避免 composer 完成帧与目标快照提交之间重新显现源页。
+
+[MUST] Android 拖拽卷页仍存在声明式准备阶段、备用实现或双页实现期间，阅读 Canvas 必须保持 TextureView 呈现，不得通过 `opaque` 切换至独立渲染线程的 SurfaceView。该组合会使手势采样产生的中间画面无法持续呈现，并表现为源页静止至提交时瞬间切换目标页。
 
 [MUST] 只有原生 composer 完整接管手势开始、连续采样、释放动画与画面交接，并通过设备测试证明中间帧连续呈现后，Android 阅读 Canvas 才允许启用独立原生渲染线程。
 

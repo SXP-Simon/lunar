@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Gesture, type PanGesture } from 'react-native-gesture-handler';
-import { useSharedValue } from 'react-native-reanimated';
+import { useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import type { ReaderSnapshot, ReaderSpreadMode, ReaderViewport } from '../../contracts';
@@ -9,6 +9,15 @@ import type {
   ReaderPreparedTurn,
 } from '../../runtime/core/native-reader-runtime';
 import { readerDiagnostic } from '../../runtime/core/performance';
+import {
+  acknowledgeNativePagerPresentationById,
+  beginNativePagerGestureOnUI,
+  cancelNativePagerGestureOnUI,
+  endNativePagerGestureOnUI,
+  updateNativePagerGestureOnUI,
+  type NativePagerEventRecord,
+} from './native-pager-compositor';
+import { readerInteractivePageTurnIdentity } from './native-page-turn';
 import {
   anchoredGestureFingerX,
   bookXForGestureTravel,
@@ -35,8 +44,15 @@ import type {
   ReaderPageContent,
 } from './page-transition';
 
+const NATIVE_GESTURE_MINIMUM_START_BOOK_X = 0.25;
+const NATIVE_GESTURE_MINIMUM_SPEED_SCALE = 1;
+const NATIVE_GESTURE_MAXIMUM_SPEED_SCALE = 2.2;
+const NATIVE_GESTURE_VELOCITY_GAIN = 0.35;
+const NATIVE_GESTURE_IDLE_DECAY_SECONDS = 0.08;
+
 interface ReaderDragState {
   readonly id: number;
+  readonly nativeGestureToken: number;
   readonly revisionId: number;
   readonly startSpread: number;
   readonly startX: number;
@@ -65,6 +81,22 @@ interface ReaderCommittedHandoff {
   readonly revisionId: number;
   readonly spreadIndex: number;
   readonly renderId: number;
+  readonly nativeTurnId?: string;
+}
+
+interface ReaderNativeGestureHandoff {
+  readonly gestureToken: number;
+  readonly preparedTurn: ReaderPreparedTurn;
+  readonly generation: number;
+  commit?: Promise<ReaderSnapshot>;
+  terminalEventHandled: boolean;
+}
+
+export interface ReaderPageTurnSurfaceBinding {
+  readonly nativeId: SharedValue<number>;
+  readonly inputReady: SharedValue<boolean>;
+  readonly stockedGestureToken: SharedValue<number>;
+  readonly onNativeEvent: (event: NativePagerEventRecord) => void;
 }
 
 export interface UseReaderPageTurnOptions {
@@ -84,6 +116,7 @@ export interface ReaderPageTurnController {
   readonly automaticTurns: readonly ReaderAutomaticTurn[];
   readonly automaticNavigationActive: boolean;
   readonly isSettling: boolean;
+  readonly surfaceBinding: ReaderPageTurnSurfaceBinding;
   completeAutomaticTurn(turnId: number): void;
   next(): Promise<ReaderSnapshot>;
   previous(): Promise<ReaderSnapshot>;
@@ -108,6 +141,7 @@ export function useReaderPageTurn({
   const automaticDirection = useRef<1 | -1 | undefined>(undefined);
   const automaticPendingCount = useRef(0);
   const automaticTurnsRef = useRef<readonly ReaderAutomaticTurn[]>([]);
+  const nativeGestureHandoff = useRef<ReaderNativeGestureHandoff | undefined>(undefined);
   const controllerRuntime = useRef(runtime);
   const gestureProgress = useSharedValue(0);
   const gestureStarted = useSharedValue(false);
@@ -118,6 +152,11 @@ export function useReaderPageTurn({
   const gestureGrabY = useSharedValue(0);
   const gesturePressedEdgeX = useSharedValue(1);
   const gestureHeldRollTilt = useSharedValue(0);
+  const gestureToken = useSharedValue(0);
+  const nativeGestureActive = useSharedValue(false);
+  const nativePagerId = useSharedValue(-1);
+  const nativePagerInputReady = useSharedValue(false);
+  const nativeStockedGestureToken = useSharedValue(0);
   const [interactiveTurn, setInteractiveTurn] = useState<ReaderInteractiveTurn>();
   const [committedHandoff, setCommittedHandoff] = useState<ReaderCommittedHandoff>();
   const [automaticTurns, setAutomaticTurns] = useState<readonly ReaderAutomaticTurn[]>([]);
@@ -140,6 +179,12 @@ export function useReaderPageTurn({
       'turn.handoff.snapshot-ready',
       `turn=${committedHandoff.turnId} ui=${describeSnapshotIdentity(snapshot)} generation=${committedHandoff.generation}`,
     );
+    if (committedHandoff.nativeTurnId) {
+      acknowledgeNativePagerPresentationById(
+        nativePagerId.value,
+        committedHandoff.nativeTurnId,
+      );
+    }
     // Keep the completed interactive picture mounted until the subscribed
     // React snapshot identifies the same target. The runtime snapshot may be
     // ahead of its subscriber during a fast release. One additional frame
@@ -155,7 +200,7 @@ export function useReaderPageTurn({
       setInteractiveTurn(undefined);
     });
     return () => cancelAnimationFrame(frame);
-  }, [committedHandoff, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex]);
+  }, [committedHandoff, nativePagerId, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex]);
 
   useEffect(() => {
     if (!interactiveTurn && !committedHandoff) return;
@@ -171,13 +216,18 @@ export function useReaderPageTurn({
     );
   }, [committedHandoff, interactiveTurn, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex]);
 
-  const beginDrag = useCallback((startX: number, startY: number) => {
+  const beginDrag = useCallback((
+    startX: number,
+    startY: number,
+    nativeToken: number,
+  ) => {
     if (!isReady || !viewport || interactiveTurn?.settling || automaticNavigationActive) return;
     const turnId = ++turnSequence.current;
     activeTurnId.current = turnId;
     handoffGeneration.current += 1;
     dragState.current = {
       id: turnId,
+      nativeGestureToken: nativeToken,
       revisionId: snapshot.revisionId,
       startSpread: snapshot.spreadIndex,
       startX,
@@ -196,6 +246,7 @@ export function useReaderPageTurn({
       preparing: false,
       prepared: false,
     };
+    nativeGestureHandoff.current = undefined;
     readerDiagnostic(
       'turn.gesture.begin',
       `turn=${turnId} source=${describeSnapshotIdentity(snapshot)} x=${formatTraceNumber(startX)} y=${formatTraceNumber(startY)}`,
@@ -260,6 +311,13 @@ export function useReaderPageTurn({
       fingerX: state.fingerX,
       throwVelocity: state.throwVelocity,
       throwAcceleration: state.throwAcceleration,
+      nativeGesture: {
+        token: state.nativeGestureToken,
+        preparedTurnId: preparedTurn.id,
+        driven: false,
+        settling: false,
+        consumed: false,
+      },
     });
     return true;
   }, [
@@ -369,12 +427,47 @@ export function useReaderPageTurn({
     viewport,
   ]);
 
+  const markNativeGestureAccepted = useCallback((nativeToken: number) => {
+    const state = dragState.current;
+    if (
+      !state
+      || state.nativeGestureToken !== nativeToken
+      || !state.preparedTurn
+      || !state.prepared
+    ) {
+      return;
+    }
+    const preparedTurn = state.preparedTurn;
+    nativeGestureHandoff.current = {
+      gestureToken: nativeToken,
+      preparedTurn,
+      generation: ++handoffGeneration.current,
+      terminalEventHandled: false,
+    };
+    setInteractiveTurn((turn) => turn?.nativeGesture?.token === nativeToken
+      ? {
+          ...turn,
+          nativeGesture: {
+            ...turn.nativeGesture,
+            driven: true,
+          },
+        }
+      : turn);
+  }, []);
+
   const finishDrag = useCallback((
     state: ReaderDragState,
     releaseVelocity = 0,
     releaseTranslationX = 0,
+    nativeReleased = false,
   ) => {
     if (dragState.current === state) dragState.current = undefined;
+    if (
+      !nativeReleased
+      && nativeGestureHandoff.current?.gestureToken === state.nativeGestureToken
+    ) {
+      nativeGestureHandoff.current = undefined;
+    }
     if (!state.directionLocked) {
       readerDiagnostic('turn.gesture.end', `turn=${state.id} decision=none reason=direction-unlocked`);
       activeTurnId.current = undefined;
@@ -427,6 +520,42 @@ export function useReaderPageTurn({
         `preparedId=${state.preparedTurn?.id ?? 'none'}`,
       ].join(' '),
     );
+    if (nativeReleased && state.preparedTurn && state.prepared) {
+      const existingHandoff = nativeGestureHandoff.current;
+      const generation = existingHandoff?.gestureToken === state.nativeGestureToken
+        ? existingHandoff.generation
+        : ++handoffGeneration.current;
+      if (existingHandoff?.gestureToken !== state.nativeGestureToken) {
+        nativeGestureHandoff.current = {
+          gestureToken: state.nativeGestureToken,
+          preparedTurn: state.preparedTurn,
+          generation,
+          terminalEventHandled: false,
+        };
+      }
+      setInteractiveTurn((turn) => turn ? {
+        ...turn,
+        progress: state.renderProgress,
+        progressValue: gestureProgress,
+        pressedEdgeX: state.pressedEdgeX,
+        heldRollTilt: state.heldRollTilt,
+        fingerX: state.fingerX,
+        releaseVelocity: towardTargetVelocity,
+        throwVelocity,
+        settling: true,
+        settleTo: commit ? 1 : 0,
+        nativeGesture: turn.nativeGesture ? {
+          ...turn.nativeGesture,
+          driven: true,
+          settling: true,
+        } : undefined,
+      } : turn);
+      readerDiagnostic(
+        'turn.native.release',
+        `turn=${state.id} prepared=${state.preparedTurn.id} expected=${commit ? 'commit' : 'cancel'} generation=${generation}`,
+      );
+      return;
+    }
     if (!commit) {
       if (!state.prepared) {
         if (state.preparedTurn) void runtime.cancelPreparedTurn(state.preparedTurn);
@@ -583,7 +712,93 @@ export function useReaderPageTurn({
     viewport,
   ]);
 
-  const endDrag = useCallback((releaseVelocity = 0, releaseTranslationX = 0) => {
+  const handleNativeGestureEvent = useCallback((event: NativePagerEventRecord) => {
+    const identity = readerInteractivePageTurnIdentity(event.id);
+    if (!identity) return;
+    const handoff = nativeGestureHandoff.current;
+    if (
+      !handoff
+      || handoff.gestureToken !== identity.gestureToken
+      || handoff.preparedTurn.id !== identity.preparedTurnId
+      || handoff.generation !== handoffGeneration.current
+    ) {
+      return;
+    }
+    readerDiagnostic(
+      'turn.native.event',
+      `turn=${identity.gestureToken} prepared=${identity.preparedTurnId} event=${event.event} native=${event.id}`,
+    );
+    if (event.event === 'consumed' && !handoff.commit) {
+      setInteractiveTurn((turn) => turn?.nativeGesture?.token === identity.gestureToken
+        ? {
+            ...turn,
+            nativeGesture: {
+              ...turn.nativeGesture,
+              consumed: true,
+            },
+          }
+        : turn);
+      handoff.commit = runtime.commitPreparedTurn(handoff.preparedTurn);
+      return;
+    }
+    if (
+      handoff.terminalEventHandled
+      || (event.event !== 'completed' && event.event !== 'cancelled')
+    ) {
+      return;
+    }
+    handoff.terminalEventHandled = true;
+    if (event.event === 'cancelled') {
+      void runtime.cancelPreparedTurn(handoff.preparedTurn)
+        .catch(() => undefined)
+        .then(waitForPageHandoffFrames)
+        .then(() => {
+          if (nativeGestureHandoff.current !== handoff) return;
+          nativeGestureHandoff.current = undefined;
+          activeTurnId.current = undefined;
+          setInteractiveTurn(undefined);
+        });
+      return;
+    }
+
+    const commit = handoff.commit
+      ?? runtime.commitPreparedTurn(handoff.preparedTurn);
+    handoff.commit = commit;
+    void commit.then((result) => {
+      if (nativeGestureHandoff.current !== handoff) return;
+      const preparedTurn = handoff.preparedTurn;
+      if (
+        result.revisionId !== preparedTurn.revisionId
+        || result.spreadIndex !== preparedTurn.targetSpreadIndex
+        || result.renderId !== preparedTurn.targetRenderId
+      ) {
+        nativeGestureHandoff.current = undefined;
+        activeTurnId.current = undefined;
+        setInteractiveTurn(undefined);
+        return;
+      }
+      nativeGestureHandoff.current = undefined;
+      setCommittedHandoff({
+        turnId: identity.gestureToken,
+        generation: handoff.generation,
+        revisionId: preparedTurn.revisionId,
+        spreadIndex: preparedTurn.targetSpreadIndex,
+        renderId: preparedTurn.targetRenderId,
+        nativeTurnId: event.id,
+      });
+    }).catch(() => {
+      if (nativeGestureHandoff.current !== handoff) return;
+      nativeGestureHandoff.current = undefined;
+      activeTurnId.current = undefined;
+      setInteractiveTurn(undefined);
+    });
+  }, [runtime]);
+
+  const endDrag = useCallback((
+    releaseVelocity = 0,
+    releaseTranslationX = 0,
+    nativeReleased = false,
+  ) => {
     if (interactiveTurn?.settling) return;
     const state = dragState.current;
     if (!state) return;
@@ -595,19 +810,22 @@ export function useReaderPageTurn({
       );
       void preparation.then(() => {
         if (dragState.current === state) {
-          finishDrag(state, releaseVelocity, releaseTranslationX);
+          finishDrag(state, releaseVelocity, releaseTranslationX, nativeReleased);
         }
       });
       return;
     }
-    finishDrag(state, releaseVelocity, releaseTranslationX);
+    finishDrag(state, releaseVelocity, releaseTranslationX, nativeReleased);
   }, [finishDrag, interactiveTurn?.settling]);
 
   /* eslint-disable react-hooks/refs, react-hooks/immutability */
   const viewportWidth = viewport?.width ?? 1;
   const viewportHeight = viewport?.height ?? 1;
-  const isSettling = interactiveTurn?.settling === true;
+  const isSettling = interactiveTurn?.settling === true
+    || interactiveTurn?.nativeGesture?.settling === true;
   const gestureBlocked = isSettling || automaticNavigationActive;
+  const nativeGestureEnabled = resolveReaderPageAnimationStyle(animationStyle) === 'page'
+    && spreadMode === 'single';
   const gesture = useMemo(
     () => Gesture.Pan()
       .minDistance(2)
@@ -626,7 +844,10 @@ export function useReaderPageTurn({
         gestureGrabY.value = event.y;
         gesturePressedEdgeX.value = 1;
         gestureHeldRollTilt.value = 0;
-        scheduleOnRN(beginDrag, event.x, event.y);
+        nativeGestureActive.value = false;
+        nativeStockedGestureToken.value = 0;
+        gestureToken.value += 1;
+        scheduleOnRN(beginDrag, event.x, event.y, gestureToken.value);
       })
       .onUpdate((event) => {
         'worklet';
@@ -663,6 +884,30 @@ export function useReaderPageTurn({
         );
         gestureHeldRollTilt.value = heldRollTilt;
         gesturePressedEdgeX.value = gesturePressedChordForFingerX(fingerX, heldRollTilt);
+        if (
+          nativeGestureEnabled
+          && nativePagerInputReady.value
+          && nativeStockedGestureToken.value === gestureToken.value
+          && (direction < 0 || startBookX >= NATIVE_GESTURE_MINIMUM_START_BOOK_X)
+        ) {
+          if (nativeGestureActive.value) {
+            updateNativePagerGestureOnUI(nativePagerId.value, {
+              fingerX,
+              turnProgress: gestureProgress.value,
+            });
+          } else {
+            const accepted = beginNativePagerGestureOnUI(nativePagerId.value, {
+              direction,
+              startBookX,
+              fingerX,
+              turnProgress: gestureProgress.value,
+            });
+            if (accepted === true) {
+              nativeGestureActive.value = true;
+              scheduleOnRN(markNativeGestureAccepted, gestureToken.value);
+            }
+          }
+        }
         scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
       })
       .onEnd((event) => {
@@ -689,16 +934,43 @@ export function useReaderPageTurn({
         );
         gestureHeldRollTilt.value = heldRollTilt;
         gesturePressedEdgeX.value = gesturePressedChordForFingerX(fingerX, heldRollTilt);
+        let nativeReleased = false;
+        if (nativeGestureActive.value) {
+          updateNativePagerGestureOnUI(nativePagerId.value, {
+            fingerX,
+            turnProgress: gestureProgress.value,
+          });
+          const throwVelocity = Math.max(
+            0,
+            (direction === 1 ? -event.velocityX : event.velocityX) / Math.max(1, viewportWidth),
+          );
+          nativeReleased = endNativePagerGestureOnUI(nativePagerId.value, {
+            fingerX,
+            throwVelocity,
+            throwAcceleration: 0,
+            pageWeight: 1,
+            commitThreshold: 0.5,
+            slowCommitEdgeX: 0,
+            minimumSpeedScale: NATIVE_GESTURE_MINIMUM_SPEED_SCALE,
+            maximumSpeedScale: NATIVE_GESTURE_MAXIMUM_SPEED_SCALE,
+            velocityGain: NATIVE_GESTURE_VELOCITY_GAIN,
+            idleDecaySeconds: NATIVE_GESTURE_IDLE_DECAY_SECONDS,
+          }) === true;
+          nativeGestureActive.value = false;
+        }
         gestureStarted.value = false;
         gestureDirectionLocked.value = false;
-        scheduleOnRN(endDrag, event.velocityX, event.translationX);
+        scheduleOnRN(endDrag, event.velocityX, event.translationX, nativeReleased);
       })
       .onFinalize(() => {
         'worklet';
         if (gestureStarted.value) {
+          const nativeCancelled = nativeGestureActive.value
+            && cancelNativePagerGestureOnUI(nativePagerId.value) === true;
+          nativeGestureActive.value = false;
           gestureStarted.value = false;
           gestureDirectionLocked.value = false;
-          scheduleOnRN(endDrag, 0, Number.NaN);
+          scheduleOnRN(endDrag, 0, Number.NaN, nativeCancelled);
         }
       }),
     [
@@ -708,12 +980,19 @@ export function useReaderPageTurn({
       gestureDirectionLocked,
       gestureGrabY,
       gestureHeldRollTilt,
+      gestureToken,
       gesturePressedEdgeX,
       gestureProgress,
       gestureStartBookX,
       gestureStartX,
       gestureStarted,
       gestureBlocked,
+      markNativeGestureAccepted,
+      nativeGestureActive,
+      nativeGestureEnabled,
+      nativePagerId,
+      nativePagerInputReady,
+      nativeStockedGestureToken,
       spreadMode,
       surfaceTop,
       updateDrag,
@@ -834,6 +1113,17 @@ export function useReaderPageTurn({
     () => enqueueAutomaticNavigation(-1),
     [enqueueAutomaticNavigation],
   );
+  const surfaceBinding = useMemo<ReaderPageTurnSurfaceBinding>(() => ({
+    nativeId: nativePagerId,
+    inputReady: nativePagerInputReady,
+    stockedGestureToken: nativeStockedGestureToken,
+    onNativeEvent: handleNativeGestureEvent,
+  }), [
+    handleNativeGestureEvent,
+    nativePagerId,
+    nativePagerInputReady,
+    nativeStockedGestureToken,
+  ]);
 
   useEffect(() => {
     const runtimeChanged = controllerRuntime.current !== runtime;
@@ -844,6 +1134,8 @@ export function useReaderPageTurn({
     automaticDirection.current = undefined;
     automaticPendingCount.current = 0;
     automaticTurnsRef.current = [];
+    nativeGestureHandoff.current = undefined;
+    nativeStockedGestureToken.set(0);
     if (runtimeChanged) {
       void Promise.resolve().then(() => {
         if (controllerRuntime.current !== runtime) return;
@@ -854,11 +1146,14 @@ export function useReaderPageTurn({
     return () => {
       automaticNavigationGeneration.current += 1;
       handoffGeneration.current += 1;
+      nativeGestureHandoff.current = undefined;
+      nativePagerInputReady.set(false);
+      nativeStockedGestureToken.set(0);
       const preparedTurn = dragState.current?.preparedTurn;
       dragState.current = undefined;
       if (preparedTurn) void runtime.cancelPreparedTurn(preparedTurn);
     };
-  }, [runtime]);
+  }, [nativePagerInputReady, nativeStockedGestureToken, runtime]);
 
   return {
     gesture,
@@ -866,6 +1161,7 @@ export function useReaderPageTurn({
     automaticTurns,
     automaticNavigationActive,
     isSettling,
+    surfaceBinding,
     completeAutomaticTurn,
     next,
     previous,

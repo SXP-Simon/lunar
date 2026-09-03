@@ -311,6 +311,22 @@ export function acknowledgeNativePagerPresentation(
   }
 }
 
+export function acknowledgeNativePagerPresentationById(
+  nativeId: number,
+  turnId: string,
+): boolean {
+  const acknowledgePresentation = nativePagerRnApi.acknowledgePresentation;
+  if (nativeId < 0 || !acknowledgePresentation || !turnId) {
+    return false;
+  }
+  try {
+    acknowledgePresentation(nativeId, turnId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function stockNativePagerPicture(
   canvas: NativePagerCanvasHandle | null,
   command: NativePagerStockPictureCommand,

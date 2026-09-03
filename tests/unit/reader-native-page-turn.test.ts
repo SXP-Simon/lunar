@@ -4,7 +4,10 @@ import {
   nativeAutomaticPageTurnBaseContent,
   nativeAutomaticPageTurnFaces,
   nativeAutomaticPageTurnId,
+  nativeInteractivePageTurnStockId,
+  nativeInteractivePageTurnBaseContent,
   readerAutomaticPageTurnId,
+  readerInteractivePageTurnIdentity,
 } from '../../src/reader/skia/anime/native-page-turn';
 import type {
   ReaderAutomaticTurn,
@@ -41,6 +44,51 @@ describe('reader native automatic page turn', () => {
     expect(readerAutomaticPageTurnId('lunar-automatic:0')).toBeUndefined();
     expect(readerAutomaticPageTurnId('lunar-automatic:1.5')).toBeUndefined();
     expect(readerAutomaticPageTurnId('lunar-automatic:text')).toBeUndefined();
+  });
+
+  it('round trips interactive stock and generated turn identifiers', () => {
+    const stockId = nativeInteractivePageTurnStockId(12, 34);
+
+    expect(stockId).toBe('lunar-interactive:12:34');
+    expect(readerInteractivePageTurnIdentity(stockId)).toEqual({
+      gestureToken: 12,
+      preparedTurnId: 34,
+    });
+    expect(readerInteractivePageTurnIdentity(`${stockId}#turn:5`)).toEqual({
+      gestureToken: 12,
+      preparedTurnId: 34,
+    });
+  });
+
+  it('rejects malformed interactive turn identifiers', () => {
+    expect(readerInteractivePageTurnIdentity('lunar-interactive:0:1')).toBeUndefined();
+    expect(readerInteractivePageTurnIdentity('lunar-interactive:1:0')).toBeUndefined();
+    expect(readerInteractivePageTurnIdentity('lunar-interactive:1')).toBeUndefined();
+    expect(readerInteractivePageTurnIdentity('lunar-interactive:1:2:3')).toBeUndefined();
+    expect(readerInteractivePageTurnIdentity('lunar-interactive:1:2#turn:text')).toBeUndefined();
+    expect(readerInteractivePageTurnIdentity('lunar-automatic:1')).toBeUndefined();
+  });
+
+  it('places the target below a consumed native gesture handoff', () => {
+    const source = { key: 'source' } as ReaderPageContent;
+    const target = { key: 'target' } as ReaderPageContent;
+    const gesture = {
+      token: 1,
+      preparedTurnId: 2,
+      driven: true,
+      settling: true,
+      consumed: false,
+    };
+
+    expect(nativeInteractivePageTurnBaseContent(source, target, gesture)).toBe(source);
+    expect(nativeInteractivePageTurnBaseContent(source, target, {
+      ...gesture,
+      consumed: true,
+    })).toBe(target);
+    expect(nativeInteractivePageTurnBaseContent(source, target, {
+      ...gesture,
+      driven: false,
+    })).toBeUndefined();
   });
 
   it('keeps the source below native animation until its first frame is presented', () => {

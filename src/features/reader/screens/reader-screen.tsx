@@ -60,6 +60,7 @@ export default function ReaderScreen() {
     automaticNavigationActive,
     isSettling,
     completeAutomaticTurn,
+    surfaceBinding: pageTurnSurfaceBinding,
     next,
     previous,
   } = useReaderPageTurn({
@@ -186,6 +187,7 @@ export default function ReaderScreen() {
           automaticTurns={automaticTurns}
           automaticNavigationActive={automaticNavigationActive}
           onAutomaticTurnComplete={completeAutomaticTurn}
+          pageTurnSurfaceBinding={pageTurnSurfaceBinding}
           chapterTitle={chapterTitle}
           progressLabel={`${progressText}${progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}`}
           overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}
