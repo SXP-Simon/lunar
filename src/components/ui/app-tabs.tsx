@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import {
   Tabs,
   TabList,
@@ -10,7 +9,6 @@ import {
 import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useUniwind } from 'uniwind';
 
 import { useTheme } from '@/hooks/use-theme';
 
@@ -69,9 +67,7 @@ function TabButton({ isFocused, label, type, ...props }: TabButtonProps) {
 
 function TabBar({ style, ...props }: TabListProps) {
   const insets = useSafeAreaInsets();
-  const { theme: currentTheme } = useUniwind();
   const theme = useTheme();
-  const isDark = currentTheme === 'dark';
 
   return (
     <View
@@ -81,15 +77,11 @@ function TabBar({ style, ...props }: TabListProps) {
         {
           height: AppTabBarHeight + insets.bottom,
           paddingBottom: insets.bottom,
+          backgroundColor: theme.surface,
           borderTopColor: theme.border,
         },
         style,
       ]}>
-      <BlurView
-        intensity={72}
-        tint={isDark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
-        style={[StyleSheet.absoluteFill, styles.blurLayer]}
-      />
       {props.children}
     </View>
   );
@@ -110,9 +102,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  blurLayer: {
-    overflow: 'hidden',
   },
   tabButton: {
     flex: 1,

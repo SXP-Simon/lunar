@@ -24,7 +24,7 @@ export function ReaderControls({
   return (
     <View className="absolute inset-0 overflow-hidden" pointerEvents="box-none">
       <View
-        className="w-full self-stretch overflow-hidden border-b border-border bg-surface/95 pb-2"
+        className="w-full self-stretch overflow-hidden border-b-0 bg-reader-controls pb-2 dark:border-b dark:border-border"
         style={{
           paddingTop: insets.top,
           paddingLeft: Math.max(insets.left, ControlHorizontalPadding),
