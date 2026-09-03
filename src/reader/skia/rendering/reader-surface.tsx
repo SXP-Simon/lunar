@@ -11,7 +11,7 @@ import {
   type SkPicture,
   useCanvasSize,
 } from '@shopify/react-native-skia';
-import { PixelRatio, Platform, processColor, type StyleProp, type ViewStyle } from 'react-native';
+import { PixelRatio, processColor, type StyleProp, type ViewStyle } from 'react-native';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import {
@@ -416,7 +416,6 @@ export function ReaderSurface({
       accessible={false}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      opaque={Platform.OS === 'android'}
       pointerEvents="none"
       ref={ref}
       style={style}>
