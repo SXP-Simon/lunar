@@ -28,13 +28,13 @@ export {
   postHingeTurnProgressForFingerX,
   shouldCommitTurn,
   visualTurnProgressForFingerX,
-} from './skia/anime/page-turn-gesture';
+} from './skia/anime/gesture/page-turn-gesture';
 export {
   useReaderPageTurn,
   type ReaderPageTurnController,
   type ReaderPageTurnSurfaceBinding,
   type UseReaderPageTurnOptions,
-} from './skia/anime/use-reader-page-turn';
+} from './skia/anime/controller/use-reader-page-turn';
 export { createReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export type { ReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export { resolveReaderRangeOverlays, resolveReaderSearchOverlays } from './skia/rendering/overlay-renderer';

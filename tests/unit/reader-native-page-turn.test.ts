@@ -8,11 +8,11 @@ import {
   nativeInteractivePageTurnBaseContent,
   readerAutomaticPageTurnId,
   readerInteractivePageTurnIdentity,
-} from '../../src/reader/skia/anime/native-page-turn';
+} from '../../src/reader/skia/anime/native/page-turn';
 import type {
   ReaderAutomaticTurn,
   ReaderPageContent,
-} from '../../src/reader/skia/anime/page-transition';
+} from '../../src/reader/skia/anime/core/page-turn-types';
 
 function turn(direction: 1 | -1): ReaderAutomaticTurn {
   return {

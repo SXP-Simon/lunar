@@ -1,0 +1,545 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { PanGesture } from 'react-native-gesture-handler';
+
+import type { ReaderSnapshot, ReaderSpreadMode, ReaderViewport } from '../../../contracts';
+import type {
+  LunarReaderRuntime,
+  ReaderPreparedTurn,
+} from '../../../runtime/core/native-reader-runtime';
+import { readerDiagnostic } from '../../../runtime/core/performance';
+import {
+  acknowledgeNativePagerPresentationById,
+  type NativePagerEventRecord,
+} from '../native/pager-compositor';
+import { readerInteractivePageTurnIdentity } from '../native/page-turn';
+import {
+  anchoredGestureFingerX,
+  bookXForGestureTravel,
+  gestureLiftRotationForFingerX,
+  gesturePressedChordForFingerX,
+  pageTurnStartBookXForTouch,
+  pageTurnRenderProgress,
+  planarTurnProgressForTranslation,
+} from '../gesture/page-turn-gesture';
+import {
+  describePreparedTarget,
+  describeSnapshotIdentity,
+  formatTraceNumber,
+} from '../core/page-content';
+import type {
+  ReaderInteractiveTurn,
+  ReaderPageAnimationStyle,
+  ReaderPageContent,
+} from '../core/page-turn-types';
+import type { ReaderPageTurnSurfaceBinding } from '../native/page-turn-binding';
+import {
+  usePageTurnGestureValues,
+  usePageTurnPanGesture,
+} from '../gesture/use-page-turn-pan-gesture';
+import type {
+  ReaderCommittedHandoff,
+  ReaderDragState,
+  ReaderNativeGestureHandoff,
+} from './interactive-page-turn-state';
+import { usePageTurnRelease } from './use-page-turn-release';
+
+interface InteractivePageTurnOptions {
+  readonly runtime: LunarReaderRuntime;
+  readonly snapshot: ReaderSnapshot;
+  readonly viewport?: ReaderViewport;
+  readonly animationStyle: ReaderPageAnimationStyle;
+  readonly animationDuration: number;
+  readonly spreadMode: ReaderSpreadMode;
+  readonly automaticNavigationActive: boolean;
+  /** Vertical viewport offset of the reader surface, used with absolute gesture coordinates. */
+  readonly surfaceTop: number;
+}
+
+interface InteractivePageTurnController {
+  readonly gesture: PanGesture;
+  readonly interactiveTurn?: ReaderInteractiveTurn;
+  readonly isSettling: boolean;
+  readonly surfaceBinding: ReaderPageTurnSurfaceBinding;
+  readonly prepareForAutomaticNavigation: () => Promise<void>;
+}
+
+export function useInteractivePageTurn({
+  runtime,
+  snapshot,
+  viewport,
+  animationStyle,
+  animationDuration,
+  spreadMode,
+  automaticNavigationActive,
+  surfaceTop,
+}: InteractivePageTurnOptions): InteractivePageTurnController {
+  const dragState = useRef<ReaderDragState | undefined>(undefined);
+  const turnSequence = useRef(0);
+  const activeTurnId = useRef<number | undefined>(undefined);
+  const handoffGeneration = useRef(0);
+  const nativeGestureHandoff = useRef<ReaderNativeGestureHandoff | undefined>(undefined);
+  const gestureValues = usePageTurnGestureValues();
+  const {
+    grabY: gestureGrabY,
+    heldRollTilt: gestureHeldRollTilt,
+    nativeInputReady: nativePagerInputReady,
+    nativePagerId,
+    nativeStockedToken: nativeStockedGestureToken,
+    pressedEdgeX: gesturePressedEdgeX,
+    progress: gestureProgress,
+  } = gestureValues;
+  const [interactiveTurn, setInteractiveTurn] = useState<ReaderInteractiveTurn>();
+  const [committedHandoff, setCommittedHandoff] = useState<ReaderCommittedHandoff>();
+  const isReady = snapshot.phase === 'ready';
+  const uiSnapshotIdentity = describeSnapshotIdentity(snapshot);
+
+  const prepareForAutomaticNavigation = useCallback(async () => {
+    handoffGeneration.current += 1;
+    const preparedTurn = dragState.current?.preparedTurn;
+    dragState.current = undefined;
+    activeTurnId.current = undefined;
+    setCommittedHandoff(undefined);
+    setInteractiveTurn(undefined);
+    if (preparedTurn) await runtime.cancelPreparedTurn(preparedTurn);
+  }, [runtime]);
+  useEffect(() => {
+    if (!committedHandoff) return;
+    if (handoffGeneration.current !== committedHandoff.generation) return;
+    if (
+      snapshot.revisionId !== committedHandoff.revisionId
+      || snapshot.spreadIndex !== committedHandoff.spreadIndex
+      || snapshot.renderId !== committedHandoff.renderId
+    ) {
+      return;
+    }
+
+    readerDiagnostic(
+      'turn.handoff.snapshot-ready',
+      `turn=${committedHandoff.turnId} ui=${uiSnapshotIdentity} generation=${committedHandoff.generation}`,
+    );
+    if (committedHandoff.nativeTurnId) {
+      acknowledgeNativePagerPresentationById(
+        nativePagerId.value,
+        committedHandoff.nativeTurnId,
+      );
+    }
+    // Keep the completed interactive picture mounted until the subscribed
+    // React snapshot identifies the same target. The runtime snapshot may be
+    // ahead of its subscriber during a fast release. One additional frame
+    // lets the target Canvas tree commit before the interactive layer leaves.
+    const frame = requestAnimationFrame(() => {
+      if (handoffGeneration.current !== committedHandoff.generation) return;
+      readerDiagnostic(
+        'turn.handoff.clear',
+        `turn=${committedHandoff.turnId} ui=${uiSnapshotIdentity} generation=${committedHandoff.generation}`,
+      );
+      activeTurnId.current = undefined;
+      setCommittedHandoff(undefined);
+      setInteractiveTurn(undefined);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [committedHandoff, nativePagerId, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex, uiSnapshotIdentity]);
+
+  useEffect(() => {
+    if (!interactiveTurn && !committedHandoff) return;
+    readerDiagnostic(
+      'turn.ui.snapshot',
+      [
+        `turn=${committedHandoff?.turnId ?? activeTurnId.current ?? 'none'}`,
+        `ui=${uiSnapshotIdentity}`,
+        `target=${interactiveTurn ? describeSnapshotIdentity(interactiveTurn.content.snapshot) : 'none'}`,
+        `settling=${String(interactiveTurn?.settling === true)}`,
+        `handoff=${String(Boolean(committedHandoff))}`,
+      ].join(' '),
+    );
+  }, [committedHandoff, interactiveTurn, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex, uiSnapshotIdentity]);
+
+  const beginDrag = useCallback((
+    startX: number,
+    startY: number,
+    nativeToken: number,
+  ) => {
+    if (!isReady || !viewport || interactiveTurn?.settling || automaticNavigationActive) return;
+    const turnId = ++turnSequence.current;
+    activeTurnId.current = turnId;
+    handoffGeneration.current += 1;
+    dragState.current = {
+      id: turnId,
+      nativeGestureToken: nativeToken,
+      revisionId: snapshot.revisionId,
+      startSpread: snapshot.spreadIndex,
+      startX,
+      direction: 1,
+      directionLocked: false,
+      startBookX: 1,
+      physicalProgress: 0,
+      renderProgress: 0,
+      grabX: Math.min(viewport.width, Math.max(0, startX)),
+      grabY: startY,
+      fingerX: 1,
+      pressedEdgeX: 1,
+      heldRollTilt: 0,
+      throwVelocity: 0,
+      throwAcceleration: 0,
+      preparing: false,
+      prepared: false,
+    };
+    nativeGestureHandoff.current = undefined;
+    readerDiagnostic(
+      'turn.gesture.begin',
+      `turn=${turnId} source=${describeSnapshotIdentity(snapshot)} x=${formatTraceNumber(startX)} y=${formatTraceNumber(startY)}`,
+    );
+  }, [automaticNavigationActive, interactiveTurn?.settling, isReady, snapshot, viewport]);
+
+  const showPreparedTurn = useCallback((
+    state: ReaderDragState,
+    preparedTurn: ReaderPreparedTurn,
+  ): boolean => {
+    if (runtime.getSnapshot().revisionId !== preparedTurn.revisionId) {
+      readerDiagnostic(
+        'turn.target.reject',
+        `turn=${state.id} prepared=${preparedTurn.id} reason=revision runtime=${describeSnapshotIdentity(runtime.getSnapshot())} expectedRevision=${preparedTurn.revisionId}`,
+      );
+      return false;
+    }
+    state.preparedTurn = preparedTurn;
+    const targetPicture = runtime.getCurrentPicture(
+      preparedTurn.revisionId,
+      preparedTurn.targetSpreadIndex,
+      preparedTurn.targetRenderId,
+    );
+    const targetFrame = runtime.getCurrentFrame(preparedTurn.targetSpreadIndex);
+    if (!targetPicture || !targetFrame) {
+      if (!state.targetUnavailableLogged) {
+        state.targetUnavailableLogged = true;
+        readerDiagnostic(
+          'turn.target.unavailable',
+          `turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)} picture=${String(Boolean(targetPicture))} frame=${String(Boolean(targetFrame))}`,
+        );
+      }
+      return false;
+    }
+    state.preparing = false;
+    state.prepared = true;
+    readerDiagnostic(
+      'turn.target.mount',
+      `turn=${state.id} prepared=${preparedTurn.id} sourceSpread=${preparedTurn.sourceSnapshotSpreadIndex} target=${describePreparedTarget(preparedTurn)} progress=${formatTraceNumber(state.renderProgress)}`,
+    );
+    setInteractiveTurn({
+      content: {
+        key: `${preparedTurn.revisionId}:${preparedTurn.targetSpreadIndex}:${preparedTurn.targetRenderId}:drag`,
+        snapshot: {
+          ...snapshot,
+          spreadIndex: preparedTurn.targetSpreadIndex,
+          renderId: preparedTurn.targetRenderId,
+        },
+        picture: targetPicture,
+        frame: targetFrame,
+      } satisfies ReaderPageContent,
+      direction: state.direction,
+      progress: state.renderProgress,
+      progressValue: gestureProgress,
+      grabX: state.grabX,
+      grabY: state.grabY,
+      grabYValue: gestureGrabY,
+      pressedEdgeX: state.pressedEdgeX,
+      pressedEdgeXValue: gesturePressedEdgeX,
+      heldRollTilt: state.heldRollTilt,
+      heldRollTiltValue: gestureHeldRollTilt,
+      fingerX: state.fingerX,
+      throwVelocity: state.throwVelocity,
+      throwAcceleration: state.throwAcceleration,
+      nativeGesture: {
+        token: state.nativeGestureToken,
+        preparedTurnId: preparedTurn.id,
+        driven: false,
+        settling: false,
+        consumed: false,
+      },
+    });
+    return true;
+  }, [
+    gestureGrabY,
+    gestureHeldRollTilt,
+    gesturePressedEdgeX,
+    gestureProgress,
+    runtime,
+    snapshot,
+  ]);
+
+  const updateDrag = useCallback((translationX: number, absoluteY: number, velocityX: number) => {
+    const state = dragState.current;
+    if (!state || !viewport || !isReady) return;
+    if (!state.directionLocked) {
+      if (Math.abs(translationX) < 2) return;
+      state.direction = translationX < 0 ? 1 : -1;
+      state.directionLocked = true;
+      readerDiagnostic(
+        'turn.gesture.direction',
+        `turn=${state.id} direction=${state.direction > 0 ? 'next' : 'previous'} translationX=${formatTraceNumber(translationX)}`,
+      );
+    }
+
+    const direction = state.direction;
+    state.startBookX = pageTurnStartBookXForTouch(state.startX, direction, viewport.width);
+    const currentBookX = bookXForGestureTravel(
+      state.startBookX,
+      translationX,
+      direction,
+      viewport.width,
+    );
+    state.fingerX = anchoredGestureFingerX(state.startBookX, currentBookX);
+    state.heldRollTilt = gestureLiftRotationForFingerX(state.fingerX);
+    state.pressedEdgeX = gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
+    state.physicalProgress = planarTurnProgressForTranslation(translationX, viewport.width);
+    state.renderProgress = pageTurnRenderProgress(
+      state.physicalProgress,
+      direction,
+      spreadMode,
+    );
+    const instantaneousThrowVelocity = Math.max(
+      0,
+      (direction === 1 ? -velocityX : velocityX) / Math.max(1, viewport.width),
+    );
+    state.throwAcceleration = Math.max(
+      0,
+      (instantaneousThrowVelocity - state.throwVelocity) * 60,
+    );
+    state.throwVelocity += (instantaneousThrowVelocity - state.throwVelocity) * 0.35;
+    state.grabY = Math.min(viewport.height, Math.max(0, absoluteY - surfaceTop));
+
+    if (state.preparedTurn && !state.prepared) {
+      showPreparedTurn(state, state.preparedTurn);
+      return;
+    }
+
+    if (!state.preparing && !state.prepared) {
+      state.preparing = true;
+      const turnDirection = direction > 0 ? 'next' : 'previous';
+      readerDiagnostic(
+        'turn.prepare.begin',
+        `turn=${state.id} direction=${turnDirection} sourceRevision=${state.revisionId} sourceSpread=${state.startSpread}`,
+      );
+      const preparation = runtime.prepareAdjacent(turnDirection);
+      state.preparation = preparation;
+      void preparation.then((preparedTurn) => {
+        const current = dragState.current;
+        if (
+          !current
+          || current !== state
+          || current.revisionId !== state.revisionId
+          || current.direction !== direction
+          || runtime.getSnapshot().revisionId !== state.revisionId
+        ) {
+          readerDiagnostic(
+            'turn.prepare.stale',
+            `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} activeTurn=${current?.id ?? 'none'} runtime=${describeSnapshotIdentity(runtime.getSnapshot())}`,
+          );
+          if (preparedTurn) void runtime.cancelPreparedTurn(preparedTurn);
+          return;
+        }
+        current.preparation = undefined;
+        if (preparedTurn) current.preparedTurn = preparedTurn;
+        readerDiagnostic(
+          preparedTurn ? 'turn.prepare.ready' : 'turn.prepare.empty',
+          preparedTurn
+            ? `turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)}`
+            : `turn=${state.id} direction=${turnDirection} runtime=${describeSnapshotIdentity(runtime.getSnapshot())}`,
+        );
+        if (!preparedTurn || !showPreparedTurn(current, preparedTurn)) {
+          current.preparing = false;
+        }
+      });
+    }
+  }, [
+    isReady,
+    runtime,
+    showPreparedTurn,
+    spreadMode,
+    surfaceTop,
+    viewport,
+  ]);
+
+  const markNativeGestureAccepted = useCallback((nativeToken: number) => {
+    const state = dragState.current;
+    if (
+      !state
+      || state.nativeGestureToken !== nativeToken
+      || !state.preparedTurn
+      || !state.prepared
+    ) {
+      return;
+    }
+    const preparedTurn = state.preparedTurn;
+    nativeGestureHandoff.current = {
+      gestureToken: nativeToken,
+      preparedTurn,
+      generation: ++handoffGeneration.current,
+      terminalEventHandled: false,
+    };
+    setInteractiveTurn((turn) => turn?.nativeGesture?.token === nativeToken
+      ? {
+          ...turn,
+          nativeGesture: {
+            ...turn.nativeGesture,
+            driven: true,
+          },
+        }
+      : turn);
+  }, []);
+
+  const handleNativeGestureEvent = useCallback((event: NativePagerEventRecord) => {
+    const identity = readerInteractivePageTurnIdentity(event.id);
+    if (!identity) return;
+    const handoff = nativeGestureHandoff.current;
+    if (
+      !handoff
+      || handoff.gestureToken !== identity.gestureToken
+      || handoff.preparedTurn.id !== identity.preparedTurnId
+      || handoff.generation !== handoffGeneration.current
+    ) {
+      return;
+    }
+    readerDiagnostic(
+      'turn.native.event',
+      `turn=${identity.gestureToken} prepared=${identity.preparedTurnId} event=${event.event} native=${event.id}`,
+    );
+    if (event.event === 'consumed' && !handoff.commit) {
+      setInteractiveTurn((turn) => turn?.nativeGesture?.token === identity.gestureToken
+        ? {
+            ...turn,
+            nativeGesture: {
+              ...turn.nativeGesture,
+              consumed: true,
+            },
+          }
+        : turn);
+      handoff.commit = runtime.commitPreparedTurn(handoff.preparedTurn);
+      return;
+    }
+    if (
+      handoff.terminalEventHandled
+      || (event.event !== 'completed' && event.event !== 'cancelled')
+    ) {
+      return;
+    }
+    handoff.terminalEventHandled = true;
+    if (event.event === 'cancelled') {
+      void runtime.cancelPreparedTurn(handoff.preparedTurn)
+        .catch(() => undefined)
+        .then(waitForPageHandoffFrames)
+        .then(() => {
+          if (nativeGestureHandoff.current !== handoff) return;
+          nativeGestureHandoff.current = undefined;
+          activeTurnId.current = undefined;
+          setInteractiveTurn(undefined);
+        });
+      return;
+    }
+
+    const commit = handoff.commit
+      ?? runtime.commitPreparedTurn(handoff.preparedTurn);
+    handoff.commit = commit;
+    void commit.then((result) => {
+      if (nativeGestureHandoff.current !== handoff) return;
+      const preparedTurn = handoff.preparedTurn;
+      if (
+        result.revisionId !== preparedTurn.revisionId
+        || result.spreadIndex !== preparedTurn.targetSpreadIndex
+        || result.renderId !== preparedTurn.targetRenderId
+      ) {
+        nativeGestureHandoff.current = undefined;
+        activeTurnId.current = undefined;
+        setInteractiveTurn(undefined);
+        return;
+      }
+      nativeGestureHandoff.current = undefined;
+      setCommittedHandoff({
+        turnId: identity.gestureToken,
+        generation: handoff.generation,
+        revisionId: preparedTurn.revisionId,
+        spreadIndex: preparedTurn.targetSpreadIndex,
+        renderId: preparedTurn.targetRenderId,
+        nativeTurnId: event.id,
+      });
+    }).catch(() => {
+      if (nativeGestureHandoff.current !== handoff) return;
+      nativeGestureHandoff.current = undefined;
+      activeTurnId.current = undefined;
+      setInteractiveTurn(undefined);
+    });
+  }, [runtime]);
+
+  const endDrag = usePageTurnRelease({
+    activeTurnIdRef: activeTurnId,
+    animationDuration,
+    animationStyle,
+    dragStateRef: dragState,
+    gestureValues,
+    handoffGenerationRef: handoffGeneration,
+    interactiveTurn,
+    nativeGestureHandoffRef: nativeGestureHandoff,
+    runtime,
+    setCommittedHandoff,
+    setInteractiveTurn,
+    spreadMode,
+    viewport,
+  });
+
+  const isSettling = interactiveTurn?.settling === true
+    || interactiveTurn?.nativeGesture?.settling === true;
+  const gesture = usePageTurnPanGesture({
+    animationStyle,
+    automaticNavigationActive,
+    beginDrag,
+    endDrag,
+    isSettling,
+    markNativeGestureAccepted,
+    spreadMode,
+    surfaceTop,
+    updateDrag,
+    values: gestureValues,
+    viewport,
+  });
+
+  const surfaceBinding = useMemo<ReaderPageTurnSurfaceBinding>(() => ({
+    nativeId: nativePagerId,
+    inputReady: nativePagerInputReady,
+    stockedGestureToken: nativeStockedGestureToken,
+    onNativeEvent: handleNativeGestureEvent,
+  }), [
+    handleNativeGestureEvent,
+    nativePagerId,
+    nativePagerInputReady,
+    nativeStockedGestureToken,
+  ]);
+
+  useEffect(() => {
+    nativeGestureHandoff.current = undefined;
+    nativeStockedGestureToken.set(0);
+    return () => {
+      handoffGeneration.current += 1;
+      nativeGestureHandoff.current = undefined;
+      nativePagerInputReady.set(false);
+      nativeStockedGestureToken.set(0);
+      const preparedTurn = dragState.current?.preparedTurn;
+      dragState.current = undefined;
+      if (preparedTurn) void runtime.cancelPreparedTurn(preparedTurn);
+    };
+  }, [nativePagerInputReady, nativeStockedGestureToken, runtime]);
+
+  return {
+    gesture,
+    interactiveTurn,
+    isSettling,
+    surfaceBinding,
+    prepareForAutomaticNavigation,
+  };
+}
+
+/** Allow the committed page to reach React's subscriber and the Skia canvas. */
+function waitForPageHandoffFrames(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}

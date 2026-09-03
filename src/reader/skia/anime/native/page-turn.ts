@@ -2,7 +2,7 @@ import type {
   ReaderAutomaticTurn,
   ReaderNativeGestureState,
   ReaderPageContent,
-} from './page-transition';
+} from '../core/page-turn-types';
 
 const NATIVE_TURN_ID_PREFIX = 'lunar-automatic:';
 const NATIVE_INTERACTIVE_TURN_ID_PREFIX = 'lunar-interactive:';

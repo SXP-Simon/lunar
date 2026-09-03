@@ -19,17 +19,17 @@ import {
 } from 'react-native-reanimated';
 import { runOnUI, scheduleOnRN } from 'react-native-worklets';
 
-import type { CompiledReaderPicture } from '../../rendering/picture-compiler';
+import type { CompiledReaderPicture } from '../../../rendering/picture-compiler';
 import {
   automaticSinglePreviousCurlProgress,
   singlePreviousCurlProgress,
   singlePreviousCurlRevealProgress,
-} from '../page-turn-gesture';
+} from '../../gesture/page-turn-gesture';
 import {
   createAutomaticCurlProfile,
   createGestureCurlProfile,
   createIncomingCurlProfile,
-} from './curl-geometry';
+} from './geometry';
 
 /**
  * Continuous page surface adapted from react-native-natural-page-turn.

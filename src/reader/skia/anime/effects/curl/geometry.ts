@@ -3,7 +3,10 @@ import {
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
   postHingeTurnProgressForFingerX,
-} from '../page-turn-gesture';
+} from '../../gesture/page-turn-gesture';
+import { AUTOMATIC_PAGE_TURN_DURATION_MS } from '../../core/page-turn-timing';
+
+export { AUTOMATIC_PAGE_TURN_DURATION_MS } from '../../core/page-turn-timing';
 
 const CURVATURE_RELAXATION = 7;
 // Inverse J0 over chord lengths [0.035, 1]. This is the reference worklet's
@@ -19,11 +22,6 @@ const AUTOMATIC_RELEASE_X = 0.9;
 const AUTOMATIC_CURVATURE_RELAXATION = 10;
 const AUTOMATIC_REVERSE_RELEASE_X = 0.4;
 const AUTOMATIC_PRESS_DURATION_MS = 120;
-const AUTOMATIC_PROPAGATION_SPEED = 0.5 * 4 * 1.15;
-export const AUTOMATIC_PAGE_TURN_DURATION_MS = Math.ceil(
-  AUTOMATIC_PRESS_DURATION_MS
-    + ((AUTOMATIC_RELEASE_X + 1) / AUTOMATIC_PROPAGATION_SPEED) * 1000,
-);
 
 export interface GestureCurlProfile {
   readonly amplitude: number;

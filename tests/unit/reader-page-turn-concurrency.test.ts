@@ -5,11 +5,11 @@ import {
   AUTOMATIC_PAGE_TURN_START_INTERVAL_MS,
   appendAutomaticPageTurn,
   automaticPageTurnPaintOrder,
-} from '../../src/reader/skia/anime/page-turn-concurrency';
+} from '../../src/reader/skia/anime/core/page-turn-concurrency';
 import type {
   ReaderAutomaticTurn,
   ReaderPageContent,
-} from '../../src/reader/skia/anime/page-transition';
+} from '../../src/reader/skia/anime/core/page-turn-types';
 
 function turn(id: number, direction: 1 | -1 = 1): ReaderAutomaticTurn {
   const content = {} as ReaderPageContent;

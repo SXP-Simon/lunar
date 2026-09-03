@@ -31,7 +31,7 @@ import {
   getReaderPageTurnDuration,
   nativeAutomaticPageTurnBaseContent,
   nativeInteractivePageTurnBaseContent,
-  useNativeAutomaticPageTurns,
+  useNativePageTurns,
   useReaderPageTransition,
   usePageCurlTexture,
   type ReaderAutomaticTurn,
@@ -224,7 +224,7 @@ export function ReaderSurface({
     viewport.height,
     viewport.width,
   ]);
-  const nativeAutomaticPageTurnState = useNativeAutomaticPageTurns({
+  const nativeAutomaticPageTurnState = useNativePageTurns({
     canvasRef: ref,
     enabled: resolvedAnimationStyle === 'page'
       && spreadMode === 'single'

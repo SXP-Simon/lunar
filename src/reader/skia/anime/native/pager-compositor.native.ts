@@ -15,7 +15,7 @@ import type {
   NativePagerPictureTurnCommand,
   NativePagerStockPictureCommand,
   NativePagerTurnCommand,
-} from "./native-pager-compositor";
+} from "./pager-compositor";
 
 interface NativePagerSkiaViewApi {
   pagerProtocolVersion?: () => number;

@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest';
 import {
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
-} from '../../src/reader/skia/anime/page-turn-gesture';
+} from '../../src/reader/skia/anime/gesture/page-turn-gesture';
 import {
   AUTOMATIC_PAGE_TURN_DURATION_MS,
   bendAmplitudeForChord,
   createAutomaticCurlProfile,
   createGestureCurlProfile,
-} from '../../src/reader/skia/anime/effect/curl-geometry';
+} from '../../src/reader/skia/anime/effects/curl/geometry';
 
 function profile(
   progress: number,

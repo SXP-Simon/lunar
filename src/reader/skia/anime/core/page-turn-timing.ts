@@ -1,6 +1,6 @@
-import type { ReaderPageAnimationStyle } from './page-transition';
-import { AUTOMATIC_PAGE_TURN_DURATION_MS } from './effect/curl-geometry';
+import type { ReaderPageAnimationStyle } from './page-turn-types';
 
+export const AUTOMATIC_PAGE_TURN_DURATION_MS = 947;
 export const PAGE_TURN_DURATION_MS = AUTOMATIC_PAGE_TURN_DURATION_MS;
 export const PAGE_TURN_GESTURE_SETTLE_DURATION_MS = 520;
 export const PAGE_TURN_REVERSE_DURATION_MS = 854;

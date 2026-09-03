@@ -1,4 +1,4 @@
-import type { ReaderAutomaticTurn } from './page-transition';
+import type { ReaderAutomaticTurn } from './page-turn-types';
 
 export const AUTOMATIC_PAGE_TURN_START_INTERVAL_MS = 100;
 export const AUTOMATIC_PAGE_TURN_MAX_LANES = 10;

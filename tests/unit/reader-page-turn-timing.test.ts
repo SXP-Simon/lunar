@@ -5,7 +5,7 @@ import {
   getReaderPageTurnSettleDuration,
   PAGE_TURN_DURATION_MS,
   resolveReaderPageAnimationStyle,
-} from '../../src/reader/skia/anime/page-turn-timing';
+} from '../../src/reader/skia/anime/core/page-turn-timing';
 
 describe('reader page turn timing', () => {
   it('keeps paper animations on their fixed duration', () => {

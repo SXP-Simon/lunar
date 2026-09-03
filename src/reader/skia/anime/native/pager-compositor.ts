@@ -122,4 +122,4 @@ export interface NativePagerGestureUpdate {
   readonly turnProgress: number;
 }
 
-export * from "./native-pager-compositor.native";
+export * from "./pager-compositor.native";

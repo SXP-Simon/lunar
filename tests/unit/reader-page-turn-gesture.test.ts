@@ -7,7 +7,7 @@ import {
   singlePreviousCurlProgress,
   singlePreviousCurlRevealProgress,
   shouldCommitPlanarTurn,
-} from '../../src/reader/skia/anime/page-turn-gesture';
+} from '../../src/reader/skia/anime/gesture/page-turn-gesture';
 
 describe('reader planar page turn gesture', () => {
   it('tracks the physical finger travel across the page', () => {

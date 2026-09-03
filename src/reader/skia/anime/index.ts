@@ -1,8 +1,9 @@
-export * from './page-transition';
-export * from './native-page-turn';
-export * from './page-turn-concurrency';
-export { PageCurlMesh, usePageCurlTexture } from './effect/curl';
-export * from './page-turn-gesture';
-export * from './page-turn-timing';
-export * from './use-native-automatic-page-turns';
-export * from './use-reader-page-turn';
+export * from './core/page-turn-types';
+export * from './core/page-turn-concurrency';
+export * from './core/page-turn-timing';
+export { PageCurlMesh, usePageCurlTexture } from './effects/curl';
+export * from './gesture/page-turn-gesture';
+export * from './native/page-turn';
+export * from './native/use-native-page-turns';
+export * from './controller/use-reader-page-transition';
+export * from './controller/use-reader-page-turn';

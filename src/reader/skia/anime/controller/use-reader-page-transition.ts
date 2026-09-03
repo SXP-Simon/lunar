@@ -1,110 +1,33 @@
-import type { Matrix4 } from '@shopify/react-native-skia';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
   cancelAnimation,
   Easing,
   useSharedValue,
   withTiming,
-  type DerivedValue,
-  type SharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import type { ReaderRenderFrame, ReaderSnapshot, ReaderSpreadMode } from '../../contracts';
-import type { CompiledReaderPicture } from '../rendering/picture-compiler';
-import { useCoverPageTransform } from './effect/cover';
-import { useSlidePageTransforms } from './effect/slide';
+import type { ReaderSpreadMode } from '../../../contracts';
+import { useCoverPageTransform } from '../effects/cover';
+import { useSlidePageTransforms } from '../effects/slide';
 import {
   getReaderPageTurnDuration,
   getReaderPageTurnHandoffProgress,
   getReaderPageTurnSettleDuration,
   resolveReaderPageAnimationStyle,
-} from './page-turn-timing';
-
-export type ReaderPageAnimationStyle =
-  | 'cover'
-  | 'page'
-  | 'slide'
-  | 'overlay'
-  | 'pageCurl'
-  | 'simulation';
-
-export const READER_PAGE_ANIMATION_STYLES: readonly ReaderPageAnimationStyle[] = [
-  'cover',
-  'page',
-  'slide',
-];
-
-export interface ReaderPageContent {
-  readonly key: string;
-  readonly snapshot: ReaderSnapshot;
-  readonly picture: CompiledReaderPicture;
-  readonly frame: ReaderRenderFrame;
-}
-
-export interface ReaderPageTransitionState {
-  readonly from: ReaderPageContent;
-  readonly toKey: string;
-  readonly direction: 1 | -1;
-}
-
-interface ReaderPageTransitionValues {
-  readonly transition?: ReaderPageTransitionState;
-  readonly visibleContent?: ReaderPageContent;
-  readonly style: 'cover' | 'page' | 'slide';
-  readonly coverMatrix: DerivedValue<Matrix4>;
-  readonly incomingSlideMatrix: DerivedValue<Matrix4>;
-  readonly outgoingSlideMatrix: DerivedValue<Matrix4>;
-  readonly progress: SharedValue<number> | DerivedValue<number>;
-  readonly grabX: number;
-  readonly grabY: number;
-}
+} from '../core/page-turn-timing';
+import type {
+  ReaderInteractiveTurn,
+  ReaderPageAnimationStyle,
+  ReaderPageContent,
+  ReaderPageTransitionState,
+  ReaderPageTransitionValues,
+} from '../core/page-turn-types';
 
 interface ReaderPageIdentity {
   readonly revisionId: number;
   readonly spreadIndex: number;
   readonly renderId?: number;
-}
-
-export interface ReaderInteractiveTurn {
-  readonly content: ReaderPageContent;
-  readonly direction: 1 | -1;
-  readonly progress: number;
-  /** Shared value updated by the gesture without a React render. */
-  readonly progressValue?: SharedValue<number>;
-  readonly grabX?: number;
-  readonly grabY?: number;
-  /** Signed release speed in page-widths per second; positive points toward the target. */
-  readonly releaseVelocity?: number;
-  /** Set while the finger release is being animated to its terminal pose. */
-  readonly settling?: boolean;
-  readonly settleTo?: 0 | 1;
-  /** Runs on the RN runtime after the UI timing animation reaches its target. */
-  readonly onSettleComplete?: () => void;
-  readonly pressedEdgeX?: number;
-  readonly pressedEdgeXValue?: SharedValue<number>;
-  readonly heldRollTilt?: number;
-  readonly heldRollTiltValue?: SharedValue<number>;
-  readonly grabYValue?: SharedValue<number>;
-  readonly fingerX?: number;
-  readonly throwVelocity?: number;
-  readonly throwAcceleration?: number;
-  readonly nativeGesture?: ReaderNativeGestureState;
-}
-
-export interface ReaderNativeGestureState {
-  readonly token: number;
-  readonly preparedTurnId: number;
-  readonly driven: boolean;
-  readonly settling: boolean;
-  readonly consumed: boolean;
-}
-
-export interface ReaderAutomaticTurn {
-  readonly id: number;
-  readonly from: ReaderPageContent;
-  readonly to: ReaderPageContent;
-  readonly direction: 1 | -1;
 }
 
 export function useReaderPageTransition(

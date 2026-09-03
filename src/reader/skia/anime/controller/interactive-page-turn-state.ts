@@ -1,0 +1,44 @@
+import type { ReaderSnapshot } from '../../../contracts';
+import type { ReaderPreparedTurn } from '../../../runtime/core/native-reader-runtime';
+
+export interface ReaderDragState {
+  readonly id: number;
+  readonly nativeGestureToken: number;
+  readonly revisionId: number;
+  readonly startSpread: number;
+  readonly startX: number;
+  direction: 1 | -1;
+  directionLocked: boolean;
+  startBookX: number;
+  physicalProgress: number;
+  renderProgress: number;
+  grabX: number;
+  grabY: number;
+  fingerX: number;
+  pressedEdgeX: number;
+  heldRollTilt: number;
+  throwVelocity: number;
+  throwAcceleration: number;
+  preparing: boolean;
+  prepared: boolean;
+  preparation?: Promise<ReaderPreparedTurn | undefined>;
+  preparedTurn?: ReaderPreparedTurn;
+  targetUnavailableLogged?: boolean;
+}
+
+export interface ReaderCommittedHandoff {
+  readonly turnId: number;
+  readonly generation: number;
+  readonly revisionId: number;
+  readonly spreadIndex: number;
+  readonly renderId: number;
+  readonly nativeTurnId?: string;
+}
+
+export interface ReaderNativeGestureHandoff {
+  readonly gestureToken: number;
+  readonly preparedTurn: ReaderPreparedTurn;
+  readonly generation: number;
+  commit?: Promise<ReaderSnapshot>;
+  terminalEventHandled: boolean;
+}
