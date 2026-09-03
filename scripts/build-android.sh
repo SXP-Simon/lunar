@@ -50,13 +50,13 @@ fi
 
 if command -v corepack >/dev/null 2>&1; then
   corepack enable
-  corepack prepare pnpm@10.32.0 --activate
+  corepack prepare pnpm@11.24.0 --activate
 elif ! command -v pnpm >/dev/null 2>&1; then
   if ! command -v npm >/dev/null 2>&1; then
     echo "pnpm or npm is required in the CNB build image." >&2
     exit 1
   fi
-  npm install --global pnpm@10.32.0
+  npm install --global pnpm@11.24.0
 fi
 
 pnpm install --frozen-lockfile

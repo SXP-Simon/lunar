@@ -2,6 +2,7 @@
   "name": "lunar",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "packageManager": "pnpm@11.24.0",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.14",
     "@expo/ui": "~57.0.14",
