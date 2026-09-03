@@ -10,6 +10,8 @@
 
 [MUST] 项目界面样式采用 Uniwind 与 HeroUI Native 语义变量。
 
+[MUST] 静态界面样式使用 Uniwind 的 `className` 声明，禁止调用 `StyleSheet.create`。
+
 [MUST] 新增第三方界面组件库须经过项目级审查。
 
 ## 通知

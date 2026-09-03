@@ -11,7 +11,6 @@ import {
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -26,11 +25,9 @@ import {
 import { BookCard, type LibraryBook } from '@/features/library/components/book-card';
 import { ImportingBookCard } from '@/features/library/components/importing-book-card';
 import {
-  LIBRARY_GRID_HORIZONTAL_PADDING,
-  LIBRARY_GRID_TOP_PADDING,
   LibraryGridSelectionSession,
 } from '@/features/library/components/library-grid-selection';
-import { Fonts, MaxContentWidth, Spacing, useTheme } from '@/hooks/use-theme';
+import { Spacing } from '@/hooks/use-theme';
 import {
   importEpubFile,
   listLibraryBooks,
@@ -64,9 +61,8 @@ export default function LibraryScreen() {
   );
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const importIconColor = useThemeColor('accent-foreground');
+  const [importIconColor, searchIconColor] = useThemeColor(['accent-foreground', 'muted']);
   const { toast } = useToast();
   const [gridSelectionSession] = useState(() => new LibraryGridSelectionSession());
   const gridContainerRef = useRef<View>(null);
@@ -345,26 +341,20 @@ export default function LibraryScreen() {
   }, [gridSelectionSession]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background }]}>
+    <View className="flex-1 bg-background">
       <View
-        style={[
-          styles.safeArea,
-          {
-            paddingTop: insets.top,
-            paddingLeft: insets.left,
-            paddingRight: insets.right,
-          },
-        ]}>
-        <View style={styles.page}>
-          <View style={styles.searchArea}>
+        className="flex-1"
+        style={{ paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
+        <View className="w-full max-w-[800px] flex-1 self-center">
+          <View className="flex-row items-center gap-2 px-4 pt-1 pb-2">
             <SearchField className="flex-1" value={query} onChange={setQuery}>
               <SearchField.Group className="h-9 rounded-3xl bg-field shadow-field">
-                <SearchField.SearchIcon iconProps={{ size: 20, color: theme.textSecondary }} />
+                <SearchField.SearchIcon iconProps={{ size: 20, color: searchIconColor }} />
                 <SearchField.Input
                   placeholder="搜索书名或作者"
                   accessibilityLabel="搜索书架"
-                  className="ios:focus:outline-transparent android:focus:border-transparent"
-                  style={styles.searchInput}
+                  className="h-9 min-h-9 rounded-3xl py-0 text-sm leading-5 ios:focus:outline-transparent android:focus:border-transparent"
+                  style={{ textAlignVertical: 'center', includeFontPadding: false }}
                 />
                 <SearchField.ClearButton accessibilityLabel="清空搜索" />
               </SearchField.Group>
@@ -393,7 +383,7 @@ export default function LibraryScreen() {
           <View
             ref={gridContainerRef}
             collapsable={false}
-            style={styles.gridContainer}
+            className="flex-1"
             onLayout={handleGridLayout}>
             <FlatList
               data={items}
@@ -404,17 +394,15 @@ export default function LibraryScreen() {
               onScroll={handleGridScroll}
               scrollEventThrottle={16}
               showsVerticalScrollIndicator={false}
-              columnWrapperStyle={styles.row}
-              contentContainerStyle={[
-                styles.grid,
-                {
-                  paddingBottom:
-                    APP_TAB_BAR_HEIGHT
-                    + insets.bottom
-                    + Spacing.four
-                    + (isSelectionMode ? SELECTION_TOOLBAR_HEIGHT + Spacing.two : 0),
-                },
-              ]}
+              columnWrapperClassName="items-start"
+              contentContainerClassName="px-[10px] pt-2"
+              contentContainerStyle={{
+                paddingBottom:
+                  APP_TAB_BAR_HEIGHT
+                  + insets.bottom
+                  + Spacing.four
+                  + (isSelectionMode ? SELECTION_TOOLBAR_HEIGHT + Spacing.two : 0),
+              }}
               renderItem={({ item }) => (
                 item.kind === 'importing' ? (
                   <ImportingBookCard
@@ -435,9 +423,9 @@ export default function LibraryScreen() {
                 )
               )}
               ListEmptyComponent={
-                <View style={styles.emptyState}>
+                <View className="items-center px-6 pt-20">
                   {isLoadingLibrary && <Spinner color="default" size="md" />}
-                  <Text style={[styles.emptyTitle, { color: theme.text }]}>
+                  <Text className="font-serif text-xl font-semibold text-foreground">
                     {isLoadingLibrary
                       ? '正在读取书架'
                       : query.trim()
@@ -445,7 +433,7 @@ export default function LibraryScreen() {
                         : '书架还是空的'}
                   </Text>
                   {!isLoadingLibrary && (
-                    <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
+                    <Text className="mt-2 text-[13px] text-muted">
                       {query.trim() ? '尝试搜索其他书名或作者' : '使用右上角的添加按钮导入 EPUB'}
                     </Text>
                   )}
@@ -499,61 +487,3 @@ function getErrorMessage(error: unknown): string {
 function fileNameWithoutExtension(fileName: string): string {
   return fileName.replace(/\.epub$/i, '') || fileName;
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  page: {
-    flex: 1,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-  },
-  gridContainer: {
-    flex: 1,
-  },
-  searchArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.one,
-    paddingBottom: Spacing.two,
-  },
-  searchInput: {
-    height: 36,
-    minHeight: 36,
-    borderRadius: 18,
-    paddingTop: 0,
-    paddingBottom: 0,
-    fontSize: 14,
-    lineHeight: 20,
-    textAlignVertical: 'center',
-    includeFontPadding: false,
-  },
-  grid: {
-    paddingHorizontal: LIBRARY_GRID_HORIZONTAL_PADDING,
-    paddingTop: LIBRARY_GRID_TOP_PADDING,
-  },
-  row: {
-    alignItems: 'flex-start',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingTop: 80,
-    paddingHorizontal: Spacing.four,
-  },
-  emptyTitle: {
-    fontFamily: Fonts.serif,
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  emptyBody: {
-    marginTop: 8,
-    fontSize: 13,
-  },
-});

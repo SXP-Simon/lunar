@@ -7,8 +7,9 @@ import {
   type TabTriggerSlotProps,
 } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResolveClassNames } from 'uniwind';
 
 import { useTheme } from '@/hooks/use-theme';
 
@@ -20,9 +21,12 @@ type TabButtonProps = TabTriggerSlotProps & {
 export const APP_TAB_BAR_HEIGHT = 58;
 
 export default function AppTabs() {
+  const tabsStyle = useResolveClassNames('flex-1');
+  const tabSlotStyle = useResolveClassNames('h-full');
+
   return (
-    <Tabs style={styles.tabs}>
-      <TabSlot style={styles.slot} />
+    <Tabs style={tabsStyle}>
+      <TabSlot style={tabSlotStyle} />
       <TabList asChild>
         <TabBar>
           <TabTrigger name="library" href="/" asChild>
@@ -39,6 +43,8 @@ export default function AppTabs() {
 
 function TabButton({ isFocused, label, type, ...props }: TabButtonProps) {
   const theme = useTheme();
+  const tabButtonStyle = useResolveClassNames('h-[58px] flex-1 items-center justify-center gap-0.5');
+  const pressedTabButtonStyle = useResolveClassNames('opacity-[0.58]');
   const color = isFocused ? theme.navigationActive : theme.textSecondary;
   const iconName =
     type === 'library'
@@ -58,64 +64,24 @@ function TabButton({ isFocused, label, type, ...props }: TabButtonProps) {
       {...props}
       accessibilityLabel={label}
       hitSlop={6}
-      style={({ pressed }) => [styles.tabButton, pressed && styles.tabButtonPressed]}>
+      style={({ pressed }) => [tabButtonStyle, pressed && pressedTabButtonStyle]}>
       <SymbolView name={iconName} size={24} tintColor={color} />
-      <Text style={[styles.tabLabel, { color }]}>{label}</Text>
+      <Text className={isFocused ? 'text-[10px] font-medium leading-[13px] text-accent' : 'text-[10px] font-medium leading-[13px] text-muted'}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
 function TabBar({ style, ...props }: TabListProps) {
   const insets = useSafeAreaInsets();
-  const theme = useTheme();
 
   return (
     <View
       {...props}
-      style={[
-        styles.tabBar,
-        {
-          height: APP_TAB_BAR_HEIGHT + insets.bottom,
-          paddingBottom: insets.bottom,
-          backgroundColor: theme.surface,
-          borderTopColor: theme.border,
-        },
-        style,
-      ]}>
+      className="absolute inset-x-0 bottom-0 flex-row items-start border-t border-border bg-surface"
+      style={[{ height: APP_TAB_BAR_HEIGHT + insets.bottom, paddingBottom: insets.bottom }, style]}>
       {props.children}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  tabs: {
-    flex: 1,
-  },
-  slot: {
-    height: '100%',
-  },
-  tabBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  tabButton: {
-    flex: 1,
-    height: APP_TAB_BAR_HEIGHT,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  tabButtonPressed: {
-    opacity: 0.58,
-  },
-  tabLabel: {
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: '500',
-  },
-});

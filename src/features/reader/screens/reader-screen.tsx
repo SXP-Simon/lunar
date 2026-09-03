@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Spinner } from 'heroui-native/spinner';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PixelRatio, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { PixelRatio, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import {
   SafeAreaListener,
@@ -12,7 +12,7 @@ import {
   type EdgeInsets,
   type SafeAreaListenerProps,
 } from 'react-native-safe-area-context';
-import { useUniwind } from 'uniwind';
+import { useResolveClassNames, useUniwind } from 'uniwind';
 
 import { IconTabBar } from '@/components/ui/icon-tab-bar';
 import type { ReaderViewport } from '@/reader';
@@ -35,6 +35,7 @@ export default function ReaderScreen() {
   const { toast } = useToast();
   const [reservedInsets, setReservedInsets] = useState(insets);
   const { theme } = useUniwind();
+  const absoluteFillStyle = useResolveClassNames('absolute inset-0');
   const [viewport, setViewport] = useState<ReaderViewport>();
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isTocOpen, setIsTocOpen] = useState(false);
@@ -184,11 +185,11 @@ export default function ReaderScreen() {
   }, [session.snapshot.phase]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: canvasBackground }]}>
+    <View className="flex-1" style={{ backgroundColor: canvasBackground }}>
       <SafeAreaListener
         onChange={handleSafeAreaChange}
         pointerEvents="none"
-        style={StyleSheet.absoluteFill}
+        style={absoluteFillStyle}
       />
       <StatusBar
         animated
@@ -202,7 +203,7 @@ export default function ReaderScreen() {
 
       <View
         onLayout={handleLayout}
-        style={StyleSheet.absoluteFill}>
+        className="absolute inset-0">
         <ReaderSurface
           runtime={session.runtime}
           snapshot={session.snapshot}
@@ -217,10 +218,10 @@ export default function ReaderScreen() {
           progressLabel={`${progressText}${progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}`}
           overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}
           overlayInsets={contentInsets}
-          style={StyleSheet.absoluteFill}
+          style={absoluteFillStyle}
         />
         <GestureDetector gesture={pageTurnGesture}>
-          <View collapsable={false} style={StyleSheet.absoluteFill}>
+          <View collapsable={false} className="absolute inset-0">
             <Pressable
               accessibilityLabel="阅读页面"
               accessibilityRole="adjustable"
@@ -231,7 +232,7 @@ export default function ReaderScreen() {
                 text: progressText,
               }}
               onPress={(event) => handleReadingPress(event.nativeEvent.locationX)}
-              style={StyleSheet.absoluteFill}
+              className="absolute inset-0"
             />
           </View>
         </GestureDetector>
@@ -294,12 +295,6 @@ export default function ReaderScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-});
 
 function preserveLargestInsets(current: EdgeInsets, next: EdgeInsets): EdgeInsets {
   const preserved = {

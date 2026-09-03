@@ -1,9 +1,7 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
-import { StyleSheet, View } from 'react-native';
-
-import { Spacing, useTheme } from '@/hooks/use-theme';
+import { View } from 'react-native';
 
 const MAX_ACTIONS_PER_ROW = 5;
 
@@ -27,25 +25,20 @@ export function FloatingActionToolbar({
   actions,
   bottom,
 }: FloatingActionToolbarProps) {
-  const theme = useTheme();
   const [foreground, danger] = useThemeColor(['foreground', 'danger']);
   const rows = chunkActions(actions);
 
   return (
-    <View pointerEvents="box-none" style={[styles.positioner, { bottom }]}>
+    <View
+      className="absolute inset-x-3 z-20 items-center"
+      pointerEvents="box-none"
+      style={{ bottom }}>
       <View
         accessibilityLabel={accessibilityLabel}
         accessibilityRole="toolbar"
-        style={[
-          styles.toolbar,
-          {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
-            shadowColor: theme.text,
-          },
-        ]}>
+        className="w-full max-w-[440px] rounded-[32px] border border-border bg-surface p-1">
         {rows.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.row}>
+          <View key={rowIndex} className="min-h-14 flex-row items-center">
             {row.map((action) => {
               const color = action.isDestructive ? danger : foreground;
               return (
@@ -57,14 +50,17 @@ export function FloatingActionToolbar({
                   onPress={action.onPress}
                   size="sm"
                   variant="ghost">
-                  <View style={styles.actionContent}>
+                  <View className="items-center justify-center gap-px">
                     <SymbolView name={action.icon} size={21} tintColor={color} />
                     <Button.Label
                       adjustsFontSizeToFit
-                      className="text-[11px] leading-4"
+                      className={
+                        action.isDestructive
+                          ? 'text-[11px] leading-4 text-danger'
+                          : 'text-[11px] leading-4 text-foreground'
+                      }
                       minimumFontScale={0.75}
-                      numberOfLines={1}
-                      style={{ color }}>
+                      numberOfLines={1}>
                       {action.label}
                     </Button.Label>
                   </View>
@@ -87,34 +83,3 @@ function chunkActions(
   }
   return rows;
 }
-
-const styles = StyleSheet.create({
-  positioner: {
-    position: 'absolute',
-    left: Spacing.three,
-    right: Spacing.three,
-    zIndex: 20,
-    alignItems: 'center',
-  },
-  toolbar: {
-    width: '100%',
-    maxWidth: 440,
-    padding: Spacing.one,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 32,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 10,
-  },
-  row: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 1,
-  },
-});

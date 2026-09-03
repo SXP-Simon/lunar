@@ -6,6 +6,8 @@
 
 [MUST] 项目采用 Expo SDK 57、React Native、TypeScript、Expo Router、HeroUI Native 与 Uniwind。
 
+[MUST] 静态界面样式使用 Uniwind 的 `className` 声明，禁止调用 `StyleSheet.create`。
+
 [MUST] Expo 相关变更以 [Expo SDK 57 版本文档](https://docs.expo.dev/versions/v57.0.0/) 为依据。
 
 [MUST] 产品范围与工程边界以 `docs/` 中的专题约束和当前公开代码契约为依据。

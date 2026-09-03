@@ -1,7 +1,7 @@
 import Svg, { Circle } from 'react-native-svg';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { Fonts, Spacing, useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/hooks/use-theme';
 
 const RING_SIZE = 54;
 const RING_STROKE_WIDTH = 4;
@@ -29,13 +29,9 @@ export function ImportingBookCard({
       accessibilityLabel={`${status}《${title}》，${percentage}%`}
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: percentage }}
-      style={styles.card}>
-      <View
-        style={[
-          styles.cover,
-          { backgroundColor: theme.surface, borderColor: theme.border },
-        ]}>
-        <View accessible={false} style={styles.progressRing}>
+      className="mb-6 w-1/3 px-[6px]">
+      <View className="w-full aspect-[2/3] items-center justify-center rounded border border-border bg-surface">
+        <View accessible={false} className="items-center justify-center">
           <Svg height={RING_SIZE} width={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}>
             <Circle
               cx={RING_SIZE / 2}
@@ -58,57 +54,16 @@ export function ImportingBookCard({
               transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
             />
           </Svg>
-          <Text style={[styles.progressValue, { color: theme.text }]}>{percentage}%</Text>
+          <Text className="absolute text-[11px] font-semibold text-foreground">{percentage}%</Text>
         </View>
-        <Text style={[styles.coverStatus, { color: theme.textSecondary }]}>{status}</Text>
+        <Text className="mt-2 text-[11px] text-muted">{status}</Text>
       </View>
-      <Text numberOfLines={1} style={[styles.bookName, { color: theme.text }]}>
+      <Text className="mt-[7px] text-xs font-semibold leading-4 text-foreground" numberOfLines={1}>
         {title}
       </Text>
-      <Text numberOfLines={1} style={[styles.bookStatus, { color: theme.textSecondary }]}>
+      <Text className="mt-px text-[10px] leading-[14px] text-muted" numberOfLines={1}>
         {status}
       </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    width: '33.3333%',
-    paddingHorizontal: 6,
-    marginBottom: Spacing.four,
-  },
-  cover: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 4,
-  },
-  progressRing: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressValue: {
-    position: 'absolute',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  coverStatus: {
-    marginTop: Spacing.two,
-    fontSize: 11,
-  },
-  bookName: {
-    marginTop: 7,
-    fontFamily: Fonts.sans,
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '600',
-  },
-  bookStatus: {
-    marginTop: 1,
-    fontSize: 10,
-    lineHeight: 14,
-  },
-});

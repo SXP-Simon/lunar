@@ -117,9 +117,7 @@ export function BookCard({
               : 'absolute inset-0 rounded bg-foreground opacity-0'}
           />
           <View
-            className={isSelected
-              ? 'absolute bottom-1.5 left-1.5 rounded-lg bg-foreground px-[5px] py-0.5'
-              : 'absolute right-1.5 bottom-1.5 rounded-lg bg-foreground px-[5px] py-0.5'}>
+            className="absolute right-1.5 bottom-1.5 rounded-lg bg-foreground px-[5px] py-0.5">
             <Text className="text-[9px] font-semibold leading-3 text-background">
               {Math.round((book.readingProgress ?? 0) * 100)}%
             </Text>
@@ -135,8 +133,8 @@ export function BookCard({
             importantForAccessibility="no-hide-descendants"
             pointerEvents="none"
             className={isSelected
-              ? 'absolute right-1.5 bottom-1.5 z-20 size-[27px] items-center justify-center rounded-full bg-accent opacity-100'
-              : 'absolute right-1.5 bottom-1.5 z-20 size-[27px] items-center justify-center rounded-full bg-accent opacity-0'}>
+              ? 'absolute top-1.5 left-1.5 z-20 size-[27px] items-center justify-center rounded-full bg-accent opacity-100'
+              : 'absolute top-1.5 left-1.5 z-20 size-[27px] items-center justify-center rounded-full bg-accent opacity-0'}>
             <SymbolView
               name={{ ios: 'checkmark', android: 'check', web: 'check' }}
               size={17}
