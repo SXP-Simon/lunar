@@ -9,8 +9,12 @@ import {
 import { RitoWireError as BinaryRitoWireError } from '../../modules/rito-rn/src/errors';
 import { decodeRitoDisplayList, decodeRitoDisplayListWithTypedColors } from '../../modules/rito-rn/src/protocol/display-list';
 import { toReaderV1DisplayList } from '../../src/reader/rito/rito-v1-display-list';
-import { encodeRitoAdjacentRequest } from '../../modules/rito-rn/src/protocol/requests';
-import { encodeRitoBackgroundHandoff, encodeRitoBackgroundRequest, encodeRitoForegroundHandoff } from '../../modules/rito-rn/src/protocol/requests';
+import {
+  encodeRitoAdjacentRequest,
+  encodeRitoBackgroundHandoff,
+  encodeRitoBackgroundRequest,
+  encodeRitoForegroundHandoff,
+} from '../../modules/rito-rn/src/protocol/requests';
 import { decodeRitoBackgroundHandoffAck, decodeRitoForegroundHandoffAck } from '../../modules/rito-rn/src/protocol/handoff';
 import { decodeRitoFootnote, decodeRitoSearchResponse, decodeRitoTextRangeGeometry, encodeRitoSearchRequest, encodeRitoTextRangeRequest } from '../../modules/rito-rn/src/protocol/interaction';
 import { decodeRitoArtifact, decodeRitoResource } from '../../modules/rito-rn/src/protocol/artifact';
@@ -120,6 +124,38 @@ describe('Rito React Native binary protocol', () => {
           none: { component0: false, component1: true, component2: false, alpha: false },
         },
       },
+    });
+  });
+
+  it('decodes the Rito 1.0.1 text-box and explicit background-size fields', () => {
+    const text = new RitoBinaryWriter()
+      .writeAscii('RITODL1').writeU32(1).writeU32(1).writeU16(9)
+      .writeUtf8('box').writeF64(10).writeF64(20).writeF64(30).writeF64(14)
+      .writeUtf8('Rito Serif').writeF64(16).writeF64(400).writeU8(1)
+      .writeU8(1).writeF32(0).writeF32(0).writeF32(0).writeF32(1).writeU8(0)
+      .writeU8(0).writeU8(0).writeU8(0).writeU8(0).writeU32(0)
+      .writeU8(0).writeU8(0).writeU8(0)
+      .writeU8(1).writeF64(-2).writeF64(19).writeU8(0).writeU8(1)
+      .writeU8(1).writeF64(22).writeU8(0).writeU8(0).writeU8(0).writeU8(0)
+      .toUint8Array();
+
+    expect(decodeRitoDisplayList(text).commands[0]).toMatchObject({
+      kind: 'paint-text',
+      paint: { box: { topPx: -2, bottomPx: 19 }, boxStart: false, boxEnd: true },
+      lineHeightPx: 22,
+    });
+
+    const background = new RitoBinaryWriter()
+      .writeAscii('RITODL1').writeU32(1).writeU32(1).writeU16(8)
+      .writeF64(0).writeF64(0).writeF64(100).writeF64(40)
+      .writeU8(1).writeU8(0).writeU8(1).writeUtf8('cover.png')
+      .writeU8(1).writeU8(4).writeU8(1).writeU8(2).writeF64(100).writeU8(1).writeU8(1).writeF64(40)
+      .writeU8(0).writeU8(0).writeU8(0).writeU8(0).writeU32(0).writeU8(0)
+      .toUint8Array();
+
+    expect(decodeRitoDisplayList(background).commands[0]).toMatchObject({
+      kind: 'paint-block',
+      paint: { background: { size: { x: { unit: 'percent', value: 100 }, y: { unit: 'px', value: 40 } } } },
     });
   });
 

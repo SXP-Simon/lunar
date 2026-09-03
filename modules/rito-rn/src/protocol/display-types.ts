@@ -14,6 +14,15 @@ export type RitoDisplayLength =
   | { readonly unit: 'px'; readonly value: number }
   | { readonly unit: 'percent'; readonly value: number };
 
+export type RitoBackgroundSize =
+  | 'auto'
+  | 'cover'
+  | 'contain'
+  | {
+      readonly x?: RitoDisplayLength;
+      readonly y?: RitoDisplayLength;
+    };
+
 export type RitoDisplayTransform =
   | { readonly kind: 'translate'; readonly x: RitoDisplayLength; readonly y: RitoDisplayLength }
   | { readonly kind: 'scale'; readonly sx: number; readonly sy: number }
@@ -66,13 +75,16 @@ export interface RitoRunPaint {
     readonly start?: { readonly widthPx: number; readonly paint: RitoBorderPaintEdge };
     readonly end?: { readonly widthPx: number; readonly paint: RitoBorderPaintEdge };
   };
+  readonly box?: { readonly topPx: number; readonly bottomPx: number };
+  readonly boxStart: boolean;
+  readonly boxEnd: boolean;
 }
 
 export interface RitoBlockPaint {
   readonly background?: {
     readonly color?: RitoPaintColor;
     readonly image?: string;
-    readonly size?: 'auto' | 'cover' | 'contain';
+    readonly size?: RitoBackgroundSize;
     readonly repeat?: 'repeat' | 'no-repeat' | 'repeat-x' | 'repeat-y' | 'space' | 'round';
     readonly position?: { readonly x: RitoDisplayLength; readonly y: RitoDisplayLength };
   };

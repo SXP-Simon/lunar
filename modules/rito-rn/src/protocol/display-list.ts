@@ -139,7 +139,7 @@ function readBlockPaint(reader: RitoBinaryReader, typedColors: boolean): RitoBlo
   const background = reader.readOption('block background', () => ({
     color: reader.readOption('background color', () => readColor(reader, typedColors)),
     image: reader.readOption('background image', () => reader.readUtf8()),
-    size: reader.readOption('background size', () => readEnum(reader, ['auto', 'cover', 'contain'] as const, 'background size')),
+    size: reader.readOption('background size', () => readBackgroundSize(reader)),
     repeat: reader.readOption('background repeat', () => {
       return readEnum(reader, ['repeat', 'no-repeat', 'repeat-x', 'repeat-y', 'space', 'round'] as const, 'background repeat');
     }),
@@ -203,7 +203,41 @@ function readRunPaint(reader: RitoBinaryReader, typedColors: boolean): RitoRunPa
     start: reader.readOption('text start border', () => readRunBorderEdge(reader, typedColors)),
     end: reader.readOption('text end border', () => readRunBorderEdge(reader, typedColors)),
   }));
-  return { font, color, wordSpacingPx, letterSpacingPx, backgroundColor, backgroundRadius, textShadow, decoration, padding, border };
+  const box = reader.readOption('text box offsets', () => ({
+    topPx: reader.readF64(),
+    bottomPx: reader.readF64(),
+  }));
+  const boxStart = reader.readBoolean('text box start');
+  const boxEnd = reader.readBoolean('text box end');
+  return {
+    font,
+    color,
+    wordSpacingPx,
+    letterSpacingPx,
+    backgroundColor,
+    backgroundRadius,
+    textShadow,
+    decoration,
+    padding,
+    border,
+    box,
+    boxStart,
+    boxEnd,
+  };
+}
+
+function readBackgroundSize(reader: RitoBinaryReader) {
+  const tag = reader.readU8();
+  if (tag === 1) return 'auto' as const;
+  if (tag === 2) return 'cover' as const;
+  if (tag === 3) return 'contain' as const;
+  if (tag === 4) {
+    return {
+      x: reader.readOption('background width', () => readLength(reader)),
+      y: reader.readOption('background height', () => readLength(reader)),
+    };
+  }
+  throw new RitoWireError('RITODL1 contains an unknown background size tag.');
 }
 
 function readRunBorderEdge(reader: RitoBinaryReader, typedColors = false) {

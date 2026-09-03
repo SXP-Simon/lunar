@@ -12,6 +12,7 @@ import {
 
 import type {
   ReaderBlockPaint,
+  ReaderBackgroundSize,
   ReaderColor,
   ReaderBorderPaintEdge,
   ReaderDisplayList,
@@ -244,13 +245,7 @@ function drawBackgroundImage(
   if (!asset) {
     return;
   }
-  const scale = background.size === 'cover'
-    ? Math.max(rect.width / asset.width, rect.height / asset.height)
-    : background.size === 'contain'
-      ? Math.min(rect.width / asset.width, rect.height / asset.height)
-      : 1;
-  let width = asset.width * scale;
-  let height = asset.height * scale;
+  let { width, height } = resolveBackgroundImageSize(background.size, asset.width, asset.height, rect);
   canvas.save();
   canvas.clipRRect(toRRect(toSkRect(rect), radius), ClipOp.Intersect, true);
   const imagePaint = createPaint('#FFFFFF', state.alpha);
@@ -573,7 +568,7 @@ function drawInlineBox(
     return;
   }
   const radius = paint.backgroundRadius ?? 0;
-  if (radius > 0 && border.top && border.bottom && border.start && border.end) {
+  if (radius > 0 && (paint.boxStart ?? true) && (paint.boxEnd ?? true) && border.top && border.bottom && border.start && border.end) {
     const edges = [border.top, border.end, border.bottom, border.start];
     const first = edges[0];
     if (edges.every((edge) => edge.paint.style === first.paint.style && edge.paint.color === first.paint.color) && edges.every((edge) => edge.widthPx === first.widthPx)) {
@@ -583,23 +578,52 @@ function drawInlineBox(
   }
   drawRunBorder(canvas, border.top, box.x, box.y, box.x + box.width, box.y, alpha, 0);
   drawRunBorder(canvas, border.bottom, box.x, box.y + box.height, box.x + box.width, box.y + box.height, alpha, 2);
-  drawRunBorder(canvas, border.start, box.x, box.y, box.x, box.y + box.height, alpha, 3);
-  drawRunBorder(canvas, border.end, box.x + box.width, box.y, box.x + box.width, box.y + box.height, alpha, 1);
+  if (paint.boxStart ?? true) drawRunBorder(canvas, border.start, box.x, box.y, box.x, box.y + box.height, alpha, 3);
+  if (paint.boxEnd ?? true) drawRunBorder(canvas, border.end, box.x + box.width, box.y, box.x + box.width, box.y + box.height, alpha, 1);
 }
 
 function computeInlineBox(rect: ReaderRect, paint: ReaderRunPaint, metrics?: { readonly contentTop: number; readonly contentHeight: number }): ReaderRect {
   const padding = paint.padding;
   const border = paint.border;
-  const left = (padding?.left ?? 0) + (border?.start?.widthPx ?? 0);
-  const right = (padding?.right ?? 0) + (border?.end?.widthPx ?? 0);
+  const left = paint.boxStart === false ? 0 : (padding?.left ?? 0) + (border?.start?.widthPx ?? 0);
+  const right = paint.boxEnd === false ? 0 : (padding?.right ?? 0) + (border?.end?.widthPx ?? 0);
   const top = (padding?.top ?? 0) + (border?.top?.widthPx ?? 0);
   const bottom = (padding?.bottom ?? 0) + (border?.bottom?.widthPx ?? 0);
+  const contentTop = metrics?.contentTop ?? rect.y;
+  const contentHeight = metrics?.contentHeight ?? paint.font.sizePx;
+  const boxTop = paint.box?.topPx;
+  const boxBottom = paint.box?.bottomPx;
   return {
     x: rect.x - left,
-    y: (metrics?.contentTop ?? rect.y) - top,
+    y: boxTop === undefined ? contentTop - top : rect.y + boxTop,
     width: rect.width + left + right,
-    height: (metrics?.contentHeight ?? paint.font.sizePx) + top + bottom,
+    height: boxBottom === undefined || boxTop === undefined ? contentHeight + top + bottom : boxBottom - boxTop,
   };
+}
+
+function resolveBackgroundImageSize(
+  size: ReaderBackgroundSize | undefined,
+  imageWidth: number,
+  imageHeight: number,
+  rect: ReaderRect,
+): { width: number; height: number } {
+  if (size === 'cover') {
+    const scale = Math.max(rect.width / imageWidth, rect.height / imageHeight);
+    return { width: imageWidth * scale, height: imageHeight * scale };
+  }
+  if (size === 'contain') {
+    const scale = Math.min(rect.width / imageWidth, rect.height / imageHeight);
+    return { width: imageWidth * scale, height: imageHeight * scale };
+  }
+  if (!size || typeof size === 'string') {
+    return { width: imageWidth, height: imageHeight };
+  }
+  const width = size.x === undefined ? undefined : resolveLength(size.x, rect.width);
+  const height = size.y === undefined ? undefined : resolveLength(size.y, rect.height);
+  if (width !== undefined && height !== undefined) return { width, height };
+  if (width !== undefined) return { width, height: imageHeight * width / imageWidth };
+  if (height !== undefined) return { width: imageWidth * height / imageHeight, height };
+  return { width: imageWidth, height: imageHeight };
 }
 
 function drawRunBorder(
@@ -820,7 +844,7 @@ function toRRect(rect: SkRect, radius: ResolvedRadius, spread = 0) {
 function resolveBackgroundOffset(
   value: ReaderLength | undefined,
   available: number,
-  size: 'cover' | 'contain' | 'auto' | undefined,
+  size: ReaderBackgroundSize | undefined,
 ): number {
   if (!value) {
     return size === 'auto' ? 0 : available / 2;

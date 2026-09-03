@@ -85,6 +85,15 @@ export type ReaderLength =
   | { readonly unit: 'px'; readonly value: number }
   | { readonly unit: 'percent'; readonly value: number };
 
+export type ReaderBackgroundSize =
+  | 'cover'
+  | 'contain'
+  | 'auto'
+  | {
+      readonly x?: ReaderLength;
+      readonly y?: ReaderLength;
+    };
+
 export type ReaderColorSpace =
   | 'srgb' | 'hsl' | 'hwb' | 'lab' | 'lch' | 'oklab' | 'oklch'
   | 'srgb-linear' | 'display-p3' | 'display-p3-linear' | 'a98-rgb'
@@ -173,6 +182,11 @@ export interface ReaderRunPaint extends ReaderMeasurePaint {
   readonly decoration?: ReaderRunDecoration;
   readonly padding?: ReaderSpacing;
   readonly border?: ReaderRunBorder;
+  /** Outer inline-box bounds relative to the text run's top edge. */
+  readonly box?: { readonly topPx: number; readonly bottomPx: number };
+  /** Whether the inline box includes its logical start and end edges. */
+  readonly boxStart?: boolean;
+  readonly boxEnd?: boolean;
 }
 
 export interface ReaderBackgroundPosition {
@@ -184,7 +198,7 @@ export interface ReaderBlockPaint {
   readonly background?: {
     readonly color?: ReaderColor | string;
     readonly image?: string;
-    readonly size?: 'cover' | 'contain' | 'auto';
+    readonly size?: ReaderBackgroundSize;
     readonly repeat?: 'repeat' | 'no-repeat' | 'repeat-x' | 'repeat-y' | 'space' | 'round';
     readonly position?: ReaderBackgroundPosition;
   };
