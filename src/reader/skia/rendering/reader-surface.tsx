@@ -1,6 +1,7 @@
 import {
   Canvas,
   ClipOp,
+  Fill,
   Group,
   Picture,
   Rect as SkiaRect,
@@ -28,6 +29,7 @@ import {
   PageCurlMesh,
   automaticPageTurnPaintOrder,
   getReaderPageTurnDuration,
+  nativeAutomaticPageTurnBaseContent,
   useNativeAutomaticPageTurns,
   useReaderPageTransition,
   usePageCurlTexture,
@@ -115,16 +117,9 @@ export function ReaderSurface({
       : undefined,
     [compiled, currentKey, frame, snapshot],
   );
-  // During a drag the runtime snapshot intentionally remains on the source
-  // spread until release. The prepared interactive content is therefore the
-  // only valid picture for the incoming layer.
-  const incomingContent = interactiveTurn?.content ?? currentContent;
-  const incomingPicture = incomingContent?.picture.picture ?? compiled?.picture;
-  const incomingSnapshot = incomingContent?.snapshot ?? snapshot;
-  const incomingFrame = incomingContent?.frame ?? frame;
-  const incomingKey = incomingContent?.key ?? currentKey;
   const {
     transition: activeTransition,
+    visibleContent,
     style: resolvedAnimationStyle,
     coverMatrix,
     incomingSlideMatrix,
@@ -141,6 +136,13 @@ export function ReaderSurface({
       spreadMode,
       automaticNavigationActive,
     );
+  // The transition hook retains the source page until the animation tree has
+  // its start pose. Interactive turns supply their prepared target here.
+  const incomingContent = visibleContent ?? currentContent;
+  const incomingPicture = incomingContent?.picture.picture;
+  const incomingSnapshot = incomingContent?.snapshot ?? snapshot;
+  const incomingFrame = incomingContent?.frame ?? frame;
+  const incomingKey = incomingContent?.key ?? currentKey;
 
   const automaticDirection = automaticTurns[0]?.direction ?? 1;
   const automaticBackgroundContent = automaticTurns.length === 0
@@ -218,7 +220,7 @@ export function ReaderSurface({
     viewport.height,
     viewport.width,
   ]);
-  const nativeAutomaticPageTurnsEnabled = useNativeAutomaticPageTurns({
+  const nativeAutomaticPageTurnState = useNativeAutomaticPageTurns({
     canvasRef: ref,
     enabled: resolvedAnimationStyle === 'page'
       && spreadMode === 'single'
@@ -231,9 +233,15 @@ export function ReaderSurface({
     onComplete: onAutomaticTurnComplete,
   });
   const nativeAutomaticPageTurnsVisible = automaticPageTurnsVisible
-    && nativeAutomaticPageTurnsEnabled;
+    && nativeAutomaticPageTurnState.enabled;
   const fallbackAutomaticPageTurnsVisible = automaticPageTurnsVisible
-    && !nativeAutomaticPageTurnsEnabled;
+    && !nativeAutomaticPageTurnState.enabled;
+  const transitionActive = activeTransition !== undefined;
+  const nativeAutomaticBaseContent = nativeAutomaticPageTurnBaseContent(
+    automaticTurns,
+    currentContent,
+    nativeAutomaticPageTurnState.hasPresentedTurn,
+  );
 
   useEffect(() => {
     readerDiagnostic(
@@ -245,7 +253,7 @@ export function ReaderSurface({
         `from=${activeTransition?.from.key ?? 'none'}`,
         `to=${activeTransition?.toKey ?? 'none'}`,
         `slideForeground=${resolvedAnimationStyle === 'slide' ? (activeTransition?.from.key ?? currentKey ?? 'none') : 'none'}`,
-        `mode=${activeTransition ? resolvedAnimationStyle : 'static'}`,
+        `mode=${transitionActive ? resolvedAnimationStyle : 'static'}`,
         `interactive=${String(Boolean(interactiveTurn))}`,
         `settling=${String(interactiveTurn?.settling === true)}`,
         `picture=${String(Boolean(incomingPicture))}`,
@@ -264,6 +272,7 @@ export function ReaderSurface({
     snapshot.renderId,
     snapshot.revisionId,
     snapshot.spreadIndex,
+    transitionActive,
   ]);
 
   // The moving sheet owns its chrome. Recording it into the same source
@@ -277,7 +286,7 @@ export function ReaderSurface({
       ? isSinglePreviousPageTurn
         ? incomingContent
         : activeTransition.from
-      : currentContent
+      : incomingContent
     : undefined;
   const pageCurlWidth = pageCurlSource?.frame.width ?? activeTransition?.from.frame.width ?? 0;
   const pageCurlHeight = pageCurlSource?.frame.height ?? activeTransition?.from.frame.height ?? 0;
@@ -340,6 +349,7 @@ export function ReaderSurface({
     pageCurlSource?.frame.width ?? 0,
     pageCurlSource?.frame.height ?? 0,
     pageCurlSource?.key,
+    pageCurlTexturePicture !== undefined,
   );
   const pageCurlBackTexture = usePageCurlTexture(
     pageCurlBackSource?.picture.picture,
@@ -348,15 +358,9 @@ export function ReaderSurface({
     pageCurlBackSource ? `${pageCurlBackSource.key}:curl-back` : undefined,
   );
 
-  useEffect(() => () => pageCurlTexturePicture?.dispose(), [pageCurlTexturePicture]);
-
   useEffect(() => {
     onTransformChange?.(createReaderSurfaceTransform(scale, offsetX, offsetY));
   }, [offsetX, offsetY, onTransformChange, scale]);
-
-  const slideForegroundContent = resolvedAnimationStyle === 'slide'
-    ? activeTransition?.from ?? currentContent
-    : undefined;
 
   const canRenderFrame = snapshot.phase === 'ready'
     && (
@@ -416,14 +420,15 @@ export function ReaderSurface({
       pointerEvents="none"
       ref={ref}
       style={style}>
+      <Fill color={paperColor} />
       {canRenderFrame && (
         <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
-          {nativeAutomaticPageTurnsVisible && automaticTurns[0] ? (
+          {nativeAutomaticPageTurnsVisible && nativeAutomaticBaseContent ? (
             <Group>
-              <Picture picture={automaticTurns[0].from.picture.picture} />
+              <Picture picture={nativeAutomaticBaseContent.picture.picture} />
               {renderChrome(
-                automaticTurns[0].from.snapshot,
-                automaticTurns[0].from.frame,
+                nativeAutomaticBaseContent.snapshot,
+                nativeAutomaticBaseContent.frame,
               )}
             </Group>
           ) : fallbackAutomaticPageTurnsVisible && automaticBackgroundContent ? (
@@ -451,43 +456,43 @@ export function ReaderSurface({
                 />
               ))}
             </Group>
-          ) : activeTransition && resolvedAnimationStyle === 'page' ? (
-            <Group>
-              {isSinglePreviousPageTurn ? (
-                <>
+          ) : resolvedAnimationStyle === 'page' ? (
+            <Group key="page-content">
+              <Group key="page-current">
+                {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
+              </Group>
+              {activeTransition && isSinglePreviousPageTurn && (
+                <Group key={`page-source:${activeTransition.from.key}`}>
                   <Picture picture={activeTransition.from.picture.picture} />
                   {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
-                </>
-              ) : (
-                <>
-                  {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
-                  {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
-                </>
+                </Group>
               )}
-              <PageCurlMesh
-                backTexture={isSinglePreviousPageTurn ? pageCurlBackTexture : undefined}
-                key={pageCurlSource?.key ?? activeTransition.from.key}
-                direction={activeTransition.direction}
-                grabX={isSinglePreviousPageTurn ? pageCurlWidth * 0.6 : grabX}
-                grabY={isSinglePreviousPageTurn ? pageCurlHeight / 2 : grabY}
-                grabYValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.grabYValue}
-                heldRollTilt={isSinglePreviousPageTurn ? undefined : interactiveTurn?.heldRollTilt}
-                heldRollTiltValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.heldRollTiltValue}
-                height={pageCurlHeight}
-                initialProgress={interactiveTurn?.progress}
-                phase={isSinglePreviousPageTurn ? 'incoming-landing' : 'full'}
-                spreadMode={spreadMode}
-                gestureDriven={Boolean(interactiveTurn)}
-                settling={interactiveTurn?.settling}
-                settleTo={interactiveTurn?.settleTo}
-                picture={pageCurlSource?.picture ?? activeTransition.from.picture}
-                pressedEdgeX={isSinglePreviousPageTurn ? undefined : interactiveTurn?.pressedEdgeX}
-                pressedEdgeXValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.pressedEdgeXValue}
-                progress={progress}
-                texture={pageCurlTexture}
-                texturePicture={pageCurlTexturePicture}
-                width={pageCurlWidth}
-              />
+              {activeTransition && (
+                <PageCurlMesh
+                  backTexture={isSinglePreviousPageTurn ? pageCurlBackTexture : undefined}
+                  key={pageCurlSource?.key ?? activeTransition.from.key}
+                  direction={activeTransition.direction}
+                  grabX={isSinglePreviousPageTurn ? pageCurlWidth * 0.6 : grabX}
+                  grabY={isSinglePreviousPageTurn ? pageCurlHeight / 2 : grabY}
+                  grabYValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.grabYValue}
+                  heldRollTilt={isSinglePreviousPageTurn ? undefined : interactiveTurn?.heldRollTilt}
+                  heldRollTiltValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.heldRollTiltValue}
+                  height={pageCurlHeight}
+                  initialProgress={interactiveTurn?.progress}
+                  phase={isSinglePreviousPageTurn ? 'incoming-landing' : 'full'}
+                  spreadMode={spreadMode}
+                  gestureDriven={Boolean(interactiveTurn)}
+                  settling={interactiveTurn?.settling}
+                  settleTo={interactiveTurn?.settleTo}
+                  picture={pageCurlSource?.picture ?? activeTransition.from.picture}
+                  pressedEdgeX={isSinglePreviousPageTurn ? undefined : interactiveTurn?.pressedEdgeX}
+                  pressedEdgeXValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.pressedEdgeXValue}
+                  progress={progress}
+                  texture={pageCurlTexture}
+                  width={pageCurlWidth}
+                />
+              )}
             </Group>
           ) : activeTransition && resolvedAnimationStyle === 'cover' ? (
             <Group>
@@ -502,28 +507,20 @@ export function ReaderSurface({
             </Group>
           ) : resolvedAnimationStyle === 'slide' ? (
             <Group>
+              <Group
+                key="slide-current"
+                matrix={activeTransition ? incomingSlideMatrix : undefined}>
+                {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
+              </Group>
               {activeTransition && (
-                <Group key="slide-incoming" matrix={incomingSlideMatrix}>
-                  {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
-                  {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
+                <Group
+                  key={`slide-outgoing:${activeTransition.from.key}`}
+                  matrix={outgoingSlideMatrix}>
+                  <Picture picture={activeTransition.from.picture.picture} />
+                  {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
                 </Group>
               )}
-              <Group
-                key="slide-foreground"
-                matrix={activeTransition ? outgoingSlideMatrix : undefined}>
-                {slideForegroundContent && (
-                  <Picture
-                    key={slideForegroundContent.key}
-                    picture={slideForegroundContent.picture.picture}
-                  />
-                )}
-                {slideForegroundContent && renderChrome(
-                  slideForegroundContent.snapshot,
-                  slideForegroundContent.frame,
-                  activeTransition ? undefined : chapterTitle,
-                  activeTransition ? undefined : progressLabel,
-                )}
-              </Group>
             </Group>
           ) : (
             <>
@@ -622,6 +619,7 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
     source.frame.width,
     source.frame.height,
     `${source.key}:automatic:${turnId}`,
+    texturePicture !== undefined,
   );
   const backTexture = usePageCurlTexture(
     backSource?.picture.picture,
@@ -631,8 +629,6 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
   );
   const progress = useSharedValue(0);
   const texturesReady = texture.ready && (!backSource || backTexture.ready);
-
-  useEffect(() => () => texturePicture?.dispose(), [texturePicture]);
 
   useEffect(() => {
     if (!texturesReady) return;
@@ -670,7 +666,6 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
       progress={progress}
       spreadMode={spreadMode}
       texture={texture}
-      texturePicture={texturePicture}
       width={source.frame.width}
     />
   );

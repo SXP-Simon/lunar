@@ -12,7 +12,7 @@ export interface SlidePageTransforms {
 export function useSlidePageTransforms(
   direction: 1 | -1,
   width: number,
-  progress: SharedValue<number>,
+  progress: SharedValue<number> | DerivedValue<number>,
 ): SlidePageTransforms {
   const incoming = useDerivedValue(
     () => processTransform3d([{ translateX: direction * width * (1 - progress.value) }]),

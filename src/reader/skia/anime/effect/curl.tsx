@@ -11,7 +11,12 @@ import {
 } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PixelRatio } from 'react-native';
-import { useDerivedValue, useSharedValue, type SharedValue } from 'react-native-reanimated';
+import {
+  useDerivedValue,
+  useSharedValue,
+  type DerivedValue,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { runOnUI, scheduleOnRN } from 'react-native-worklets';
 
 import type { CompiledReaderPicture } from '../../rendering/picture-compiler';
@@ -145,13 +150,10 @@ export interface PageCurlTexture {
 
 interface PageCurlMeshProps {
   readonly picture: CompiledReaderPicture;
-  /** Optional composed picture containing Skia-owned chrome such as the
-   * chapter title and page number. */
-  readonly texturePicture?: SkPicture;
   readonly width: number;
   readonly height: number;
   readonly direction: 1 | -1;
-  readonly progress: SharedValue<number>;
+  readonly progress: SharedValue<number> | DerivedValue<number>;
   readonly initialProgress?: number;
   readonly grabX: number;
   readonly grabY: number;
@@ -178,34 +180,39 @@ function capturePictureTexture(
   textureScale: number,
   captureId: number,
   textureIdentity: string,
+  disposePictureAfterCapture: boolean,
   onReady: (captureId: number, textureIdentity: string) => void,
 ): void {
   "worklet";
-  const surface = Skia.Surface.MakeOffscreen(
-    Math.max(1, Math.round(width * textureScale)),
-    Math.max(1, Math.round(height * textureScale)),
-  );
-  if (!surface) {
-    return;
+  try {
+    const surface = Skia.Surface.MakeOffscreen(
+      Math.max(1, Math.round(width * textureScale)),
+      Math.max(1, Math.round(height * textureScale)),
+    );
+    if (!surface) return;
+    const canvas = surface.getCanvas();
+    canvas.clear(Skia.Color('transparent'));
+    canvas.scale(textureScale, textureScale);
+    canvas.drawPicture(picture);
+    surface.flush();
+    const nextTexture = surface.makeImageSnapshot();
+    const previousTexture = texture.value;
+    const previousSurface = backingSurface.value;
+    // Swap only after the replacement snapshot exists. Clearing the shared
+    // image first leaves one or more transparent frames on Android while the
+    // new GPU-backed texture is being prepared.
+    texture.value = nextTexture;
+    // Android snapshots may remain GPU-backed by this Surface. Keep it alive
+    // until the texture is released instead of disposing it immediately.
+    backingSurface.value = surface;
+    previousTexture?.dispose();
+    previousSurface?.dispose();
+    scheduleOnRN(onReady, captureId, textureIdentity);
+  } finally {
+    // Generated chrome pictures belong to this queued UI task. Releasing them
+    // here prevents RN cleanup from racing canvas.drawPicture above.
+    if (disposePictureAfterCapture) picture.dispose();
   }
-  const canvas = surface.getCanvas();
-  canvas.clear(Skia.Color('transparent'));
-  canvas.scale(textureScale, textureScale);
-  canvas.drawPicture(picture);
-  surface.flush();
-  const nextTexture = surface.makeImageSnapshot();
-  const previousTexture = texture.value;
-  const previousSurface = backingSurface.value;
-  // Swap only after the replacement snapshot exists. Clearing the shared
-  // image first leaves one or more transparent frames on Android while the
-  // new GPU-backed texture is being prepared.
-  texture.value = nextTexture;
-  // Android snapshots may remain GPU-backed by this Surface. Keep it alive
-  // until the texture is released instead of disposing it immediately.
-  backingSurface.value = surface;
-  previousTexture?.dispose();
-  previousSurface?.dispose();
-  scheduleOnRN(onReady, captureId, textureIdentity);
 }
 
 function disposePictureTexture(
@@ -270,12 +277,12 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
   if (!shader) {
     return incomingLanding
       ? null
-      : <Picture picture={props.texturePicture ?? picture.picture} />;
+      : <Picture picture={picture.picture} />;
   }
   if (!textureReady) {
     return incomingLanding
       ? null
-      : <Picture picture={props.texturePicture ?? picture.picture} />;
+      : <Picture picture={picture.picture} />;
   }
 
   return (
@@ -315,6 +322,7 @@ export function usePageCurlTexture(
   width: number,
   height: number,
   identity?: string,
+  disposePictureAfterCapture = false,
 ): PageCurlTexture {
   const image = useSharedValue<SkImage | null>(null);
   const backingSurface = useSharedValue<SkSurface | null>(null);
@@ -349,9 +357,10 @@ export function usePageCurlTexture(
       DEVICE_TEXTURE_SCALE,
       nextCaptureId,
       textureIdentity,
+      disposePictureAfterCapture,
       markTextureReady,
     );
-  }, [backingSurface, height, image, markTextureReady, picture, textureIdentity, width]);
+  }, [backingSurface, disposePictureAfterCapture, height, image, markTextureReady, picture, textureIdentity, width]);
 
   useEffect(() => () => {
     captureId.current += 1;

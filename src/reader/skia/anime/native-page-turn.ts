@@ -24,3 +24,12 @@ export function readerAutomaticPageTurnId(value: string): number | undefined {
   const turnId = Number(value.slice(NATIVE_TURN_ID_PREFIX.length));
   return Number.isSafeInteger(turnId) && turnId > 0 ? turnId : undefined;
 }
+
+export function nativeAutomaticPageTurnBaseContent(
+  turns: readonly ReaderAutomaticTurn[],
+  current: ReaderPageContent | undefined,
+  hasPresentedTurn: boolean,
+): ReaderPageContent | undefined {
+  if (turns.length === 0) return current;
+  return hasPresentedTurn ? current ?? turns.at(-1)?.to : turns[0]?.from;
+}

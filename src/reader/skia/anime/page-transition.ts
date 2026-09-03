@@ -50,11 +50,12 @@ export interface ReaderPageTransitionState {
 
 interface ReaderPageTransitionValues {
   readonly transition?: ReaderPageTransitionState;
+  readonly visibleContent?: ReaderPageContent;
   readonly style: 'cover' | 'page' | 'slide';
   readonly coverMatrix: DerivedValue<Matrix4>;
   readonly incomingSlideMatrix: DerivedValue<Matrix4>;
   readonly outgoingSlideMatrix: DerivedValue<Matrix4>;
-  readonly progress: SharedValue<number>;
+  readonly progress: SharedValue<number> | DerivedValue<number>;
   readonly grabX: number;
   readonly grabY: number;
 }
@@ -122,31 +123,10 @@ export function useReaderPageTransition(
           ?? ((interactiveTargetSpread ?? displayedContent.snapshot.spreadIndex) > displayedContent.snapshot.spreadIndex ? 1 : -1),
     }
     : undefined, [displayedContent, interactiveContent, interactiveTargetSpread, interactiveTurn?.direction]);
-  const automaticTransition = useMemo<ReaderPageTransitionState | undefined>(() => {
-    if (
-      suppressAutomaticTransition
-      ||
-      interactiveContent
-      || !current
-      || !displayedContent
-      || samePageIdentity(current.snapshot, interactiveCommit)
-      || displayedContent.key === currentKey
-      || displayedContent.frame.width !== current.frame.width
-      || displayedContent.frame.height !== current.frame.height
-      || displayedContent.snapshot.revisionId !== current.snapshot.revisionId
-      || displayedContent.snapshot.spreadIndex === current.snapshot.spreadIndex
-    ) {
-      return undefined;
-    }
-    return {
-      from: displayedContent,
-      toKey: currentKey!,
-      direction: current.snapshot.spreadIndex > displayedContent.snapshot.spreadIndex ? 1 : -1,
-    };
-  }, [current, currentKey, displayedContent, interactiveCommit, interactiveContent, suppressAutomaticTransition]);
   const activeTransition = interactiveTransition
-    ?? (transition?.toKey === currentKey ? transition : undefined)
-    ?? automaticTransition;
+    ?? (transition?.toKey === currentKey ? transition : undefined);
+  const visibleContent = interactiveContent
+    ?? (activeTransition ? current : displayedContent ?? current);
   const incomingPageLanding = style === 'page'
     && spreadMode === 'single'
     && activeTransition?.direction === -1;
@@ -219,10 +199,11 @@ export function useReaderPageTransition(
       && previous.frame.height === current.frame.height
       && previous.snapshot.revisionId === current.snapshot.revisionId;
     if (sameSurface && previous.snapshot.spreadIndex !== current.snapshot.spreadIndex) {
-      // Reuse the transition object that was already visible in this render
-      // when the implicit transition guarded the snapshot handoff. This keeps
-      // the composed SkPicture alive while React records the state update.
-      setTransition(activeTransition ?? {
+      // Establish the start pose before publishing the transition tree. The
+      // previous page remains visible during this render, so Skia never sees
+      // the target page at its completed pose before the animation begins.
+      animatedProgress.set(0);
+      setTransition({
         from: previous,
         toKey: current.key,
         direction: current.snapshot.spreadIndex > previous.snapshot.spreadIndex ? 1 : -1,
@@ -231,7 +212,7 @@ export function useReaderPageTransition(
       setTransition(undefined);
       animatedProgress.set(1);
     }
-  }, [activeTransition, animatedProgress, current, currentKey, displayedContent, interactiveCommit, interactiveTurn, style, suppressAutomaticTransition]);
+  }, [animatedProgress, current, displayedContent, interactiveCommit, interactiveTurn, suppressAutomaticTransition]);
 
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -259,7 +240,9 @@ export function useReaderPageTransition(
     // React Skia can observe the driver swap before it removes the interactive
     // nodes. Keep both drivers at the same terminal pose during that frame.
     if (handoffProgress !== undefined) progress.set(handoffProgress);
-    if (!interactiveTurn?.settling) animatedProgress.set(0);
+    if (!interactiveTurn?.settling && animatedProgress.value !== 0) {
+      animatedProgress.set(0);
+    }
     animatedProgress.set(withTiming(target, {
       duration,
       easing: !interactiveTurn && style === 'page'
@@ -284,6 +267,7 @@ export function useReaderPageTransition(
 
   return {
     transition: activeTransition,
+    visibleContent,
     style,
     coverMatrix,
     incomingSlideMatrix,

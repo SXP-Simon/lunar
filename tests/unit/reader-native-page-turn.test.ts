@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  nativeAutomaticPageTurnBaseContent,
   nativeAutomaticPageTurnFaces,
   nativeAutomaticPageTurnId,
   readerAutomaticPageTurnId,
@@ -40,5 +41,26 @@ describe('reader native automatic page turn', () => {
     expect(readerAutomaticPageTurnId('lunar-automatic:0')).toBeUndefined();
     expect(readerAutomaticPageTurnId('lunar-automatic:1.5')).toBeUndefined();
     expect(readerAutomaticPageTurnId('lunar-automatic:text')).toBeUndefined();
+  });
+
+  it('keeps the source below native animation until its first frame is presented', () => {
+    const source = { key: 'source' } as ReaderPageContent;
+    const target = { key: 'target' } as ReaderPageContent;
+    const current = { key: 'current' } as ReaderPageContent;
+    const turns: readonly ReaderAutomaticTurn[] = [{
+      id: 1,
+      from: source,
+      to: target,
+      direction: 1,
+    }];
+
+    expect(nativeAutomaticPageTurnBaseContent(turns, current, false)).toBe(source);
+    expect(nativeAutomaticPageTurnBaseContent(turns, current, true)).toBe(current);
+  });
+
+  it('uses current content when native animation is idle', () => {
+    const current = { key: 'current' } as ReaderPageContent;
+
+    expect(nativeAutomaticPageTurnBaseContent([], current, false)).toBe(current);
   });
 });

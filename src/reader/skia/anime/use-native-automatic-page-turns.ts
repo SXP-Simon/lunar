@@ -70,6 +70,11 @@ interface NativeAutomaticPageTurnsOptions {
   readonly onComplete?: (turnId: number) => void;
 }
 
+interface NativeAutomaticPageTurnsState {
+  readonly enabled: boolean;
+  readonly hasPresentedTurn: boolean;
+}
+
 export function useNativeAutomaticPageTurns({
   canvasRef,
   enabled,
@@ -79,7 +84,7 @@ export function useNativeAutomaticPageTurns({
   paperColor,
   createPicture,
   onComplete,
-}: NativeAutomaticPageTurnsOptions): boolean {
+}: NativeAutomaticPageTurnsOptions): NativeAutomaticPageTurnsState {
   const supported = useMemo(
     () => enabled && nativePagerCompositorAvailable(),
     [enabled],
@@ -87,11 +92,26 @@ export function useNativeAutomaticPageTurns({
   const [ready, setReady] = useState(false);
   const active = supported && ready;
   const submittedTurnIds = useRef(new Set<number>());
+  const presentedTurnIds = useRef(new Set<number>());
+  const [presentedTurnCount, setPresentedTurnCount] = useState(0);
   const onCompleteRef = useRef(onComplete);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
+
+  useEffect(() => {
+    const liveTurnIds = new Set(turns.map((turn) => turn.id));
+    const presented = presentedTurnIds.current;
+    let changed = false;
+    for (const turnId of presented) {
+      if (!liveTurnIds.has(turnId)) {
+        presented.delete(turnId);
+        changed = true;
+      }
+    }
+    if (changed) setPresentedTurnCount(presented.size);
+  }, [turns]);
 
   useEffect(() => {
     if (!supported || ready || turns.length > 0) return;
@@ -122,9 +142,14 @@ export function useNativeAutomaticPageTurns({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const submitted = submittedTurnIds.current;
+    const presented = presentedTurnIds.current;
     return () => {
       resetNativePagerCompositor(canvas);
       submitted.clear();
+      if (presented.size > 0) {
+        presented.clear();
+        setPresentedTurnCount(0);
+      }
     };
   }, [active, canvasRef]);
 
@@ -182,11 +207,19 @@ export function useNativeAutomaticPageTurns({
     if (!canvas) return;
     const drainEvents = () => {
       for (const event of takeNativePagerEvents(canvas)) {
-        if (event.event !== 'completed' && event.event !== 'cancelled') continue;
         const turnId = readerAutomaticPageTurnId(event.id);
-        if (turnId === undefined || !submittedTurnIds.current.delete(turnId)) {
+        if (turnId === undefined || !submittedTurnIds.current.has(turnId)) {
           continue;
         }
+        if (event.event === 'started') {
+          const presented = presentedTurnIds.current;
+          const previousSize = presented.size;
+          presented.add(turnId);
+          if (presented.size !== previousSize) setPresentedTurnCount(presented.size);
+          continue;
+        }
+        if (event.event !== 'completed' && event.event !== 'cancelled') continue;
+        submittedTurnIds.current.delete(turnId);
         onCompleteRef.current?.(turnId);
       }
     };
@@ -198,5 +231,8 @@ export function useNativeAutomaticPageTurns({
     };
   }, [active, canvasRef, turns.length]);
 
-  return active;
+  return {
+    enabled: active,
+    hasPresentedTurn: presentedTurnCount > 0,
+  };
 }
