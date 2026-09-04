@@ -10,12 +10,33 @@ fi
 
 : "${EXPO_TOKEN:?EXPO_TOKEN must be provided by the CNB secret import}"
 
-for command_name in java node unzip wget; do
+SYSTEM_PACKAGES=()
+command -v javac >/dev/null 2>&1 || SYSTEM_PACKAGES+=(openjdk-17-jdk-headless)
+command -v unzip >/dev/null 2>&1 || SYSTEM_PACKAGES+=(unzip)
+command -v wget >/dev/null 2>&1 || SYSTEM_PACKAGES+=(wget)
+command -v curl >/dev/null 2>&1 || SYSTEM_PACKAGES+=(curl)
+command -v git >/dev/null 2>&1 || SYSTEM_PACKAGES+=(git)
+
+if (( ${#SYSTEM_PACKAGES[@]} > 0 )); then
+  if ! command -v apt-get >/dev/null 2>&1; then
+    echo "apt-get is required to install the CNB build dependencies." >&2
+    exit 1
+  fi
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update
+  apt-get install -y --no-install-recommends "${SYSTEM_PACKAGES[@]}"
+fi
+
+for command_name in java javac node unzip wget curl git; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "$command_name is required in the CNB build image." >&2
     exit 1
   fi
 done
+
+JAVAC_BIN="$(command -v javac)"
+export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$JAVAC_BIN")")")"
+
 java -version
 node --version
 

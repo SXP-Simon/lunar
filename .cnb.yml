@@ -3,12 +3,13 @@
     - runner:
         cpus: 16
       docker:
-        image: docker.cnb.cool/zhxycn/env:latest
+        image: docker.io/library/node:22-bookworm@sha256:8a34c4ab3ea2c5cd194f07e317b2a8f09461d3c8b05c4e34c8ccd56d56024c4d
         volumes:
           - /opt/android-sdk:copy-on-write
           - /root/.gradle:copy-on-write
           - /root/.cargo/registry:copy-on-write
           - /root/.cargo/git:copy-on-write
+          - /root/.cargo/bin:copy-on-write
           - /root/.rustup:copy-on-write
           - /root/.local/share/pnpm/store:copy-on-write
           - /root/.cache:copy-on-write
