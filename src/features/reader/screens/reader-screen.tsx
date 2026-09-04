@@ -93,11 +93,10 @@ export default function ReaderScreen() {
   const progressPercentage = totalSpreads === undefined
     ? undefined
     : Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
+  const initialPaperColor = readerTheme === 'dark' ? '#000000' : '#FFFFFF';
   const canvasBackground = isReady
     ? session.runtime.getBackgroundColor()
-    : readerTheme === 'dark'
-      ? '#151515'
-      : '#FAF9F6';
+    : initialPaperColor;
   const readerChromeVisible = controlsVisible || Boolean(session.errorMessage);
   const handleSafeAreaChange = useCallback<SafeAreaListenerProps['onChange']>(
     ({ insets: nextInsets }) => {
@@ -209,6 +208,7 @@ export default function ReaderScreen() {
         <ReaderSurface
           runtime={session.runtime}
           snapshot={session.snapshot}
+          initialBackgroundColor={initialPaperColor}
           animationStyle={animationStyle}
           spreadMode={spreadMode}
           interactiveTurn={interactiveTurn}

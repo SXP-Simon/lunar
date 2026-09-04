@@ -57,6 +57,8 @@ export interface ReaderSurfaceProps {
   readonly runtime: LunarReaderRuntime;
   readonly snapshot: ReaderSnapshot;
   readonly style?: StyleProp<ViewStyle>;
+  /** Canvas color used before the runtime has produced its first page. */
+  readonly initialBackgroundColor?: string;
   readonly overlays?: readonly ReaderOverlayRect[];
   readonly onTransformChange?: (transform: ReaderSurfaceTransform) => void;
   /** Defaults to `slide`, which keeps the page content legible throughout the turn. */
@@ -82,6 +84,7 @@ export function ReaderSurface({
   runtime,
   snapshot,
   style,
+  initialBackgroundColor = '#000000',
   overlays = [],
   onTransformChange,
   animationStyle = 'slide',
@@ -165,7 +168,9 @@ export function ReaderSurface({
   const automaticPageTurnsVisible = resolvedAnimationStyle === 'page'
     && automaticTurns.length > 0;
 
-  const paperColor = runtime.getBackgroundColor();
+  const paperColor = snapshot.phase === 'ready'
+    ? runtime.getBackgroundColor()
+    : initialBackgroundColor;
   const processedPaperColor = processColor(paperColor);
   const nativePaperColor = typeof processedPaperColor === 'number'
     ? processedPaperColor >>> 0
