@@ -1911,10 +1911,10 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..1a190f007c052e128bf4002daacc77c5
     * Constructor
 diff --git a/cpp/rnskia/RNSkPagerCompositor.h b/cpp/rnskia/RNSkPagerCompositor.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..33e74e00628a1946d580790994ade5814a27ab19
+index 0000000000000000000000000000000000000000..e631b546f9f1ba46ea91812d93107110118da727
 --- /dev/null
 +++ b/cpp/rnskia/RNSkPagerCompositor.h
-@@ -0,0 +1,3360 @@
+@@ -0,0 +1,3376 @@
 +#pragma once
 +
 +#include <algorithm>
@@ -5044,31 +5044,47 @@ index 0000000000000000000000000000000000000000..33e74e00628a1946d580790994ade581
 +    if (turns.empty()) {
 +      return;
 +    }
++    const auto &firstTurn = turns.front();
++    const int direction = firstTurn.direction;
++    const auto &firstSource = direction > 0
++                                  ? firstTurn.frontImage
++                                  : firstTurn.backgroundLeftImage;
++    float cumulativeProgress = 0;
 +    for (const auto &turn : turns) {
-+      const auto &source = turn.direction > 0
-+                               ? turn.frontImage
-+                               : turn.backgroundLeftImage;
-+      const auto &target = turn.direction > 0
++      cumulativeProgress +=
++          std::clamp(turn.lifecycleProgress, 0.0f, 1.0f);
++    }
++
++    const float bodyTop =
++        std::clamp(firstTurn.fixedChromeTop, 0.0f, viewportHeight);
++    const float bodyBottom = std::clamp(
++        viewportHeight - firstTurn.fixedChromeBottom, bodyTop,
++        viewportHeight);
++    const auto drawStripPage = [&](size_t pageIndex,
++                                   const sk_sp<SkImage> &image) {
++      const float destinationX = static_cast<float>(direction) *
++                                 (static_cast<float>(pageIndex) -
++                                  cumulativeProgress) *
++                                 viewportWidth;
++      if (destinationX <= -viewportWidth || destinationX >= viewportWidth) {
++        return;
++      }
++      drawClippedPage(canvas, bodyTop, bodyBottom, destinationX,
++                      viewportWidth, viewportHeight, image);
++    };
++
++    // Slide turns share one continuous page strip. Treating each rapid tap as
++    // an independent source/target pair would redraw the next source at x=0,
++    // visibly snapping the motion backwards while the preceding turn remains
++    // in flight. Summing their progress preserves the exact page position
++    // when a completed leading turn leaves the active array.
++    drawStripPage(0, firstSource);
++    for (size_t index = 0; index < turns.size(); index += 1) {
++      const auto &turn = turns[index];
++      const auto &target = direction > 0
 +                               ? turn.backgroundLeftImage
 +                               : turn.frontImage;
-+      if (source == nullptr || target == nullptr) {
-+        continue;
-+      }
-+      const float progress =
-+          std::clamp(turn.lifecycleProgress, 0.0f, 1.0f);
-+      const float sourceX =
-+          -static_cast<float>(turn.direction) * viewportWidth * progress;
-+      const float targetX =
-+          static_cast<float>(turn.direction) * viewportWidth *
-+          (1.0f - progress);
-+      const float bodyTop =
-+          std::clamp(turn.fixedChromeTop, 0.0f, viewportHeight);
-+      const float bodyBottom = std::clamp(
-+          viewportHeight - turn.fixedChromeBottom, bodyTop, viewportHeight);
-+      drawClippedPage(canvas, bodyTop, bodyBottom, sourceX, viewportWidth,
-+                      viewportHeight, source);
-+      drawClippedPage(canvas, bodyTop, bodyBottom, targetX, viewportWidth,
-+                      viewportHeight, target);
++      drawStripPage(index + 1, target);
 +    }
 +
 +    const auto &chromeTurn = turns.back();
