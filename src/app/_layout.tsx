@@ -3,12 +3,20 @@ import '@/global.css';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
-import { useUniwind } from 'uniwind';
+import { useLayoutEffect } from 'react';
+import { Uniwind, useUniwind } from 'uniwind';
 
 import { AppProviders } from '@/components/providers/app-providers';
+import { useApplicationSettingsStore } from '@/stores';
+
 export default function RootLayout() {
   const { theme } = useUniwind();
+  const themeMode = useApplicationSettingsStore((state) => state.themeMode);
   const isDark = theme === 'dark';
+
+  useLayoutEffect(() => {
+    Uniwind.setTheme(themeMode);
+  }, [themeMode]);
 
   return (
     <AppProviders>

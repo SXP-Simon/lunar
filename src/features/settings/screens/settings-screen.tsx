@@ -2,8 +2,9 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Uniwind, useUniwind } from 'uniwind';
+import { useUniwind } from 'uniwind';
 
+import { useApplicationSettingsStore } from '@/stores';
 import { AppearancePreviewSheet } from '../components/appearance-preview-sheet';
 import { SettingRow } from '../components/setting-row';
 import { SettingSection } from '../components/setting-section';
@@ -11,6 +12,7 @@ import { SettingSection } from '../components/setting-section';
 export function SettingsScreen() {
   const { theme } = useUniwind();
   const insets = useSafeAreaInsets();
+  const setThemeMode = useApplicationSettingsStore((state) => state.setThemeMode);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const isDark = theme === 'dark';
 
@@ -21,7 +23,7 @@ export function SettingsScreen() {
   );
 
   const handleThemeChange = (isSelected: boolean) => {
-    Uniwind.setTheme(isSelected ? 'dark' : 'light');
+    setThemeMode(isSelected ? 'dark' : 'light');
   };
 
   return (

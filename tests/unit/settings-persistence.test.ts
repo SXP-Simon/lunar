@@ -1,0 +1,107 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { useApplicationSettingsStore } from '../../src/stores/application-settings-store';
+import {
+  mmkvStateStorage,
+} from '../../src/stores/mmkv-state-storage';
+import { useReaderStore } from '../../src/stores/reader-store';
+
+const persistedValues = vi.hoisted(() => new Map<string, string>());
+const readerDefaults = vi.hoisted(() => ({
+  fontFamily: 'LunarWenKai',
+  fontSize: 18,
+  lineHeight: 1.65,
+  marginHorizontal: 24,
+  marginVertical: 36,
+  spreadMode: 'single' as const,
+}));
+
+vi.mock('react-native-mmkv', () => ({
+  createMMKV: () => ({
+    getString: (key: string) => persistedValues.get(key),
+    set: (key: string, value: string) => {
+      persistedValues.set(key, value);
+    },
+    remove: (key: string) => persistedValues.delete(key),
+  }),
+}));
+
+vi.mock('@/reader', () => ({
+  DEFAULT_READER_TYPOGRAPHY: readerDefaults,
+  normalizeReaderTypography: (typography: typeof readerDefaults) => {
+    const numericValues = [
+      typography.fontSize,
+      typography.lineHeight,
+      typography.marginHorizontal,
+      typography.marginVertical,
+    ];
+    if (numericValues.some((value) => !Number.isFinite(value) || value < 0)) {
+      throw new RangeError('Invalid reader typography.');
+    }
+    return { ...typography, fontFamily: readerDefaults.fontFamily };
+  },
+}));
+
+const APPLICATION_SETTINGS_KEY = 'settings.application';
+const READER_SETTINGS_KEY = 'settings.reader';
+
+afterEach(() => {
+  useApplicationSettingsStore.getState().setThemeMode('system');
+  useReaderStore.getState().reset();
+  mmkvStateStorage.removeItem(APPLICATION_SETTINGS_KEY);
+  mmkvStateStorage.removeItem(READER_SETTINGS_KEY);
+});
+
+describe('settings persistence', () => {
+  it('stores the selected application theme mode in MMKV', () => {
+    useApplicationSettingsStore.getState().setThemeMode('dark');
+
+    expect(readPersistedState(APPLICATION_SETTINGS_KEY)).toEqual({
+      themeMode: 'dark',
+    });
+  });
+
+  it('stores reader typography and page-turn animation without session state', () => {
+    useReaderStore.getState().updateTypography({
+      fontSize: 24,
+      lineHeight: 1.8,
+    });
+    useReaderStore.getState().setAnimationStyle('page');
+    useReaderStore.getState().setActiveBook('book-1');
+
+    expect(readPersistedState(READER_SETTINGS_KEY)).toEqual({
+      typography: {
+        ...readerDefaults,
+        fontSize: 24,
+        lineHeight: 1.8,
+      },
+      animationStyle: 'page',
+    });
+  });
+
+  it('uses reader defaults when persisted values are invalid', () => {
+    mmkvStateStorage.setItem(READER_SETTINGS_KEY, JSON.stringify({
+      state: {
+        typography: {
+          ...readerDefaults,
+          fontSize: -1,
+        },
+        animationStyle: 'unknown',
+      },
+      version: 1,
+    }));
+
+    useReaderStore.persist.rehydrate();
+
+    expect(useReaderStore.getState().typography).toEqual(readerDefaults);
+    expect(useReaderStore.getState().animationStyle).toBe('slide');
+  });
+});
+
+function readPersistedState(key: string): unknown {
+  const storedValue = mmkvStateStorage.getItem(key);
+  if (typeof storedValue !== 'string') {
+    throw new Error(`Expected a persisted value for ${key}.`);
+  }
+  return (JSON.parse(storedValue) as { state: unknown }).state;
+}
