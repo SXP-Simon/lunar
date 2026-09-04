@@ -137,9 +137,7 @@ describe('reader text selection', () => {
     const selection = createReaderTextSelection(entries, 0, 2);
     expect(selection && createReaderTextSelectionSearchQuery(selection)).toBe('First line\nSecond');
     expect(selection?.searchSegments.map((segment) => segment.text)).toEqual([
-      'First ',
-      'line',
-      'Second',
+      'First line\nSecond',
     ]);
   });
 });

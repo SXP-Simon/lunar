@@ -14,18 +14,20 @@ import { createReaderTextSelection } from '../../src/reader/interaction/text-sel
 
 const entries: ReaderHitEntry[] = [
   hit('第一行', 0, 0),
-  hit('第二行', 1, 24),
+  hit('第二行。', 1, 24),
 ];
 const sourceRanges: ReaderSourceRange[] = [
   { start: { nodePath: [1, 0], textOffset: 0 }, end: { nodePath: [1, 0], textOffset: 3 } },
-  { start: { nodePath: [1, 0], textOffset: 3 }, end: { nodePath: [1, 0], textOffset: 6 } },
+  { start: { nodePath: [1, 0], textOffset: 3 }, end: { nodePath: [1, 0], textOffset: 7 } },
 ];
 
 describe('reader highlight overlays', () => {
-  it('resolves every selected run separately and composes a durable source range', async () => {
+  it('resolves one page query containing a Chinese punctuation run', async () => {
     const runtime = runtimeWithSearchResults([
-      searchResult('第一行', 0, sourceRanges[0]),
-      searchResult('第二行', 1, sourceRanges[1]),
+      searchResultAcrossLines('第一行\n第二行。', {
+        start: sourceRanges[0].start,
+        end: sourceRanges[1].end,
+      }),
     ]);
     const selection = createReaderTextSelection(entries, 0, 1);
 
@@ -35,9 +37,9 @@ describe('reader highlight overlays', () => {
       start: sourceRanges[0].start,
       end: sourceRanges[1].end,
     });
-    expect(runtime.search).toHaveBeenCalledTimes(2);
+    expect(runtime.search).toHaveBeenCalledTimes(1);
     expect(runtime.search).toHaveBeenNthCalledWith(1, {
-      query: '第一行',
+      query: '第一行\n第二行。',
       caseSensitive: true,
       limit: 256,
     });
@@ -46,7 +48,7 @@ describe('reader highlight overlays', () => {
   it('rebuilds persisted multi-line highlight geometry from matching source segments', async () => {
     const runtime = runtimeWithSearchResults([
       searchResult('第一行', 0, sourceRanges[0]),
-      searchResult('第二行', 1, sourceRanges[1]),
+      searchResult('第二行。', 1, sourceRanges[1]),
     ]);
     const sourceRange = { start: sourceRanges[0].start, end: sourceRanges[1].end };
     const overlays = await resolveReaderHighlightOverlays(
@@ -59,7 +61,7 @@ describe('reader highlight overlays', () => {
         bookId: 'book',
         href: 'chapter.xhtml',
         sourceRange,
-        text: '第一行\n第二行',
+        text: '第一行\n第二行。',
         createdAt: 1,
       }],
       '#ffee00',
@@ -115,16 +117,29 @@ function runtimeWithSearchResults(results: readonly ReaderSearchResult[]): Reade
       results: results.filter((result) => result.context === query),
     })),
     resolveTextRangeGeometry: vi.fn(async (request) => {
-      const entry = entries.find((candidate) =>
-        candidate.textRange?.start.lineIndex === request.start.lineIndex);
-      return entry ? [{
+      return entries.filter((candidate) => {
+        const lineIndex = candidate.textRange?.start.lineIndex;
+        return lineIndex !== undefined
+          && lineIndex >= request.start.lineIndex
+          && lineIndex <= request.end.lineIndex;
+      }).map((entry) => ({
         bounds: entry.bounds,
-        blockIndex: request.start.blockIndex,
-        lineIndex: request.start.lineIndex,
-        runIndex: request.start.runIndex,
-        startCharIndex: request.start.charIndex,
-        endCharIndex: request.end.charIndex,
-      }] : [];
+        blockIndex: entry.textRange!.start.blockIndex,
+        lineIndex: entry.textRange!.start.lineIndex,
+        runIndex: entry.textRange!.start.runIndex,
+        startCharIndex: entry.textRange!.start.charIndex,
+        endCharIndex: entry.textRange!.end.charIndex,
+      }));
     }),
   } as unknown as ReaderRuntime;
+}
+
+function searchResultAcrossLines(
+  context: string,
+  sourceRange: ReaderSourceRange,
+): ReaderSearchResult {
+  return {
+    ...searchResult(context, 0, sourceRange),
+    end: { blockIndex: 0, lineIndex: 1, runIndex: 0, charIndex: entries[1].text.length },
+  };
 }

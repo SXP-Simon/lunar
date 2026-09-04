@@ -41,7 +41,11 @@ import {
   type ReaderInteractiveTurn,
   type ReaderPageTurnSurfaceBinding,
 } from '../anime';
-import type { ReaderOverlayRect } from './overlay-renderer';
+import {
+  mergeReaderOverlayRects,
+  renderSkiaOverlays,
+  type ReaderOverlayRect,
+} from './overlay-renderer';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
 
 export type { ReaderSurfaceTransform } from './surface-transform';
@@ -120,11 +124,16 @@ export function ReaderSurface({
   const currentKey = snapshot.phase === 'ready' && compiled && frame
     ? `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 0}`
     : undefined;
+  const currentOverlays = useMemo(
+    () => mergeReaderOverlayRects(overlays.filter((overlay) =>
+      overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId)),
+    [overlays, snapshot.revisionId],
+  );
   const currentContent = useMemo<ReaderPageContent | undefined>(
     () => currentKey && compiled && frame
-      ? { key: currentKey, snapshot, picture: compiled, frame }
+      ? { key: currentKey, snapshot, picture: compiled, frame, overlays: currentOverlays }
       : undefined,
-    [compiled, currentKey, frame, snapshot],
+    [compiled, currentKey, currentOverlays, frame, snapshot],
   );
   const {
     transition: activeTransition,
@@ -157,15 +166,18 @@ export function ReaderSurface({
   const incomingKey = incomingContent?.key ?? currentKey;
 
   const automaticDirection = automaticTurns[0]?.direction ?? 1;
-  const automaticBackgroundContent = automaticTurns.length === 0
+  const automaticPaintTurns = useMemo(
+    () => automaticPageTurnPaintOrder(automaticTurns, automaticDirection).map((turn) => ({
+      ...turn,
+      from: activeTransition?.from.key === turn.from.key ? activeTransition.from : turn.from,
+    })),
+    [activeTransition, automaticDirection, automaticTurns],
+  );
+  const automaticBackgroundContent = automaticPaintTurns.length === 0
     ? undefined
     : automaticDirection > 0
-      ? automaticTurns.at(-1)?.to
-      : automaticTurns[0]?.from;
-  const automaticPaintTurns = useMemo(
-    () => automaticPageTurnPaintOrder(automaticTurns, automaticDirection),
-    [automaticDirection, automaticTurns],
-  );
+      ? automaticPaintTurns.at(-1)?.to
+      : automaticPaintTurns[0]?.from;
   const automaticPageTurnsVisible = pageTurnVisualKind === 'curl'
     && automaticTurns.length > 0;
 
@@ -194,6 +206,7 @@ export function ReaderSurface({
         bottom: overlayBottom,
         left: overlayLeft,
       },
+      overlays: content.overlays,
       pageScale,
       progress: progressLabelForSnapshot(content.snapshot),
       progressFont: runtime.getUiFont(12 / pageScale),
@@ -242,7 +255,7 @@ export function ReaderSurface({
         onAutomaticTurnComplete !== undefined
         || pageTurnSurfaceBinding !== undefined
       ),
-    turns: automaticTurns,
+    turns: automaticPaintTurns,
     pixelWidth: nativePixelWidth,
     pixelHeight: nativePixelHeight,
     paperColor: nativePaperColor,
@@ -365,6 +378,7 @@ export function ReaderSurface({
         bottom: overlayBottom,
         left: overlayLeft,
       },
+      overlays: source.overlays,
     });
   }, [
     offsetX,
@@ -461,7 +475,7 @@ export function ReaderSurface({
         <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
           {nativeAutomaticPageTurnsVisible && nativeAutomaticBaseContent ? (
             <Group>
-              <Picture picture={nativeAutomaticBaseContent.picture.picture} />
+              <ReaderPagePicture content={nativeAutomaticBaseContent} />
               {renderChrome(
                 nativeAutomaticBaseContent.snapshot,
                 nativeAutomaticBaseContent.frame,
@@ -469,7 +483,7 @@ export function ReaderSurface({
             </Group>
           ) : fallbackAutomaticPageTurnsVisible && automaticBackgroundContent ? (
             <Group>
-              <Picture picture={automaticBackgroundContent.picture.picture} />
+              <ReaderPagePicture content={automaticBackgroundContent} />
               {renderChrome(
                 automaticBackgroundContent.snapshot,
                 automaticBackgroundContent.frame,
@@ -498,7 +512,7 @@ export function ReaderSurface({
               <Group key="page-current">
                 {nativeInteractiveBaseContent ? (
                   <>
-                    <Picture picture={nativeInteractiveBaseContent.picture.picture} />
+                    <ReaderPagePicture content={nativeInteractiveBaseContent} />
                     {renderChrome(
                       nativeInteractiveBaseContent.snapshot,
                       nativeInteractiveBaseContent.frame,
@@ -506,14 +520,14 @@ export function ReaderSurface({
                   </>
                 ) : (
                   <>
-                    {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                    {incomingContent && <ReaderPagePicture content={incomingContent} />}
                     {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
                   </>
                 )}
               </Group>
               {activeTransition && !nativeInteractiveGestureDriven && isSinglePreviousPageTurn && (
                 <Group key={`page-source:${activeTransition.from.key}`}>
-                  <Picture picture={activeTransition.from.picture.picture} />
+                  <ReaderPagePicture content={activeTransition.from} />
                   {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
                 </Group>
               )}
@@ -546,11 +560,11 @@ export function ReaderSurface({
           ) : activeTransition && pageTurnVisualKind === 'cover' ? (
             <Group>
               <Group>
-                <Picture picture={activeTransition.from.picture.picture} />
+                <ReaderPagePicture content={activeTransition.from} />
                 {renderChrome(activeTransition.from.snapshot, activeTransition.from.frame)}
               </Group>
               <Group matrix={coverMatrix}>
-                {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                {incomingContent && <ReaderPagePicture content={incomingContent} />}
                 {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
               </Group>
             </Group>
@@ -558,7 +572,7 @@ export function ReaderSurface({
             <Group>
               {nativeInteractiveGestureDriven && nativeInteractiveBaseContent ? (
                 <Group key={`slide-native-base:${nativeInteractiveBaseContent.key}`}>
-                  <Picture picture={nativeInteractiveBaseContent.picture.picture} />
+                  <ReaderPagePicture content={nativeInteractiveBaseContent} />
                   {renderChrome(
                     nativeInteractiveBaseContent.snapshot,
                     nativeInteractiveBaseContent.frame,
@@ -569,13 +583,13 @@ export function ReaderSurface({
                   <Group
                     key="slide-current"
                     matrix={activeTransition ? incomingSlideMatrix : undefined}>
-                    {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                    {incomingContent && <ReaderPagePicture content={incomingContent} />}
                   </Group>
                   {activeTransition && (
                     <Group
                       key={`slide-outgoing:${activeTransition.from.key}`}
                       matrix={outgoingSlideMatrix}>
-                      <Picture picture={activeTransition.from.picture.picture} />
+                      <ReaderPagePicture content={activeTransition.from} />
                     </Group>
                   )}
                   {incomingFrame && renderChrome(
@@ -589,25 +603,33 @@ export function ReaderSurface({
             </Group>
           ) : (
             <>
-              {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+              {incomingContent && <ReaderPagePicture content={incomingContent} />}
               {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
             </>
           )}
-          {!activeTransition && !automaticPageTurnsVisible && overlays.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId).map((overlay, index) => (
-            <SkiaRect
-              key={`${index}:${overlay.bounds.x}:${overlay.bounds.y}`}
-              x={overlay.bounds.x}
-              y={overlay.bounds.y}
-              width={overlay.bounds.width}
-              height={overlay.bounds.height}
-              color={overlay.color}
-              style={overlay.outline ? 'stroke' : 'fill'}
-              strokeWidth={overlay.thickness ?? 1}
-            />
-          ))}
         </Group>
       )}
     </Canvas>
+  );
+}
+
+function ReaderPagePicture({ content }: { readonly content: ReaderPageContent }) {
+  return (
+    <>
+      <Picture picture={content.picture.picture} />
+      {mergeReaderOverlayRects(content.overlays ?? []).map((overlay, index) => (
+        <SkiaRect
+          key={`${index}:${overlay.bounds.x}:${overlay.bounds.y}`}
+          x={overlay.bounds.x}
+          y={overlay.bounds.y}
+          width={overlay.bounds.width}
+          height={overlay.bounds.height}
+          color={overlay.color}
+          style={overlay.outline ? 'stroke' : 'fill'}
+          strokeWidth={overlay.thickness ?? 1}
+        />
+      ))}
+    </>
   );
 }
 
@@ -660,6 +682,7 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
       offsetX,
       offsetY,
       overlayInsets,
+      overlays: source.overlays,
       pageScale,
       progress: progressText,
       progressFont,
@@ -762,6 +785,7 @@ interface PageCurlPictureOptions {
   readonly offsetX: number;
   readonly offsetY: number;
   readonly overlayInsets: Readonly<{ top: number; right: number; bottom: number; left: number }>;
+  readonly overlays?: readonly ReaderOverlayRect[];
   readonly pageScale: number;
   readonly progress: string;
   readonly progressFont?: SkFont;
@@ -776,6 +800,7 @@ function composePageCurlPicture(options: PageCurlPictureOptions): SkPicture {
   const recorder = Skia.PictureRecorder();
   const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, options.width, options.height));
   canvas.drawPicture(options.base);
+  renderSkiaOverlays(canvas, options.overlays ?? []);
   const paint = Skia.Paint();
   paint.setAntiAlias(true);
   paint.setColor(Skia.Color(options.color));

@@ -20,7 +20,7 @@ export async function resolveReaderSelectionSourceRange(
   if (selection.sourceRange) return selection.sourceRange;
   if (
     selection.searchSegments.length === 0
-    || selection.searchSegments.length !== selection.entries.length
+    || selection.searchSegments.length !== selection.geometryRequests.length
   ) return undefined;
 
   const ranges: ReaderSourceRange[] = [];
@@ -93,7 +93,25 @@ async function resolveHighlightSegments(
   href: string,
   pageIndexes: ReadonlySet<number>,
 ): Promise<readonly ReaderSearchResult[]> {
-  const textSegments = highlight.text.replace(/\r\n?/gu, '\n').split('\n').filter(Boolean);
+  const normalizedText = highlight.text.replace(/\r\n?/gu, '\n');
+  if (!normalizedText) return [];
+
+  const fullResponse = await runtime.search({
+    query: normalizedText,
+    caseSensitive: true,
+    limit: 256,
+  });
+  const exactResult = fullResponse.results.find((result) => {
+    const range = result.locator?.sourceRange;
+    return result.locator?.manifestHref === href
+      && pageIndexes.has(result.pageIndex)
+      && range !== undefined
+      && sameSourcePoint(range.start, highlight.sourceRange.start)
+      && sameSourcePoint(range.end, highlight.sourceRange.end);
+  });
+  if (exactResult) return [exactResult];
+
+  const textSegments = normalizedText.split('\n').filter(Boolean);
   if (textSegments.length === 0) return [];
   const responses = await Promise.all(textSegments.map((query) => runtime.search({
     query,

@@ -53,10 +53,16 @@ export function useReaderPageTransition(
     }
     : undefined, [displayedContent, interactiveContent, interactiveTargetSpread, interactiveTurn?.direction]);
   const automaticTransition = useMemo(
-    () => automaticTurn && pageTurnEffect.orchestration.usesPlanarAutomaticTransition
-      ? automaticPageTurnTransition(automaticTurn)
-      : undefined,
-    [automaticTurn, pageTurnEffect],
+    () => {
+      if (!automaticTurn || !pageTurnEffect.orchestration.usesPlanarAutomaticTransition) {
+        return undefined;
+      }
+      const next = automaticPageTurnTransition(automaticTurn);
+      return displayedContent?.key === next.from.key
+        ? { ...next, from: displayedContent }
+        : next;
+    },
+    [automaticTurn, displayedContent, pageTurnEffect],
   );
   const activeTransition = interactiveTransition
     ?? automaticTransition
@@ -145,7 +151,10 @@ export function useReaderPageTransition(
       animatedProgress.set(1);
       return;
     }
-    if (displayedContent?.key === current.key) return;
+    if (displayedContent?.key === current.key) {
+      if (displayedContent !== current) setDisplayedContent(current);
+      return;
+    }
 
     if (suppressAutomaticTransition) {
       setDisplayedContent(current);

@@ -267,18 +267,30 @@ function createSourceRange(
 function createSearchSegments(
   portions: readonly ReaderTextSelectionPortion[],
 ): ReaderTextSelectionSearchSegment[] {
-  return portions.flatMap((portion) => {
-    const textRange = portion.entry.textRange;
-    if (!textRange) return [];
-    return [{
-      text: portion.entry.text.slice(portion.startCharIndex, portion.endCharIndex),
-      request: {
-        pageIndex: portion.entry.pageIndex,
-        start: withCharIndex(textRange.start, portion.startCharIndex),
-        end: withCharIndex(textRange.end, portion.endCharIndex),
-      },
-    }];
-  });
+  const segments: ReaderTextSelectionSearchSegment[] = [];
+  let pageStart = 0;
+  while (pageStart < portions.length) {
+    const pageIndex = portions[pageStart].entry.pageIndex;
+    let pageEnd = pageStart;
+    while (pageEnd + 1 < portions.length && portions[pageEnd + 1].entry.pageIndex === pageIndex) {
+      pageEnd += 1;
+    }
+    const pagePortions = portions.slice(pageStart, pageEnd + 1);
+    const first = pagePortions[0];
+    const last = pagePortions.at(-1);
+    if (first?.entry.textRange && last?.entry.textRange) {
+      segments.push({
+        text: joinSelectionText(pagePortions),
+        request: {
+          pageIndex,
+          start: withCharIndex(first.entry.textRange.start, first.startCharIndex),
+          end: withCharIndex(last.entry.textRange.end, last.endCharIndex),
+        },
+      });
+    }
+    pageStart = pageEnd + 1;
+  }
+  return segments;
 }
 
 function addSourceTextOffset(point: ReaderSourcePoint, offset: number): ReaderSourcePoint {
