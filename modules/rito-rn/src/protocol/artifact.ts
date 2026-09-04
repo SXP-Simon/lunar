@@ -3,9 +3,10 @@ import { RitoBinaryReader } from './binary';
 import { decodeRitoDisplayListWithTypedColors } from './display-list';
 import type {
   RitoAdjacentAvailability, RitoArtifact, RitoDisplayListPayload, RitoFontRef, RitoHitEntry,
-  RitoLocator, RitoLocatorMatch, RitoNavigation, RitoPage, RitoRect, RitoResourceKind, RitoResourceRef,
-  RitoSemanticNode, RitoSemanticRole, RitoSourcePoint, RitoSourceRange, RitoTextProfile, RitoTextRunOffset,
+  RitoLocatorMatch, RitoNavigation, RitoPage, RitoRect, RitoResourceKind, RitoResourceRef,
+  RitoSemanticNode, RitoSemanticRole, RitoTextProfile, RitoTextRunOffset,
 } from './artifact-types';
+import { readRitoLocator, readRitoSourcePoint } from './locator';
 
 const MAX_WIRE_BYTES = 256 * 1024 * 1024;
 
@@ -23,7 +24,7 @@ export function decodeRitoArtifact(data: Uint8Array): RitoArtifact {
     revisionId: reader.readExternalId('revision id'),
     revisionVersion: reader.readU32(),
     artifactId: reader.readExternalId('artifact id'),
-    locator: readLocator(reader),
+    locator: readRitoLocator(reader),
     matchedBy: readEnum(reader, ['source-range', 'source-point', 'anchor', 'progression', 'href'] as const, 'locator match'),
     localPageIndex: reader.readU32(),
     localSpreadIndex: reader.readU32(),
@@ -81,20 +82,6 @@ function readDisplayListPayload(reader: RitoBinaryReader): RitoDisplayListPayloa
   });
 }
 
-function readLocator(reader: RitoBinaryReader): RitoLocator {
-  return reader.readRecord('locator', (record) => ({
-    href: record.readUtf8(),
-    anchorId: record.readOption('locator anchor', () => record.readUtf8()),
-    sourcePoint: record.readOption('source point', () => readSourcePoint(record)),
-    sourceRange: record.readOption('source range', () => ({ start: readSourcePoint(record), end: readSourcePoint(record) })),
-    progression: record.readOption('locator progression', () => record.readF64()),
-  }));
-}
-
-function readSourcePoint(reader: RitoBinaryReader): RitoSourcePoint {
-  return reader.readRecord('source point', (record) => ({ nodePath: readU32Collection(record, 'source point path'), textOffset: record.readU64() }));
-}
-
 function readResourceRef(reader: RitoBinaryReader): RitoResourceRef {
   return { kind: readEnum(reader, ['image', 'font', 'stylesheet'] as const, 'resource kind'), href: reader.readUtf8() };
 }
@@ -114,7 +101,7 @@ function readPage(reader: RitoBinaryReader): RitoPage {
 }
 
 function readHit(reader: RitoBinaryReader): RitoHitEntry {
-  return { pageIndex: reader.readU32(), bounds: readRect(reader), text: reader.readUtf8(), href: reader.readOption('hit href', () => reader.readUtf8()), sourcePoint: reader.readOption('hit source point', () => readSourcePoint(reader)), imageSrc: reader.readOption('hit image source', () => reader.readUtf8()), imageAlt: reader.readOption('hit image alternative', () => reader.readUtf8()), footnoteKey: reader.readOption('hit footnote key', () => reader.readUtf8()), footnotePending: reader.readBoolean('hit footnote pending') };
+  return { pageIndex: reader.readU32(), bounds: readRect(reader), text: reader.readUtf8(), href: reader.readOption('hit href', () => reader.readUtf8()), sourcePoint: reader.readOption('hit source point', () => readRitoSourcePoint(reader)), imageSrc: reader.readOption('hit image source', () => reader.readUtf8()), imageAlt: reader.readOption('hit image alternative', () => reader.readUtf8()), footnoteKey: reader.readOption('hit footnote key', () => reader.readUtf8()), footnotePending: reader.readBoolean('hit footnote pending') };
 }
 
 function readSemantic(reader: RitoBinaryReader, depth: number): RitoSemanticNode {

@@ -1,6 +1,7 @@
 import type {
   ReaderHitEntry,
   ReaderRect,
+  ReaderSearchResult,
   ReaderSourcePoint,
   ReaderSourceRange,
   ReaderTextPosition,
@@ -33,6 +34,35 @@ export interface ReaderTextSelection {
   readonly origin: ReaderTextSelectionOrigin;
   readonly range: ReaderTextSelectionOrigin;
   readonly sourceRange?: ReaderSourceRange;
+}
+
+export function createReaderTextSelectionSearchQuery(
+  selection: ReaderTextSelection,
+): string {
+  return selection.text.replace(/\n/gu, '');
+}
+
+export function resolveReaderTextSelectionSourceRange(
+  selection: ReaderTextSelection,
+  results: readonly ReaderSearchResult[],
+  href: string,
+): ReaderSourceRange | undefined {
+  if (selection.sourceRange) return selection.sourceRange;
+  if (selection.geometryRequests.length !== 1) return undefined;
+  const request = selection.geometryRequests[0];
+  const pageCandidates = results.filter((result) =>
+    result.pageIndex === request.pageIndex
+    && result.locator?.sourceRange,
+  );
+  const chapterCandidates = pageCandidates.filter((result) =>
+    result.locator?.manifestHref === href,
+  );
+  const candidates = chapterCandidates.length > 0 ? chapterCandidates : pageCandidates;
+  return candidates.reduce<ReaderSearchResult | undefined>((closest, candidate) =>
+    !closest || compareTextPositionDistance(candidate, closest, request) < 0
+      ? candidate
+      : closest,
+  undefined)?.locator?.sourceRange;
 }
 
 export function findReaderHitIndex(
@@ -200,8 +230,9 @@ function createSelection(
 function createSourceRange(
   portions: readonly ReaderTextSelectionPortion[],
 ): ReaderSourceRange | undefined {
-  const first = portions[0];
-  const last = portions.at(-1);
+  const sourcedPortions = portions.filter((portion) => portion.entry.sourcePoint);
+  const first = sourcedPortions[0];
+  const last = sourcedPortions.at(-1);
   if (!first?.entry.sourcePoint || !last?.entry.sourcePoint) return undefined;
   return {
     start: addSourceTextOffset(first.entry.sourcePoint, first.startCharIndex),
@@ -276,6 +307,36 @@ function createGeometryRequests(
 
 function withCharIndex(position: ReaderTextPosition, charIndex: number): ReaderTextPosition {
   return { ...position, charIndex };
+}
+
+function compareTextPositionDistance(
+  left: ReaderSearchResult,
+  right: ReaderSearchResult,
+  request: ReaderTextRangeGeometryRequest,
+): number {
+  const leftDistance = textPositionDistance(left, request);
+  const rightDistance = textPositionDistance(right, request);
+  for (let index = 0; index < leftDistance.length; index += 1) {
+    const difference = leftDistance[index] - rightDistance[index];
+    if (difference !== 0) return difference;
+  }
+  return 0;
+}
+
+function textPositionDistance(
+  result: ReaderSearchResult,
+  request: ReaderTextRangeGeometryRequest,
+): readonly number[] {
+  return [
+    Math.abs(result.start.blockIndex - request.start.blockIndex)
+      + Math.abs(result.end.blockIndex - request.end.blockIndex),
+    Math.abs(result.start.lineIndex - request.start.lineIndex)
+      + Math.abs(result.end.lineIndex - request.end.lineIndex),
+    Math.abs(result.start.runIndex - request.start.runIndex)
+      + Math.abs(result.end.runIndex - request.end.runIndex),
+    Math.abs(result.start.charIndex - request.start.charIndex)
+      + Math.abs(result.end.charIndex - request.end.charIndex),
+  ];
 }
 
 function isSelectable(entry: ReaderHitEntry): boolean {

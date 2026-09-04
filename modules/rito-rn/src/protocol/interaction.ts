@@ -1,6 +1,7 @@
 import { RitoWireError } from '../errors';
 import { RitoBinaryReader, RitoBinaryWriter } from './binary';
 import type { RitoLocator, RitoRect } from './artifact-types';
+import { readRitoLocator } from './locator';
 
 export interface RitoTextPosition { readonly blockIndex: number; readonly lineIndex: number; readonly runIndex: number; readonly charIndex: number }
 export interface RitoSearchRequest { readonly sessionId: bigint; readonly artifactId: bigint; readonly query: string; readonly caseSensitive?: boolean; readonly wholeWord?: boolean; readonly limit?: number }
@@ -48,12 +49,10 @@ export function decodeRitoFootnote(data: Uint8Array): RitoFootnote {
   reader.expectExhausted(); return result;
 }
 
-function readSearchResult(reader: RitoBinaryReader): RitoSearchResult { return { pageIndex: reader.readU32(), spreadIndex: reader.readU32(), start: readPosition(reader), end: readPosition(reader), context: reader.readUtf8(), locator: reader.readOption('search locator', () => readLocator(reader)) }; }
+function readSearchResult(reader: RitoBinaryReader): RitoSearchResult { return { pageIndex: reader.readU32(), spreadIndex: reader.readU32(), start: readPosition(reader), end: readPosition(reader), context: reader.readUtf8(), locator: reader.readOption('search locator', () => readRitoLocator(reader, 'search locator')) }; }
 function readPosition(reader: RitoBinaryReader): RitoTextPosition { return { blockIndex: reader.readU32(), lineIndex: reader.readU32(), runIndex: reader.readU32(), charIndex: reader.readU32() }; }
 function writePosition(writer: RitoBinaryWriter, value: RitoTextPosition): void { writer.writeU32(value.blockIndex).writeU32(value.lineIndex).writeU32(value.runIndex).writeU32(value.charIndex); }
 function readTextRect(reader: RitoBinaryReader): RitoTextRect { return { bounds: { x: reader.readF64(), y: reader.readF64(), width: reader.readF64(), height: reader.readF64() }, blockIndex: reader.readU32(), lineIndex: reader.readU32(), runIndex: reader.readU32(), startCharIndex: reader.readU32(), endCharIndex: reader.readU32() }; }
-function readLocator(reader: RitoBinaryReader): RitoLocator { return reader.readRecord('search locator', (record) => ({ href: record.readUtf8(), anchorId: record.readOption('locator anchor', () => record.readUtf8()), sourcePoint: record.readOption('source point', () => readSourcePoint(record)), sourceRange: record.readOption('source range', () => ({ start: readSourcePoint(record), end: readSourcePoint(record) })), progression: record.readOption('locator progression', () => record.readF64()) })); }
-function readSourcePoint(reader: RitoBinaryReader) { return reader.readRecord('source point', (record) => ({ nodePath: Array.from({ length: record.readCount('source point path') }, () => record.readU32()), textOffset: record.readU64() })); }
 function message(magic: string): RitoBinaryWriter { return new RitoBinaryWriter().writeAscii(magic).writeU32(1).writeU64(0n); }
 function finish(writer: RitoBinaryWriter): Uint8Array { const bytes = writer.toUint8Array(); new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setBigUint64(12, BigInt(bytes.byteLength), true); return bytes; }
 function open(data: Uint8Array, magic: string): RitoBinaryReader { const reader = new RitoBinaryReader(data); reader.expectHeader(magic); if (reader.readU32() !== 1) throw new RitoWireError(`Unsupported ${magic} wire version.`); if (reader.readU64() !== BigInt(data.byteLength)) throw new RitoWireError(`${magic} total length does not match input.`); return reader; }

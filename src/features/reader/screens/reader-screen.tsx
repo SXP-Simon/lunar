@@ -19,9 +19,11 @@ import {
 import { IconTabBar } from '@/components/ui/icon-tab-bar';
 import { useTranslation } from '@/i18n';
 import {
+  createReaderTextSelectionSearchQuery,
   createReaderWordSelectionAtPoint,
   createReaderTextSelectionFromSourceRange,
   findReaderHitIndex,
+  resolveReaderTextSelectionSourceRange,
   updateReaderTextSelectionBoundaryAtPoint,
   updateReaderTextSelectionAtPoint,
   type ReaderFootnote,
@@ -72,6 +74,7 @@ export default function ReaderScreen() {
   const [footnote, setFootnote] = useState<ReaderFootnote>();
   const [isFootnoteOpen, setIsFootnoteOpen] = useState(false);
   const [selectionState, setSelection] = useState<OwnedReaderTextSelection>();
+  const [isHighlighting, setIsHighlighting] = useState(false);
   const selectionRef = useRef<ReaderTextSelection | undefined>(undefined);
   const [surfaceTransform, setSurfaceTransform] = useState<ReaderSurfaceTransform>();
   const footnoteRequestRef = useRef(0);
@@ -386,14 +389,36 @@ export default function ReaderScreen() {
 
   const highlightSelection = useCallback(async () => {
     const href = session.snapshot.position?.locator?.manifestHref;
-    if (!selection?.sourceRange || !href || !bookId) {
+    if (isHighlighting) return;
+    if (!selection || !href || !bookId) {
       toast.show({ variant: 'danger', label: t('reader.highlightUnavailable') });
       return;
     }
+    setIsHighlighting(true);
     try {
+      let sourceRange = selection.sourceRange;
+      if (!sourceRange) {
+        const query = createReaderTextSelectionSearchQuery(selection);
+        if (query) {
+          const response = await session.runtime.search({
+            query,
+            caseSensitive: true,
+            limit: 256,
+          });
+          sourceRange = resolveReaderTextSelectionSourceRange(
+            selection,
+            response.results,
+            href,
+          );
+        }
+      }
+      if (!sourceRange) {
+        toast.show({ variant: 'danger', label: t('reader.highlightUnavailable') });
+        return;
+      }
       await addHighlight({
         href,
-        sourceRange: selection.sourceRange,
+        sourceRange,
         text: selection.text,
       });
       toast.show({ variant: 'success', label: t('reader.highlightSaved') });
@@ -404,8 +429,10 @@ export default function ReaderScreen() {
         label: t('reader.highlightSaveFailed'),
         description: error instanceof Error ? error.message : undefined,
       });
+    } finally {
+      setIsHighlighting(false);
     }
-  }, [addHighlight, bookId, clearSelection, selection, session.snapshot.position?.locator?.manifestHref, t, toast]);
+  }, [addHighlight, bookId, clearSelection, isHighlighting, selection, session.runtime, session.snapshot.position?.locator?.manifestHref, t, toast]);
 
   const visibleHighlightSelections = useMemo(() => {
     const href = session.snapshot.position?.locator?.manifestHref;
@@ -581,7 +608,7 @@ export default function ReaderScreen() {
           copyLabel={t('reader.copySelection')}
           endHandleLabel={t('reader.selectionEndHandle')}
           highlightLabel={t('reader.highlightSelection')}
-          isHighlightDisabled={!selection.sourceRange}
+          isHighlightDisabled={isHighlighting}
           onBoundaryMove={updateSelectionBoundary}
           onBoundaryMoveEnd={() => void refineSelectionGeometry()}
           onCopy={() => void copySelection()}

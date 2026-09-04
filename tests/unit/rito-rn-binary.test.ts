@@ -191,8 +191,15 @@ describe('Rito React Native binary protocol', () => {
     const display = new RitoBinaryWriter().writeAscii('RITODL1').writeU32(1).writeU32(0).toUint8Array();
     const artifact = message('RITOART1')
       .writeU32(2).writeU32(1).writeU64(91n).writeU64(12n).writeU64(44n).writeU32(3).writeU64(7001n)
-      .writeRecord((locator) => locator.writeUtf8('chapter.xhtml').writeU8(0).writeU8(0).writeU8(0).writeU8(0))
-      .writeU32(3).writeU32(7).writeU32(7).writeU32(1).writeU32(7)
+      .writeRecord((locator) => {
+        locator.writeUtf8('chapter.xhtml').writeU8(0).writeU8(0).writeU8(1)
+          .writeRecord((range) => {
+            writeSourcePoint(range, [1, 2], 3n);
+            writeSourcePoint(range, [1, 2], 4n);
+          })
+          .writeU8(0);
+      })
+      .writeU32(0).writeU32(7).writeU32(7).writeU32(1).writeU32(7)
       .writeF64(360).writeF64(640).writeU8(0).writeU8(0).writeU8(0)
       .writeU32(0).writeU32(1).writeU32(1).writeRecord((record) => record.writeU32(1).writeU32(0).writeU32(32).writeBytes(new Uint8Array(32)).writeU64(BigInt(display.byteLength)).writeBytes(display))
       .writeU32(1).writeRecord((record) => record.writeU32(0).writeUtf8('images/cover.png'))
@@ -201,6 +208,10 @@ describe('Rito React Native binary protocol', () => {
 
     const decoded = decodeRitoArtifact(finish(artifact));
     expect(decoded.artifactId).toBe(7001n);
+    expect(decoded.locator.sourceRange).toEqual({
+      start: { nodePath: [1, 2], textOffset: 3n },
+      end: { nodePath: [1, 2], textOffset: 4n },
+    });
     expect(decoded.displayList.commandCount).toBe(0);
     expect(decoded.fonts[0]?.family).toBe('Rito Serif');
 
@@ -238,8 +249,27 @@ describe('Rito React Native binary protocol', () => {
     const geometry = encodeRitoTextRangeRequest({ sessionId: 1n, artifactId: 2n, pageIndex: 3, start: { blockIndex: 0, lineIndex: 1, runIndex: 2, charIndex: 3 }, end: { blockIndex: 0, lineIndex: 1, runIndex: 2, charIndex: 4 } });
     expect(geometry.byteLength).toBe(72);
 
-    const searchResponse = message('RITOSRS1').writeU64(2n).writeUtf8('章').writeU8(0).writeU32(4).writeU8(1).writeU32(0);
-    expect(decodeRitoSearchResponse(finish(searchResponse)).scopeComplete).toBe(true);
+    const searchResponse = message('RITOSRS1')
+      .writeU64(2n).writeUtf8('章').writeU8(0).writeU32(4).writeU8(1).writeU32(1)
+      .writeRecord((result) => {
+        result.writeU32(3).writeU32(2);
+        writeTextPosition(result, 0, 1, 2, 3);
+        writeTextPosition(result, 0, 1, 2, 4);
+        result.writeUtf8('章节').writeU8(1).writeRecord((locator) => {
+          locator.writeUtf8('chapter.xhtml').writeU8(0).writeU8(0).writeU8(1)
+            .writeRecord((range) => {
+              writeSourcePoint(range, [1, 2], 3n);
+              writeSourcePoint(range, [1, 2], 4n);
+            })
+            .writeU8(0);
+        });
+      });
+    const decodedSearch = decodeRitoSearchResponse(finish(searchResponse));
+    expect(decodedSearch.scopeComplete).toBe(true);
+    expect(decodedSearch.results[0]?.locator?.sourceRange).toEqual({
+      start: { nodePath: [1, 2], textOffset: 3n },
+      end: { nodePath: [1, 2], textOffset: 4n },
+    });
     const textResponse = message('RITOTRG1').writeU64(2n).writeU32(3).writeU32(0);
     expect(decodeRitoTextRangeGeometry(finish(textResponse)).rects).toEqual([]);
     const footnote = message('RITOFTN1').writeU64(2n).writeUtf8('#n1').writeU32(0).writeUtf8('说明').writeUtf8('<p>说明</p>');
@@ -249,6 +279,28 @@ describe('Rito React Native binary protocol', () => {
 
 function message(magic: string): RitoBinaryWriter {
   return new RitoBinaryWriter().writeAscii(magic).writeU32(1).writeU64(0n);
+}
+
+function writeTextPosition(
+  writer: RitoBinaryWriter,
+  blockIndex: number,
+  lineIndex: number,
+  runIndex: number,
+  charIndex: number,
+): void {
+  writer.writeU32(blockIndex).writeU32(lineIndex).writeU32(runIndex).writeU32(charIndex);
+}
+
+function writeSourcePoint(
+  writer: RitoBinaryWriter,
+  nodePath: readonly number[],
+  textOffset: bigint,
+): void {
+  writer.writeRecord((point) => {
+    point.writeU32(nodePath.length);
+    for (const part of nodePath) point.writeU32(part);
+    point.writeU64(textOffset);
+  });
 }
 
 function finish(writer: RitoBinaryWriter): Uint8Array {

@@ -65,7 +65,7 @@ export function ReaderSelectionControls({
       <View
         accessibilityLabel={selectionLabel}
         accessibilityRole="toolbar"
-        className="absolute z-30 h-[52px] flex-row items-center rounded-lg border border-border bg-surface px-1 shadow-lg"
+        className="absolute z-30 h-[52px] flex-row items-center justify-center rounded-lg border border-border bg-surface px-1 shadow-lg"
         style={{
           left: layout.toolbar.left,
           top: layout.toolbar.top,

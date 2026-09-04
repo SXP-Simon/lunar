@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ReaderHitEntry } from '../../src/reader';
+import type { ReaderHitEntry, ReaderSourceRange } from '../../src/reader';
 import {
+  createReaderTextSelectionSearchQuery,
   createReaderTextSelection,
   createReaderTextSelectionFromSourceRange,
   createReaderWordSelectionAtPoint,
   findReaderHitIndex,
   findSelectableReaderHitIndex,
+  resolveReaderTextSelectionSourceRange,
   updateReaderTextSelectionAtPoint,
   updateReaderTextSelectionBoundaryAtPoint,
 } from '../../src/reader/interaction/text-selection';
@@ -71,4 +73,88 @@ describe('reader text selection', () => {
       : undefined;
     expect(restored?.text).toBe('st line');
   });
+
+  it('resolves a missing source range from the matching Rito search result', () => {
+    const sourceLessEntries = entries.map((entry) => ({ ...entry, sourcePoint: undefined }));
+    const selection = createReaderTextSelection(sourceLessEntries, 0, 1);
+    expect(selection?.sourceRange).toBeUndefined();
+    expect(selection && createReaderTextSelectionSearchQuery(selection)).toBe('First line');
+
+    const sourceRange = selection
+      ? resolveReaderTextSelectionSourceRange(selection, [{
+          pageIndex: 0,
+          spreadIndex: 0,
+          start: { blockIndex: 0, lineIndex: 0, runIndex: 0, charIndex: 0 },
+          end: { blockIndex: 0, lineIndex: 0, runIndex: 1, charIndex: 4 },
+          context: 'First line',
+          locator: {
+            spineIdref: 'chapter',
+            manifestHref: 'chapter.xhtml',
+            chapterProgress: 0,
+            sourceRange: {
+              start: { nodePath: [1, 0], textOffset: 0 },
+              end: { nodePath: [1, 0], textOffset: 10 },
+            },
+          },
+        }], 'chapter.xhtml')
+      : undefined;
+    expect(sourceRange).toEqual({
+      start: { nodePath: [1, 0], textOffset: 0 },
+      end: { nodePath: [1, 0], textOffset: 10 },
+    });
+  });
+
+  it('uses the nearest same-page search result when gesture positions are approximate', () => {
+    const sourceLessEntries = entries.map((entry) => ({ ...entry, sourcePoint: undefined }));
+    const selection = createReaderTextSelection(sourceLessEntries, 0, 1);
+    const farRange = {
+      start: { nodePath: [1, 3], textOffset: 20 },
+      end: { nodePath: [1, 3], textOffset: 30 },
+    };
+    const nearRange = {
+      start: { nodePath: [1, 0], textOffset: 0 },
+      end: { nodePath: [1, 0], textOffset: 10 },
+    };
+    const sourceRange = selection
+      ? resolveReaderTextSelectionSourceRange(selection, [
+          searchResult(3, 0, 3, 3, farRange),
+          searchResult(0, 0, 0, 5, nearRange),
+        ], 'chapter.xhtml')
+      : undefined;
+    expect(sourceRange).toEqual(nearRange);
+  });
+
+  it('anchors to the mapped part when a generated endpoint has no source point', () => {
+    const generatedStartEntries = [
+      { ...entries[0], sourcePoint: undefined },
+      entries[1],
+      entries[2],
+    ];
+    expect(createReaderTextSelection(generatedStartEntries, 0, 2)?.sourceRange).toEqual({
+      start: { nodePath: [1, 0], textOffset: 6 },
+      end: { nodePath: [1, 1], textOffset: 6 },
+    });
+  });
 });
+
+function searchResult(
+  startLineIndex: number,
+  startCharIndex: number,
+  endLineIndex: number,
+  endCharIndex: number,
+  sourceRange: ReaderSourceRange,
+) {
+  return {
+    pageIndex: 0,
+    spreadIndex: 0,
+    start: { blockIndex: 0, lineIndex: startLineIndex, runIndex: 0, charIndex: startCharIndex },
+    end: { blockIndex: 0, lineIndex: endLineIndex, runIndex: 1, charIndex: endCharIndex },
+    context: 'First line',
+    locator: {
+      spineIdref: 'chapter',
+      manifestHref: 'chapter.xhtml',
+      chapterProgress: 0,
+      sourceRange,
+    },
+  };
+}
