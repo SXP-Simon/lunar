@@ -21,15 +21,15 @@ import { runOnUI, scheduleOnRN } from 'react-native-worklets';
 
 import type { CompiledReaderPicture } from '../../../rendering/picture-compiler';
 import {
-  automaticSinglePreviousCurlProgress,
-  singlePreviousCurlProgress,
-  singlePreviousCurlRevealProgress,
-} from '../../gesture/page-turn-gesture';
-import {
   createAutomaticCurlProfile,
   createGestureCurlProfile,
   createIncomingCurlProfile,
 } from './geometry';
+import {
+  automaticSinglePreviousCurlProgress,
+  singlePreviousCurlProgress,
+  singlePreviousCurlRevealProgress,
+} from './progress';
 
 /**
  * Continuous page surface adapted from react-native-natural-page-turn.

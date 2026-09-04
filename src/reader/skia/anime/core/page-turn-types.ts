@@ -34,7 +34,7 @@ export interface ReaderPageTransitionState {
 export interface ReaderPageTransitionValues {
   readonly transition?: ReaderPageTransitionState;
   readonly visibleContent?: ReaderPageContent;
-  readonly style: 'cover' | 'page' | 'slide';
+  readonly visualKind: 'cover' | 'curl' | 'slide';
   readonly coverMatrix: DerivedValue<Matrix4>;
   readonly incomingSlideMatrix: DerivedValue<Matrix4>;
   readonly outgoingSlideMatrix: DerivedValue<Matrix4>;

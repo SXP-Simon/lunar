@@ -1,13 +1,16 @@
-import type { NativePagerMotionConfig, NativePagerMotionTuning } from './pager-compositor';
+import type {
+  ReaderNativePageTurnMotionConfig,
+  ReaderNativePageTurnMotionTuning,
+} from '../../core/page-turn-effect';
 
-const AUTOMATIC_FORWARD_TUNING: NativePagerMotionTuning = {
+const AUTOMATIC_FORWARD_TUNING: ReaderNativePageTurnMotionTuning = {
   releaseX: 0.9,
   liftVelocity: 0.5,
   liftToLeft: 4,
   curvatureRelaxation: 10,
 };
 
-const AUTOMATIC_BACKWARD_TUNING: NativePagerMotionTuning = {
+const AUTOMATIC_BACKWARD_TUNING: ReaderNativePageTurnMotionTuning = {
   releaseX: 0.4,
   liftVelocity: 0.5,
   liftToLeft: 4,
@@ -22,7 +25,7 @@ const AUTOMATIC_BACKWARD_TUNING: NativePagerMotionTuning = {
   incomingRevertDurationSeconds: 0.72,
 };
 
-export const NATIVE_PAGE_TURN_MOTION_CONFIG: NativePagerMotionConfig = {
+export const NATIVE_CURL_MOTION_CONFIG: ReaderNativePageTurnMotionConfig = {
   automatic: {
     forward: AUTOMATIC_FORWARD_TUNING,
     backward: AUTOMATIC_BACKWARD_TUNING,

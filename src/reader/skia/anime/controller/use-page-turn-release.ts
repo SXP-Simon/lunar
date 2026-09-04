@@ -8,17 +8,9 @@ import {
   describeSnapshotIdentity,
   formatTraceNumber,
 } from '../core/page-content';
-import type { ReaderInteractiveTurn, ReaderPageAnimationStyle } from '../core/page-turn-types';
-import { getReaderPageTurnSettleDuration } from '../core/page-turn-timing';
-import {
-  anchoredGestureFingerX,
-  bookXForGestureTravel,
-  gestureLiftRotationForFingerX,
-  gesturePressedChordForFingerX,
-  pageTurnRenderProgress,
-  planarTurnProgressForTranslation,
-  shouldCommitPlanarTurn,
-} from '../gesture/page-turn-gesture';
+import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
+import type { ReaderInteractiveTurn } from '../core/page-turn-types';
+import { planarTurnProgressForTranslation } from '../gesture/page-turn-gesture';
 import type { PageTurnGestureValues } from '../gesture/use-page-turn-pan-gesture';
 import type {
   ReaderCommittedHandoff,
@@ -31,12 +23,12 @@ const PAGE_TURN_SETTLE_FALLBACK_DELAY_MS = 180;
 interface PageTurnReleaseOptions {
   readonly activeTurnIdRef: RefObject<number | undefined>;
   readonly animationDuration: number;
-  readonly animationStyle: ReaderPageAnimationStyle;
   readonly dragStateRef: RefObject<ReaderDragState | undefined>;
   readonly gestureValues: PageTurnGestureValues;
   readonly handoffGenerationRef: RefObject<number>;
   readonly interactiveTurn?: ReaderInteractiveTurn;
   readonly nativeGestureHandoffRef: RefObject<ReaderNativeGestureHandoff | undefined>;
+  readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly runtime: LunarReaderRuntime;
   readonly setCommittedHandoff: Dispatch<SetStateAction<ReaderCommittedHandoff | undefined>>;
   readonly setInteractiveTurn: Dispatch<SetStateAction<ReaderInteractiveTurn | undefined>>;
@@ -47,12 +39,12 @@ interface PageTurnReleaseOptions {
 export function usePageTurnRelease({
   activeTurnIdRef,
   animationDuration,
-  animationStyle,
   dragStateRef,
   gestureValues,
   handoffGenerationRef,
   interactiveTurn,
   nativeGestureHandoffRef,
+  pageTurnEffect,
   runtime,
   setCommittedHandoff,
   setInteractiveTurn,
@@ -84,24 +76,25 @@ export function usePageTurnRelease({
     }
 
     if (viewport && Number.isFinite(releaseTranslationX)) {
-      const currentBookX = bookXForGestureTravel(
-        state.startBookX,
-        releaseTranslationX,
-        state.direction,
-        viewport.width,
-      );
-      state.fingerX = anchoredGestureFingerX(state.startBookX, currentBookX);
-      state.heldRollTilt = gestureLiftRotationForFingerX(state.fingerX);
-      state.pressedEdgeX = gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
+      const geometry = pageTurnEffect.gesture.getGeometry({
+        startBookX: state.startBookX,
+        translationX: releaseTranslationX,
+        direction: state.direction,
+        pageWidth: viewport.width,
+      });
+      state.fingerX = geometry.fingerX;
+      state.heldRollTilt = geometry.heldRollTilt;
+      state.pressedEdgeX = geometry.pressedEdgeX;
       state.physicalProgress = planarTurnProgressForTranslation(
         releaseTranslationX,
+        state.direction,
         viewport.width,
       );
-      state.renderProgress = pageTurnRenderProgress(
-        state.physicalProgress,
-        state.direction,
+      state.renderProgress = pageTurnEffect.gesture.renderProgress({
+        physicalProgress: state.physicalProgress,
+        direction: state.direction,
         spreadMode,
-      );
+      });
     }
 
     const terminalThrowVelocity = viewport
@@ -116,7 +109,10 @@ export function usePageTurnRelease({
       ? (state.direction === 1 ? -releaseVelocity : releaseVelocity)
         / Math.max(1, viewport.width)
       : 0;
-    const commit = shouldCommitPlanarTurn(state.physicalProgress, towardTargetVelocity);
+    const commit = pageTurnEffect.gesture.shouldCommit({
+      progress: state.physicalProgress,
+      towardTargetVelocity,
+    });
     readerDiagnostic(
       'turn.release',
       [
@@ -177,13 +173,13 @@ export function usePageTurnRelease({
         setInteractiveTurn(undefined);
         return;
       }
-      const settleDuration = getReaderPageTurnSettleDuration(
-        animationStyle,
-        state.renderProgress,
-        0,
-        towardTargetVelocity,
+      const settleDuration = pageTurnEffect.motion.getSettleDuration({
+        fromProgress: state.renderProgress,
+        targetProgress: 0,
+        releaseVelocity: towardTargetVelocity,
         animationDuration,
-      );
+        pageWidth: viewport?.width ?? 0,
+      });
       const generation = ++handoffGenerationRef.current;
       const preparedTurn = state.preparedTurn;
       let notifyVisualSettle: () => void = () => undefined;
@@ -270,13 +266,13 @@ export function usePageTurnRelease({
       settleTo: 1,
     } : turn);
     const navigate = runtime.commitPreparedTurn(preparedTurn);
-    const settleDuration = getReaderPageTurnSettleDuration(
-      animationStyle,
-      state.renderProgress,
-      1,
-      towardTargetVelocity,
+    const settleDuration = pageTurnEffect.motion.getSettleDuration({
+      fromProgress: state.renderProgress,
+      targetProgress: 1,
+      releaseVelocity: towardTargetVelocity,
       animationDuration,
-    );
+      pageWidth: viewport?.width ?? 0,
+    });
     const generation = ++handoffGenerationRef.current;
     readerDiagnostic(
       'turn.commit.begin',
@@ -313,11 +309,11 @@ export function usePageTurnRelease({
   }, [
     activeTurnIdRef,
     animationDuration,
-    animationStyle,
     dragStateRef,
     gestureValues,
     handoffGenerationRef,
     nativeGestureHandoffRef,
+    pageTurnEffect,
     runtime,
     setCommittedHandoff,
     setInteractiveTurn,

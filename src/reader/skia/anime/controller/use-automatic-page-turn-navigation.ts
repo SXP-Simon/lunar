@@ -11,12 +11,12 @@ import {
   readerPageContentForSnapshot,
   sameSnapshotIdentity,
 } from '../core/page-content';
-import type { ReaderAutomaticTurn, ReaderPageAnimationStyle } from '../core/page-turn-types';
-import { resolveReaderPageAnimationStyle } from '../core/page-turn-timing';
+import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
+import type { ReaderAutomaticTurn } from '../core/page-turn-types';
 
 interface AutomaticPageTurnNavigationOptions {
-  readonly animationStyle: ReaderPageAnimationStyle;
   readonly beforeNavigate: () => Promise<void>;
+  readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly runtime: LunarReaderRuntime;
 }
 
@@ -29,8 +29,8 @@ interface AutomaticPageTurnNavigation {
 }
 
 export function useAutomaticPageTurnNavigation({
-  animationStyle,
   beforeNavigate,
+  pageTurnEffect,
   runtime,
 }: AutomaticPageTurnNavigationOptions): AutomaticPageTurnNavigation {
   const generation = useRef(0);
@@ -55,11 +55,11 @@ export function useAutomaticPageTurnNavigation({
   }, []);
 
   const enqueue = useCallback((turnDirection: 1 | -1) => {
-    const paperAnimation = resolveReaderPageAnimationStyle(animationStyle) === 'page';
+    const serializesTurns = pageTurnEffect.orchestration.serializesAutomaticTurns;
     if (pendingCount.current + turnsRef.current.length >= AUTOMATIC_PAGE_TURN_MAX_LANES) {
       return Promise.resolve(runtime.getSnapshot());
     }
-    if (paperAnimation) {
+    if (serializesTurns) {
       if (direction.current !== undefined && direction.current !== turnDirection) {
         return Promise.resolve(runtime.getSnapshot());
       }
@@ -75,7 +75,7 @@ export function useAutomaticPageTurnNavigation({
             resolve(runtime.getSnapshot());
             return;
           }
-          if (paperAnimation) {
+          if (serializesTurns) {
             const startDelay = Math.max(0, nextStartAt.current - Date.now());
             if (startDelay > 0) await waitForPageTurn(startDelay);
             if (generation.current !== requestGeneration) {
@@ -103,7 +103,7 @@ export function useAutomaticPageTurnNavigation({
               const nextTurns = appendAutomaticPageTurn(turnsRef.current, turn);
               turnsRef.current = nextTurns;
               setTurns(nextTurns);
-              if (paperAnimation) {
+              if (serializesTurns) {
                 nextStartAt.current = Date.now() + AUTOMATIC_PAGE_TURN_START_INTERVAL_MS;
               }
             }
@@ -121,7 +121,7 @@ export function useAutomaticPageTurnNavigation({
       };
       queue.current = queue.current.then(run, run);
     });
-  }, [animationStyle, beforeNavigate, runtime]);
+  }, [beforeNavigate, pageTurnEffect, runtime]);
 
   const next = useCallback(() => enqueue(1), [enqueue]);
   const previous = useCallback(() => enqueue(-1), [enqueue]);

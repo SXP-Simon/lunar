@@ -4,8 +4,7 @@ import { useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import type { ReaderSpreadMode, ReaderViewport } from '../../../contracts';
-import type { ReaderPageAnimationStyle } from '../core/page-turn-types';
-import { resolveReaderPageAnimationStyle } from '../core/page-turn-timing';
+import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import {
   beginNativePagerGestureOnUI,
   cancelNativePagerGestureOnUI,
@@ -13,20 +12,8 @@ import {
   updateNativePagerGestureOnUI,
 } from '../native/pager-compositor';
 import {
-  anchoredGestureFingerX,
-  bookXForGestureTravel,
-  gestureLiftRotationForFingerX,
-  gesturePressedChordForFingerX,
-  pageTurnRenderProgress,
-  pageTurnStartBookXForTouch,
   planarTurnProgressForTranslation,
 } from './page-turn-gesture';
-
-const NATIVE_GESTURE_MINIMUM_START_BOOK_X = 0.25;
-const NATIVE_GESTURE_MINIMUM_SPEED_SCALE = 1;
-const NATIVE_GESTURE_MAXIMUM_SPEED_SCALE = 2.2;
-const NATIVE_GESTURE_VELOCITY_GAIN = 0.35;
-const NATIVE_GESTURE_IDLE_DECAY_SECONDS = 0.08;
 
 export interface PageTurnGestureValues {
   readonly progress: SharedValue<number>;
@@ -46,12 +33,12 @@ export interface PageTurnGestureValues {
 }
 
 interface PageTurnPanGestureOptions {
-  readonly animationStyle: ReaderPageAnimationStyle;
   readonly automaticNavigationActive: boolean;
   readonly beginDrag: (x: number, y: number, token: number) => void;
   readonly endDrag: (velocityX?: number, translationX?: number, nativeReleased?: boolean) => void;
   readonly isSettling: boolean;
   readonly markNativeGestureAccepted: (token: number) => void;
+  readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly spreadMode: ReaderSpreadMode;
   readonly surfaceTop: number;
   readonly updateDrag: (translationX: number, absoluteY: number, velocityX: number) => void;
@@ -109,12 +96,12 @@ export function usePageTurnGestureValues(): PageTurnGestureValues {
 }
 
 export function usePageTurnPanGesture({
-  animationStyle,
   automaticNavigationActive,
   beginDrag,
   endDrag,
   isSettling,
   markNativeGestureAccepted,
+  pageTurnEffect,
   spreadMode,
   surfaceTop,
   updateDrag,
@@ -124,7 +111,11 @@ export function usePageTurnPanGesture({
   const viewportWidth = viewport?.width ?? 1;
   const viewportHeight = viewport?.height ?? 1;
   const gestureBlocked = isSettling || automaticNavigationActive;
-  const nativeGestureEnabled = resolveReaderPageAnimationStyle(animationStyle) === 'page'
+  const getGestureStartBookX = pageTurnEffect.gesture.getStartBookX;
+  const getGestureGeometry = pageTurnEffect.gesture.getGeometry;
+  const renderGestureProgress = pageTurnEffect.gesture.renderProgress;
+  const nativeGesturePolicy = pageTurnEffect.native?.gesture;
+  const nativeGestureEnabled = nativeGesturePolicy !== undefined
     && spreadMode === 'single';
   const {
     direction,
@@ -175,7 +166,7 @@ export function usePageTurnPanGesture({
           const nextDirection: 1 | -1 = event.translationX < 0 ? 1 : -1;
           direction.value = nextDirection;
           directionLocked.value = true;
-          startBookX.value = pageTurnStartBookXForTouch(
+          startBookX.value = getGestureStartBookX(
             startX.value,
             nextDirection,
             viewportWidth,
@@ -183,30 +174,34 @@ export function usePageTurnPanGesture({
         }
         const activeDirection = direction.value;
         const activeStartBookX = startBookX.value;
-        const currentBookX = bookXForGestureTravel(
-          activeStartBookX,
-          event.translationX,
-          activeDirection,
-          viewportWidth,
-        );
-        const fingerX = anchoredGestureFingerX(activeStartBookX, currentBookX);
-        const rollTilt = gestureLiftRotationForFingerX(fingerX);
-        progress.value = pageTurnRenderProgress(
-          planarTurnProgressForTranslation(event.translationX, viewportWidth),
-          activeDirection,
+        const geometry = getGestureGeometry({
+          startBookX: activeStartBookX,
+          translationX: event.translationX,
+          direction: activeDirection,
+          pageWidth: viewportWidth,
+        });
+        const fingerX = geometry.fingerX;
+        progress.value = renderGestureProgress({
+          physicalProgress: planarTurnProgressForTranslation(
+            event.translationX,
+            activeDirection,
+            viewportWidth,
+          ),
+          direction: activeDirection,
           spreadMode,
-        );
+        });
         grabY.value = Math.min(
           viewportHeight,
           Math.max(0, event.absoluteY - surfaceTop),
         );
-        heldRollTilt.value = rollTilt;
-        pressedEdgeX.value = gesturePressedChordForFingerX(fingerX, rollTilt);
+        heldRollTilt.value = geometry.heldRollTilt;
+        pressedEdgeX.value = geometry.pressedEdgeX;
         if (
           nativeGestureEnabled
+          && nativeGesturePolicy
           && nativeInputReady.value
           && nativeStockedToken.value === token.value
-          && (activeDirection < 0 || activeStartBookX >= NATIVE_GESTURE_MINIMUM_START_BOOK_X)
+          && nativeGesturePolicy.canStart(activeDirection, activeStartBookX)
         ) {
           if (nativeActive.value) {
             updateNativePagerGestureOnUI(nativePagerId.value, {
@@ -233,25 +228,28 @@ export function usePageTurnPanGesture({
         if (!started.value) return;
         const activeDirection = direction.value;
         const activeStartBookX = startBookX.value;
-        const currentBookX = bookXForGestureTravel(
-          activeStartBookX,
-          event.translationX,
-          activeDirection,
-          viewportWidth,
-        );
-        const fingerX = anchoredGestureFingerX(activeStartBookX, currentBookX);
-        const rollTilt = gestureLiftRotationForFingerX(fingerX);
-        progress.value = pageTurnRenderProgress(
-          planarTurnProgressForTranslation(event.translationX, viewportWidth),
-          activeDirection,
+        const geometry = getGestureGeometry({
+          startBookX: activeStartBookX,
+          translationX: event.translationX,
+          direction: activeDirection,
+          pageWidth: viewportWidth,
+        });
+        const fingerX = geometry.fingerX;
+        progress.value = renderGestureProgress({
+          physicalProgress: planarTurnProgressForTranslation(
+            event.translationX,
+            activeDirection,
+            viewportWidth,
+          ),
+          direction: activeDirection,
           spreadMode,
-        );
+        });
         grabY.value = Math.min(
           viewportHeight,
           Math.max(0, event.absoluteY - surfaceTop),
         );
-        heldRollTilt.value = rollTilt;
-        pressedEdgeX.value = gesturePressedChordForFingerX(fingerX, rollTilt);
+        heldRollTilt.value = geometry.heldRollTilt;
+        pressedEdgeX.value = geometry.pressedEdgeX;
         let nativeReleased = false;
         if (nativeActive.value) {
           updateNativePagerGestureOnUI(nativePagerId.value, {
@@ -270,10 +268,10 @@ export function usePageTurnPanGesture({
             pageWeight: 1,
             commitThreshold: 0.5,
             slowCommitEdgeX: 0,
-            minimumSpeedScale: NATIVE_GESTURE_MINIMUM_SPEED_SCALE,
-            maximumSpeedScale: NATIVE_GESTURE_MAXIMUM_SPEED_SCALE,
-            velocityGain: NATIVE_GESTURE_VELOCITY_GAIN,
-            idleDecaySeconds: NATIVE_GESTURE_IDLE_DECAY_SECONDS,
+            minimumSpeedScale: nativeGesturePolicy?.minimumSpeedScale ?? 1,
+            maximumSpeedScale: nativeGesturePolicy?.maximumSpeedScale ?? 1,
+            velocityGain: nativeGesturePolicy?.velocityGain ?? 0,
+            idleDecaySeconds: nativeGesturePolicy?.idleDecaySeconds ?? 0,
           }) === true;
           nativeActive.value = false;
         }
@@ -300,14 +298,18 @@ export function usePageTurnPanGesture({
       grabY,
       heldRollTilt,
       gestureBlocked,
+      getGestureGeometry,
+      getGestureStartBookX,
       markNativeGestureAccepted,
       nativeActive,
       nativeGestureEnabled,
+      nativeGesturePolicy,
       nativeInputReady,
       nativePagerId,
       nativeStockedToken,
       pressedEdgeX,
       progress,
+      renderGestureProgress,
       spreadMode,
       started,
       startBookX,

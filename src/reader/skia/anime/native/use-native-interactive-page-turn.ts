@@ -2,7 +2,7 @@ import type { CanvasRef, SkPicture } from '@shopify/react-native-skia';
 import { useEffect, type RefObject } from 'react';
 
 import { AUTOMATIC_PAGE_TURN_START_INTERVAL_MS } from '../core/page-turn-concurrency';
-import { getReaderPageTurnDuration } from '../core/page-turn-timing';
+import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import type { ReaderInteractiveTurn, ReaderPageContent } from '../core/page-turn-types';
 import { nativeInteractivePageTurnStockId } from './page-turn';
 import type { ReaderPageTurnSurfaceBinding } from './page-turn-binding';
@@ -20,6 +20,7 @@ interface NativeInteractivePageTurnOptions {
   readonly interactiveSource?: ReaderPageContent;
   readonly interactiveTurn?: ReaderInteractiveTurn;
   readonly paperColor: number;
+  readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly pixelHeight: number;
   readonly pixelWidth: number;
   readonly surfaceBinding?: ReaderPageTurnSurfaceBinding;
@@ -36,6 +37,7 @@ export function useNativeInteractivePageTurn({
   interactiveSource,
   interactiveTurn,
   paperColor,
+  pageTurnEffect,
   pixelHeight,
   pixelWidth,
   surfaceBinding,
@@ -119,13 +121,16 @@ export function useNativeInteractivePageTurn({
         direction: interactiveTurn.direction,
         spread: false,
         contentRevision: interactiveTurn.content.snapshot.revisionId,
-        durationMs: getReaderPageTurnDuration(
-          'page',
-          0,
-          undefined,
-          interactiveTurn.direction < 0,
-        ),
-        rapidDurationMs: getReaderPageTurnDuration('page'),
+        durationMs: pageTurnEffect.motion.getDuration({
+          releaseVelocity: 0,
+          animationDuration: 360,
+          incomingPageLanding: interactiveTurn.direction < 0,
+        }),
+        rapidDurationMs: pageTurnEffect.motion.getDuration({
+          releaseVelocity: 0,
+          animationDuration: 360,
+          incomingPageLanding: false,
+        }),
         launchIntervalMs: AUTOMATIC_PAGE_TURN_START_INTERVAL_MS,
         paperColor,
       });
@@ -149,6 +154,7 @@ export function useNativeInteractivePageTurn({
     interactiveSource,
     interactiveTurn,
     paperColor,
+    pageTurnEffect,
     pixelHeight,
     pixelWidth,
     submittedStockIdsRef,

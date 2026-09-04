@@ -8,6 +8,7 @@ import type {
   ReaderInteractiveTurn,
   ReaderPageAnimationStyle,
 } from '../core/page-turn-types';
+import { getReaderPageTurnEffect } from '../effects/page-turn-effects';
 import type { ReaderPageTurnSurfaceBinding } from '../native/page-turn-binding';
 import { useAutomaticPageTurnNavigation } from './use-automatic-page-turn-navigation';
 import { useInteractivePageTurn } from './use-interactive-page-turn';
@@ -46,6 +47,7 @@ export function useReaderPageTurn({
   spreadMode = 'double',
   surfaceTop = 0,
 }: UseReaderPageTurnOptions): ReaderPageTurnController {
+  const pageTurnEffect = getReaderPageTurnEffect(animationStyle);
   const prepareInteractiveTurnRef = useRef<() => Promise<void>>(
     () => Promise.resolve(),
   );
@@ -54,16 +56,16 @@ export function useReaderPageTurn({
     [],
   );
   const automatic = useAutomaticPageTurnNavigation({
-    animationStyle,
     beforeNavigate: prepareForAutomaticNavigation,
+    pageTurnEffect,
     runtime,
   });
   const interactive = useInteractivePageTurn({
     runtime,
     snapshot,
     viewport,
-    animationStyle,
     animationDuration,
+    pageTurnEffect,
     spreadMode,
     automaticNavigationActive: automatic.active,
     surfaceTop,

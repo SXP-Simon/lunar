@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
-} from '../../src/reader/skia/anime/gesture/page-turn-gesture';
+} from '../../src/reader/skia/anime/effects/curl/gesture';
 import {
   AUTOMATIC_PAGE_TURN_DURATION_MS,
   bendAmplitudeForChord,

@@ -1,28 +1,18 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   cancelAnimation,
-  Easing,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import type { ReaderSpreadMode } from '../../../contracts';
-import { useCoverPageTransform } from '../effects/cover';
-import { useSlidePageTransforms } from '../effects/slide';
+import { useReaderPageTurnVisuals } from '../effects/use-page-turn-visuals';
 import { automaticPageTurnTransition } from '../core/page-turn-concurrency';
-import {
-  getAutomaticPlanarPageTurnDuration,
-  getReaderPageTurnDuration,
-  getReaderPageTurnHandoffProgress,
-  getReaderPageTurnSettleDuration,
-  getSlidePageTurnEasing,
-  resolveReaderPageAnimationStyle,
-} from '../core/page-turn-timing';
+import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import type {
   ReaderAutomaticTurn,
   ReaderInteractiveTurn,
-  ReaderPageAnimationStyle,
   ReaderPageContent,
   ReaderPageTransitionState,
   ReaderPageTransitionValues,
@@ -36,7 +26,7 @@ interface ReaderPageIdentity {
 
 export function useReaderPageTransition(
   current: ReaderPageContent | undefined,
-  animationStyle: ReaderPageAnimationStyle = 'slide',
+  pageTurnEffect: ReaderPageTurnEffect,
   animationDuration = 360,
   interactiveTurn?: ReaderInteractiveTurn,
   spreadMode: ReaderSpreadMode = 'double',
@@ -51,7 +41,6 @@ export function useReaderPageTransition(
   const animatedAutomaticTurnId = useRef<number | undefined>(undefined);
   const progress = useSharedValue(1);
   const animatedProgress = interactiveTurn?.progressValue ?? progress;
-  const style = resolveReaderPageAnimationStyle(animationStyle);
   const currentKey = current?.key;
   const interactiveContent = interactiveTurn?.content;
   const interactiveTargetSpread = interactiveContent?.snapshot.spreadIndex;
@@ -64,10 +53,10 @@ export function useReaderPageTransition(
     }
     : undefined, [displayedContent, interactiveContent, interactiveTargetSpread, interactiveTurn?.direction]);
   const automaticTransition = useMemo(
-    () => automaticTurn && style !== 'page'
+    () => automaticTurn && pageTurnEffect.orchestration.usesPlanarAutomaticTransition
       ? automaticPageTurnTransition(automaticTurn)
       : undefined,
-    [automaticTurn, style],
+    [automaticTurn, pageTurnEffect],
   );
   const activeTransition = interactiveTransition
     ?? automaticTransition
@@ -75,9 +64,12 @@ export function useReaderPageTransition(
   const visibleContent = interactiveContent
     ?? (automaticTransition ? automaticTurn?.to : undefined)
     ?? (activeTransition ? current : displayedContent ?? current);
-  const incomingPageLanding = style === 'page'
-    && spreadMode === 'single'
-    && activeTransition?.direction === -1;
+  const incomingPageLanding = activeTransition
+    ? pageTurnEffect.visual.isIncomingPageLanding(
+        activeTransition.direction,
+        spreadMode,
+      )
+    : false;
   const clearTransition = useCallback((key: string) => {
     setTransition((value) => value?.toKey === key ? undefined : value);
   }, []);
@@ -90,10 +82,12 @@ export function useReaderPageTransition(
   const height = transitionFrame?.height ?? 0;
   const grabX = interactiveTurn?.grabX ?? (direction > 0 ? 0 : width);
   const grabY = interactiveTurn?.grabY ?? height / 2;
-  const coverMatrix = useCoverPageTransform(direction, width, animatedProgress);
-  const slideTransforms = useSlidePageTransforms(direction, width, animatedProgress);
-  const incomingSlideMatrix = slideTransforms.incoming;
-  const outgoingSlideMatrix = slideTransforms.outgoing;
+  const visualValues = useReaderPageTurnVisuals(
+    pageTurnEffect,
+    direction,
+    width,
+    animatedProgress,
+  );
   /* eslint-disable react-hooks/set-state-in-effect */
   useLayoutEffect(() => {
     if (interactiveTurn) {
@@ -194,10 +188,9 @@ export function useReaderPageTransition(
         || interactiveTurn.nativeGesture?.driven
       ))
     ) return;
-    const handoffProgress = getReaderPageTurnHandoffProgress(
-      interactiveTurn?.settling === true,
-      interactiveTurn?.settleTo,
-    );
+    const handoffProgress = interactiveTurn?.settling
+      ? interactiveTurn.settleTo ?? 1
+      : undefined;
     const target = handoffProgress ?? 1;
     const automaticTurnContinues = automaticTurn !== undefined
       && animatedAutomaticTurnId.current === automaticTurn.id;
@@ -205,26 +198,25 @@ export function useReaderPageTransition(
       ? Math.min(1, Math.max(0, progress.value))
       : 0;
     const duration = interactiveTurn
-      ? getReaderPageTurnSettleDuration(
-          animationStyle,
-          interactiveTurn.progress,
-          target,
-          interactiveTurn.releaseVelocity,
+      ? pageTurnEffect.motion.getSettleDuration({
+          fromProgress: interactiveTurn.progress,
+          targetProgress: target,
+          releaseVelocity: interactiveTurn.releaseVelocity ?? 0,
           animationDuration,
-        )
+          pageWidth: width,
+        })
       : automaticTransition
-        ? getAutomaticPlanarPageTurnDuration(
-            animationStyle,
-            automaticTurnCount,
-            automaticStartProgress,
+        ? pageTurnEffect.motion.getAutomaticDuration({
+            queuedTurnCount: automaticTurnCount,
+            fromProgress: automaticStartProgress,
             animationDuration,
-          )
-        : getReaderPageTurnDuration(
-          animationStyle,
-          0,
-          animationDuration,
-          incomingPageLanding,
-        );
+            incomingPageLanding,
+          })
+        : pageTurnEffect.motion.getDuration({
+            releaseVelocity: 0,
+            animationDuration,
+            incomingPageLanding,
+          });
     // React Skia can observe the driver swap before it removes the interactive
     // nodes. Keep both drivers at the same terminal pose during that frame.
     if (handoffProgress !== undefined) progress.set(handoffProgress);
@@ -240,19 +232,13 @@ export function useReaderPageTransition(
     ) {
       animatedProgress.set(0);
     }
-    const easing = style === 'slide'
-      ? getSlidePageTurnEasing(
-          interactiveTurn?.progress ?? automaticStartProgress,
-          target,
-          (interactiveTurn?.releaseVelocity ?? 0) * width / 1000,
-        )
-      : !interactiveTurn && style === 'page'
-        ? Easing.linear
-        : target === 0
-          ? Easing.out(Easing.cubic)
-          : incomingPageLanding
-            ? Easing.out(Easing.quad)
-            : Easing.inOut(Easing.sin);
+    const easing = pageTurnEffect.motion.getEasing({
+      fromProgress: interactiveTurn?.progress ?? automaticStartProgress,
+      targetProgress: target,
+      releaseVelocityPxPerMs: (interactiveTurn?.releaseVelocity ?? 0) * width / 1000,
+      incomingPageLanding,
+      interactive: interactiveTurn !== undefined,
+    });
     animatedProgress.set(withTiming(target, {
       duration,
       easing,
@@ -271,7 +257,6 @@ export function useReaderPageTransition(
     activeTransition,
     animatedProgress,
     animationDuration,
-    animationStyle,
     automaticTransition,
     automaticTurn,
     automaticTurnCount,
@@ -279,18 +264,18 @@ export function useReaderPageTransition(
     incomingPageLanding,
     interactiveTurn,
     onAutomaticTurnComplete,
+    pageTurnEffect,
     progress,
-    style,
     width,
   ]);
 
   return {
     transition: activeTransition,
     visibleContent,
-    style,
-    coverMatrix,
-    incomingSlideMatrix,
-    outgoingSlideMatrix,
+    visualKind: pageTurnEffect.visual.kind,
+    coverMatrix: visualValues.primaryMatrix,
+    incomingSlideMatrix: visualValues.incomingMatrix,
+    outgoingSlideMatrix: visualValues.outgoingMatrix,
     progress: animatedProgress,
     grabX,
     grabY,

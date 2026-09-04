@@ -38,17 +38,21 @@
 
 [MUST] `skia/rendering` 管理 DisplayList 执行、Picture 编译与 Canvas 表面。
 
-[MUST] `skia/anime/core` 仅保存翻页效果共享的类型、画面身份、时序与并发规则，不得依赖 React Hook、原生 composer 适配或具体视觉效果。
+[MUST] `skia/anime/core` 仅保存翻页效果共享的类型、组合契约、画面身份、数学函数与并发规则，不得依赖 React Hook、原生 composer 适配或具体动画实现。
 
-[MUST] `skia/anime/effects` 仅保存视觉效果实现；单个效果包含多个算法或绘制模块时使用效果名称子目录，`curl` 的几何计算与网格绘制共同归入 `effects/curl`。
+[MUST] `skia/anime/effects/<effect>` 以动画为单位保存视觉计算、手势进度、释放判定、完成与回弹时长、缓动函数及专属能力配置；每个动画必须实现 `core` 定义的统一组合契约。
 
-[MUST] `skia/anime/gesture` 仅负责手势采样、翻页参数换算及 UI Runtime 命令发送，不得提交阅读运行时导航。
+[MUST] 动画兼容名称仅由 `skia/anime/effects` 注册表解析，控制器、手势和原生适配不得依据动画名称选择具体策略。
+
+[MUST] 单个动画包含多个算法或绘制模块时使用动画名称子目录，`curl` 的几何计算、进度换算、网格绘制与时序策略共同归入 `effects/curl`。
+
+[MUST] `skia/anime/gesture` 仅负责手势采样、通用坐标换算、调用当前动画策略及 UI Runtime 命令发送，不得保存具体动画的进度、释放或回弹策略，不得提交阅读运行时导航。
 
 [MUST] `skia/anime/native` 仅负责 C++ composer 协议、Canvas 绑定、画面库存、事件分派与原生能力探测。
 
-[MUST] `skia/anime/controller` 负责组合交互翻页、自动翻页、运行时预备操作与画面交接；公开 Hook 必须保持为轻量组合层，细分状态由对应控制器持有。
+[MUST] `skia/anime/controller` 负责选择统一动画实现并组合交互翻页、自动翻页、运行时预备操作与画面交接；公开 Hook 必须保持为轻量组合层，细分状态由对应控制器持有。
 
-[MUST] `skia/anime` 的内部依赖依次以 `core` 为基础，由 `effects`、`native` 与 `gesture` 提供专属能力，并由 `controller` 完成组合；内部模块不得通过顶层公开入口反向引用自身。
+[MUST] `skia/anime` 的内部依赖以 `core` 为基础，由 `effects` 实现组合契约，`native` 与 `gesture` 通过契约使用当前动画能力，并由 `controller` 完成组合；内部模块不得通过顶层公开入口反向引用自身。
 
 [MUST] `interaction` 仅负责命中检测与当前页可访问性语义。
 

@@ -1,5 +1,11 @@
 import type { SkImage, SkPicture } from "@shopify/react-native-skia";
 
+import type {
+  ReaderNativePageTurnDirectionalMotionTuning,
+  ReaderNativePageTurnMotionConfig,
+  ReaderNativePageTurnMotionTuning,
+} from '../core/page-turn-effect';
+
 export type NativePagerEvent =
   | "consumed"
   | "started"
@@ -20,31 +26,9 @@ export interface NativePagerCanvasHandle {
   getNativeId(): number;
 }
 
-export interface NativePagerMotionTuning {
-  readonly releaseX: number;
-  readonly liftVelocity: number;
-  readonly liftToLeft: number;
-  readonly curvatureRelaxation: number;
-  readonly incomingLandingStartProgress?: number;
-  readonly incomingRevealStartProgress?: number;
-  readonly incomingRevealEndProgress?: number;
-  readonly incomingDragProgressScale?: number;
-  readonly incomingDragProgressExponent?: number;
-  readonly incomingSettleDurationSeconds?: number;
-  readonly incomingSettleEasingPower?: number;
-  readonly incomingRevertDurationSeconds?: number;
-}
-
-export interface NativePagerMotionConfig {
-  readonly automatic: NativePagerDirectionalMotionTuning;
-  readonly rapid: NativePagerDirectionalMotionTuning;
-  readonly gesture: NativePagerDirectionalMotionTuning;
-}
-
-export interface NativePagerDirectionalMotionTuning {
-  readonly forward: NativePagerMotionTuning;
-  readonly backward: NativePagerMotionTuning;
-}
+export type NativePagerMotionTuning = ReaderNativePageTurnMotionTuning;
+export type NativePagerMotionConfig = ReaderNativePageTurnMotionConfig;
+export type NativePagerDirectionalMotionTuning = ReaderNativePageTurnDirectionalMotionTuning;
 
 export interface NativePagerTurnCommand {
   readonly id: string;

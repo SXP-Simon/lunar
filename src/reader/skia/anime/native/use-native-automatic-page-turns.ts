@@ -2,7 +2,7 @@ import type { CanvasRef, SkPicture } from '@shopify/react-native-skia';
 import { useEffect, type RefObject } from 'react';
 
 import { AUTOMATIC_PAGE_TURN_START_INTERVAL_MS } from '../core/page-turn-concurrency';
-import { getReaderPageTurnDuration } from '../core/page-turn-timing';
+import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import type { ReaderAutomaticTurn, ReaderPageContent } from '../core/page-turn-types';
 import { nativeAutomaticPageTurnFaces, nativeAutomaticPageTurnId } from './page-turn';
 import { enqueueNativePagerPictureTurn } from './pager-compositor';
@@ -17,6 +17,7 @@ interface NativeAutomaticPageTurnsOptions {
   readonly submittedTurnIds: RefObject<Set<number>>;
   readonly turns: readonly ReaderAutomaticTurn[];
   readonly onRejected: () => void;
+  readonly pageTurnEffect: ReaderPageTurnEffect;
 }
 
 export function useNativeAutomaticPageTurnSubmission({
@@ -29,6 +30,7 @@ export function useNativeAutomaticPageTurnSubmission({
   submittedTurnIds,
   turns,
   onRejected,
+  pageTurnEffect,
 }: NativeAutomaticPageTurnsOptions): void {
   useEffect(() => {
     if (!active || turns.length === 0 || pixelWidth <= 0 || pixelHeight <= 0) return;
@@ -53,12 +55,11 @@ export function useNativeAutomaticPageTurnSubmission({
           direction: turn.direction,
           spread: false,
           startAtMs: Date.now(),
-          durationMs: getReaderPageTurnDuration(
-            'page',
-            0,
-            undefined,
-            turn.direction < 0,
-          ),
+          durationMs: pageTurnEffect.motion.getDuration({
+            releaseVelocity: 0,
+            animationDuration: 360,
+            incomingPageLanding: turn.direction < 0,
+          }),
           launchIntervalMs: AUTOMATIC_PAGE_TURN_START_INTERVAL_MS,
           paperColor,
         });
@@ -79,6 +80,7 @@ export function useNativeAutomaticPageTurnSubmission({
     canvasRef,
     createPicture,
     onRejected,
+    pageTurnEffect,
     paperColor,
     pixelHeight,
     pixelWidth,

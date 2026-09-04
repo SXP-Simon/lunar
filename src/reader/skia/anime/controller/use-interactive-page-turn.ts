@@ -13,12 +13,6 @@ import {
 } from '../native/pager-compositor';
 import { readerInteractivePageTurnIdentity } from '../native/page-turn';
 import {
-  anchoredGestureFingerX,
-  bookXForGestureTravel,
-  gestureLiftRotationForFingerX,
-  gesturePressedChordForFingerX,
-  pageTurnStartBookXForTouch,
-  pageTurnRenderProgress,
   planarTurnProgressForTranslation,
 } from '../gesture/page-turn-gesture';
 import {
@@ -28,9 +22,9 @@ import {
 } from '../core/page-content';
 import type {
   ReaderInteractiveTurn,
-  ReaderPageAnimationStyle,
   ReaderPageContent,
 } from '../core/page-turn-types';
+import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import type { ReaderPageTurnSurfaceBinding } from '../native/page-turn-binding';
 import {
   usePageTurnGestureValues,
@@ -47,7 +41,7 @@ interface InteractivePageTurnOptions {
   readonly runtime: LunarReaderRuntime;
   readonly snapshot: ReaderSnapshot;
   readonly viewport?: ReaderViewport;
-  readonly animationStyle: ReaderPageAnimationStyle;
+  readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly animationDuration: number;
   readonly spreadMode: ReaderSpreadMode;
   readonly automaticNavigationActive: boolean;
@@ -67,7 +61,7 @@ export function useInteractivePageTurn({
   runtime,
   snapshot,
   viewport,
-  animationStyle,
+  pageTurnEffect,
   animationDuration,
   spreadMode,
   automaticNavigationActive,
@@ -281,22 +275,30 @@ export function useInteractivePageTurn({
     }
 
     const direction = state.direction;
-    state.startBookX = pageTurnStartBookXForTouch(state.startX, direction, viewport.width);
-    const currentBookX = bookXForGestureTravel(
-      state.startBookX,
+    state.startBookX = pageTurnEffect.gesture.getStartBookX(
+      state.startX,
+      direction,
+      viewport.width,
+    );
+    const geometry = pageTurnEffect.gesture.getGeometry({
+      startBookX: state.startBookX,
+      translationX,
+      direction,
+      pageWidth: viewport.width,
+    });
+    state.fingerX = geometry.fingerX;
+    state.heldRollTilt = geometry.heldRollTilt;
+    state.pressedEdgeX = geometry.pressedEdgeX;
+    state.physicalProgress = planarTurnProgressForTranslation(
       translationX,
       direction,
       viewport.width,
     );
-    state.fingerX = anchoredGestureFingerX(state.startBookX, currentBookX);
-    state.heldRollTilt = gestureLiftRotationForFingerX(state.fingerX);
-    state.pressedEdgeX = gesturePressedChordForFingerX(state.fingerX, state.heldRollTilt);
-    state.physicalProgress = planarTurnProgressForTranslation(translationX, viewport.width);
-    state.renderProgress = pageTurnRenderProgress(
-      state.physicalProgress,
+    state.renderProgress = pageTurnEffect.gesture.renderProgress({
+      physicalProgress: state.physicalProgress,
       direction,
       spreadMode,
-    );
+    });
     const instantaneousThrowVelocity = Math.max(
       0,
       (direction === 1 ? -velocityX : velocityX) / Math.max(1, viewport.width),
@@ -353,6 +355,7 @@ export function useInteractivePageTurn({
     }
   }, [
     isReady,
+    pageTurnEffect,
     runtime,
     showPreparedTurn,
     spreadMode,
@@ -473,12 +476,12 @@ export function useInteractivePageTurn({
   const endDrag = usePageTurnRelease({
     activeTurnIdRef: activeTurnId,
     animationDuration,
-    animationStyle,
     dragStateRef: dragState,
     gestureValues,
     handoffGenerationRef: handoffGeneration,
     interactiveTurn,
     nativeGestureHandoffRef: nativeGestureHandoff,
+    pageTurnEffect,
     runtime,
     setCommittedHandoff,
     setInteractiveTurn,
@@ -489,12 +492,12 @@ export function useInteractivePageTurn({
   const isSettling = interactiveTurn?.settling === true
     || interactiveTurn?.nativeGesture?.settling === true;
   const gesture = usePageTurnPanGesture({
-    animationStyle,
     automaticNavigationActive,
     beginDrag,
     endDrag,
     isSettling,
     markNativeGestureAccepted,
+    pageTurnEffect,
     spreadMode,
     surfaceTop,
     updateDrag,

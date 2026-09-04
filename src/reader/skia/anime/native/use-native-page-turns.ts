@@ -6,7 +6,7 @@ import type {
   ReaderInteractiveTurn,
   ReaderPageContent,
 } from '../core/page-turn-types';
-import { NATIVE_PAGE_TURN_MOTION_CONFIG } from './motion-config';
+import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import type { ReaderPageTurnSurfaceBinding } from './page-turn-binding';
 import {
   configureNativePagerInput,
@@ -28,6 +28,7 @@ interface NativePageTurnsOptions {
   readonly paperColor: number;
   readonly createPicture: (content: ReaderPageContent) => SkPicture;
   readonly onComplete?: (turnId: number) => void;
+  readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly currentContent?: ReaderPageContent;
   readonly interactiveSource?: ReaderPageContent;
   readonly interactiveTurn?: ReaderInteractiveTurn;
@@ -48,6 +49,7 @@ export function useNativePageTurns({
   paperColor,
   createPicture,
   onComplete,
+  pageTurnEffect,
   currentContent,
   interactiveSource,
   interactiveTurn,
@@ -75,7 +77,8 @@ export function useNativePageTurns({
       if (
         canvas
         && nativePagerCanvasReady(canvas)
-        && configureNativePagerMotion(canvas, NATIVE_PAGE_TURN_MOTION_CONFIG)
+        && pageTurnEffect.native
+        && configureNativePagerMotion(canvas, pageTurnEffect.native.motion)
       ) {
         setReady(true);
         return;
@@ -87,7 +90,7 @@ export function useNativePageTurns({
       cancelled = true;
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [canvasRef, ready, supported, turns.length]);
+  }, [canvasRef, pageTurnEffect, ready, supported, turns.length]);
 
   useEffect(() => {
     if (!active) {
@@ -125,6 +128,7 @@ export function useNativePageTurns({
     currentContent,
     interactiveSource,
     interactiveTurn,
+    pageTurnEffect,
     paperColor,
     pixelHeight,
     pixelWidth,
@@ -144,6 +148,7 @@ export function useNativePageTurns({
     submittedTurnIds,
     turns,
     onRejected: rejectAutomaticSubmission,
+    pageTurnEffect,
   });
 
   const hasPresentedTurn = useNativePageTurnEvents({

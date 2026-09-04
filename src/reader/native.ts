@@ -28,7 +28,7 @@ export {
   postHingeTurnProgressForFingerX,
   shouldCommitTurn,
   visualTurnProgressForFingerX,
-} from './skia/anime/gesture/page-turn-gesture';
+} from './skia/anime/effects/curl/gesture';
 export {
   useReaderPageTurn,
   type ReaderPageTurnController,

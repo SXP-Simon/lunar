@@ -3,10 +3,10 @@ import {
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
   postHingeTurnProgressForFingerX,
-} from '../../gesture/page-turn-gesture';
-import { AUTOMATIC_PAGE_TURN_DURATION_MS } from '../../core/page-turn-timing';
+} from './gesture';
+import { AUTOMATIC_PAGE_TURN_DURATION_MS } from './strategy';
 
-export { AUTOMATIC_PAGE_TURN_DURATION_MS } from '../../core/page-turn-timing';
+export { AUTOMATIC_PAGE_TURN_DURATION_MS } from './strategy';
 
 const CURVATURE_RELAXATION = 7;
 // Inverse J0 over chord lengths [0.035, 1]. This is the reference worklet's

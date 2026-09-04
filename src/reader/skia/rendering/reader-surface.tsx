@@ -16,7 +16,6 @@ import { memo, useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import {
   cancelAnimation,
-  Easing,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -29,7 +28,7 @@ import { readerDiagnostic, readerPerformanceMark } from '../../runtime/core/perf
 import {
   PageCurlMesh,
   automaticPageTurnPaintOrder,
-  getReaderPageTurnDuration,
+  getReaderPageTurnEffect,
   nativeAutomaticPageTurnBaseContent,
   nativeInteractivePageTurnBaseContent,
   useNativePageTurns,
@@ -38,6 +37,7 @@ import {
   type ReaderAutomaticTurn,
   type ReaderPageAnimationStyle,
   type ReaderPageContent,
+  type ReaderPageTurnEffect,
   type ReaderInteractiveTurn,
   type ReaderPageTurnSurfaceBinding,
 } from '../anime';
@@ -100,6 +100,7 @@ export function ReaderSurface({
   overlayColor = '#777777',
   overlayInsets = { top: 0, right: 0, bottom: 0, left: 0 },
 }: ReaderSurfaceProps) {
+  const pageTurnEffect = getReaderPageTurnEffect(animationStyle);
   const { ref, size: viewport } = useCanvasSize();
   const compiled = snapshot.phase === 'ready'
     ? runtime.getCurrentPicture(snapshot.revisionId, snapshot.spreadIndex, snapshot.renderId)
@@ -128,7 +129,7 @@ export function ReaderSurface({
   const {
     transition: activeTransition,
     visibleContent,
-    style: resolvedAnimationStyle,
+    visualKind: pageTurnVisualKind,
     coverMatrix,
     incomingSlideMatrix,
     outgoingSlideMatrix,
@@ -138,7 +139,7 @@ export function ReaderSurface({
   } =
     useReaderPageTransition(
       currentContent,
-      animationStyle,
+      pageTurnEffect,
       animationDuration,
       interactiveTurn,
       spreadMode,
@@ -165,7 +166,7 @@ export function ReaderSurface({
     () => automaticPageTurnPaintOrder(automaticTurns, automaticDirection),
     [automaticDirection, automaticTurns],
   );
-  const automaticPageTurnsVisible = resolvedAnimationStyle === 'page'
+  const automaticPageTurnsVisible = pageTurnVisualKind === 'curl'
     && automaticTurns.length > 0;
 
   const paperColor = snapshot.phase === 'ready'
@@ -235,7 +236,7 @@ export function ReaderSurface({
   ]);
   const nativeAutomaticPageTurnState = useNativePageTurns({
     canvasRef: ref,
-    enabled: resolvedAnimationStyle === 'page'
+    enabled: pageTurnEffect.native !== undefined
       && spreadMode === 'single'
       && (
         onAutomaticTurnComplete !== undefined
@@ -247,6 +248,7 @@ export function ReaderSurface({
     paperColor: nativePaperColor,
     createPicture: createNativePagePicture,
     onComplete: onAutomaticTurnComplete,
+    pageTurnEffect,
     currentContent,
     interactiveTurn,
     interactiveSource: activeTransition?.from,
@@ -278,8 +280,8 @@ export function ReaderSurface({
         `incoming=${incomingKey ?? 'none'}`,
         `from=${activeTransition?.from.key ?? 'none'}`,
         `to=${activeTransition?.toKey ?? 'none'}`,
-        `slideForeground=${resolvedAnimationStyle === 'slide' ? (activeTransition?.from.key ?? currentKey ?? 'none') : 'none'}`,
-        `mode=${transitionActive ? resolvedAnimationStyle : 'static'}`,
+        `slideForeground=${pageTurnVisualKind === 'slide' ? (activeTransition?.from.key ?? currentKey ?? 'none') : 'none'}`,
+        `mode=${transitionActive ? pageTurnVisualKind : 'static'}`,
         `interactive=${String(Boolean(interactiveTurn))}`,
         `automatic=${automaticTurns.length}`,
         `automaticTurn=${automaticTurns[0]?.id ?? 'none'}`,
@@ -297,7 +299,7 @@ export function ReaderSurface({
     incomingKey,
     incomingPicture,
     interactiveTurn,
-    resolvedAnimationStyle,
+    pageTurnVisualKind,
     snapshot.renderId,
     snapshot.revisionId,
     snapshot.spreadIndex,
@@ -307,10 +309,10 @@ export function ReaderSurface({
   // The moving sheet owns its chrome. Recording it into the same source
   // picture prevents a footer or chapter title from travelling on a separate
   // linear transform while the paper follows the curl profile.
-  const isSinglePreviousPageTurn = resolvedAnimationStyle === 'page'
+  const isSinglePreviousPageTurn = pageTurnVisualKind === 'curl'
     && spreadMode === 'single'
     && activeTransition?.direction === -1;
-  const pageCurlSource = resolvedAnimationStyle === 'page'
+  const pageCurlSource = pageTurnVisualKind === 'curl'
     && !automaticNavigationActive
     && !nativeInteractiveGestureDriven
     ? activeTransition
@@ -321,7 +323,7 @@ export function ReaderSurface({
     : undefined;
   const pageCurlWidth = pageCurlSource?.frame.width ?? activeTransition?.from.frame.width ?? 0;
   const pageCurlHeight = pageCurlSource?.frame.height ?? activeTransition?.from.frame.height ?? 0;
-  const pageCurlBackSource = resolvedAnimationStyle === 'page'
+  const pageCurlBackSource = pageTurnVisualKind === 'curl'
     && spreadMode === 'single'
     && !automaticNavigationActive
     ? isSinglePreviousPageTurn
@@ -477,6 +479,7 @@ export function ReaderSurface({
                   onComplete={onAutomaticTurnComplete}
                   overlayColor={overlayColor}
                   overlayInsets={overlayInsets}
+                  pageTurnEffect={pageTurnEffect}
                   runtime={runtime}
                   scale={scale}
                   spreadMode={spreadMode}
@@ -486,7 +489,7 @@ export function ReaderSurface({
                 />
               ))}
             </Group>
-          ) : resolvedAnimationStyle === 'page' ? (
+          ) : pageTurnVisualKind === 'curl' ? (
             <Group key="page-content">
               <Group key="page-current">
                 {nativeInteractiveBaseContent ? (
@@ -536,7 +539,7 @@ export function ReaderSurface({
                 />
               )}
             </Group>
-          ) : activeTransition && resolvedAnimationStyle === 'cover' ? (
+          ) : activeTransition && pageTurnVisualKind === 'cover' ? (
             <Group>
               <Group>
                 <Picture picture={activeTransition.from.picture.picture} />
@@ -547,7 +550,7 @@ export function ReaderSurface({
                 {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
               </Group>
             </Group>
-          ) : resolvedAnimationStyle === 'slide' ? (
+          ) : pageTurnVisualKind === 'slide' ? (
             <Group>
               <Group
                 key="slide-current"
@@ -599,6 +602,7 @@ interface AutomaticPageCurlLayerProps {
   readonly onComplete?: (turnId: number) => void;
   readonly overlayColor: string;
   readonly overlayInsets: Readonly<{ top: number; right: number; bottom: number; left: number }>;
+  readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly runtime: LunarReaderRuntime;
   readonly scale: number;
   readonly spreadMode: ReaderSpreadMode;
@@ -614,6 +618,7 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
   onComplete,
   overlayColor,
   overlayInsets,
+  pageTurnEffect,
   runtime,
   scale,
   spreadMode,
@@ -678,15 +683,20 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
 
   useEffect(() => {
     if (!texturesReady) return;
-    const duration = getReaderPageTurnDuration(
-      'page',
-      0,
+    const duration = pageTurnEffect.motion.getDuration({
+      releaseVelocity: 0,
       animationDuration,
-      incomingLanding,
-    );
+      incomingPageLanding: incomingLanding,
+    });
     progress.set(withTiming(1, {
       duration,
-      easing: Easing.linear,
+      easing: pageTurnEffect.motion.getEasing({
+        fromProgress: 0,
+        targetProgress: 1,
+        releaseVelocityPxPerMs: 0,
+        incomingPageLanding: incomingLanding,
+        interactive: false,
+      }),
     }, (finished) => {
       if (finished && onComplete) scheduleOnRN(onComplete, turnId);
     }));
@@ -695,6 +705,7 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
     animationDuration,
     incomingLanding,
     onComplete,
+    pageTurnEffect,
     progress,
     texturesReady,
     turnId,
