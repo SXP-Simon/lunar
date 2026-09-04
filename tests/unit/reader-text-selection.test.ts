@@ -124,16 +124,23 @@ describe('reader text selection', () => {
     expect(sourceRange).toEqual(nearRange);
   });
 
-  it('anchors to the mapped part when a generated endpoint has no source point', () => {
+  it('requires every selected run to carry a source point before deriving a source range', () => {
     const generatedStartEntries = [
       { ...entries[0], sourcePoint: undefined },
       entries[1],
       entries[2],
     ];
-    expect(createReaderTextSelection(generatedStartEntries, 0, 2)?.sourceRange).toEqual({
-      start: { nodePath: [1, 0], textOffset: 6 },
-      end: { nodePath: [1, 1], textOffset: 6 },
-    });
+    expect(createReaderTextSelection(generatedStartEntries, 0, 2)?.sourceRange).toBeUndefined();
+  });
+
+  it('preserves Rito visual-line separators in the search query', () => {
+    const selection = createReaderTextSelection(entries, 0, 2);
+    expect(selection && createReaderTextSelectionSearchQuery(selection)).toBe('First line\nSecond');
+    expect(selection?.searchSegments.map((segment) => segment.text)).toEqual([
+      'First ',
+      'line',
+      'Second',
+    ]);
   });
 });
 

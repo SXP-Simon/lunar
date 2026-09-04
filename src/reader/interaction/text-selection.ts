@@ -13,6 +13,11 @@ export interface ReaderTextSelectionEndpoint {
   readonly charIndex: number;
 }
 
+export interface ReaderTextSelectionSearchSegment {
+  readonly text: string;
+  readonly request: ReaderTextRangeGeometryRequest;
+}
+
 interface ReaderTextSelectionOrigin {
   readonly start: ReaderTextSelectionEndpoint;
   readonly end: ReaderTextSelectionEndpoint;
@@ -31,6 +36,7 @@ export interface ReaderTextSelection {
   readonly bounds: readonly ReaderRect[];
   readonly text: string;
   readonly geometryRequests: readonly ReaderTextRangeGeometryRequest[];
+  readonly searchSegments: readonly ReaderTextSelectionSearchSegment[];
   readonly origin: ReaderTextSelectionOrigin;
   readonly range: ReaderTextSelectionOrigin;
   readonly sourceRange?: ReaderSourceRange;
@@ -39,7 +45,15 @@ export interface ReaderTextSelection {
 export function createReaderTextSelectionSearchQuery(
   selection: ReaderTextSelection,
 ): string {
-  return selection.text.replace(/\n/gu, '');
+  return selection.text;
+}
+
+export function resolveReaderTextSelectionSegmentSourceRange(
+  segment: ReaderTextSelectionSearchSegment,
+  results: readonly ReaderSearchResult[],
+  href: string,
+): ReaderSourceRange | undefined {
+  return findClosestSourceResult(results, segment.request, href)?.locator?.sourceRange;
 }
 
 export function resolveReaderTextSelectionSourceRange(
@@ -50,6 +64,14 @@ export function resolveReaderTextSelectionSourceRange(
   if (selection.sourceRange) return selection.sourceRange;
   if (selection.geometryRequests.length !== 1) return undefined;
   const request = selection.geometryRequests[0];
+  return findClosestSourceResult(results, request, href)?.locator?.sourceRange;
+}
+
+function findClosestSourceResult(
+  results: readonly ReaderSearchResult[],
+  request: ReaderTextRangeGeometryRequest,
+  href: string,
+): ReaderSearchResult | undefined {
   const pageCandidates = results.filter((result) =>
     result.pageIndex === request.pageIndex
     && result.locator?.sourceRange,
@@ -62,7 +84,7 @@ export function resolveReaderTextSelectionSourceRange(
     !closest || compareTextPositionDistance(candidate, closest, request) < 0
       ? candidate
       : closest,
-  undefined)?.locator?.sourceRange;
+  undefined);
 }
 
 export function findReaderHitIndex(
@@ -214,6 +236,7 @@ function createSelection(
   };
   const portions = selectionPortions(entries, range.start, range.end);
   if (portions.length === 0) return undefined;
+  const searchSegments = createSearchSegments(portions);
   return {
     anchorIndex: origin.start.entryIndex,
     focusIndex: focus.entryIndex,
@@ -221,6 +244,7 @@ function createSelection(
     bounds: portions.map(portionBounds),
     text: joinSelectionText(portions),
     geometryRequests: createGeometryRequests(portions),
+    searchSegments,
     origin,
     range,
     sourceRange: createSourceRange(portions),
@@ -230,14 +254,31 @@ function createSelection(
 function createSourceRange(
   portions: readonly ReaderTextSelectionPortion[],
 ): ReaderSourceRange | undefined {
-  const sourcedPortions = portions.filter((portion) => portion.entry.sourcePoint);
-  const first = sourcedPortions[0];
-  const last = sourcedPortions.at(-1);
+  if (portions.some((portion) => !portion.entry.sourcePoint)) return undefined;
+  const first = portions[0];
+  const last = portions.at(-1);
   if (!first?.entry.sourcePoint || !last?.entry.sourcePoint) return undefined;
   return {
     start: addSourceTextOffset(first.entry.sourcePoint, first.startCharIndex),
     end: addSourceTextOffset(last.entry.sourcePoint, last.endCharIndex),
   };
+}
+
+function createSearchSegments(
+  portions: readonly ReaderTextSelectionPortion[],
+): ReaderTextSelectionSearchSegment[] {
+  return portions.flatMap((portion) => {
+    const textRange = portion.entry.textRange;
+    if (!textRange) return [];
+    return [{
+      text: portion.entry.text.slice(portion.startCharIndex, portion.endCharIndex),
+      request: {
+        pageIndex: portion.entry.pageIndex,
+        start: withCharIndex(textRange.start, portion.startCharIndex),
+        end: withCharIndex(textRange.end, portion.endCharIndex),
+      },
+    }];
+  });
 }
 
 function addSourceTextOffset(point: ReaderSourcePoint, offset: number): ReaderSourcePoint {
