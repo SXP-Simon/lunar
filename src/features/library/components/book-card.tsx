@@ -31,7 +31,8 @@ type BookCardProps = {
   onSelectionGestureStart?: (absoluteX: number, absoluteY: number) => void;
 };
 
-const LONG_PRESS_DURATION = 360;
+const LONG_PRESS_DURATION = 650;
+const PRE_LONG_PRESS_SCROLL_TOLERANCE = 8;
 const Image = withUniwind(ExpoImage);
 
 type BookCoverArtworkProps = {
@@ -79,6 +80,7 @@ export function BookCard({
   const selectionGesture = useMemo(
     () => Gesture.Pan()
       .activateAfterLongPress(LONG_PRESS_DURATION)
+      .failOffsetY([-PRE_LONG_PRESS_SCROLL_TOLERANCE, PRE_LONG_PRESS_SCROLL_TOLERANCE])
       .minDistance(0)
       .averageTouches(true)
       .cancelsTouchesInView(true)

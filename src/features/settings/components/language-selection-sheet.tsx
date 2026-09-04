@@ -28,7 +28,6 @@ export function LanguageSelectionSheet({
         <BottomSheet.Content
           backgroundClassName="bg-surface"
           contentContainerClassName="gap-2 px-6 pb-8">
-          <BottomSheet.Close accessibilityLabel={t('action.close')} />
           <BottomSheet.Title className="text-xl text-foreground">
             {t('settings.languageSelection')}
           </BottomSheet.Title>
