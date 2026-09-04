@@ -554,23 +554,35 @@ export function ReaderSurface({
             </Group>
           ) : pageTurnVisualKind === 'slide' ? (
             <Group>
-              <Group
-                key="slide-current"
-                matrix={activeTransition ? incomingSlideMatrix : undefined}>
-                {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
-              </Group>
-              {activeTransition && (
-                <Group
-                  key={`slide-outgoing:${activeTransition.from.key}`}
-                  matrix={outgoingSlideMatrix}>
-                  <Picture picture={activeTransition.from.picture.picture} />
+              {nativeInteractiveGestureDriven && nativeInteractiveBaseContent ? (
+                <Group key={`slide-native-base:${nativeInteractiveBaseContent.key}`}>
+                  <Picture picture={nativeInteractiveBaseContent.picture.picture} />
+                  {renderChrome(
+                    nativeInteractiveBaseContent.snapshot,
+                    nativeInteractiveBaseContent.frame,
+                  )}
                 </Group>
-              )}
-              {incomingFrame && renderChrome(
-                incomingSnapshot,
-                incomingFrame,
-                chapterTitle,
-                interactiveTurn ? undefined : progressLabel,
+              ) : (
+                <>
+                  <Group
+                    key="slide-current"
+                    matrix={activeTransition ? incomingSlideMatrix : undefined}>
+                    {incomingPicture && <Picture key={incomingKey} picture={incomingPicture} />}
+                  </Group>
+                  {activeTransition && (
+                    <Group
+                      key={`slide-outgoing:${activeTransition.from.key}`}
+                      matrix={outgoingSlideMatrix}>
+                      <Picture picture={activeTransition.from.picture.picture} />
+                    </Group>
+                  )}
+                  {incomingFrame && renderChrome(
+                    incomingSnapshot,
+                    incomingFrame,
+                    chapterTitle,
+                    interactiveTurn ? undefined : progressLabel,
+                  )}
+                </>
               )}
             </Group>
           ) : (

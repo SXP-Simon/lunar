@@ -267,6 +267,7 @@ export function usePageTurnPanGesture({
           );
           nativeReleased = endNativePagerGestureOnUI(nativePagerId.value, {
             fingerX,
+            pageWidth: viewportWidth,
             throwVelocity,
             throwAcceleration: 0,
             pageWeight: releaseTuning?.pageWeight ?? 1,
@@ -276,6 +277,7 @@ export function usePageTurnPanGesture({
             maximumSpeedScale: releaseTuning?.maximumSpeedScale ?? 1,
             velocityGain: releaseTuning?.velocityGain ?? 0,
             idleDecaySeconds: releaseTuning?.idleDecaySeconds ?? 0,
+            releaseProjectionSeconds: releaseTuning?.releaseProjectionSeconds ?? 0,
           }) === true;
           nativeActive.value = false;
         }

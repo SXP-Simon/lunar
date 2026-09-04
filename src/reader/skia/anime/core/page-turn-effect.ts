@@ -4,6 +4,7 @@ import type { ReaderPageAnimationStyle } from './page-turn-types';
 
 export type ResolvedReaderPageAnimationStyle = 'cover' | 'page' | 'slide';
 export type ReaderPageTurnVisualKind = 'cover' | 'curl' | 'slide';
+export type ReaderNativePageTurnVisualKind = 'curl' | 'slide';
 export type ReaderPageTurnEasing = (progress: number) => number;
 export type ReaderPageTurnTransform = (
   | { readonly translateX: number }
@@ -100,6 +101,15 @@ export interface ReaderNativePageTurnGestureReleaseTuning {
   readonly maximumSpeedScale: number;
   readonly velocityGain: number;
   readonly idleDecaySeconds: number;
+  readonly releaseProjectionSeconds: number;
+}
+
+export interface ReaderNativePlanarPageTurnMotionTuning {
+  readonly minimumReleaseSpeedPxPerMs: number;
+  readonly maximumReleaseSpeedPxPerMs: number;
+  readonly maximumPlaybackRate: number;
+  readonly minimumBoostedSettleMs: number;
+  readonly maximumEaseOutBlend: number;
 }
 
 export interface ReaderNativePageTurnMotionTuning {
@@ -154,8 +164,10 @@ export interface ReaderPageTurnEffect {
     readonly usesPlanarAutomaticTransition: boolean;
   };
   readonly native?: {
+    readonly visualKind: ReaderNativePageTurnVisualKind;
     readonly gesture: ReaderNativePageTurnGesturePolicy;
     readonly motion: ReaderNativePageTurnMotionConfig;
+    readonly planarMotion?: ReaderNativePlanarPageTurnMotionTuning;
   };
 }
 

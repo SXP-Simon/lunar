@@ -106,6 +106,7 @@ export const curlPageTurnEffect: ReaderPageTurnEffect = {
     },
   },
   native: {
+    visualKind: 'curl',
     motion: NATIVE_CURL_MOTION_CONFIG,
     gesture: {
       minimumStartBookX: 0.25,
@@ -128,6 +129,7 @@ export const curlPageTurnEffect: ReaderPageTurnEffect = {
           maximumSpeedScale: GESTURE_MAXIMUM_SPEED_SCALE,
           velocityGain: GESTURE_VELOCITY_GAIN,
           idleDecaySeconds: GESTURE_IDLE_DECAY_SECONDS,
+          releaseProjectionSeconds: 0,
         };
       },
     },

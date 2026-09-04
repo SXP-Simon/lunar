@@ -9,6 +9,7 @@ import {
 import { getReaderPageTurnEffect } from '../../src/reader/skia/anime/effects/page-turn-effects';
 import {
   getSlidePageTurnEasing,
+  SLIDE_RELEASE_PROJECTION_SECONDS,
   slidePageTurnEffect,
 } from '../../src/reader/skia/anime/effects/slide/strategy';
 
@@ -105,7 +106,22 @@ describe('reader page turn effect timing', () => {
         commitThreshold: 0.15,
         minimumSpeedScale: 0.8,
       });
-    expect(slidePageTurnEffect.native).toBeUndefined();
+    expect(slidePageTurnEffect.native).toMatchObject({
+      visualKind: 'slide',
+      planarMotion: {
+        minimumReleaseSpeedPxPerMs: 0.2,
+        maximumReleaseSpeedPxPerMs: 1,
+        maximumPlaybackRate: 2,
+        minimumBoostedSettleMs: 90,
+        maximumEaseOutBlend: 1 / 3,
+      },
+    });
+    expect(slidePageTurnEffect.native?.gesture.canStart(1, 0)).toBe(true);
+    expect(slidePageTurnEffect.native?.gesture.getReleaseTuning(1, 'single'))
+      .toMatchObject({
+        commitThreshold: 0.5,
+        releaseProjectionSeconds: SLIDE_RELEASE_PROJECTION_SECONDS,
+      });
   });
 
   it('lets each effect calculate its release and rebound duration', () => {

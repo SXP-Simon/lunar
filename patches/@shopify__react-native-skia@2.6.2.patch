@@ -2,7 +2,7 @@ diff --git a/android/README.md b/android/README.md
 deleted file mode 100644
 index ac2fbda377ad1213c02f090138f48054e5660547..0000000000000000000000000000000000000000
 diff --git a/android/cpp/rnskia-android/OpenGLWindowContext.cpp b/android/cpp/rnskia-android/OpenGLWindowContext.cpp
-index 3916c0d67a0c30637759fd260ac7f581e32f8ea3..14693b92711ff205e5fd7639de855175324f235a 100644
+index 3916c0d67a0c30637759fd260ac7f581e32f8ea3..3fb4b330066c56cc7dac30545ec0c2c64ecc1924 100644
 --- a/android/cpp/rnskia-android/OpenGLWindowContext.cpp
 +++ b/android/cpp/rnskia-android/OpenGLWindowContext.cpp
 @@ -15,8 +15,10 @@
@@ -29,7 +29,7 @@ index 3916c0d67a0c30637759fd260ac7f581e32f8ea3..14693b92711ff205e5fd7639de855175
    _glSurface->present();
  }
 diff --git a/android/cpp/rnskia-android/OpenGLWindowContext.h b/android/cpp/rnskia-android/OpenGLWindowContext.h
-index 14b228a32e5de513619f4c31f68e5fe5fec71ab7..df6d10e8e6a65e7723bf5be6075f2eaf4146aa81 100644
+index 14b228a32e5de513619f4c31f68e5fe5fec71ab7..3a14992000f42e88cd456f1144d75cca39ea1e4f 100644
 --- a/android/cpp/rnskia-android/OpenGLWindowContext.h
 +++ b/android/cpp/rnskia-android/OpenGLWindowContext.h
 @@ -43,6 +43,9 @@ public:
@@ -55,7 +55,7 @@ index 14b228a32e5de513619f4c31f68e5fe5fec71ab7..df6d10e8e6a65e7723bf5be6075f2eaf
        _skSurface = nullptr;
      }
 diff --git a/android/cpp/rnskia-android/RNSkAndroidView.h b/android/cpp/rnskia-android/RNSkAndroidView.h
-index e0533bf5d93051f50d3292b42a2d05c41d6c4ce8..119845ab8728401b3ace5ec422c1bd2651631f15 100644
+index e0533bf5d93051f50d3292b42a2d05c41d6c4ce8..c0c53a4fec3f095210832d672fa3149d78625f0e 100644
 --- a/android/cpp/rnskia-android/RNSkAndroidView.h
 +++ b/android/cpp/rnskia-android/RNSkAndroidView.h
 @@ -38,7 +38,7 @@ public:
@@ -81,7 +81,7 @@ index e0533bf5d93051f50d3292b42a2d05c41d6c4ce8..119845ab8728401b3ace5ec422c1bd26
  
    float getPixelDensity() override {
 diff --git a/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.cpp b/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.cpp
-index e8e4c0314b7a11600827b5ccd4924c337fd59833..bc0d6f5ad0922f5bfba842a397bdd3245a1b39f2 100644
+index e8e4c0314b7a11600827b5ccd4924c337fd59833..35188d57254faa9687802138894da7b3746922f8 100644
 --- a/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.cpp
 +++ b/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.cpp
 @@ -1,9 +1,19 @@
@@ -363,7 +363,7 @@ index e8e4c0314b7a11600827b5ccd4924c337fd59833..bc0d6f5ad0922f5bfba842a397bdd324
    } else {
      _surfaceHolder->resize(width, height);
 diff --git a/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.h b/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.h
-index ca5768de24b8c3600e92d2684c959e8ec24c4f61..81275c13e08f520469bea17478bf751c45e0f9d1 100644
+index ca5768de24b8c3600e92d2684c959e8ec24c4f61..8cbb3ac3d121d977300bec4f9ac0939457560c93 100644
 --- a/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.h
 +++ b/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.h
 @@ -1,8 +1,15 @@
@@ -421,7 +421,7 @@ index ca5768de24b8c3600e92d2684c959e8ec24c4f61..81275c13e08f520469bea17478bf751c
  };
  } // namespace RNSkia
 diff --git a/android/src/main/java/com/shopify/reactnative/skia/PlatformContext.java b/android/src/main/java/com/shopify/reactnative/skia/PlatformContext.java
-index 724776a00be028a773cfbfb70ffb3c25a8e8840e..2a4224ef1bab9623f973b42d5c6f440702ccea77 100644
+index 724776a00be028a773cfbfb70ffb3c25a8e8840e..bd081f9b80feda7e3b4433e88db03d4cc25b31cc 100644
 --- a/android/src/main/java/com/shopify/reactnative/skia/PlatformContext.java
 +++ b/android/src/main/java/com/shopify/reactnative/skia/PlatformContext.java
 @@ -2,6 +2,7 @@ package com.shopify.reactnative.skia;
@@ -466,7 +466,7 @@ index 724776a00be028a773cfbfb70ffb3c25a8e8840e..2a4224ef1bab9623f973b42d5c6f4407
      }
  
 diff --git a/apple/MetalContext.h b/apple/MetalContext.h
-index 3fd4e908ca6baf5fd23c443edc2ac6b756eb28aa..2340b02069f146c1c8c737ebfb641438884d3915 100644
+index 3fd4e908ca6baf5fd23c443edc2ac6b756eb28aa..dfd032aca15b9b288a56450b4c9f9fd6f34e3bd8 100644
 --- a/apple/MetalContext.h
 +++ b/apple/MetalContext.h
 @@ -97,11 +97,12 @@ public:
@@ -485,7 +485,7 @@ index 3fd4e908ca6baf5fd23c443edc2ac6b756eb28aa..2340b02069f146c1c8c737ebfb641438
  
    GrDirectContext *getDirectContext() { return _directContext.get(); }
 diff --git a/apple/MetalWindowContext.h b/apple/MetalWindowContext.h
-index 867f6db89bad9e5c5c153c0d8bec768ac70eb3db..724c7f6fdfdfe106442978b9d9133f7fa9f739bf 100644
+index 867f6db89bad9e5c5c153c0d8bec768ac70eb3db..6f4b3c6310f3cd173764e21938834f22ec6b12bf 100644
 --- a/apple/MetalWindowContext.h
 +++ b/apple/MetalWindowContext.h
 @@ -10,7 +10,8 @@ class MetalWindowContext : public RNSkia::WindowContext {
@@ -499,10 +499,10 @@ index 867f6db89bad9e5c5c153c0d8bec768ac70eb3db..724c7f6fdfdfe106442978b9d9133f7f
  
    sk_sp<SkSurface> getSurface() override;
 diff --git a/apple/MetalWindowContext.mm b/apple/MetalWindowContext.mm
-index 4cbfafa69fd9c1d1e5f056b17ce8582b94b35325..9f3d5da7c66deba0befc5c5aeabafe22bc762c03 100644
+index 4cbfafa69fd9c1d1e5f056b17ce8582b94b35325..335bfc9e4efdd599bf1faab780c5d7616f2cfc60 100644
 --- a/apple/MetalWindowContext.mm
 +++ b/apple/MetalWindowContext.mm
-@@ -8,12 +8,17 @@
+@@ -8,12 +8,17 @@ MetalWindowContext::MetalWindowContext(GrDirectContext *directContext,
                                         id<MTLDevice> device,
                                         id<MTLCommandQueue> commandQueue,
                                         CALayer *layer, int width, int height,
@@ -522,7 +522,7 @@ index 4cbfafa69fd9c1d1e5f056b17ce8582b94b35325..9f3d5da7c66deba0befc5c5aeabafe22
    _layer.framebufferOnly = NO;
    _layer.device = device;
    _layer.opaque = false;
-@@ -48,6 +53,8 @@
+@@ -48,6 +53,8 @@ MetalWindowContext::MetalWindowContext(GrDirectContext *directContext,
      _layer.colorspace = colorSpace;
      CGColorSpaceRelease(colorSpace);
      _useP3ColorSpace = true;
@@ -532,7 +532,7 @@ index 4cbfafa69fd9c1d1e5f056b17ce8582b94b35325..9f3d5da7c66deba0befc5c5aeabafe22
  }
  
 diff --git a/apple/RNSkMetalCanvasProvider.h b/apple/RNSkMetalCanvasProvider.h
-index 205e7ad99d4bdfb89075f2fa28d6e4ad76285759..8f18acefeed81c2353a758447b9c634c8b237256 100644
+index 205e7ad99d4bdfb89075f2fa28d6e4ad76285759..5761bcf04bed27e797579cf582489bd2cb0fdf26 100644
 --- a/apple/RNSkMetalCanvasProvider.h
 +++ b/apple/RNSkMetalCanvasProvider.h
 @@ -6,6 +6,9 @@
@@ -587,7 +587,7 @@ index 205e7ad99d4bdfb89075f2fa28d6e4ad76285759..8f18acefeed81c2353a758447b9c634c
 +  std::atomic<bool> _useP3ColorSpace = {true};
  };
 diff --git a/apple/RNSkMetalCanvasProvider.mm b/apple/RNSkMetalCanvasProvider.mm
-index cc5007733e92caaf643c1b18c8be2cef52b477dd..3a7b47a9c6fbdccba8cead8f234d856c830d3281 100644
+index cc5007733e92caaf643c1b18c8be2cef52b477dd..cffdd211c8539508a7887ca264b1ca446b30f741 100644
 --- a/apple/RNSkMetalCanvasProvider.mm
 +++ b/apple/RNSkMetalCanvasProvider.mm
 @@ -19,8 +19,281 @@
@@ -872,7 +872,7 @@ index cc5007733e92caaf643c1b18c8be2cef52b477dd..3a7b47a9c6fbdccba8cead8f234d856c
  RNSkMetalCanvasProvider::RNSkMetalCanvasProvider(
      std::function<void()> requestRedraw,
      std::shared_ptr<RNSkia::RNSkPlatformContext> context, bool useP3ColorSpace)
-@@ -28,24 +301,101 @@
+@@ -28,24 +301,101 @@ RNSkMetalCanvasProvider::RNSkMetalCanvasProvider(
        _useP3ColorSpace(useP3ColorSpace) {
  #pragma clang diagnostic push
  #pragma clang diagnostic ignored "-Wunguarded-availability-new"
@@ -978,7 +978,7 @@ index cc5007733e92caaf643c1b18c8be2cef52b477dd..3a7b47a9c6fbdccba8cead8f234d856c
  };
  
  /**
-@@ -53,6 +403,11 @@
+@@ -53,6 +403,11 @@ int RNSkMetalCanvasProvider::getHeight() {
   */
  bool RNSkMetalCanvasProvider::renderToCanvas(
      const std::function<void(SkCanvas *)> &cb) {
@@ -990,7 +990,7 @@ index cc5007733e92caaf643c1b18c8be2cef52b477dd..3a7b47a9c6fbdccba8cead8f234d856c
    if (!_ctx) {
      return false;
    }
-@@ -61,50 +416,81 @@
+@@ -61,50 +416,81 @@ bool RNSkMetalCanvasProvider::renderToCanvas(
    // background or inactive. This will cause an error that might clear the
    // CAMetalLayer so that the canvas is empty when the app receives focus again.
    // Reference: https://github.com/Shopify/react-native-skia/issues/1257
@@ -1103,7 +1103,7 @@ index cc5007733e92caaf643c1b18c8be2cef52b477dd..3a7b47a9c6fbdccba8cead8f234d856c
 +  }
  }
 diff --git a/cpp/api/JsiSkParagraph.h b/cpp/api/JsiSkParagraph.h
-index 319410930843c33a850755508d788cac71ee4be2..9b76f4d8e0483d01a0722e002754a15e0946426d 100644
+index 319410930843c33a850755508d788cac71ee4be2..e8d7304fd3b518507c15cd211fcb26066d617abe 100644
 --- a/cpp/api/JsiSkParagraph.h
 +++ b/cpp/api/JsiSkParagraph.h
 @@ -171,7 +171,14 @@ public:
@@ -1123,7 +1123,7 @@ index 319410930843c33a850755508d788cac71ee4be2..9b76f4d8e0483d01a0722e002754a15e
    std::string getObjectType() const override { return "JsiSkParagraph"; }
  
 diff --git a/cpp/api/JsiSkParagraphBuilder.h b/cpp/api/JsiSkParagraphBuilder.h
-index d7e0956b1ec15435a718f28c96ea8f55376d2f36..dccded4753b787d1d03252fdcbf63ae26d264d68 100644
+index d7e0956b1ec15435a718f28c96ea8f55376d2f36..02bb7fa3f80cb3f928588316dbb5e1dc39f7c8a6 100644
 --- a/cpp/api/JsiSkParagraphBuilder.h
 +++ b/cpp/api/JsiSkParagraphBuilder.h
 @@ -116,7 +116,11 @@ public:
@@ -1140,7 +1140,7 @@ index d7e0956b1ec15435a718f28c96ea8f55376d2f36..dccded4753b787d1d03252fdcbf63ae2
    std::string getObjectType() const override { return "JsiSkParagraphBuilder"; }
  
 diff --git a/cpp/api/JsiSkPicture.h b/cpp/api/JsiSkPicture.h
-index b58d412a258b2a0430189a2bd1c1811f672d4cf8..3880acd861faee2d1e98b8bf88783136f54768a5 100644
+index b58d412a258b2a0430189a2bd1c1811f672d4cf8..ac7e722d3984f97eb07bed950f9a7d30e98cfa86 100644
 --- a/cpp/api/JsiSkPicture.h
 +++ b/cpp/api/JsiSkPicture.h
 @@ -1,5 +1,6 @@
@@ -1169,7 +1169,7 @@ index b58d412a258b2a0430189a2bd1c1811f672d4cf8..3880acd861faee2d1e98b8bf88783136
  
    std::string getObjectType() const override { return "JsiSkPicture"; }
 diff --git a/cpp/api/JsiSkSurfaceFactory.h b/cpp/api/JsiSkSurfaceFactory.h
-index aad94429344434bd0b4c3a78e3bcff15fb0d27ce..f796c0afcac504055f1f8946c9a9a8ed31e4ec3b 100644
+index aad94429344434bd0b4c3a78e3bcff15fb0d27ce..aac698af2355567d4c2e904f29c5068a26ae165a 100644
 --- a/cpp/api/JsiSkSurfaceFactory.h
 +++ b/cpp/api/JsiSkSurfaceFactory.h
 @@ -1,10 +1,20 @@
@@ -1277,7 +1277,7 @@ index aad94429344434bd0b4c3a78e3bcff15fb0d27ce..f796c0afcac504055f1f8946c9a9a8ed
    size_t getMemoryPressure() const override { return 2048; }
  
 diff --git a/cpp/rnskia/RNSkJsiViewApi.h b/cpp/rnskia/RNSkJsiViewApi.h
-index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..7cb8d71e5cc5bb0401e6ea1df2accb6671fbadf3 100644
+index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..2d7f3190cff851dc730970ee74a6457ea2bdd89b 100644
 --- a/cpp/rnskia/RNSkJsiViewApi.h
 +++ b/cpp/rnskia/RNSkJsiViewApi.h
 @@ -10,6 +10,7 @@
@@ -1288,7 +1288,7 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..7cb8d71e5cc5bb0401e6ea1df2accb66
  #include "RNSkPictureView.h"
  #include "RNSkPlatformContext.h"
  #include "RNSkView.h"
-@@ -268,11 +269,582 @@ public:
+@@ -268,11 +269,617 @@ public:
      return sizeObj;
    }
  
@@ -1549,9 +1549,11 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..7cb8d71e5cc5bb0401e6ea1df2accb66
 +  }
 +
 +  JSI_HOST_FUNCTION(pagerConfigureMotion) {
-+    if (count != 7 || !arguments[0].isNumber()) {
++    if (count != 9 || !arguments[0].isNumber() ||
++        !arguments[1].isNumber()) {
 +      _platformContext->raiseError(
-+          "pagerConfigureMotion: Expected native id and six tuning arrays.");
++          "pagerConfigureMotion: Expected native id, visual kind, six motion "
++          "arrays, and planar tuning.");
 +      return jsi::Value::undefined();
 +    }
 +
@@ -1584,20 +1586,50 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..7cb8d71e5cc5bb0401e6ea1df2accb66
 +      return true;
 +    };
 +
++    auto readPlanarTuning = [&](
++        size_t argumentIndex,
++        RNSkPagerCompositor::PlanarMotionTuning &tuning) {
++      if (!arguments[argumentIndex].isObject()) {
++        return false;
++      }
++      auto object = arguments[argumentIndex].asObject(runtime);
++      if (!object.isArray(runtime)) {
++        return false;
++      }
++      auto values = object.asArray(runtime);
++      if (values.size(runtime) != 5) {
++        return false;
++      }
++      float numbers[5];
++      for (size_t index = 0; index < 5; index += 1) {
++        auto value = values.getValueAtIndex(runtime, index);
++        if (!value.isNumber()) {
++          return false;
++        }
++        numbers[index] = static_cast<float>(value.asNumber());
++      }
++      tuning = {
++          numbers[0], numbers[1], numbers[2], numbers[3], numbers[4],
++      };
++      return true;
++    };
++
 +    RNSkPagerCompositor::MotionTuning automaticForward;
 +    RNSkPagerCompositor::MotionTuning automaticBackward;
 +    RNSkPagerCompositor::MotionTuning rapidForward;
 +    RNSkPagerCompositor::MotionTuning rapidBackward;
 +    RNSkPagerCompositor::MotionTuning gestureForward;
 +    RNSkPagerCompositor::MotionTuning gestureBackward;
-+    if (!readTuning(1, automaticForward) ||
-+        !readTuning(2, automaticBackward) ||
-+        !readTuning(3, rapidForward) ||
-+        !readTuning(4, rapidBackward) ||
-+        !readTuning(5, gestureForward) ||
-+        !readTuning(6, gestureBackward)) {
++    RNSkPagerCompositor::PlanarMotionTuning planarMotion;
++    if (!readTuning(2, automaticForward) ||
++        !readTuning(3, automaticBackward) ||
++        !readTuning(4, rapidForward) ||
++        !readTuning(5, rapidBackward) ||
++        !readTuning(6, gestureForward) ||
++        !readTuning(7, gestureBackward) ||
++        !readPlanarTuning(8, planarMotion)) {
 +      _platformContext->raiseError(
-+          "pagerConfigureMotion: Every tuning array must contain 12 numbers.");
++          "pagerConfigureMotion: Invalid motion tuning arrays.");
 +      return jsi::Value::undefined();
 +    }
 +    const int nativeId = arguments[0].asNumber();
@@ -1607,8 +1639,9 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..7cb8d71e5cc5bb0401e6ea1df2accb66
 +    auto pictureView = std::dynamic_pointer_cast<RNSkPictureView>(view);
 +    if (pictureView != nullptr) {
 +      pictureView->configurePagerMotion(
-+          automaticForward, automaticBackward, rapidForward, rapidBackward,
-+          gestureForward, gestureBackward);
++          arguments[1].asNumber(), automaticForward, automaticBackward,
++          rapidForward, rapidBackward, gestureForward, gestureBackward,
++          planarMotion);
 +    }
 +    return jsi::Value::undefined();
 +  }
@@ -1694,14 +1727,15 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..7cb8d71e5cc5bb0401e6ea1df2accb66
 +  }
 +
 +  JSI_HOST_FUNCTION(pagerEndGesture) {
-+    if (count != 11 || !arguments[0].isNumber() ||
++    if (count != 13 || !arguments[0].isNumber() ||
 +        !arguments[1].isNumber() || !arguments[2].isNumber() ||
 +        !arguments[3].isNumber() || !arguments[4].isNumber() ||
 +        !arguments[5].isNumber() || !arguments[6].isNumber() ||
 +        !arguments[7].isNumber() || !arguments[8].isNumber() ||
-+        !arguments[9].isNumber() || !arguments[10].isNumber()) {
++        !arguments[9].isNumber() || !arguments[10].isNumber() ||
++        !arguments[11].isNumber() || !arguments[12].isNumber()) {
 +      _platformContext->raiseError(
-+          "pagerEndGesture: Expected native id and ten gesture values.");
++          "pagerEndGesture: Expected native id and twelve gesture values.");
 +      return jsi::Value(false);
 +    }
 +    const int nativeId = arguments[0].asNumber();
@@ -1717,7 +1751,8 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..7cb8d71e5cc5bb0401e6ea1df2accb66
 +        arguments[3].asNumber(), arguments[4].asNumber(),
 +        arguments[5].asNumber(), arguments[6].asNumber(),
 +        arguments[7].asNumber(), arguments[8].asNumber(),
-+        arguments[9].asNumber(), arguments[10].asNumber()));
++        arguments[9].asNumber(), arguments[10].asNumber(),
++        arguments[11].asNumber(), arguments[12].asNumber()));
 +  }
 +
 +  JSI_HOST_FUNCTION(pagerCancelGesture) {
@@ -1815,7 +1850,7 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..7cb8d71e5cc5bb0401e6ea1df2accb66
 +          "pagerProtocolVersion: Expected no arguments.");
 +      return jsi::Value::undefined();
 +    }
-+    return jsi::Value(10);
++    return jsi::Value(11);
 +  }
 +
 +  JSI_HOST_FUNCTION(pagerReady) {
@@ -1874,10 +1909,10 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..7cb8d71e5cc5bb0401e6ea1df2accb66
     * Constructor
 diff --git a/cpp/rnskia/RNSkPagerCompositor.h b/cpp/rnskia/RNSkPagerCompositor.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662a27db99c
+index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f92537969
 --- /dev/null
 +++ b/cpp/rnskia/RNSkPagerCompositor.h
-@@ -0,0 +1,3129 @@
+@@ -0,0 +1,3311 @@
 +#pragma once
 +
 +#include <algorithm>
@@ -1935,6 +1970,11 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 + */
 +class RNSkPagerCompositor {
 +public:
++  enum class VisualKind {
++    Curl,
++    Slide,
++  };
++
 +  struct Event {
 +    std::string id;
 +    std::string type;
@@ -1957,21 +1997,32 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +    float incomingRevertDurationSeconds = 0.72f;
 +  };
 +
++  struct PlanarMotionTuning {
++    float minimumReleaseSpeedPxPerMs = 0.2f;
++    float maximumReleaseSpeedPxPerMs = 1.0f;
++    float maximumPlaybackRate = 2.0f;
++    float minimumBoostedSettleMs = 90.0f;
++    float maximumEaseOutBlend = 1.0f / 3.0f;
++  };
++
 +  explicit RNSkPagerCompositor(std::function<void()> requestRedraw)
 +      : _requestRedraw(std::move(requestRedraw)) {}
 +
-+  void configureMotion(MotionTuning automaticForward,
++  void configureMotion(int visualKind, MotionTuning automaticForward,
 +                       MotionTuning automaticBackward,
 +                       MotionTuning rapidForward, MotionTuning rapidBackward,
 +                       MotionTuning gestureForward,
-+                       MotionTuning gestureBackward) {
++                       MotionTuning gestureBackward,
++                       PlanarMotionTuning planarMotion) {
 +    std::lock_guard<std::mutex> lock(_mutex);
++    _visualKind = visualKind == 1 ? VisualKind::Slide : VisualKind::Curl;
 +    _automaticForwardTuning = clampMotionTuning(automaticForward);
 +    _automaticBackwardTuning = clampMotionTuning(automaticBackward);
 +    _rapidForwardTuning = clampMotionTuning(rapidForward);
 +    _rapidBackwardTuning = clampMotionTuning(rapidBackward);
 +    _gestureForwardTuning = clampMotionTuning(gestureForward);
 +    _gestureBackwardTuning = clampMotionTuning(gestureBackward);
++    _planarMotionTuning = clampPlanarMotionTuning(planarMotion);
 +  }
 +
 +  void preload(sk_sp<SkImage> image) {
@@ -1998,6 +2049,8 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +    {
 +      std::lock_guard<std::mutex> lock(_mutex);
 +      Turn turn;
++      turn.visualKind = _visualKind;
++      turn.planarTuning = _planarMotionTuning;
 +      turn.id = std::move(id);
 +      turn.frontImageId = frontImage->uniqueID();
 +      turn.backImageId =
@@ -2046,6 +2099,8 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +    {
 +      std::lock_guard<std::mutex> lock(_mutex);
 +      Turn turn;
++      turn.visualKind = _visualKind;
++      turn.planarTuning = _planarMotionTuning;
 +      turn.id = std::move(id);
 +      turn.frontPicture = std::move(frontPicture);
 +      turn.backPicture = std::move(backPicture);
@@ -2352,6 +2407,8 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +      _nextLaunchSteadyMs = nowSteadyMs;
 +
 +      Turn turn;
++      turn.visualKind = _visualKind;
++      turn.planarTuning = _planarMotionTuning;
 +      turn.id = nextStockTurnIdLocked(stock->id);
 +      turn.fromPageKey = stock->fromPageKey;
 +      turn.toPageKey = stock->toPageKey;
@@ -2412,11 +2469,12 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +    return accepted;
 +  }
 +
-+  bool endGesture(float fingerX, float throwVelocity,
++  bool endGesture(float fingerX, float pageWidth, float throwVelocity,
 +                  float throwAcceleration, float pageWeight,
 +                  float commitThreshold, float slowCommitEdgeX,
 +                  float minimumSpeedScale, float maximumSpeedScale,
-+                  float velocityGain, float idleDecaySeconds) {
++                  float velocityGain, float idleDecaySeconds,
++                  float releaseProjectionSeconds) {
 +    bool accepted = false;
 +    {
 +      std::lock_guard<std::mutex> lock(_mutex);
@@ -2458,12 +2516,23 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +      const float score =
 +          (distance + velocity + acceleration) /
 +          std::clamp(pageWeight, 0.25f, 3.0f);
-+      const bool commit =
-+          (incomingPage || !turn->weakGrip) &&
-+          score >= std::clamp(commitThreshold, 0.15f, 1.5f) - 1e-6f;
++      const bool commit = turn->visualKind == VisualKind::Slide
++                              ? turn->gestureProgress +
++                                        decayedThrowVelocity *
++                                            std::clamp(
++                                                releaseProjectionSeconds,
++                                                0.0f, 1.0f) >=
++                                    std::clamp(commitThreshold, 0.05f, 0.95f) -
++                                        1e-6f
++                              : (incomingPage || !turn->weakGrip) &&
++                                    score >=
++                                        std::clamp(commitThreshold, 0.15f,
++                                                   1.5f) -
++                                            1e-6f;
 +      releaseGestureLocked(
 +          *turn, commit, decayedThrowVelocity, minimumSpeedScale,
-+          maximumSpeedScale, velocityGain, nowSteadyMs, epochNowMs());
++          maximumSpeedScale, velocityGain, pageWidth, nowSteadyMs,
++          epochNowMs());
 +      accepted = true;
 +    }
 +    if (accepted) {
@@ -2612,13 +2681,18 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +      std::lock_guard<std::mutex> lock(_mutex);
 +      renderTurns.reserve(_turns.size());
 +      for (auto &turn : _turns) {
++        const bool slideFacesReady =
++            turn.visualKind != VisualKind::Slide ||
++            turn.backgroundLeftImage != nullptr;
 +        const bool interactiveFacesReady =
 +            turn.interactive && turn.frontImage != nullptr &&
 +            (!turn.spread || turn.backImage != nullptr) &&
++            slideFacesReady &&
 +            turn.frontPicture == nullptr && turn.backPicture == nullptr;
 +        const bool automaticTurnReady =
 +            !turn.interactive && turn.frontImage != nullptr &&
 +            (!turn.spread || turn.backImage != nullptr) &&
++            slideFacesReady &&
 +            turn.frontPicture == nullptr && turn.backPicture == nullptr &&
 +            turn.backgroundLeftPicture == nullptr &&
 +            turn.backgroundRightPicture == nullptr;
@@ -2669,9 +2743,13 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +            0,
 +            0,
 +        };
-+        buildRenderProfileLocked(
-+            turn, sample.shape, sample.lifecycleProgress,
-+            nowSteadyMs, renderTurn);
++        renderTurn.visualKind = turn.visualKind;
++        renderTurn.lifecycleProgress = sample.lifecycleProgress;
++        if (turn.visualKind == VisualKind::Curl) {
++          buildRenderProfileLocked(
++              turn, sample.shape, sample.lifecycleProgress,
++              nowSteadyMs, renderTurn);
++        }
 +        renderTurns.push_back(std::move(renderTurn));
 +        if (displayPresentation && !turn.interactive &&
 +            !turn.firstFramePresented && !turn.firstFrameQueued) {
@@ -2711,7 +2789,9 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +
 +    if (!renderTurns.empty()) {
 +      const int direction = renderTurns.front().direction;
-+      if (renderTurns.front().spread) {
++      if (renderTurns.front().visualKind == VisualKind::Slide) {
++        drawSlideTurns(canvas, viewportWidth, viewportHeight, renderTurns);
++      } else if (renderTurns.front().spread) {
 +        drawSpreadBackground(canvas, viewportWidth, viewportHeight,
 +                             renderTurns, direction);
 +        const int landingFace = direction > 0 ? -1 : 1;
@@ -2878,6 +2958,8 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +  };
 +
 +  struct Turn {
++    VisualKind visualKind = VisualKind::Curl;
++    PlanarMotionTuning planarTuning;
 +    std::string id;
 +    std::string fromPageKey;
 +    std::string toPageKey;
@@ -2926,6 +3008,7 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +    float driveStartProgress = 0;
 +    float driveStartRotation = 0;
 +    float driveSpeedScale = 1;
++    float planarEaseOutBlend = 0;
 +    float previousCurvature = 0;
 +    double lastGestureUpdateAtSteadyMs = 0;
 +    double settleStartedAtSteadyMs = 0;
@@ -2950,6 +3033,8 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +    float shadowCenter;
 +    float shadowWidth;
 +    float shadowStrength;
++    VisualKind visualKind = VisualKind::Curl;
++    float lifecycleProgress = 0;
 +  };
 +
 +  struct PresentationHandoff {
@@ -3073,6 +3158,20 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +        std::clamp(tuning.incomingSettleDurationSeconds, 0.15f, 1.5f),
 +        std::clamp(tuning.incomingSettleEasingPower, 0.75f, 6.0f),
 +        std::clamp(tuning.incomingRevertDurationSeconds, 0.1f, 1.5f),
++    };
++  }
++
++  static PlanarMotionTuning clampPlanarMotionTuning(
++      PlanarMotionTuning tuning) {
++    const float minimumSpeed = std::clamp(
++        tuning.minimumReleaseSpeedPxPerMs, 0.0f, 4.0f);
++    return {
++        minimumSpeed,
++        std::clamp(tuning.maximumReleaseSpeedPxPerMs,
++                   minimumSpeed + 0.001f, 8.0f),
++        std::clamp(tuning.maximumPlaybackRate, 1.0f, 8.0f),
++        std::clamp(tuning.minimumBoostedSettleMs, 0.0f, 1000.0f),
++        std::clamp(tuning.maximumEaseOutBlend, 0.0f, 1.0f),
 +    };
 +  }
 +
@@ -3236,6 +3335,10 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +                                       float turnProgress) {
 +    turn.gestureFingerX = std::clamp(fingerX, -1.0f, 1.0f);
 +    const float rawProgress = std::clamp(turnProgress, 0.0f, 1.0f);
++    if (turn.visualKind == VisualKind::Slide) {
++      turn.gestureProgress = rawProgress;
++      return;
++    }
 +    if (turn.direction < 0 && !turn.spread) {
 +      turn.gestureProgress = incomingPageDragProgress(rawProgress, turn.tuning);
 +      return;
@@ -3337,7 +3440,40 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +        0.0f, 1.0f);
 +  }
 +
++  static float slideEasedProgress(float timeline, float easeOutBlend) {
++    const float time = std::clamp(timeline, 0.0f, 1.0f);
++    const float easeInOutQuad =
++        time < 0.5f ? 2.0f * time * time
++                    : 1.0f - 2.0f * (1.0f - time) * (1.0f - time);
++    const float easeOutCubic =
++        1.0f - std::pow(1.0f - time, 3.0f);
++    const float blend = std::clamp(easeOutBlend, 0.0f, 1.0f);
++    return easeInOutQuad * (1.0f - blend) + easeOutCubic * blend;
++  }
++
 +  static MotionSample sampleMotion(const Turn &turn, double nowSteadyMs) {
++    if (turn.visualKind == VisualKind::Slide) {
++      if (!turn.interactive) {
++        const float timeline = automaticProgressForTurn(turn, nowSteadyMs);
++        return {{}, slideEasedProgress(timeline, 0), timeline >= 1.0f};
++      }
++      if (turn.motionPhase == MotionPhase::GestureDrag) {
++        return {{}, std::clamp(turn.gestureProgress, 0.0f, 1.0f), false};
++      }
++      const float segmentProgress = std::clamp(
++          static_cast<float>(
++              std::max(0.0, nowSteadyMs - turn.settleStartedAtSteadyMs) /
++              std::max(0.001, turn.settleDurationMs)),
++          0.0f, 1.0f);
++      const float eased =
++          slideEasedProgress(segmentProgress, turn.planarEaseOutBlend);
++      const float targetProgress = turn.commitOnComplete ? 1.0f : 0.0f;
++      const float progress =
++          turn.driveStartProgress +
++          (targetProgress - turn.driveStartProgress) * eased;
++      return {{}, std::clamp(progress, 0.0f, 1.0f),
++              segmentProgress >= 1.0f};
++    }
 +    if (!turn.interactive) {
 +      const float timeline =
 +          automaticProgressForTurn(turn, nowSteadyMs);
@@ -3488,7 +3624,8 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +  void releaseGestureLocked(Turn &turn, bool commit, float throwVelocity,
 +                            float minimumSpeedScale,
 +                            float maximumSpeedScale, float velocityGain,
-+                            double nowSteadyMs, double nowEpochMs) {
++                            float pageWidth, double nowSteadyMs,
++                            double nowEpochMs) {
 +    turn.settling = true;
 +    turn.commitOnComplete = commit;
 +    turn.settleStartedAtSteadyMs = nowSteadyMs;
@@ -3501,6 +3638,48 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +            std::max(0.0f, throwVelocity) *
 +                std::clamp(velocityGain, 0.0f, 4.0f),
 +        safeMinimumSpeed, safeMaximumSpeed);
++    if (turn.visualKind == VisualKind::Slide) {
++      turn.driveStartProgress = turn.gestureProgress;
++      turn.motionPhase = commit ? MotionPhase::GestureTurn
++                                : MotionPhase::GestureRevert;
++      const float targetProgress = commit ? 1.0f : 0.0f;
++      const float distance =
++          std::abs(targetProgress - turn.driveStartProgress);
++      const float baseDurationMs =
++          static_cast<float>(turn.durationMs) * distance;
++      float releaseBoost = 0;
++      if (commit) {
++        const float releaseSpeedPxPerMs =
++            std::max(0.0f, throwVelocity) * std::max(0.0f, pageWidth) /
++            1000.0f;
++        releaseBoost = std::clamp(
++            (releaseSpeedPxPerMs -
++             turn.planarTuning.minimumReleaseSpeedPxPerMs) /
++                (turn.planarTuning.maximumReleaseSpeedPxPerMs -
++                 turn.planarTuning.minimumReleaseSpeedPxPerMs),
++            0.0f, 1.0f);
++      }
++      const float playbackRate =
++          1.0f +
++          (turn.planarTuning.maximumPlaybackRate - 1.0f) * releaseBoost;
++      const float boostedDurationMs =
++          releaseBoost <= 0
++              ? baseDurationMs
++              : std::max(
++                    std::min(
++                        turn.planarTuning.minimumBoostedSettleMs,
++                        baseDurationMs),
++                    baseDurationMs / playbackRate);
++      turn.planarEaseOutBlend =
++          releaseBoost * turn.planarTuning.maximumEaseOutBlend;
++      turn.settleDurationMs = std::max(0.001f, boostedDurationMs);
++      if (commit) {
++        consumeGestureLocked(turn, nowEpochMs);
++      }
++      _events.push_back(
++          {turn.id, "gesture-released", nowEpochMs, turn.direction});
++      return;
++    }
 +    if (turn.direction < 0 && !turn.spread) {
 +      turn.driveStartProgress = turn.gestureProgress;
 +      if (commit) {
@@ -4226,6 +4405,8 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +      }
 +    }
 +    Turn turn;
++    turn.visualKind = _visualKind;
++    turn.planarTuning = _planarMotionTuning;
 +    turn.id = nextStockTurnIdLocked(stock->id, rapidInput);
 +    turn.fromPageKey = stock->fromPageKey;
 +    turn.toPageKey = stock->toPageKey;
@@ -4822,6 +5003,40 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +        paint);
 +  }
 +
++  static void drawSlideTurns(SkCanvas *canvas, float viewportWidth,
++                             float viewportHeight,
++                             const std::vector<RenderTurn> &turns) {
++    if (turns.empty()) {
++      return;
++    }
++    SkPaint paperPaint;
++    paperPaint.setColor(turns.back().paperColor);
++    canvas->drawRect(SkRect::MakeWH(viewportWidth, viewportHeight),
++                     paperPaint);
++    for (const auto &turn : turns) {
++      const auto &source = turn.direction > 0
++                               ? turn.frontImage
++                               : turn.backgroundLeftImage;
++      const auto &target = turn.direction > 0
++                               ? turn.backgroundLeftImage
++                               : turn.frontImage;
++      if (source == nullptr || target == nullptr) {
++        continue;
++      }
++      const float progress =
++          std::clamp(turn.lifecycleProgress, 0.0f, 1.0f);
++      const float sourceX =
++          -static_cast<float>(turn.direction) * viewportWidth * progress;
++      const float targetX =
++          static_cast<float>(turn.direction) * viewportWidth *
++          (1.0f - progress);
++      drawBackgroundPage(canvas, sourceX, viewportWidth, viewportHeight,
++                         source);
++      drawBackgroundPage(canvas, targetX, viewportWidth, viewportHeight,
++                         target);
++    }
++  }
++
 +  static void drawTurn(SkCanvas *canvas, float viewportWidth,
 +                       float viewportHeight, const RenderTurn &turn,
 +                       int faceFilter = 0, bool drawTurnShadow = true) {
@@ -4998,6 +5213,8 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +  double _benchmarkIntervalMs = 100;
 +  double _benchmarkNextSteadyMs = 0;
 +  bool _inputEnabled = false;
++  VisualKind _visualKind = VisualKind::Curl;
++  PlanarMotionTuning _planarMotionTuning;
 +  MotionTuning _automaticForwardTuning = {0.72f, 1.5f, 2.2f, 6.75f};
 +  MotionTuning _automaticBackwardTuning = {0.72f, 1.5f, 2.2f, 6.75f};
 +  MotionTuning _rapidForwardTuning = {0.72f, 1.5f, 2.2f, 6.75f};
@@ -5008,7 +5225,7 @@ index 0000000000000000000000000000000000000000..4cf4f4febedc2c0baf803083c6bfd662
 +
 +} // namespace RNSkia
 diff --git a/cpp/rnskia/RNSkPictureView.h b/cpp/rnskia/RNSkPictureView.h
-index 0059ea1c7ed47adb189095bc9f1110525668d11a..bceb016c73589038e77bafa8f8ebb4c147460925 100644
+index 0059ea1c7ed47adb189095bc9f1110525668d11a..33f5bf88f5623f5e94a72e1560cc8fe9355f1f8d 100644
 --- a/cpp/rnskia/RNSkPictureView.h
 +++ b/cpp/rnskia/RNSkPictureView.h
 @@ -11,6 +11,7 @@
@@ -5029,7 +5246,7 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..bceb016c73589038e77bafa8f8ebb4c1
  
    virtual ~RNSkPictureRenderer() = default;
  
-@@ -52,31 +54,178 @@ public:
+@@ -52,31 +54,182 @@ public:
    }
  
    void setPicture(sk_sp<SkPicture> picture) {
@@ -5109,15 +5326,17 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..bceb016c73589038e77bafa8f8ebb4c1
 +  }
 +
 +  void configurePagerMotion(
++      int visualKind,
 +      RNSkPagerCompositor::MotionTuning automaticForward,
 +      RNSkPagerCompositor::MotionTuning automaticBackward,
 +      RNSkPagerCompositor::MotionTuning rapidForward,
 +      RNSkPagerCompositor::MotionTuning rapidBackward,
 +      RNSkPagerCompositor::MotionTuning gestureForward,
-+      RNSkPagerCompositor::MotionTuning gestureBackward) {
++      RNSkPagerCompositor::MotionTuning gestureBackward,
++      RNSkPagerCompositor::PlanarMotionTuning planarMotion) {
 +    _pagerCompositor.configureMotion(
-+        automaticForward, automaticBackward, rapidForward, rapidBackward,
-+        gestureForward, gestureBackward);
++        visualKind, automaticForward, automaticBackward, rapidForward,
++        rapidBackward, gestureForward, gestureBackward, planarMotion);
 +  }
 +
 +  bool consumePagerInput(int direction) {
@@ -5138,15 +5357,17 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..bceb016c73589038e77bafa8f8ebb4c1
 +    return _pagerCompositor.updateGesture(fingerX, turnProgress);
 +  }
 +
-+  bool endPagerGesture(float fingerX, float throwVelocity,
++  bool endPagerGesture(float fingerX, float pageWidth, float throwVelocity,
 +                       float throwAcceleration, float pageWeight,
 +                       float commitThreshold, float slowCommitEdgeX,
 +                       float minimumSpeedScale, float maximumSpeedScale,
-+                       float velocityGain, float idleDecaySeconds) {
++                       float velocityGain, float idleDecaySeconds,
++                       float releaseProjectionSeconds) {
 +    return _pagerCompositor.endGesture(
-+        fingerX, throwVelocity, throwAcceleration, pageWeight,
++        fingerX, pageWidth, throwVelocity, throwAcceleration, pageWeight,
 +        commitThreshold, slowCommitEdgeX, minimumSpeedScale,
-+        maximumSpeedScale, velocityGain, idleDecaySeconds);
++        maximumSpeedScale, velocityGain, idleDecaySeconds,
++        releaseProjectionSeconds);
 +  }
 +
 +  bool cancelPagerGesture() {
@@ -5212,7 +5433,7 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..bceb016c73589038e77bafa8f8ebb4c1
  };
  
  class RNSkPictureView : public RNSkView {
-@@ -108,5 +257,141 @@ public:
+@@ -108,5 +261,145 @@ public:
        }
      }
    }
@@ -5283,16 +5504,18 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..bceb016c73589038e77bafa8f8ebb4c1
 +  }
 +
 +  void configurePagerMotion(
++      int visualKind,
 +      RNSkPagerCompositor::MotionTuning automaticForward,
 +      RNSkPagerCompositor::MotionTuning automaticBackward,
 +      RNSkPagerCompositor::MotionTuning rapidForward,
 +      RNSkPagerCompositor::MotionTuning rapidBackward,
 +      RNSkPagerCompositor::MotionTuning gestureForward,
-+      RNSkPagerCompositor::MotionTuning gestureBackward) {
++      RNSkPagerCompositor::MotionTuning gestureBackward,
++      RNSkPagerCompositor::PlanarMotionTuning planarMotion) {
 +    std::static_pointer_cast<RNSkPictureRenderer>(getRenderer())
 +        ->configurePagerMotion(
-+            automaticForward, automaticBackward, rapidForward, rapidBackward,
-+            gestureForward, gestureBackward);
++            visualKind, automaticForward, automaticBackward, rapidForward,
++            rapidBackward, gestureForward, gestureBackward, planarMotion);
 +  }
 +
 +  bool consumePagerInput(int direction) {
@@ -5317,16 +5540,18 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..bceb016c73589038e77bafa8f8ebb4c1
 +        ->updatePagerGesture(fingerX, turnProgress);
 +  }
 +
-+  bool endPagerGesture(float fingerX, float throwVelocity,
++  bool endPagerGesture(float fingerX, float pageWidth, float throwVelocity,
 +                       float throwAcceleration, float pageWeight,
 +                       float commitThreshold, float slowCommitEdgeX,
 +                       float minimumSpeedScale, float maximumSpeedScale,
-+                       float velocityGain, float idleDecaySeconds) {
++                       float velocityGain, float idleDecaySeconds,
++                       float releaseProjectionSeconds) {
 +    return std::static_pointer_cast<RNSkPictureRenderer>(getRenderer())
 +        ->endPagerGesture(
-+            fingerX, throwVelocity, throwAcceleration, pageWeight,
++            fingerX, pageWidth, throwVelocity, throwAcceleration, pageWeight,
 +            commitThreshold, slowCommitEdgeX, minimumSpeedScale,
-+            maximumSpeedScale, velocityGain, idleDecaySeconds);
++            maximumSpeedScale, velocityGain, idleDecaySeconds,
++            releaseProjectionSeconds);
 +  }
 +
 +  bool cancelPagerGesture() {
@@ -5355,7 +5580,7 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..bceb016c73589038e77bafa8f8ebb4c1
  };
  } // namespace RNSkia
 diff --git a/cpp/rnskia/RNSkView.h b/cpp/rnskia/RNSkView.h
-index 5181c713c7415a48544b95fbb826c56a81bc0787..f7efc11e31b0c86f042fe3604abbf15e98dcaf9a 100644
+index 5181c713c7415a48544b95fbb826c56a81bc0787..dd838f24812389adb711433fde29d9df2f4354fc 100644
 --- a/cpp/rnskia/RNSkView.h
 +++ b/cpp/rnskia/RNSkView.h
 @@ -1,6 +1,8 @@

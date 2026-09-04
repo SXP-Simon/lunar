@@ -5,6 +5,10 @@ import {
   crossesPageTurnCommitThreshold,
   getPlanarAutomaticPageTurnDuration,
 } from '../../core/page-turn-math';
+import {
+  NATIVE_SLIDE_MOTION_CONFIG,
+  NATIVE_SLIDE_PLANAR_MOTION,
+} from './native-motion';
 
 export const SLIDE_RELEASE_PROJECTION_SECONDS = 0.24;
 
@@ -58,6 +62,31 @@ export const slidePageTurnEffect: ReaderPageTurnEffect = {
         towardTargetVelocity,
         SLIDE_RELEASE_PROJECTION_SECONDS,
       );
+    },
+  },
+  native: {
+    visualKind: 'slide',
+    motion: NATIVE_SLIDE_MOTION_CONFIG,
+    planarMotion: NATIVE_SLIDE_PLANAR_MOTION,
+    gesture: {
+      minimumStartBookX: 0,
+      canStart: () => {
+        'worklet';
+        return true;
+      },
+      getReleaseTuning: () => {
+        'worklet';
+        return {
+          pageWeight: 1,
+          commitThreshold: 0.5,
+          slowCommitEdgeX: 0,
+          minimumSpeedScale: 1,
+          maximumSpeedScale: 2,
+          velocityGain: 0,
+          idleDecaySeconds: 0.1,
+          releaseProjectionSeconds: SLIDE_RELEASE_PROJECTION_SECONDS,
+        };
+      },
     },
   },
   motion: {

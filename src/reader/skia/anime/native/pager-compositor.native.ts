@@ -12,9 +12,11 @@ import type {
   NativePagerGestureStart,
   NativePagerGestureUpdate,
   NativePagerMotionConfig,
+  NativePagerPlanarMotionTuning,
   NativePagerPictureTurnCommand,
   NativePagerStockPictureCommand,
   NativePagerTurnCommand,
+  NativePagerVisualKind,
 } from "./pager-compositor";
 
 interface NativePagerSkiaViewApi {
@@ -77,12 +79,14 @@ interface NativePagerSkiaViewApi {
   pagerSetInputEnabled?: (nativeId: number, enabled: boolean) => void;
   pagerConfigureMotion?: (
     nativeId: number,
+    visualKind: number,
     automaticForward: readonly number[],
     automaticBackward: readonly number[],
     rapidForward: readonly number[],
     rapidBackward: readonly number[],
     gestureForward: readonly number[],
     gestureBackward: readonly number[],
+    planarMotion: readonly number[],
   ) => void;
   pagerConsumeInput?: (nativeId: number, direction: 1 | -1) => boolean;
   pagerTryConsumeInput?: (nativeId: number, direction: 1 | -1) => boolean;
@@ -101,6 +105,7 @@ interface NativePagerSkiaViewApi {
   pagerEndGesture?: (
     nativeId: number,
     fingerX: number,
+    pageWidth: number,
     throwVelocity: number,
     throwAcceleration: number,
     pageWeight: number,
@@ -110,6 +115,7 @@ interface NativePagerSkiaViewApi {
     maximumSpeedScale: number,
     velocityGain: number,
     idleDecaySeconds: number,
+    releaseProjectionSeconds: number,
   ) => boolean;
   pagerCancelGesture?: (nativeId: number) => boolean;
   pagerRunBenchmark?: (
@@ -170,7 +176,7 @@ export function nativePagerCompositorAvailable(): boolean {
     return false;
   }
   nativePagerAvailability =
-    protocolVersion >= 10 &&
+    protocolVersion >= 11 &&
     typeof nativePagerRnApi.ready === "function" &&
     typeof nativePagerRnApi.enqueue === "function" &&
     typeof nativePagerRnApi.enqueuePicture === "function" &&
@@ -383,7 +389,9 @@ export function configureNativePagerInput(
 
 export function configureNativePagerMotion(
   canvas: NativePagerCanvasHandle | null,
+  visualKind: NativePagerVisualKind,
   config: NativePagerMotionConfig,
+  planarMotion?: NativePagerPlanarMotionTuning,
 ): boolean {
   const configureMotion = nativePagerRnApi.configureMotion;
   if (!canvas || !configureMotion) {
@@ -392,17 +400,31 @@ export function configureNativePagerMotion(
   try {
     configureMotion(
       canvas.getNativeId(),
+      visualKind === "slide" ? 1 : 0,
       motionTuningValues(config.automatic.forward),
       motionTuningValues(config.automatic.backward),
       motionTuningValues(config.rapid.forward),
       motionTuningValues(config.rapid.backward),
       motionTuningValues(config.gesture.forward),
       motionTuningValues(config.gesture.backward),
+      planarMotionTuningValues(planarMotion),
     );
     return true;
   } catch {
     return false;
   }
+}
+
+function planarMotionTuningValues(
+  tuning?: NativePagerPlanarMotionTuning,
+): [number, number, number, number, number] {
+  return [
+    tuning?.minimumReleaseSpeedPxPerMs ?? 0.2,
+    tuning?.maximumReleaseSpeedPxPerMs ?? 1,
+    tuning?.maximumPlaybackRate ?? 2,
+    tuning?.minimumBoostedSettleMs ?? 90,
+    tuning?.maximumEaseOutBlend ?? 1 / 3,
+  ];
 }
 
 function motionTuningValues(
@@ -508,6 +530,7 @@ export function endNativePagerGestureOnUI(
     return nativePagerWorkletApi?.pagerEndGesture?.(
       nativeId,
       release.fingerX,
+      release.pageWidth,
       release.throwVelocity,
       release.throwAcceleration,
       release.pageWeight,
@@ -517,6 +540,7 @@ export function endNativePagerGestureOnUI(
       release.maximumSpeedScale,
       release.velocityGain,
       release.idleDecaySeconds,
+      release.releaseProjectionSeconds,
     );
   } catch {
     return undefined;

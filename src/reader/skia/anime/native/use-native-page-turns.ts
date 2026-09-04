@@ -59,16 +59,16 @@ export function useNativePageTurns({
     () => enabled && nativePagerCompositorAvailable(),
     [enabled],
   );
-  const [ready, setReady] = useState(false);
-  const active = supported && ready;
+  const [configuredEffect, setConfiguredEffect] = useState<ReaderPageTurnEffect>();
+  const active = supported && configuredEffect === pageTurnEffect;
   const automaticActive = active && onComplete !== undefined;
   const submittedTurnIds = useRef(new Set<number>());
   const submittedGestureStockIds = useRef(new Set<string>());
   const anchorKey = useRef<string | undefined>(undefined);
-  const rejectAutomaticSubmission = useCallback(() => setReady(false), []);
+  const rejectAutomaticSubmission = useCallback(() => setConfiguredEffect(undefined), []);
 
   useEffect(() => {
-    if (!supported || ready || turns.length > 0) return;
+    if (!supported || configuredEffect === pageTurnEffect || turns.length > 0) return;
     let cancelled = false;
     let frame = 0;
     const probe = () => {
@@ -78,9 +78,14 @@ export function useNativePageTurns({
         canvas
         && nativePagerCanvasReady(canvas)
         && pageTurnEffect.native
-        && configureNativePagerMotion(canvas, pageTurnEffect.native.motion)
+        && configureNativePagerMotion(
+          canvas,
+          pageTurnEffect.native.visualKind,
+          pageTurnEffect.native.motion,
+          pageTurnEffect.native.planarMotion,
+        )
       ) {
-        setReady(true);
+        setConfiguredEffect(pageTurnEffect);
         return;
       }
       frame = requestAnimationFrame(probe);
@@ -90,7 +95,7 @@ export function useNativePageTurns({
       cancelled = true;
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [canvasRef, pageTurnEffect, ready, supported, turns.length]);
+  }, [canvasRef, configuredEffect, pageTurnEffect, supported, turns.length]);
 
   useEffect(() => {
     if (!active) {

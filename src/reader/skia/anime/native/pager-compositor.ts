@@ -4,6 +4,8 @@ import type {
   ReaderNativePageTurnDirectionalMotionTuning,
   ReaderNativePageTurnMotionConfig,
   ReaderNativePageTurnMotionTuning,
+  ReaderNativePageTurnVisualKind,
+  ReaderNativePlanarPageTurnMotionTuning,
 } from '../core/page-turn-effect';
 
 export type NativePagerEvent =
@@ -29,6 +31,8 @@ export interface NativePagerCanvasHandle {
 export type NativePagerMotionTuning = ReaderNativePageTurnMotionTuning;
 export type NativePagerMotionConfig = ReaderNativePageTurnMotionConfig;
 export type NativePagerDirectionalMotionTuning = ReaderNativePageTurnDirectionalMotionTuning;
+export type NativePagerVisualKind = ReaderNativePageTurnVisualKind;
+export type NativePagerPlanarMotionTuning = ReaderNativePlanarPageTurnMotionTuning;
 
 export interface NativePagerTurnCommand {
   readonly id: string;
@@ -83,6 +87,7 @@ export interface NativePagerStockPictureCommand {
 
 export interface NativePagerGestureRelease {
   readonly fingerX: number;
+  readonly pageWidth: number;
   readonly throwVelocity: number;
   readonly throwAcceleration: number;
   readonly pageWeight: number;
@@ -92,6 +97,7 @@ export interface NativePagerGestureRelease {
   readonly maximumSpeedScale: number;
   readonly velocityGain: number;
   readonly idleDecaySeconds: number;
+  readonly releaseProjectionSeconds: number;
 }
 
 export interface NativePagerGestureStart {
