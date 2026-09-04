@@ -5,6 +5,7 @@ import {
   getAutomaticPlanarPageTurnDuration,
   getReaderPageTurnDuration,
   getReaderPageTurnSettleDuration,
+  getSlidePageTurnEasing,
   PAGE_TURN_DURATION_MS,
   resolveReaderPageAnimationStyle,
 } from '../../src/reader/skia/anime/core/page-turn-timing';
@@ -32,6 +33,26 @@ describe('reader page turn timing', () => {
     expect(getReaderPageTurnSettleDuration('slide', 0.7, 1, 0, 360)).toBe(108);
     expect(getReaderPageTurnSettleDuration('slide', 0.7, 0, 0, 360)).toBe(252);
     expect(getReaderPageTurnSettleDuration('page', 0.5, 1)).toBe(260);
+  });
+
+  it('uses the Readest slide curve when settling without release momentum', () => {
+    const easing = getSlidePageTurnEasing(0.5, 1);
+
+    expect(easing(0)).toBe(0);
+    expect(easing(0.25)).toBeCloseTo(0.125);
+    expect(easing(0.5)).toBe(0.5);
+    expect(easing(0.75)).toBeCloseTo(0.875);
+    expect(easing(1)).toBe(1);
+  });
+
+  it('blends toward ease-out only when release momentum points at the target', () => {
+    const towardTarget = getSlidePageTurnEasing(0.5, 1, 1);
+    const awayFromTarget = getSlidePageTurnEasing(0.5, 1, -1);
+    const returning = getSlidePageTurnEasing(0.5, 0, -1);
+
+    expect(towardTarget(0.25)).toBeCloseTo(0.2760416667);
+    expect(awayFromTarget(0.25)).toBeCloseTo(0.125);
+    expect(returning(0.25)).toBeCloseTo(0.2760416667);
   });
 
   it('accelerates queued planar turns without restarting their completed progress', () => {

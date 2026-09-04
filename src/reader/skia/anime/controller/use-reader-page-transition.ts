@@ -16,6 +16,7 @@ import {
   getReaderPageTurnDuration,
   getReaderPageTurnHandoffProgress,
   getReaderPageTurnSettleDuration,
+  getSlidePageTurnEasing,
   resolveReaderPageAnimationStyle,
 } from '../core/page-turn-timing';
 import type {
@@ -239,17 +240,22 @@ export function useReaderPageTransition(
     ) {
       animatedProgress.set(0);
     }
-    animatedProgress.set(withTiming(target, {
-      duration,
-      easing: !interactiveTurn && style === 'page'
+    const easing = style === 'slide'
+      ? getSlidePageTurnEasing(
+          interactiveTurn?.progress ?? automaticStartProgress,
+          target,
+          (interactiveTurn?.releaseVelocity ?? 0) * width / 1000,
+        )
+      : !interactiveTurn && style === 'page'
         ? Easing.linear
         : target === 0
-        ? Easing.out(Easing.cubic)
-        : incomingPageLanding
-          ? Easing.out(Easing.quad)
-          : style === 'page'
-            ? Easing.inOut(Easing.sin)
-            : Easing.inOut(Easing.cubic),
+          ? Easing.out(Easing.cubic)
+          : incomingPageLanding
+            ? Easing.out(Easing.quad)
+            : Easing.inOut(Easing.sin);
+    animatedProgress.set(withTiming(target, {
+      duration,
+      easing,
     }, (finished) => {
       if (!finished) return;
       if (interactiveTurn?.settling && interactiveTurn.onSettleComplete) {
@@ -275,6 +281,7 @@ export function useReaderPageTransition(
     onAutomaticTurnComplete,
     progress,
     style,
+    width,
   ]);
 
   return {

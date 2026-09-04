@@ -7,6 +7,35 @@ export const PAGE_TURN_REVERSE_DURATION_MS = 854;
 export const PAGE_TURN_REVERT_DURATION_MS = 720;
 export const AUTOMATIC_PLANAR_PAGE_TURN_MIN_DURATION_MS = 100;
 
+const SLIDE_RELEASE_MIN_SPEED_PX_PER_MS = 0.2;
+const SLIDE_RELEASE_MAX_SPEED_PX_PER_MS = 1;
+const SLIDE_MAX_EASE_OUT_BLEND = 1 / 3;
+
+export function getSlidePageTurnEasing(
+  fromProgress: number,
+  targetProgress: 0 | 1,
+  releaseVelocityPxPerMs = 0,
+): (progress: number) => number {
+  const towardTarget = releaseVelocityPxPerMs * (targetProgress - fromProgress) > 0;
+  const releaseBoost = towardTarget
+    ? clampUnit(
+        (Math.abs(releaseVelocityPxPerMs) - SLIDE_RELEASE_MIN_SPEED_PX_PER_MS)
+          / (SLIDE_RELEASE_MAX_SPEED_PX_PER_MS - SLIDE_RELEASE_MIN_SPEED_PX_PER_MS),
+      )
+    : 0;
+  const easeOutBlend = releaseBoost * SLIDE_MAX_EASE_OUT_BLEND;
+
+  return (progress: number): number => {
+    'worklet';
+    const time = Math.min(1, Math.max(0, progress));
+    const easeInOutQuad = time < 0.5
+      ? 2 * time * time
+      : 1 - 2 * (1 - time) * (1 - time);
+    const easeOutCubic = 1 - (1 - time) ** 3;
+    return easeInOutQuad * (1 - easeOutBlend) + easeOutCubic * easeOutBlend;
+  };
+}
+
 export function getReaderPageTurnDuration(
   animationStyle: ReaderPageAnimationStyle,
   releaseVelocity = 0,
