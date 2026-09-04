@@ -4,6 +4,10 @@ vi.mock('react-native', () => ({
   TurboModuleRegistry: { get: () => null },
 }));
 
+vi.mock('react-native-nitro-modules', () => ({
+  NitroModules: { createHybridObject: () => null },
+}));
+
 import { RitoReaderSession } from '../../modules/rito-rn/src/session';
 import type { RitoNativeCallResult, RitoNativeReaderModule } from '../../modules/rito-rn/src/native';
 import { RitoBinaryWriter } from '../../modules/rito-rn/src/protocol/binary';
