@@ -388,6 +388,15 @@ export interface ReaderSearchResponse {
   readonly results: readonly ReaderSearchResult[];
 }
 
+export type ReaderFootnoteKind = 'footnote' | 'endnote' | 'rearnote' | 'note';
+
+export interface ReaderFootnote {
+  readonly key: string;
+  readonly kind: ReaderFootnoteKind;
+  readonly text: string;
+  readonly html: string;
+}
+
 export interface ReaderHitEntry {
   readonly pageIndex: number;
   readonly bounds: ReaderRect;
@@ -398,6 +407,10 @@ export interface ReaderHitEntry {
   readonly footnoteKey?: string;
   readonly footnotePending?: boolean;
   readonly sourcePoint?: ReaderSourcePoint;
+  readonly textRange?: {
+    readonly start: ReaderTextPosition;
+    readonly end: ReaderTextPosition;
+  };
 }
 
 export type ReaderSemanticRole =
@@ -457,6 +470,8 @@ export interface ReaderPublicationView {
   getImage(source: string): Uint8Array | undefined;
   /** Resolves a TOC target, paginating it on demand when necessary. */
   resolveToc(href: string): number | undefined | Promise<number | undefined>;
+  /** Reads a note owned by the artifact assigned to a spread. */
+  readFootnote?(key: string, spreadIndex?: number): Promise<ReaderFootnote | undefined>;
   resolveTextRangeGeometry?(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]>;
   search?(request: ReaderSearchRequest): Promise<ReaderSearchResponse>;
 }

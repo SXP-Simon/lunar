@@ -446,6 +446,14 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.getCurrentFrame(spreadIndex)?.semantics ?? [];
   }
 
+  async readFootnote(key: string, spreadIndex = this.snapshot.spreadIndex): Promise<import('../../contracts').ReaderFootnote | undefined> {
+    const publication = this.publication;
+    if (!publication?.readFootnote || this.snapshot.phase !== 'ready') return undefined;
+    const revision = this.snapshot.revisionId;
+    const footnote = await publication.readFootnote(key, spreadIndex);
+    return revision === this.snapshot.revisionId ? footnote : undefined;
+  }
+
   async resolveTextRangeGeometry(request: import('../../contracts').ReaderTextRangeGeometryRequest): Promise<readonly import('../../contracts').ReaderTextRangeRect[]> {
     const publication = this.publication;
     if (!publication?.resolveTextRangeGeometry || this.snapshot.phase !== 'ready') return [];

@@ -31,9 +31,6 @@ export function LanguageSelectionSheet({
           <BottomSheet.Title className="text-xl text-foreground">
             {t('settings.languageSelection')}
           </BottomSheet.Title>
-          <BottomSheet.Description className="text-sm text-muted">
-            {t('settings.languageSelectionDescription')}
-          </BottomSheet.Description>
           <View className="mt-4 gap-2">
             {LANGUAGE_OPTIONS.map((option) => {
               const isSelected = option === language;

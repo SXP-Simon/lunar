@@ -1,0 +1,288 @@
+import type {
+  ReaderHitEntry,
+  ReaderRect,
+  ReaderTextPosition,
+  ReaderTextRangeGeometryRequest,
+} from '../contracts';
+
+interface ReaderTextSelectionEndpoint {
+  readonly entryIndex: number;
+  readonly charIndex: number;
+}
+
+interface ReaderTextSelectionOrigin {
+  readonly start: ReaderTextSelectionEndpoint;
+  readonly end: ReaderTextSelectionEndpoint;
+}
+
+interface ReaderTextSelectionPortion {
+  readonly entry: ReaderHitEntry;
+  readonly startCharIndex: number;
+  readonly endCharIndex: number;
+}
+
+export interface ReaderTextSelection {
+  readonly anchorIndex: number;
+  readonly focusIndex: number;
+  readonly entries: readonly ReaderHitEntry[];
+  readonly bounds: readonly ReaderRect[];
+  readonly text: string;
+  readonly geometryRequests: readonly ReaderTextRangeGeometryRequest[];
+  readonly origin: ReaderTextSelectionOrigin;
+}
+
+export function findReaderHitIndex(
+  entries: readonly ReaderHitEntry[],
+  x: number,
+  y: number,
+): number | undefined {
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    if (contains(entries[index].bounds, x, y)) return index;
+  }
+  return undefined;
+}
+
+export function findSelectableReaderHitIndex(
+  entries: readonly ReaderHitEntry[],
+  x: number,
+  y: number,
+  maximumDistance = 48,
+): number | undefined {
+  const exact = findReaderHitIndex(entries, x, y);
+  if (exact !== undefined && isSelectable(entries[exact])) return exact;
+
+  let selected: number | undefined;
+  let selectedDistance = maximumDistance * maximumDistance;
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    if (!isSelectable(entry)) continue;
+    const distance = squaredDistanceToRect(entry.bounds, x, y);
+    if (distance <= selectedDistance) {
+      selected = index;
+      selectedDistance = distance;
+    }
+  }
+  return selected;
+}
+
+export function createReaderTextSelection(
+  entries: readonly ReaderHitEntry[],
+  anchorIndex: number,
+  focusIndex: number,
+): ReaderTextSelection | undefined {
+  const startIndex = Math.min(anchorIndex, focusIndex);
+  const endIndex = Math.max(anchorIndex, focusIndex);
+  const startEntry = entries[startIndex];
+  const endEntry = entries[endIndex];
+  if (!startEntry || !endEntry) return undefined;
+  return createSelection(entries, {
+    start: { entryIndex: startIndex, charIndex: 0 },
+    end: { entryIndex: endIndex, charIndex: endEntry.text.length },
+  }, { entryIndex: focusIndex, charIndex: entries[focusIndex]?.text.length ?? 0 });
+}
+
+export function createReaderWordSelectionAtPoint(
+  entries: readonly ReaderHitEntry[],
+  x: number,
+  y: number,
+  maximumDistance = 12,
+): ReaderTextSelection | undefined {
+  const entryIndex = findSelectableReaderHitIndex(entries, x, y, maximumDistance);
+  if (entryIndex === undefined) return undefined;
+  const entry = entries[entryIndex];
+  const charIndex = charIndexAtPoint(entry, x, y);
+  const word = wordRangeAt(entry.text, charIndex);
+  return createSelection(entries, {
+    start: { entryIndex, charIndex: word.start },
+    end: { entryIndex, charIndex: word.end },
+  }, { entryIndex, charIndex: word.end });
+}
+
+export function updateReaderTextSelectionAtPoint(
+  entries: readonly ReaderHitEntry[],
+  selection: ReaderTextSelection,
+  x: number,
+  y: number,
+  maximumDistance = 48,
+): ReaderTextSelection | undefined {
+  const entryIndex = findSelectableReaderHitIndex(entries, x, y, maximumDistance);
+  if (entryIndex === undefined) return selection;
+  const focus = {
+    entryIndex,
+    charIndex: charIndexAtPoint(entries[entryIndex], x, y),
+  };
+  const beforeOrigin = compareEndpoints(focus, selection.origin.start) < 0;
+  return createSelection(entries, selection.origin, focus, beforeOrigin);
+}
+
+function createSelection(
+  entries: readonly ReaderHitEntry[],
+  origin: ReaderTextSelectionOrigin,
+  focus: ReaderTextSelectionEndpoint,
+  focusBeforeOrigin = false,
+): ReaderTextSelection | undefined {
+  const first = focusBeforeOrigin ? focus : origin.start;
+  const last = focusBeforeOrigin ? origin.end : maxEndpoint(origin.end, focus);
+  const portions = selectionPortions(entries, first, last);
+  if (portions.length === 0) return undefined;
+  return {
+    anchorIndex: origin.start.entryIndex,
+    focusIndex: focus.entryIndex,
+    entries: portions.map((portion) => portion.entry),
+    bounds: portions.map(portionBounds),
+    text: joinSelectionText(portions),
+    geometryRequests: createGeometryRequests(portions),
+    origin,
+  };
+}
+
+function selectionPortions(
+  entries: readonly ReaderHitEntry[],
+  first: ReaderTextSelectionEndpoint,
+  last: ReaderTextSelectionEndpoint,
+): ReaderTextSelectionPortion[] {
+  const start = minEndpoint(first, last);
+  const end = maxEndpoint(first, last);
+  const portions: ReaderTextSelectionPortion[] = [];
+  for (let index = start.entryIndex; index <= end.entryIndex; index += 1) {
+    const entry = entries[index];
+    if (!entry || !isSelectable(entry)) continue;
+    const startCharIndex = index === start.entryIndex ? start.charIndex : 0;
+    const endCharIndex = index === end.entryIndex ? end.charIndex : entry.text.length;
+    if (endCharIndex <= startCharIndex) continue;
+    portions.push({ entry, startCharIndex, endCharIndex });
+  }
+  return portions;
+}
+
+function createGeometryRequests(
+  portions: readonly ReaderTextSelectionPortion[],
+): ReaderTextRangeGeometryRequest[] {
+  const requests: ReaderTextRangeGeometryRequest[] = [];
+  let pageStart = 0;
+  while (pageStart < portions.length) {
+    const pageIndex = portions[pageStart].entry.pageIndex;
+    let pageEnd = pageStart;
+    while (pageEnd + 1 < portions.length && portions[pageEnd + 1].entry.pageIndex === pageIndex) {
+      pageEnd += 1;
+    }
+    const first = portions[pageStart];
+    const last = portions[pageEnd];
+    if (first.entry.textRange && last.entry.textRange) {
+      requests.push({
+        pageIndex,
+        start: withCharIndex(first.entry.textRange.start, first.startCharIndex),
+        end: withCharIndex(last.entry.textRange.end, last.endCharIndex),
+      });
+    }
+    pageStart = pageEnd + 1;
+  }
+  return requests;
+}
+
+function withCharIndex(position: ReaderTextPosition, charIndex: number): ReaderTextPosition {
+  return { ...position, charIndex };
+}
+
+function isSelectable(entry: ReaderHitEntry): boolean {
+  return entry.imageSource === undefined && entry.text.length > 0;
+}
+
+function contains(bounds: ReaderRect, x: number, y: number): boolean {
+  return x >= bounds.x
+    && y >= bounds.y
+    && x <= bounds.x + bounds.width
+    && y <= bounds.y + bounds.height;
+}
+
+function squaredDistanceToRect(bounds: ReaderRect, x: number, y: number): number {
+  const dx = x < bounds.x
+    ? bounds.x - x
+    : x > bounds.x + bounds.width
+      ? x - bounds.x - bounds.width
+      : 0;
+  const dy = y < bounds.y
+    ? bounds.y - y
+    : y > bounds.y + bounds.height
+      ? y - bounds.y - bounds.height
+      : 0;
+  return dx * dx + dy * dy;
+}
+
+function charIndexAtPoint(entry: ReaderHitEntry, x: number, y: number): number {
+  const vertical = entry.bounds.height > entry.bounds.width * 1.5;
+  const extent = vertical ? entry.bounds.height : entry.bounds.width;
+  const offset = vertical ? y - entry.bounds.y : x - entry.bounds.x;
+  const ratio = extent > 0 ? Math.min(1, Math.max(0, offset / extent)) : 0;
+  return Math.min(entry.text.length, Math.max(0, Math.round(ratio * entry.text.length)));
+}
+
+function wordRangeAt(text: string, charIndex: number): { readonly start: number; readonly end: number } {
+  const safeIndex = Math.min(Math.max(0, charIndex), Math.max(0, text.length - 1));
+  const Segmenter = (Intl as typeof Intl & {
+    Segmenter?: new (locale?: string, options?: { granularity: 'word' }) => {
+      segment(value: string): Iterable<{ readonly segment: string; readonly index: number }>;
+    };
+  }).Segmenter;
+  if (Segmenter) {
+    const segments = Array.from(new Segmenter(undefined, { granularity: 'word' }).segment(text));
+    const segment = segments.find((part) => safeIndex >= part.index && safeIndex < part.index + part.segment.length);
+    if (segment) return { start: segment.index, end: segment.index + segment.segment.length };
+  }
+  let start = safeIndex;
+  let end = Math.min(text.length, safeIndex + 1);
+  while (start > 0 && !/\s/u.test(text[start - 1])) start -= 1;
+  while (end < text.length && !/\s/u.test(text[end])) end += 1;
+  return { start, end };
+}
+
+function portionBounds(portion: ReaderTextSelectionPortion): ReaderRect {
+  const { bounds, text } = portion.entry;
+  const startRatio = portion.startCharIndex / text.length;
+  const endRatio = portion.endCharIndex / text.length;
+  if (bounds.height > bounds.width * 1.5) {
+    return {
+      x: bounds.x,
+      y: bounds.y + bounds.height * startRatio,
+      width: bounds.width,
+      height: bounds.height * (endRatio - startRatio),
+    };
+  }
+  return {
+    x: bounds.x + bounds.width * startRatio,
+    y: bounds.y,
+    width: bounds.width * (endRatio - startRatio),
+    height: bounds.height,
+  };
+}
+
+function joinSelectionText(portions: readonly ReaderTextSelectionPortion[]): string {
+  let output = '';
+  let previous: ReaderHitEntry | undefined;
+  for (const portion of portions) {
+    if (previous && beginsNewVisualLine(previous.bounds, portion.entry.bounds)) output += '\n';
+    output += portion.entry.text.slice(portion.startCharIndex, portion.endCharIndex);
+    previous = portion.entry;
+  }
+  return output;
+}
+
+function beginsNewVisualLine(previous: ReaderRect, current: ReaderRect): boolean {
+  const previousCenter = previous.y + previous.height / 2;
+  const currentCenter = current.y + current.height / 2;
+  return Math.abs(currentCenter - previousCenter) > Math.max(previous.height, current.height) * 0.6;
+}
+
+function compareEndpoints(left: ReaderTextSelectionEndpoint, right: ReaderTextSelectionEndpoint): number {
+  return left.entryIndex === right.entryIndex
+    ? left.charIndex - right.charIndex
+    : left.entryIndex - right.entryIndex;
+}
+
+function minEndpoint(left: ReaderTextSelectionEndpoint, right: ReaderTextSelectionEndpoint): ReaderTextSelectionEndpoint {
+  return compareEndpoints(left, right) <= 0 ? left : right;
+}
+
+function maxEndpoint(left: ReaderTextSelectionEndpoint, right: ReaderTextSelectionEndpoint): ReaderTextSelectionEndpoint {
+  return compareEndpoints(left, right) >= 0 ? left : right;
+}

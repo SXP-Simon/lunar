@@ -1,33 +1,53 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
+import * as Clipboard from 'expo-clipboard';
+import * as Linking from 'expo-linking';
+import { Button } from 'heroui-native/button';
 import { Spinner } from 'heroui-native/spinner';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PixelRatio, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
-import { GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useResolveClassNames, useUniwind } from 'uniwind';
 import {
   SafeAreaListener,
   useSafeAreaInsets,
   type EdgeInsets,
   type SafeAreaListenerProps,
 } from 'react-native-safe-area-context';
-import { useResolveClassNames, useUniwind } from 'uniwind';
 
 import { IconTabBar } from '@/components/ui/icon-tab-bar';
 import { useTranslation } from '@/i18n';
-import type { ReaderViewport } from '@/reader';
-import { ReaderSurface, useReaderPageTurn } from '@/reader/native';
+import {
+  createReaderWordSelectionAtPoint,
+  findReaderHitIndex,
+  updateReaderTextSelectionAtPoint,
+  type ReaderFootnote,
+  type ReaderTextSelection,
+  type ReaderViewport,
+} from '@/reader';
+import {
+  ReaderSurface,
+  useReaderPageTurn,
+  type ReaderSurfaceTransform,
+} from '@/reader/native';
 import { useReaderStore } from '@/stores';
 import { ProgressDrawer } from '../components/bottom-tabs/progress-drawer';
 import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
 import { TypographyDrawer } from '../components/bottom-tabs/typography-drawer';
 import { ReaderControls } from '../components/reader-controls';
+import { FootnoteDrawer } from '../components/footnote-drawer';
 import { useReaderSession } from '../hooks/use-reader-session';
 
 // The canvas covers the window; these values only keep page content away from its edges.
 const ReaderSurfaceTopSpacing = 4;
 const ReaderSurfaceBottomSpacing = 4;
+
+interface OwnedReaderTextSelection extends ReaderTextSelection {
+  readonly revisionId: number;
+  readonly spreadIndex: number;
+}
 
 export default function ReaderScreen() {
   const { t } = useTranslation();
@@ -43,6 +63,12 @@ export default function ReaderScreen() {
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [isProgressOpen, setIsProgressOpen] = useState(false);
   const [isTypographyOpen, setIsTypographyOpen] = useState(false);
+  const [footnote, setFootnote] = useState<ReaderFootnote>();
+  const [isFootnoteOpen, setIsFootnoteOpen] = useState(false);
+  const [selectionState, setSelection] = useState<OwnedReaderTextSelection>();
+  const selectionRef = useRef<ReaderTextSelection | undefined>(undefined);
+  const [surfaceTransform, setSurfaceTransform] = useState<ReaderSurfaceTransform>();
+  const footnoteRequestRef = useRef(0);
   const errorToastKey = useRef<string | undefined>(undefined);
   const readerTheme = theme === 'dark' ? 'dark' : 'light';
   const animationStyle = useReaderStore((state) => state.animationStyle);
@@ -78,6 +104,10 @@ export default function ReaderScreen() {
     surfaceTop: 0,
   });
   const isReady = session.snapshot.phase === 'ready';
+  const selection = selectionState?.revisionId === session.snapshot.revisionId
+    && selectionState.spreadIndex === session.snapshot.spreadIndex
+    ? selectionState
+    : undefined;
   const chapterTitle = session.snapshot.chapterTitle
     ?? session.metadata?.title
     ?? session.book?.title
@@ -138,9 +168,169 @@ export default function ReaderScreen() {
     });
   }, []);
 
+  const handleSurfaceTransform = useCallback((transform: ReaderSurfaceTransform) => {
+    setSurfaceTransform(transform);
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    selectionRef.current = undefined;
+    setSelection(undefined);
+  }, []);
+
+  const displayPoint = useCallback((x: number, y: number) => {
+    return surfaceTransform?.toDisplayPoint(x, y) ?? { x, y };
+  }, [surfaceTransform]);
+
+  const beginSelection = useCallback((x: number, y: number) => {
+    const hitMap = session.runtime.getCurrentHitMap();
+    if (!hitMap) return;
+    const point = displayPoint(x, y);
+    const nextSelection = createReaderWordSelectionAtPoint(hitMap.entries, point.x, point.y);
+    if (!nextSelection) return;
+    selectionRef.current = nextSelection;
+    setSelection({
+      ...nextSelection,
+      revisionId: session.snapshot.revisionId,
+      spreadIndex: session.snapshot.spreadIndex,
+    });
+    setControlsVisible(false);
+  }, [displayPoint, session.runtime, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+
+  const updateSelection = useCallback((x: number, y: number) => {
+    const currentSelection = selectionRef.current;
+    const hitMap = session.runtime.getCurrentHitMap();
+    if (!currentSelection || !hitMap) return;
+    const point = displayPoint(x, y);
+    const nextSelection = updateReaderTextSelectionAtPoint(
+      hitMap.entries,
+      currentSelection,
+      point.x,
+      point.y,
+    );
+    if (!nextSelection) return;
+    selectionRef.current = nextSelection;
+    setSelection({
+      ...nextSelection,
+      revisionId: session.snapshot.revisionId,
+      spreadIndex: session.snapshot.spreadIndex,
+    });
+  }, [displayPoint, session.runtime, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+
+  const refineSelectionGeometry = useCallback(async () => {
+    const requestedSelection = selectionRef.current;
+    if (!requestedSelection || requestedSelection.geometryRequests.length === 0) return;
+    const revisionId = session.snapshot.revisionId;
+    const spreadIndex = session.snapshot.spreadIndex;
+    const groups = await Promise.all(
+      requestedSelection.geometryRequests.map((request) =>
+        session.runtime.resolveTextRangeGeometry(request).catch(() => [])),
+    );
+    if (
+      selectionRef.current !== requestedSelection
+      || session.runtime.getSnapshot().revisionId !== revisionId
+      || session.runtime.getSnapshot().spreadIndex !== spreadIndex
+    ) return;
+    const bounds = groups.flat().map((rect) => rect.bounds);
+    if (bounds.length === 0) return;
+    const refinedSelection = { ...requestedSelection, bounds };
+    selectionRef.current = refinedSelection;
+    setSelection({ ...refinedSelection, revisionId, spreadIndex });
+  }, [session.runtime, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+
+  /* eslint-disable react-hooks/refs */
+  const selectionGesture = useMemo(() => Gesture.Pan()
+    .enabled(isReady && !isSettling)
+    .minDistance(0)
+    .averageTouches(true)
+    .cancelsTouchesInView(true)
+    .runOnJS(true)
+    .activateAfterLongPress(420)
+    .onStart((event) => beginSelection(event.x, event.y))
+    .onUpdate((event) => updateSelection(event.x, event.y))
+    .onEnd(() => {
+      void refineSelectionGeometry();
+    }),
+  [beginSelection, isReady, isSettling, refineSelectionGeometry, updateSelection]);
+  /* eslint-enable react-hooks/refs */
+  const readingGesture = useMemo(
+    () => Gesture.Exclusive(selectionGesture, pageTurnGesture),
+    [pageTurnGesture, selectionGesture],
+  );
+
+  const openFootnote = useCallback(async (key: string, pending = false) => {
+    const request = footnoteRequestRef.current + 1;
+    footnoteRequestRef.current = request;
+    setFootnote(undefined);
+    setIsFootnoteOpen(true);
+    let lastError: unknown;
+    try {
+      const attempts = pending ? 8 : 1;
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        try {
+          const nextFootnote = await session.runtime.readFootnote(key);
+          if (nextFootnote) {
+            if (footnoteRequestRef.current === request) setFootnote(nextFootnote);
+            return;
+          }
+        } catch (error) {
+          lastError = error;
+        }
+        if (attempt + 1 < attempts) await delay(160);
+      }
+      throw lastError ?? new Error(t('reader.footnoteUnavailable'));
+    } catch (error) {
+      if (footnoteRequestRef.current !== request) return;
+      setIsFootnoteOpen(false);
+      toast.show({
+        variant: 'danger',
+        label: t('reader.footnoteUnavailable'),
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  }, [session.runtime, t, toast]);
+
+  const openHyperlink = useCallback(async (href: string) => {
+    try {
+      if (isExternalHref(href)) {
+        const externalUrl = href.startsWith('//') ? `https:${href}` : href;
+        const scheme = externalUrl.slice(0, externalUrl.indexOf(':')).toLowerCase();
+        if (!AllowedExternalLinkSchemes.has(scheme) || !(await Linking.canOpenURL(externalUrl))) {
+          throw new Error(t('reader.linkSchemeUnsupported'));
+        }
+        await Linking.openURL(externalUrl);
+      } else {
+        await session.runtime.goToToc(href);
+      }
+    } catch (error) {
+      toast.show({
+        variant: 'danger',
+        label: t('reader.linkOpenFailed'),
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  }, [session.runtime, t, toast]);
+
   const handleReadingPress = useCallback(
-    (x: number) => {
+    (x: number, y: number) => {
       if (!viewport || !isReady || isSettling) return;
+      if (selection) {
+        clearSelection();
+        return;
+      }
+      const hitMap = session.runtime.getCurrentHitMap();
+      const point = displayPoint(x, y);
+      const hitIndex = hitMap
+        ? findReaderHitIndex(hitMap.entries, point.x, point.y)
+        : undefined;
+      const hit = hitIndex === undefined ? undefined : hitMap?.entries[hitIndex];
+      if (hit?.footnoteKey) {
+        void openFootnote(hit.footnoteKey, hit.footnotePending);
+        return;
+      }
+      if (hit?.href) {
+        void openHyperlink(hit.href);
+        return;
+      }
       if (x < viewport.width * 0.3) {
         void previous();
       } else if (x > viewport.width * 0.7) {
@@ -149,8 +339,30 @@ export default function ReaderScreen() {
         setControlsVisible((value) => !value);
       }
     },
-    [isReady, isSettling, next, previous, viewport],
+    [clearSelection, displayPoint, isReady, isSettling, next, openFootnote, openHyperlink, previous, selection, session.runtime, viewport],
   );
+
+  const copySelection = useCallback(async () => {
+    if (!selection?.text) return;
+    await Clipboard.setStringAsync(selection.text);
+    toast.show({ variant: 'success', label: t('reader.selectionCopied') });
+    clearSelection();
+  }, [clearSelection, selection, t, toast]);
+
+  const selectionOverlays = useMemo(() => selection?.bounds.map((bounds) => ({
+    revisionId: session.snapshot.revisionId,
+    bounds,
+    color: readerTheme === 'dark' ? '#5B8DEF66' : '#3B82F64D',
+    radius: 2,
+  })) ?? [], [readerTheme, selection?.bounds, session.snapshot.revisionId]);
+  const interactiveHits = isReady && !selection
+    ? session.runtime.getCurrentHitMap()?.entries.filter((entry) => entry.footnoteKey || entry.href) ?? []
+    : [];
+
+  const handleFootnoteOpenChange = useCallback((value: boolean) => {
+    setIsFootnoteOpen(value);
+    if (!value) footnoteRequestRef.current += 1;
+  }, []);
 
   const handleTabSelect = useCallback((key: string) => {
     if (key === 'toc') {
@@ -220,9 +432,11 @@ export default function ReaderScreen() {
           progressLabel={`${progressText}${progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}`}
           overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}
           overlayInsets={contentInsets}
+          overlays={selectionOverlays}
+          onTransformChange={handleSurfaceTransform}
           style={absoluteFillStyle}
         />
-        <GestureDetector gesture={pageTurnGesture}>
+        <GestureDetector gesture={readingGesture}>
           <View collapsable={false} className="absolute inset-0">
             <Pressable
               accessibilityLabel={t('reader.readerPage')}
@@ -233,12 +447,60 @@ export default function ReaderScreen() {
                 now: currentSpread + 1,
                 text: progressText,
               }}
-              onPress={(event) => handleReadingPress(event.nativeEvent.locationX)}
+              onPress={(event) => handleReadingPress(
+                event.nativeEvent.locationX,
+                event.nativeEvent.locationY,
+              )}
               className="absolute inset-0"
             />
+            {surfaceTransform && interactiveHits.map((hit, index) => {
+              const origin = surfaceTransform.toViewportPoint(hit.bounds.x, hit.bounds.y);
+              return (
+                <Pressable
+                  key={`${hit.pageIndex}:${index}:${hit.footnoteKey ?? hit.href}`}
+                  accessibilityHint={hit.footnoteKey
+                    ? t('reader.openFootnote')
+                    : t('reader.openLink')}
+                  accessibilityLabel={hit.text || hit.imageAlt || hit.href}
+                  accessibilityRole={hit.footnoteKey ? 'button' : 'link'}
+                  className="absolute"
+                  hitSlop={6}
+                  onPress={() => {
+                    if (hit.footnoteKey) {
+                      void openFootnote(hit.footnoteKey, hit.footnotePending);
+                    } else if (hit.href) {
+                      void openHyperlink(hit.href);
+                    }
+                  }}
+                  style={{
+                    left: origin.x,
+                    top: origin.y,
+                    width: hit.bounds.width * surfaceTransform.scale,
+                    height: hit.bounds.height * surfaceTransform.scale,
+                  }}
+                />
+              );
+            })}
           </View>
         </GestureDetector>
       </View>
+
+      {selection && (
+        <View
+          accessibilityRole="toolbar"
+          className="absolute left-4 right-4 flex-row items-center gap-3 rounded-lg border border-border bg-background px-3 py-2 shadow-lg"
+          style={{ bottom: reservedInsets.bottom + 20 }}>
+          <Text className="min-w-0 flex-1 text-sm text-foreground" numberOfLines={2}>
+            {selection.text}
+          </Text>
+          <Button size="sm" variant="primary" onPress={() => void copySelection()}>
+            <Button.Label>{t('reader.copySelection')}</Button.Label>
+          </Button>
+          <Button size="sm" variant="ghost" onPress={clearSelection}>
+            <Button.Label>{t('action.cancel')}</Button.Label>
+          </Button>
+        </View>
+      )}
 
       {readerChromeVisible && (
         <ReaderControls
@@ -296,8 +558,29 @@ export default function ReaderScreen() {
         isOpen={isTypographyOpen}
         onOpenChange={setIsTypographyOpen}
       />
+      <FootnoteDrawer
+        footnote={footnote}
+        isOpen={isFootnoteOpen}
+        onOpenChange={handleFootnoteOpenChange}
+      />
     </View>
   );
+}
+
+function isExternalHref(href: string): boolean {
+  if (href.startsWith('//')) return true;
+  const pathEnd = Math.min(
+    ...[href.indexOf('?'), href.indexOf('#')].filter((index) => index >= 0),
+    href.length,
+  );
+  const colon = href.slice(0, pathEnd).indexOf(':');
+  return colon > 0 && /^[A-Za-z][A-Za-z0-9+.-]*$/.test(href.slice(0, colon));
+}
+
+const AllowedExternalLinkSchemes = new Set(['http', 'https', 'mailto', 'tel', 'sms']);
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function preserveLargestInsets(current: EdgeInsets, next: EdgeInsets): EdgeInsets {

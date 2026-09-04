@@ -187,17 +187,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       height: artifact.height,
       imageSources: [...new Set(imageSources)],
       displayList: display,
-      hits: pages.flatMap((page) => page.hits.map((hit) => ({
-        pageIndex: hit.pageIndex,
-        bounds: hit.bounds,
-        text: hit.text,
-        href: hit.href,
-        imageSource: hit.imageSrc,
-        imageAlt: hit.imageAlt,
-        footnoteKey: hit.footnoteKey,
-        footnotePending: hit.footnotePending,
-        sourcePoint: hit.sourcePoint ? { nodePath: hit.sourcePoint.nodePath, textOffset: safeTextOffset(hit.sourcePoint.textOffset) } : undefined,
-      }))),
+      hits: pages.flatMap(toReaderHitEntries),
       semantics: pages.flatMap((page) => page.semantics.map(toReaderSemanticNode)),
       text: pages.map((page) => page.text).join(''),
     };
@@ -532,18 +522,22 @@ class RitoNativePublication implements LoadedReaderPublication {
 
   private async resolveTocQueued(href: string): Promise<number | undefined> {
     readerDiagnostic('toc.begin', `href=${href} visibleIndex=${this.visibleIndex} visible=${describeArtifact(this.currentArtifact)}`);
-    const base = href.split('#', 1)[0];
-    const target = findTocTarget(this.tocValue, href, base);
+    const source = this.currentArtifact;
+    if (!source) return undefined;
+    const resolvedHref = resolvePublicationHref(source.locator.href, href, this.spine);
+    const base = resolvedHref.split('#', 1)[0];
+    const target = findTocTarget(this.tocValue, resolvedHref, base);
     const targetBase = target?.split('#', 1)[0] ?? base;
-    const targetAnchor = target?.includes('#') ? target.slice(target.indexOf('#') + 1) : undefined;
-    const existing = this.findArtifactForTocTarget(targetBase, href, targetAnchor);
+    const navigationHref = target ?? resolvedHref;
+    const targetAnchor = navigationHref.includes('#')
+      ? navigationHref.slice(navigationHref.indexOf('#') + 1)
+      : undefined;
+    const existing = this.findArtifactForTocTarget(targetBase, resolvedHref, targetAnchor);
     if (existing !== undefined && existing === this.visibleIndex) return existing;
 
     const targetSpineIndex = this.spine.findIndex((item) => item.href === targetBase);
     if (targetSpineIndex < 0 || this.session.currentVisibleArtifactId === undefined) return undefined;
     const targetIndex = this.visibleIndex;
-    const source = this.currentArtifact;
-    if (!source) return undefined;
     const artifact = await this.session.requestArtifact({
       ...this.artifactRequest,
       requestId: this.session.nextRequestId,
@@ -566,7 +560,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       : spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode);
     await this.releaseAfterNavigation(source);
     this.pruneSlots();
-    readerDiagnostic('toc.commit', `href=${href} spread=${targetIndex} artifact=${describeArtifact(artifact)} released=${source.artifactId.toString()}`);
+    readerDiagnostic('toc.commit', `href=${resolvedHref} spread=${targetIndex} artifact=${describeArtifact(artifact)} released=${source.artifactId.toString()}`);
     return targetIndex;
   }
 
@@ -588,6 +582,19 @@ class RitoNativePublication implements LoadedReaderPublication {
       end: request.end,
     });
     return geometry.rects;
+  }
+
+  async readFootnote(key: string, spreadIndex = this.visibleIndex): Promise<import('../../contracts').ReaderFootnote | undefined> {
+    const artifactId = this.slots.get(spreadIndex)?.artifactId;
+    const artifact = artifactId === undefined ? undefined : this.session.getArtifact(artifactId);
+    if (!artifact || !key) return undefined;
+    const footnote = await this.session.readFootnote(artifact.artifactId, key);
+    return {
+      key: footnote.key,
+      kind: footnote.kind,
+      text: footnote.text,
+      html: footnote.html,
+    };
   }
 
   async search(request: import('../../contracts').ReaderSearchRequest): Promise<import('../../contracts').ReaderSearchResponse> {
@@ -1038,6 +1045,70 @@ function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../../co
     fontFamily: typography.fontFamily,
     palette,
   };
+}
+
+function toReaderHitEntries(
+  page: import('../../../../modules/rito-rn/src/protocol/artifact-types').RitoPage,
+): import('../../contracts').ReaderHitEntry[] {
+  let textRunIndex = 0;
+  return page.hits.map((hit) => {
+    const textRun = hit.imageSrc === undefined && hit.text.length > 0
+      ? page.textRuns[textRunIndex++]
+      : undefined;
+    const textPosition = textRun
+      ? {
+          blockIndex: textRun.blockIndex,
+          lineIndex: textRun.lineIndex,
+          runIndex: textRun.runIndex,
+        }
+      : undefined;
+    return {
+      pageIndex: hit.pageIndex,
+      bounds: hit.bounds,
+      text: hit.text,
+      href: hit.href,
+      imageSource: hit.imageSrc,
+      imageAlt: hit.imageAlt,
+      footnoteKey: hit.footnoteKey,
+      footnotePending: hit.footnotePending,
+      sourcePoint: hit.sourcePoint
+        ? { nodePath: hit.sourcePoint.nodePath, textOffset: safeTextOffset(hit.sourcePoint.textOffset) }
+        : undefined,
+      textRange: textPosition
+        ? {
+            start: { ...textPosition, charIndex: 0 },
+            end: { ...textPosition, charIndex: hit.text.length },
+          }
+        : undefined,
+    };
+  });
+}
+
+export function resolvePublicationHref(
+  sourceHref: string,
+  href: string,
+  spine: readonly { readonly href: string }[],
+): string {
+  const fragmentIndex = href.indexOf('#');
+  const fragment = fragmentIndex >= 0 ? href.slice(fragmentIndex) : '';
+  const queryIndex = href.indexOf('?');
+  const pathEnd = Math.min(
+    fragmentIndex >= 0 ? fragmentIndex : href.length,
+    queryIndex >= 0 ? queryIndex : href.length,
+  );
+  const path = href.slice(0, pathEnd).replace(/^\/+/, '');
+  if (!path) return `${sourceHref.split('#', 1)[0]}${fragment}`;
+  if (spine.some((item) => item.href === path)) return `${path}${fragment}`;
+  const sourceDirectory = sourceHref.includes('/')
+    ? sourceHref.slice(0, sourceHref.lastIndexOf('/') + 1)
+    : '';
+  const parts: string[] = [];
+  for (const part of `${sourceDirectory}${path}`.split('/')) {
+    if (!part || part === '.') continue;
+    if (part === '..') parts.pop();
+    else parts.push(part);
+  }
+  return `${parts.join('/')}${fragment}`;
 }
 
 function resolveLayoutMargins(layout: ReaderLayoutRequest): Pick<
