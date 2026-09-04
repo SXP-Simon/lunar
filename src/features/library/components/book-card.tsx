@@ -33,6 +33,7 @@ type BookCardProps = {
 
 const LONG_PRESS_DURATION = 650;
 const PRE_LONG_PRESS_SCROLL_TOLERANCE = 8;
+const SELECTION_MODE_DRAG_DISTANCE = 1;
 const Image = withUniwind(ExpoImage);
 
 type BookCoverArtworkProps = {
@@ -77,19 +78,24 @@ export function BookCard({
   const { t } = useTranslation();
   const theme = useTheme();
   const selectedIconColor = useThemeColor('accent-foreground');
-  const selectionGesture = useMemo(
-    () => Gesture.Pan()
-      .activateAfterLongPress(LONG_PRESS_DURATION)
-      .failOffsetY([-PRE_LONG_PRESS_SCROLL_TOLERANCE, PRE_LONG_PRESS_SCROLL_TOLERANCE])
-      .minDistance(0)
+  const selectionGesture = useMemo(() => {
+    const gesture = Gesture.Pan()
+      .minDistance(isSelectionMode ? SELECTION_MODE_DRAG_DISTANCE : 0)
       .averageTouches(true)
       .cancelsTouchesInView(true)
       .runOnJS(true)
       .onStart((event) => onSelectionGestureStart?.(event.absoluteX, event.absoluteY))
       .onUpdate((event) => onSelectionGestureMove?.(event.absoluteX, event.absoluteY))
-      .onFinalize(() => onSelectionGestureFinish?.()),
-    [onSelectionGestureFinish, onSelectionGestureMove, onSelectionGestureStart],
-  );
+      .onFinalize(() => onSelectionGestureFinish?.());
+
+    if (!isSelectionMode) {
+      gesture
+        .activateAfterLongPress(LONG_PRESS_DURATION)
+        .failOffsetY([-PRE_LONG_PRESS_SCROLL_TOLERANCE, PRE_LONG_PRESS_SCROLL_TOLERANCE]);
+    }
+
+    return gesture;
+  }, [isSelectionMode, onSelectionGestureFinish, onSelectionGestureMove, onSelectionGestureStart]);
 
   return (
     <GestureDetector gesture={selectionGesture}>
