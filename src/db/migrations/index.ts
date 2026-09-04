@@ -69,4 +69,21 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       'CREATE INDEX IF NOT EXISTS book_assets_book_id_index ON book_assets(book_id)',
     ],
   },
+  {
+    version: 3,
+    name: 'create_reader_highlights',
+    statements: [
+      `CREATE TABLE IF NOT EXISTS reader_highlights (
+        id TEXT PRIMARY KEY NOT NULL,
+        book_id TEXT NOT NULL,
+        href TEXT NOT NULL,
+        source_range_json TEXT NOT NULL,
+        text TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        UNIQUE(book_id, href, source_range_json),
+        FOREIGN KEY(book_id) REFERENCES books(id) ON DELETE CASCADE
+      )`,
+      'CREATE INDEX IF NOT EXISTS reader_highlights_book_id_index ON reader_highlights(book_id)',
+    ],
+  },
 ];

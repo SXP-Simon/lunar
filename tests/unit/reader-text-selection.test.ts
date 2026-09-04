@@ -3,16 +3,18 @@ import { describe, expect, it } from 'vitest';
 import type { ReaderHitEntry } from '../../src/reader';
 import {
   createReaderTextSelection,
+  createReaderTextSelectionFromSourceRange,
   createReaderWordSelectionAtPoint,
   findReaderHitIndex,
   findSelectableReaderHitIndex,
   updateReaderTextSelectionAtPoint,
+  updateReaderTextSelectionBoundaryAtPoint,
 } from '../../src/reader/interaction/text-selection';
 
 const entries: ReaderHitEntry[] = [
-  { pageIndex: 0, bounds: { x: 10, y: 20, width: 40, height: 16 }, text: 'First ', textRange: { start: { blockIndex: 0, lineIndex: 0, runIndex: 0, charIndex: 0 }, end: { blockIndex: 0, lineIndex: 0, runIndex: 0, charIndex: 6 } } },
-  { pageIndex: 0, bounds: { x: 50, y: 20, width: 40, height: 16 }, text: 'line', textRange: { start: { blockIndex: 0, lineIndex: 0, runIndex: 1, charIndex: 0 }, end: { blockIndex: 0, lineIndex: 0, runIndex: 1, charIndex: 4 } } },
-  { pageIndex: 0, bounds: { x: 10, y: 42, width: 60, height: 16 }, text: 'Second', textRange: { start: { blockIndex: 0, lineIndex: 1, runIndex: 0, charIndex: 0 }, end: { blockIndex: 0, lineIndex: 1, runIndex: 0, charIndex: 6 } } },
+  { pageIndex: 0, bounds: { x: 10, y: 20, width: 40, height: 16 }, text: 'First ', sourcePoint: { nodePath: [1, 0], textOffset: 0 }, textRange: { start: { blockIndex: 0, lineIndex: 0, runIndex: 0, charIndex: 0 }, end: { blockIndex: 0, lineIndex: 0, runIndex: 0, charIndex: 6 } } },
+  { pageIndex: 0, bounds: { x: 50, y: 20, width: 40, height: 16 }, text: 'line', sourcePoint: { nodePath: [1, 0], textOffset: 6 }, textRange: { start: { blockIndex: 0, lineIndex: 0, runIndex: 1, charIndex: 0 }, end: { blockIndex: 0, lineIndex: 0, runIndex: 1, charIndex: 4 } } },
+  { pageIndex: 0, bounds: { x: 10, y: 42, width: 60, height: 16 }, text: 'Second', sourcePoint: { nodePath: [1, 1], textOffset: 0 }, textRange: { start: { blockIndex: 0, lineIndex: 1, runIndex: 0, charIndex: 0 }, end: { blockIndex: 0, lineIndex: 1, runIndex: 0, charIndex: 6 } } },
   { pageIndex: 0, bounds: { x: 80, y: 42, width: 20, height: 20 }, text: '', imageSource: 'image.png' },
 ];
 
@@ -50,5 +52,23 @@ describe('reader text selection', () => {
       ? updateReaderTextSelectionAtPoint(entries, initial, 40, 49)
       : undefined;
     expect(extended?.text).toBe('line\nSec');
+    expect(extended?.sourceRange).toEqual({
+      start: { nodePath: [1, 0], textOffset: 6 },
+      end: { nodePath: [1, 1], textOffset: 3 },
+    });
+  });
+
+  it('moves either saved boundary and restores the selection from a source range', () => {
+    const initial = createReaderTextSelection(entries, 0, 1);
+    const moved = initial
+      ? updateReaderTextSelectionBoundaryAtPoint(entries, initial, 'start', 30, 25)
+      : undefined;
+    expect(moved?.text).toBe('st line');
+    expect(moved?.range.start).toEqual({ entryIndex: 0, charIndex: 3 });
+
+    const restored = moved?.sourceRange
+      ? createReaderTextSelectionFromSourceRange(entries, moved.sourceRange)
+      : undefined;
+    expect(restored?.text).toBe('st line');
   });
 });

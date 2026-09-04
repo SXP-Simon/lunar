@@ -18,6 +18,9 @@
   --color-brand-950: hsl(0 0% 0%);
   --color-navigation-active: hsl(211 100% 50%);
   --color-reader-controls: hsl(0 0% 94.902%);
+  --color-reader-selection: hsl(176 56% 55%);
+  --color-reader-selection-fill: hsl(176 56% 55% / 0.38);
+  --color-reader-highlight-fill: hsl(48 96% 62% / 0.48);
 
   --font-display:
     Spline Sans, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,

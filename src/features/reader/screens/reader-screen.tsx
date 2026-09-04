@@ -3,13 +3,12 @@ import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
-import { Button } from 'heroui-native/button';
 import { Spinner } from 'heroui-native/spinner';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PixelRatio, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { useResolveClassNames, useUniwind } from 'uniwind';
+import { useCSSVariable, useResolveClassNames, useUniwind } from 'uniwind';
 import {
   SafeAreaListener,
   useSafeAreaInsets,
@@ -21,7 +20,9 @@ import { IconTabBar } from '@/components/ui/icon-tab-bar';
 import { useTranslation } from '@/i18n';
 import {
   createReaderWordSelectionAtPoint,
+  createReaderTextSelectionFromSourceRange,
   findReaderHitIndex,
+  updateReaderTextSelectionBoundaryAtPoint,
   updateReaderTextSelectionAtPoint,
   type ReaderFootnote,
   type ReaderTextSelection,
@@ -38,11 +39,14 @@ import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
 import { TypographyDrawer } from '../components/bottom-tabs/typography-drawer';
 import { ReaderControls } from '../components/reader-controls';
 import { FootnoteDrawer } from '../components/footnote-drawer';
+import { ReaderSelectionControls } from '../components/reader-selection-controls';
+import { useReaderHighlights } from '../hooks/use-reader-highlights';
 import { useReaderSession } from '../hooks/use-reader-session';
 
 // The canvas covers the window; these values only keep page content away from its edges.
 const ReaderSurfaceTopSpacing = 4;
 const ReaderSurfaceBottomSpacing = 4;
+const EmptyReaderHitEntries = [] as const;
 
 interface OwnedReaderTextSelection extends ReaderTextSelection {
   readonly revisionId: number;
@@ -57,6 +61,8 @@ export default function ReaderScreen() {
   const { toast } = useToast();
   const [reservedInsets, setReservedInsets] = useState(insets);
   const { theme } = useUniwind();
+  const selectionFillColor = useCSSVariable('--color-reader-selection-fill') as string;
+  const highlightFillColor = useCSSVariable('--color-reader-highlight-fill') as string;
   const absoluteFillStyle = useResolveClassNames('absolute inset-0');
   const [viewport, setViewport] = useState<ReaderViewport>();
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -85,6 +91,7 @@ export default function ReaderScreen() {
     contentInsets,
     theme: readerTheme,
   });
+  const { highlights, addHighlight } = useReaderHighlights(bookId ?? '');
   const {
     gesture: pageTurnGesture,
     interactiveTurn,
@@ -104,6 +111,9 @@ export default function ReaderScreen() {
     surfaceTop: 0,
   });
   const isReady = session.snapshot.phase === 'ready';
+  const currentHitEntries = isReady
+    ? session.runtime.getCurrentHitMap()?.entries ?? EmptyReaderHitEntries
+    : EmptyReaderHitEntries;
   const selection = selectionState?.revisionId === session.snapshot.revisionId
     && selectionState.spreadIndex === session.snapshot.spreadIndex
     ? selectionState
@@ -204,6 +214,31 @@ export default function ReaderScreen() {
     const nextSelection = updateReaderTextSelectionAtPoint(
       hitMap.entries,
       currentSelection,
+      point.x,
+      point.y,
+    );
+    if (!nextSelection) return;
+    selectionRef.current = nextSelection;
+    setSelection({
+      ...nextSelection,
+      revisionId: session.snapshot.revisionId,
+      spreadIndex: session.snapshot.spreadIndex,
+    });
+  }, [displayPoint, session.runtime, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+
+  const updateSelectionBoundary = useCallback((
+    boundary: 'start' | 'end',
+    x: number,
+    y: number,
+  ) => {
+    const currentSelection = selectionRef.current;
+    const hitMap = session.runtime.getCurrentHitMap();
+    if (!currentSelection || !hitMap) return;
+    const point = displayPoint(x, y);
+    const nextSelection = updateReaderTextSelectionBoundaryAtPoint(
+      hitMap.entries,
+      currentSelection,
+      boundary,
       point.x,
       point.y,
     );
@@ -349,14 +384,70 @@ export default function ReaderScreen() {
     clearSelection();
   }, [clearSelection, selection, t, toast]);
 
-  const selectionOverlays = useMemo(() => selection?.bounds.map((bounds) => ({
-    revisionId: session.snapshot.revisionId,
-    bounds,
-    color: readerTheme === 'dark' ? '#5B8DEF66' : '#3B82F64D',
-    radius: 2,
-  })) ?? [], [readerTheme, selection?.bounds, session.snapshot.revisionId]);
+  const highlightSelection = useCallback(async () => {
+    const href = session.snapshot.position?.locator?.manifestHref;
+    if (!selection?.sourceRange || !href || !bookId) {
+      toast.show({ variant: 'danger', label: t('reader.highlightUnavailable') });
+      return;
+    }
+    try {
+      await addHighlight({
+        href,
+        sourceRange: selection.sourceRange,
+        text: selection.text,
+      });
+      toast.show({ variant: 'success', label: t('reader.highlightSaved') });
+      clearSelection();
+    } catch (error) {
+      toast.show({
+        variant: 'danger',
+        label: t('reader.highlightSaveFailed'),
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  }, [addHighlight, bookId, clearSelection, selection, session.snapshot.position?.locator?.manifestHref, t, toast]);
+
+  const visibleHighlightSelections = useMemo(() => {
+    const href = session.snapshot.position?.locator?.manifestHref;
+    if (!href || currentHitEntries.length === 0) return [];
+    return highlights.flatMap((highlight) => {
+      if (highlight.href !== href) return [];
+      const resolved = createReaderTextSelectionFromSourceRange(
+        currentHitEntries,
+        highlight.sourceRange,
+      );
+      return resolved ? [resolved] : [];
+    });
+  }, [currentHitEntries, highlights, session.snapshot.position?.locator?.manifestHref]);
+
+  const selectionOverlays = useMemo(() => [
+    ...visibleHighlightSelections.flatMap((highlight) => highlight.bounds.map((bounds) => ({
+      revisionId: session.snapshot.revisionId,
+      bounds,
+      color: highlightFillColor,
+      radius: 2,
+    }))),
+    ...(selection?.bounds.map((bounds) => ({
+      revisionId: session.snapshot.revisionId,
+      bounds,
+      color: selectionFillColor,
+      radius: 2,
+    })) ?? []),
+  ], [highlightFillColor, selection?.bounds, selectionFillColor, session.snapshot.revisionId, visibleHighlightSelections]);
+  const selectionViewportRects = useMemo(() => {
+    if (!selection || !surfaceTransform) return [];
+    return selection.bounds.map((bounds) => {
+      const origin = surfaceTransform.toViewportPoint(bounds.x, bounds.y);
+      return {
+        x: origin.x,
+        y: origin.y,
+        width: bounds.width * surfaceTransform.scale,
+        height: bounds.height * surfaceTransform.scale,
+      };
+    });
+  }, [selection, surfaceTransform]);
   const interactiveHits = isReady && !selection
-    ? session.runtime.getCurrentHitMap()?.entries.filter((entry) => entry.footnoteKey || entry.href) ?? []
+    ? currentHitEntries.filter((entry) => entry.footnoteKey || entry.href)
     : [];
 
   const handleFootnoteOpenChange = useCallback((value: boolean) => {
@@ -485,21 +576,23 @@ export default function ReaderScreen() {
         </GestureDetector>
       </View>
 
-      {selection && (
-        <View
-          accessibilityRole="toolbar"
-          className="absolute left-4 right-4 flex-row items-center gap-3 rounded-lg border border-border bg-background px-3 py-2 shadow-lg"
-          style={{ bottom: reservedInsets.bottom + 20 }}>
-          <Text className="min-w-0 flex-1 text-sm text-foreground" numberOfLines={2}>
-            {selection.text}
-          </Text>
-          <Button size="sm" variant="primary" onPress={() => void copySelection()}>
-            <Button.Label>{t('reader.copySelection')}</Button.Label>
-          </Button>
-          <Button size="sm" variant="ghost" onPress={clearSelection}>
-            <Button.Label>{t('action.cancel')}</Button.Label>
-          </Button>
-        </View>
+      {selection && viewport && (
+        <ReaderSelectionControls
+          copyLabel={t('reader.copySelection')}
+          endHandleLabel={t('reader.selectionEndHandle')}
+          highlightLabel={t('reader.highlightSelection')}
+          isHighlightDisabled={!selection.sourceRange}
+          onBoundaryMove={updateSelectionBoundary}
+          onBoundaryMoveEnd={() => void refineSelectionGeometry()}
+          onCopy={() => void copySelection()}
+          onHighlight={() => void highlightSelection()}
+          rects={selectionViewportRects}
+          safeAreaInsets={reservedInsets}
+          selectionLabel={t('reader.selectionToolbar')}
+          startHandleLabel={t('reader.selectionStartHandle')}
+          viewportHeight={viewport.height}
+          viewportWidth={viewport.width}
+        />
       )}
 
       {readerChromeVisible && (

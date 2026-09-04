@@ -1,11 +1,13 @@
 import type {
   ReaderHitEntry,
   ReaderRect,
+  ReaderSourcePoint,
+  ReaderSourceRange,
   ReaderTextPosition,
   ReaderTextRangeGeometryRequest,
 } from '../contracts';
 
-interface ReaderTextSelectionEndpoint {
+export interface ReaderTextSelectionEndpoint {
   readonly entryIndex: number;
   readonly charIndex: number;
 }
@@ -29,6 +31,8 @@ export interface ReaderTextSelection {
   readonly text: string;
   readonly geometryRequests: readonly ReaderTextRangeGeometryRequest[];
   readonly origin: ReaderTextSelectionOrigin;
+  readonly range: ReaderTextSelectionOrigin;
+  readonly sourceRange?: ReaderSourceRange;
 }
 
 export function findReaderHitIndex(
@@ -115,6 +119,57 @@ export function updateReaderTextSelectionAtPoint(
   return createSelection(entries, selection.origin, focus, beforeOrigin);
 }
 
+export function updateReaderTextSelectionBoundaryAtPoint(
+  entries: readonly ReaderHitEntry[],
+  selection: ReaderTextSelection,
+  boundary: 'start' | 'end',
+  x: number,
+  y: number,
+  maximumDistance = 72,
+): ReaderTextSelection | undefined {
+  const entryIndex = findSelectableReaderHitIndex(entries, x, y, maximumDistance);
+  if (entryIndex === undefined) return selection;
+  const endpoint = {
+    entryIndex,
+    charIndex: charIndexAtPoint(entries[entryIndex], x, y),
+  };
+  const start = boundary === 'start' ? endpoint : selection.range.start;
+  const end = boundary === 'end' ? endpoint : selection.range.end;
+  if (compareEndpoints(start, end) >= 0) return selection;
+  const normalized = {
+    start: minEndpoint(start, end),
+    end: maxEndpoint(start, end),
+  };
+  return createSelection(entries, normalized, normalized.end);
+}
+
+export function createReaderTextSelectionFromSourceRange(
+  entries: readonly ReaderHitEntry[],
+  sourceRange: ReaderSourceRange,
+): ReaderTextSelection | undefined {
+  let start: ReaderTextSelectionEndpoint | undefined;
+  let end: ReaderTextSelectionEndpoint | undefined;
+  for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
+    const entry = entries[entryIndex];
+    const entryStart = entry.sourcePoint;
+    if (!entryStart || !isSelectable(entry)) continue;
+    const entryEnd = addSourceTextOffset(entryStart, entry.text.length);
+    if (compareSourcePoints(entryEnd, sourceRange.start) <= 0) continue;
+    if (compareSourcePoints(entryStart, sourceRange.end) >= 0) break;
+    const startCharIndex = sameSourceNode(entryStart, sourceRange.start)
+      ? Math.max(0, sourceRange.start.textOffset - entryStart.textOffset)
+      : 0;
+    const endCharIndex = sameSourceNode(entryStart, sourceRange.end)
+      ? Math.min(entry.text.length, sourceRange.end.textOffset - entryStart.textOffset)
+      : entry.text.length;
+    start ??= { entryIndex, charIndex: startCharIndex };
+    end = { entryIndex, charIndex: endCharIndex };
+  }
+  if (!start || !end) return undefined;
+  const range = { start, end };
+  return createSelection(entries, range, range.end);
+}
+
 function createSelection(
   entries: readonly ReaderHitEntry[],
   origin: ReaderTextSelectionOrigin,
@@ -123,7 +178,11 @@ function createSelection(
 ): ReaderTextSelection | undefined {
   const first = focusBeforeOrigin ? focus : origin.start;
   const last = focusBeforeOrigin ? origin.end : maxEndpoint(origin.end, focus);
-  const portions = selectionPortions(entries, first, last);
+  const range = {
+    start: minEndpoint(first, last),
+    end: maxEndpoint(first, last),
+  };
+  const portions = selectionPortions(entries, range.start, range.end);
   if (portions.length === 0) return undefined;
   return {
     anchorIndex: origin.start.entryIndex,
@@ -133,7 +192,42 @@ function createSelection(
     text: joinSelectionText(portions),
     geometryRequests: createGeometryRequests(portions),
     origin,
+    range,
+    sourceRange: createSourceRange(portions),
   };
+}
+
+function createSourceRange(
+  portions: readonly ReaderTextSelectionPortion[],
+): ReaderSourceRange | undefined {
+  const first = portions[0];
+  const last = portions.at(-1);
+  if (!first?.entry.sourcePoint || !last?.entry.sourcePoint) return undefined;
+  return {
+    start: addSourceTextOffset(first.entry.sourcePoint, first.startCharIndex),
+    end: addSourceTextOffset(last.entry.sourcePoint, last.endCharIndex),
+  };
+}
+
+function addSourceTextOffset(point: ReaderSourcePoint, offset: number): ReaderSourcePoint {
+  return { nodePath: point.nodePath, textOffset: point.textOffset + offset };
+}
+
+function sameSourceNode(left: ReaderSourcePoint, right: ReaderSourcePoint): boolean {
+  return left.nodePath.length === right.nodePath.length
+    && left.nodePath.every((part, index) => part === right.nodePath[index]);
+}
+
+function compareSourcePoints(left: ReaderSourcePoint, right: ReaderSourcePoint): number {
+  const length = Math.min(left.nodePath.length, right.nodePath.length);
+  for (let index = 0; index < length; index += 1) {
+    if (left.nodePath[index] !== right.nodePath[index]) {
+      return left.nodePath[index] - right.nodePath[index];
+    }
+  }
+  return left.nodePath.length === right.nodePath.length
+    ? left.textOffset - right.textOffset
+    : left.nodePath.length - right.nodePath.length;
 }
 
 function selectionPortions(
