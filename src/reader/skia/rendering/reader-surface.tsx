@@ -258,7 +258,7 @@ export function ReaderSurface({
       : activeTransition?.from,
     surfaceBinding: pageTurnSurfaceBinding,
   });
-  const nativeAutomaticPageTurnsVisible = automaticPageTurnsVisible
+  const nativeAutomaticPageTurnsVisible = automaticTurns.length > 0
     && nativeAutomaticPageTurnState.enabled;
   const fallbackAutomaticPageTurnsVisible = automaticPageTurnsVisible
     && !nativeAutomaticPageTurnState.enabled;
