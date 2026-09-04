@@ -8,7 +8,7 @@ import { AUTOMATIC_PAGE_TURN_DURATION_MS } from './strategy';
 
 export { AUTOMATIC_PAGE_TURN_DURATION_MS } from './strategy';
 
-const CURVATURE_RELAXATION = 7;
+const CURVATURE_RELAXATION = 10;
 // Inverse J0 over chord lengths [0.035, 1]. This is the reference worklet's
 // degree-10 Chebyshev approximation, with less than 9e-8 radians of error.
 const INVERSE_BESSEL_CHEBYSHEV = [
@@ -121,11 +121,14 @@ export function createAutomaticCurlProfile(progress: number): GestureCurlProfile
   );
 }
 
-export function createIncomingCurlProfile(progress: number): GestureCurlProfile {
+export function createIncomingCurlProfile(
+  progress: number,
+  releaseX = AUTOMATIC_REVERSE_RELEASE_X,
+): GestureCurlProfile {
   'worklet';
   return createTurnCurlProfile(
     clampUnit(progress),
-    bendAmplitudeForChord(AUTOMATIC_REVERSE_RELEASE_X),
+    bendAmplitudeForChord(releaseX),
     0,
     AUTOMATIC_CURVATURE_RELAXATION,
   );

@@ -71,7 +71,7 @@ export function useInteractivePageTurn({
   const turnSequence = useRef(0);
   const activeTurnId = useRef<number | undefined>(undefined);
   const handoffGeneration = useRef(0);
-  const nativeGestureHandoff = useRef<ReaderNativeGestureHandoff | undefined>(undefined);
+  const nativeGestureHandoffs = useRef(new Map<number, ReaderNativeGestureHandoff>());
   const gestureValues = usePageTurnGestureValues();
   const {
     grabY: gestureGrabY,
@@ -117,12 +117,9 @@ export function useInteractivePageTurn({
         committedHandoff.nativeTurnId,
       );
     }
-    // Keep the completed interactive picture mounted until the subscribed
-    // React snapshot identifies the same target. The runtime snapshot may be
-    // ahead of its subscriber during a fast release. One additional frame
-    // lets the target Canvas tree commit before the interactive layer leaves.
-    const frame = requestAnimationFrame(() => {
-      if (handoffGeneration.current !== committedHandoff.generation) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled || handoffGeneration.current !== committedHandoff.generation) return;
       readerDiagnostic(
         'turn.handoff.clear',
         `turn=${committedHandoff.turnId} ui=${uiSnapshotIdentity} generation=${committedHandoff.generation}`,
@@ -131,7 +128,9 @@ export function useInteractivePageTurn({
       setCommittedHandoff(undefined);
       setInteractiveTurn(undefined);
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelled = true;
+    };
   }, [committedHandoff, nativePagerId, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex, uiSnapshotIdentity]);
 
   useEffect(() => {
@@ -178,7 +177,6 @@ export function useInteractivePageTurn({
       preparing: false,
       prepared: false,
     };
-    nativeGestureHandoff.current = undefined;
     readerDiagnostic(
       'turn.gesture.begin',
       `turn=${turnId} source=${describeSnapshotIdentity(snapshot)} x=${formatTraceNumber(startX)} y=${formatTraceNumber(startY)}`,
@@ -241,6 +239,7 @@ export function useInteractivePageTurn({
       heldRollTilt: state.heldRollTilt,
       heldRollTiltValue: gestureHeldRollTilt,
       fingerX: state.fingerX,
+      startBookX: state.startBookX,
       throwVelocity: state.throwVelocity,
       throwAcceleration: state.throwAcceleration,
       nativeGesture: {
@@ -374,12 +373,16 @@ export function useInteractivePageTurn({
       return;
     }
     const preparedTurn = state.preparedTurn;
-    nativeGestureHandoff.current = {
-      gestureToken: nativeToken,
-      preparedTurn,
-      generation: ++handoffGeneration.current,
-      terminalEventHandled: false,
-    };
+    const existingHandoff = nativeGestureHandoffs.current.get(nativeToken);
+    if (!existingHandoff) {
+      nativeGestureHandoffs.current.set(nativeToken, {
+        turnId: state.id,
+        gestureToken: nativeToken,
+        preparedTurn,
+        generation: ++handoffGeneration.current,
+        terminalEventHandled: false,
+      });
+    }
     setInteractiveTurn((turn) => turn?.nativeGesture?.token === nativeToken
       ? {
           ...turn,
@@ -394,12 +397,11 @@ export function useInteractivePageTurn({
   const handleNativeGestureEvent = useCallback((event: NativePagerEventRecord) => {
     const identity = readerInteractivePageTurnIdentity(event.id);
     if (!identity) return;
-    const handoff = nativeGestureHandoff.current;
+    const handoff = nativeGestureHandoffs.current.get(identity.gestureToken);
     if (
       !handoff
       || handoff.gestureToken !== identity.gestureToken
       || handoff.preparedTurn.id !== identity.preparedTurnId
-      || handoff.generation !== handoffGeneration.current
     ) {
       return;
     }
@@ -411,9 +413,11 @@ export function useInteractivePageTurn({
       setInteractiveTurn((turn) => turn?.nativeGesture?.token === identity.gestureToken
         ? {
             ...turn,
+            settling: false,
             nativeGesture: {
               ...turn.nativeGesture,
               consumed: true,
+              settling: false,
             },
           }
         : turn);
@@ -432,8 +436,9 @@ export function useInteractivePageTurn({
         .catch(() => undefined)
         .then(waitForPageHandoffFrames)
         .then(() => {
-          if (nativeGestureHandoff.current !== handoff) return;
-          nativeGestureHandoff.current = undefined;
+          if (nativeGestureHandoffs.current.get(identity.gestureToken) !== handoff) return;
+          nativeGestureHandoffs.current.delete(identity.gestureToken);
+          if (activeTurnId.current !== handoff.turnId) return;
           activeTurnId.current = undefined;
           setInteractiveTurn(undefined);
         });
@@ -444,21 +449,27 @@ export function useInteractivePageTurn({
       ?? runtime.commitPreparedTurn(handoff.preparedTurn);
     handoff.commit = commit;
     void commit.then((result) => {
-      if (nativeGestureHandoff.current !== handoff) return;
+      if (nativeGestureHandoffs.current.get(identity.gestureToken) !== handoff) return;
       const preparedTurn = handoff.preparedTurn;
       if (
         result.revisionId !== preparedTurn.revisionId
         || result.spreadIndex !== preparedTurn.targetSpreadIndex
         || result.renderId !== preparedTurn.targetRenderId
       ) {
-        nativeGestureHandoff.current = undefined;
-        activeTurnId.current = undefined;
-        setInteractiveTurn(undefined);
+        nativeGestureHandoffs.current.delete(identity.gestureToken);
+        if (activeTurnId.current === handoff.turnId) {
+          activeTurnId.current = undefined;
+          setInteractiveTurn(undefined);
+        }
         return;
       }
-      nativeGestureHandoff.current = undefined;
+      nativeGestureHandoffs.current.delete(identity.gestureToken);
+      if (activeTurnId.current !== handoff.turnId) {
+        acknowledgeNativePagerPresentationById(nativePagerId.value, event.id);
+        return;
+      }
       setCommittedHandoff({
-        turnId: identity.gestureToken,
+        turnId: handoff.turnId,
         generation: handoff.generation,
         revisionId: preparedTurn.revisionId,
         spreadIndex: preparedTurn.targetSpreadIndex,
@@ -466,12 +477,13 @@ export function useInteractivePageTurn({
         nativeTurnId: event.id,
       });
     }).catch(() => {
-      if (nativeGestureHandoff.current !== handoff) return;
-      nativeGestureHandoff.current = undefined;
+      if (nativeGestureHandoffs.current.get(identity.gestureToken) !== handoff) return;
+      nativeGestureHandoffs.current.delete(identity.gestureToken);
+      if (activeTurnId.current !== handoff.turnId) return;
       activeTurnId.current = undefined;
       setInteractiveTurn(undefined);
     });
-  }, [runtime]);
+  }, [nativePagerId, runtime]);
 
   const endDrag = usePageTurnRelease({
     activeTurnIdRef: activeTurnId,
@@ -480,7 +492,7 @@ export function useInteractivePageTurn({
     gestureValues,
     handoffGenerationRef: handoffGeneration,
     interactiveTurn,
-    nativeGestureHandoffRef: nativeGestureHandoff,
+    nativeGestureHandoffRef: nativeGestureHandoffs,
     pageTurnEffect,
     runtime,
     setCommittedHandoff,
@@ -518,11 +530,12 @@ export function useInteractivePageTurn({
   ]);
 
   useEffect(() => {
-    nativeGestureHandoff.current = undefined;
+    const handoffs = nativeGestureHandoffs.current;
+    handoffs.clear();
     nativeStockedGestureToken.set(0);
     return () => {
       handoffGeneration.current += 1;
-      nativeGestureHandoff.current = undefined;
+      handoffs.clear();
       nativePagerInputReady.set(false);
       nativeStockedGestureToken.set(0);
       const preparedTurn = dragState.current?.preparedTurn;

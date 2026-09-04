@@ -1,15 +1,16 @@
 import { clampUnit } from '../../core/page-turn-math';
 
 /** Finger position at which the hinge starts bending. */
-export const MIN_PRESSED_EDGE_X = 0.2;
-export const GESTURE_LIFT_START_FINGER_X = 0.42;
+export const MIN_PRESSED_EDGE_X = 0.14;
+export const GESTURE_LIFT_START_FINGER_X = 0.36;
 export const GESTURE_HINGE_BEND_AMPLITUDE = 2.1266855842119465;
-export const GESTURE_HINGE_ROTATION = 0.4 * 0.997;
-export const GESTURE_HINGE_CHORD_X = MIN_PRESSED_EDGE_X
-  / Math.cos(GESTURE_HINGE_ROTATION);
+export const MAX_PRESSED_ROLL_TILT = Math.PI - 2.147033481101353 - 0.015;
+export const GESTURE_HINGE_ROTATION = MAX_PRESSED_ROLL_TILT * 0.4;
+export const GESTURE_HINGE_CHORD_X = 0.15148003824552042;
+export const SLOW_COMMIT_EDGE_X = MIN_PRESSED_EDGE_X - 0.3565937167398107;
 export const VISUAL_TURN_TRAVEL = 0.38;
 export const GESTURE_COMMIT_TRAVEL = 0.58;
-export const DEFAULT_GESTURE_COMMIT_THRESHOLD = 0.78;
+export const DEFAULT_GESTURE_COMMIT_THRESHOLD = 0.8;
 
 export function pageTurnStartBookXForTouch(
   localX: number,
@@ -62,6 +63,7 @@ export function gesturePressedChordForFingerX(
 export function postHingeTurnProgressForFingerX(
   fingerX: number,
   startBookX: number,
+  curvatureRelaxation = 10,
 ): number {
   'worklet';
   const safeFingerX = Math.min(1, Math.max(-1, fingerX));
@@ -85,7 +87,7 @@ export function postHingeTurnProgressForFingerX(
   const retention = clampUnit(
     (Math.PI - desiredRotation) / GESTURE_HINGE_BEND_AMPLITUDE,
   );
-  const remaining = retention ** (1 / (1 + 7 / 14));
+  const remaining = retention ** (1 / (1 + curvatureRelaxation / 14));
   return landingStart + (1 - remaining) * (1 - landingStart);
 }
 
@@ -105,12 +107,12 @@ export function turnCommitScore(
   'worklet';
   const distance = Math.min(
     1.2,
-    Math.max(0, (1 - fingerX) / GESTURE_COMMIT_TRAVEL),
+    Math.max(0, (1 - fingerX) / (1 - SLOW_COMMIT_EDGE_X)),
   );
   const velocity = Math.min(3.2, Math.max(0, throwVelocity)) * 0.18;
   const acceleration = Math.min(10, Math.max(0, throwAcceleration)) * 0.035;
   return (distance + velocity + acceleration)
-    / Math.min(6, Math.max(0.1, pageWeight));
+    / Math.min(3, Math.max(0.25, pageWeight));
 }
 
 export function shouldCommitTurn(

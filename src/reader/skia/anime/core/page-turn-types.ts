@@ -64,6 +64,7 @@ export interface ReaderInteractiveTurn {
   readonly heldRollTiltValue?: SharedValue<number>;
   readonly grabYValue?: SharedValue<number>;
   readonly fingerX?: number;
+  readonly startBookX?: number;
   readonly throwVelocity?: number;
   readonly throwAcceleration?: number;
   readonly nativeGesture?: ReaderNativeGestureState;

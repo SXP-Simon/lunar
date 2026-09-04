@@ -1,22 +1,36 @@
 import type { ReaderPageTurnEffect } from '../../core/page-turn-effect';
-import {
-  clampUnit,
-  crossesPageTurnCommitThreshold,
-} from '../../core/page-turn-math';
+import { clampUnit } from '../../core/page-turn-math';
 import { NATIVE_CURL_MOTION_CONFIG } from './native-motion';
 import {
   anchoredGestureFingerX,
   bookXForGestureTravel,
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
+  MIN_PRESSED_EDGE_X,
   pageTurnStartBookXForTouch,
+  postHingeTurnProgressForFingerX,
+  SLOW_COMMIT_EDGE_X,
+  turnCommitScore,
 } from './gesture';
+import {
+  gestureSinglePreviousCurlProgress,
+  gestureSinglePreviousCurlRemainingDurationMs,
+} from './progress';
 
 export const AUTOMATIC_PAGE_TURN_DURATION_MS = 947;
 export const PAGE_TURN_DURATION_MS = AUTOMATIC_PAGE_TURN_DURATION_MS;
 export const PAGE_TURN_GESTURE_SETTLE_DURATION_MS = 520;
 export const PAGE_TURN_REVERSE_DURATION_MS = 854;
 export const PAGE_TURN_REVERT_DURATION_MS = 720;
+
+const GESTURE_FORWARD_COMMIT_THRESHOLD = 0.8;
+const GESTURE_BACKWARD_COMMIT_THRESHOLD = 0.15;
+const GESTURE_FORWARD_MINIMUM_SPEED_SCALE = 1;
+const GESTURE_BACKWARD_MINIMUM_SPEED_SCALE = 0.8;
+const GESTURE_MAXIMUM_SPEED_SCALE = 5;
+const GESTURE_VELOCITY_GAIN = 0.2;
+const GESTURE_IDLE_DECAY_SECONDS = 0.1;
+const PAGE_TURN_PROPAGATION_SPEED_SCALE = 1.15;
 
 export const curlPageTurnEffect: ReaderPageTurnEffect = {
   style: 'page',
@@ -58,26 +72,63 @@ export const curlPageTurnEffect: ReaderPageTurnEffect = {
     renderProgress: ({ physicalProgress, direction, spreadMode }) => {
       'worklet';
       const progress = clampUnit(physicalProgress);
-      return spreadMode === 'single' && direction === 1
+      if (spreadMode !== 'single') return progress;
+      return direction === 1
         ? progress * 0.5
-        : progress;
+        : gestureSinglePreviousCurlProgress(progress);
     },
-    shouldCommit: ({ progress, towardTargetVelocity }) => {
+    shouldCommit: ({
+      progress,
+      towardTargetVelocity,
+      direction,
+      spreadMode,
+      startBookX,
+      fingerX,
+      throwVelocity,
+      throwAcceleration,
+    }) => {
       'worklet';
-      return crossesPageTurnCommitThreshold(progress, towardTargetVelocity);
+      const incomingPage = spreadMode === 'single' && direction === -1;
+      const commitFingerX = incomingPage
+        ? 1 - clampUnit(progress) * (1 - SLOW_COMMIT_EDGE_X)
+        : fingerX;
+      const score = turnCommitScore(
+        commitFingerX,
+        Math.max(throwVelocity, towardTargetVelocity),
+        throwAcceleration,
+      );
+      return (incomingPage || startBookX >= 0.25)
+        && score >= (
+          incomingPage
+            ? GESTURE_BACKWARD_COMMIT_THRESHOLD
+            : GESTURE_FORWARD_COMMIT_THRESHOLD
+        );
     },
   },
   native: {
     motion: NATIVE_CURL_MOTION_CONFIG,
     gesture: {
       minimumStartBookX: 0.25,
-      minimumSpeedScale: 1,
-      maximumSpeedScale: 2.2,
-      velocityGain: 0.35,
-      idleDecaySeconds: 0.08,
       canStart: (direction, startBookX) => {
         'worklet';
         return direction < 0 || startBookX >= 0.25;
+      },
+      getReleaseTuning: (direction, spreadMode) => {
+        'worklet';
+        const incomingPage = spreadMode === 'single' && direction === -1;
+        return {
+          pageWeight: 1,
+          commitThreshold: incomingPage
+            ? GESTURE_BACKWARD_COMMIT_THRESHOLD
+            : GESTURE_FORWARD_COMMIT_THRESHOLD,
+          slowCommitEdgeX: SLOW_COMMIT_EDGE_X,
+          minimumSpeedScale: direction === -1
+            ? GESTURE_BACKWARD_MINIMUM_SPEED_SCALE
+            : GESTURE_FORWARD_MINIMUM_SPEED_SCALE,
+          maximumSpeedScale: GESTURE_MAXIMUM_SPEED_SCALE,
+          velocityGain: GESTURE_VELOCITY_GAIN,
+          idleDecaySeconds: GESTURE_IDLE_DECAY_SECONDS,
+        };
       },
     },
   },
@@ -85,29 +136,16 @@ export const curlPageTurnEffect: ReaderPageTurnEffect = {
     getDuration: ({ incomingPageLanding }) => incomingPageLanding
       ? PAGE_TURN_REVERSE_DURATION_MS
       : PAGE_TURN_DURATION_MS,
-    getSettleDuration: ({ fromProgress, targetProgress, releaseVelocity }) => {
-      const distance = Math.abs(clampUnit(targetProgress) - clampUnit(fromProgress));
-      const fullDuration = targetProgress === 0
-        ? PAGE_TURN_REVERT_DURATION_MS
-        : PAGE_TURN_GESTURE_SETTLE_DURATION_MS;
-      const minimumDuration = targetProgress === 0 ? 220 : 160;
-      const towardTarget = releaseVelocity * (targetProgress - fromProgress) > 0;
-      const releaseSpeed = towardTarget ? Math.min(6, Math.abs(releaseVelocity)) : 0;
-      const releaseBoost = Math.min(0.22, releaseSpeed * 0.035);
-      return Math.max(
-        minimumDuration,
-        Math.round(fullDuration * distance * (1 - releaseBoost)),
-      );
-    },
+    getSettleDuration: getCurlSettleDuration,
     getAutomaticDuration: ({ incomingPageLanding }) => incomingPageLanding
       ? PAGE_TURN_REVERSE_DURATION_MS
       : PAGE_TURN_DURATION_MS,
-    getEasing: ({ targetProgress, incomingPageLanding, interactive }) => {
+    getEasing: ({ fromProgress, targetProgress, incomingPageLanding, interactive }) => {
       if (!interactive) return linear;
       if (targetProgress === 0) return easeOutCubic;
       return incomingPageLanding
-        ? easeOutQuad
-        : easeInOutSine;
+        ? incomingGestureSettleEasing(fromProgress)
+        : linear;
     },
   },
   orchestration: {
@@ -126,12 +164,81 @@ function easeOutCubic(progress: number): number {
   return 1 - (1 - progress) ** 3;
 }
 
-function easeOutQuad(progress: number): number {
-  'worklet';
-  return 1 - (1 - progress) ** 2;
+function incomingGestureSettleEasing(startProgress: number) {
+  const start = clampUnit(startProgress);
+  const revealEnd = 0.1;
+  const durationScale = 0.7 / (1 - revealEnd);
+  const preludeRemaining = start < revealEnd
+    ? (revealEnd - start) * durationScale
+    : 0;
+  const landingStart = Math.max(start, revealEnd);
+  const landingDuration = (1 - landingStart) * durationScale;
+  const totalDuration = preludeRemaining + landingDuration;
+
+  return (timelineProgress: number): number => {
+    'worklet';
+    if (start >= 1) return 1;
+    const elapsed = clampUnit(timelineProgress) * totalDuration;
+    let drivenProgress: number;
+    if (preludeRemaining > 0 && elapsed < preludeRemaining) {
+      drivenProgress = start
+        + (revealEnd - start) * (elapsed / preludeRemaining);
+    } else {
+      const landingElapsed = Math.max(0, elapsed - preludeRemaining);
+      const linearProgress = clampUnit(
+        landingElapsed / Math.max(0.000001, landingDuration),
+      );
+      const easedProgress = 1 - (1 - linearProgress) ** 2;
+      drivenProgress = landingStart + (1 - landingStart) * easedProgress;
+    }
+    return clampUnit((drivenProgress - start) / Math.max(0.000001, 1 - start));
+  };
 }
 
-function easeInOutSine(progress: number): number {
-  'worklet';
-  return -(Math.cos(Math.PI * progress) - 1) / 2;
+function getCurlSettleDuration({
+  fromProgress,
+  targetProgress,
+  throwVelocity,
+  direction,
+  spreadMode,
+  fingerX,
+  pressedEdgeX,
+  heldRollTilt,
+  startBookX,
+}: Parameters<ReaderPageTurnEffect['motion']['getSettleDuration']>[0]): number {
+  const progress = clampUnit(fromProgress);
+  const incomingPage = spreadMode === 'single' && direction === -1;
+  if (targetProgress === 0) {
+    return Math.max(
+      1000 / 60,
+      Math.round(incomingPage
+        ? 700 * progress
+        : PAGE_TURN_REVERT_DURATION_MS * progress),
+    );
+  }
+
+  const minimumSpeed = direction === -1
+    ? GESTURE_BACKWARD_MINIMUM_SPEED_SCALE
+    : GESTURE_FORWARD_MINIMUM_SPEED_SCALE;
+  const speedScale = Math.min(
+    GESTURE_MAXIMUM_SPEED_SCALE,
+    Math.max(minimumSpeed, minimumSpeed + Math.max(0, throwVelocity) * GESTURE_VELOCITY_GAIN),
+  );
+  if (incomingPage) {
+    return Math.max(
+      1000 / 60,
+      Math.round(gestureSinglePreviousCurlRemainingDurationMs(progress) / speedScale),
+    );
+  }
+
+  const turnProgress = postHingeTurnProgressForFingerX(fingerX, startBookX, 10);
+  const remainingRotationRatio = (Math.PI - Math.max(0, heldRollTilt)) / Math.PI;
+  const fullDurationSeconds = (
+    (Math.min(1, Math.max(MIN_PRESSED_EDGE_X, pressedEdgeX)) + 1)
+    * remainingRotationRatio
+  ) / (PAGE_TURN_PROPAGATION_SPEED_SCALE * speedScale);
+  return Math.max(
+    1000 / 60,
+    Math.round(1000 * (1 - turnProgress) * fullDurationSeconds),
+  );
 }

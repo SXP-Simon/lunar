@@ -99,6 +99,14 @@ export function useReaderPageTransition(
       if (!samePageIdentity(targetIdentity, interactiveCommit)) {
         setInteractiveCommit(targetIdentity);
       }
+      if (
+        interactiveTurn.nativeGesture?.consumed
+        && current
+        && samePageIdentity(current.snapshot, targetIdentity)
+        && current.key !== displayedContent?.key
+      ) {
+        setDisplayedContent(current);
+      }
       // During release the timing driver owns the shared value. Writing the
       // last React gesture sample here would jump the curl backwards whenever
       // the runtime publishes its committed snapshot.
@@ -202,8 +210,15 @@ export function useReaderPageTransition(
           fromProgress: interactiveTurn.progress,
           targetProgress: target,
           releaseVelocity: interactiveTurn.releaseVelocity ?? 0,
+          throwVelocity: interactiveTurn.throwVelocity ?? 0,
           animationDuration,
           pageWidth: width,
+          direction,
+          spreadMode,
+          fingerX: interactiveTurn.fingerX ?? 1,
+          pressedEdgeX: interactiveTurn.pressedEdgeX ?? 1,
+          heldRollTilt: interactiveTurn.heldRollTilt ?? 0,
+          startBookX: interactiveTurn.startBookX ?? 1,
         })
       : automaticTransition
         ? pageTurnEffect.motion.getAutomaticDuration({
@@ -261,11 +276,13 @@ export function useReaderPageTransition(
     automaticTurn,
     automaticTurnCount,
     clearTransition,
+    direction,
     incomingPageLanding,
     interactiveTurn,
     onAutomaticTurnComplete,
     pageTurnEffect,
     progress,
+    spreadMode,
     width,
   ]);
 

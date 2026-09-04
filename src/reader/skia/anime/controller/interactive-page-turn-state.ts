@@ -36,6 +36,7 @@ export interface ReaderCommittedHandoff {
 }
 
 export interface ReaderNativeGestureHandoff {
+  readonly turnId: number;
   readonly gestureToken: number;
   readonly preparedTurn: ReaderPreparedTurn;
   readonly generation: number;

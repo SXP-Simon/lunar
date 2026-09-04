@@ -39,6 +39,12 @@ export interface ReaderPageTurnReleaseContext {
   readonly progress: number;
   /** Signed speed in page widths per second; positive points toward the target. */
   readonly towardTargetVelocity: number;
+  readonly direction: 1 | -1;
+  readonly spreadMode: ReaderSpreadMode;
+  readonly startBookX: number;
+  readonly fingerX: number;
+  readonly throwVelocity: number;
+  readonly throwAcceleration: number;
 }
 
 export interface ReaderPageTurnDurationContext {
@@ -51,8 +57,15 @@ export interface ReaderPageTurnSettleContext {
   readonly fromProgress: number;
   readonly targetProgress: 0 | 1;
   readonly releaseVelocity: number;
+  readonly throwVelocity: number;
   readonly animationDuration: number;
   readonly pageWidth: number;
+  readonly direction: 1 | -1;
+  readonly spreadMode: ReaderSpreadMode;
+  readonly fingerX: number;
+  readonly pressedEdgeX: number;
+  readonly heldRollTilt: number;
+  readonly startBookX: number;
 }
 
 export interface ReaderAutomaticPageTurnDurationContext {
@@ -72,11 +85,21 @@ export interface ReaderPageTurnEasingContext {
 
 export interface ReaderNativePageTurnGesturePolicy {
   readonly minimumStartBookX: number;
+  canStart(direction: 1 | -1, startBookX: number): boolean;
+  getReleaseTuning(
+    direction: 1 | -1,
+    spreadMode: ReaderSpreadMode,
+  ): ReaderNativePageTurnGestureReleaseTuning;
+}
+
+export interface ReaderNativePageTurnGestureReleaseTuning {
+  readonly pageWeight: number;
+  readonly commitThreshold: number;
+  readonly slowCommitEdgeX: number;
   readonly minimumSpeedScale: number;
   readonly maximumSpeedScale: number;
   readonly velocityGain: number;
   readonly idleDecaySeconds: number;
-  canStart(direction: 1 | -1, startBookX: number): boolean;
 }
 
 export interface ReaderNativePageTurnMotionTuning {

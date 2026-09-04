@@ -27,7 +27,8 @@ import {
 } from './geometry';
 import {
   automaticSinglePreviousCurlProgress,
-  singlePreviousCurlProgress,
+  gestureSinglePreviousCurlRevealProgress,
+  gestureSinglePreviousCurlShapeProgress,
   singlePreviousCurlRevealProgress,
 } from './progress';
 
@@ -397,7 +398,7 @@ function createCurlUniforms(
   const incomingLanding = phase === 'incoming-landing';
   const turn = incomingLanding
     ? gestureDriven
-      ? singlePreviousCurlProgress(animationProgress)
+      ? gestureSinglePreviousCurlShapeProgress(animationProgress)
       : automaticSinglePreviousCurlProgress(animationProgress)
     : animationProgress;
   const safeWidth = Math.max(1, width);
@@ -412,7 +413,10 @@ function createCurlUniforms(
   let uniformity: number;
   let cornerTilt: number;
   if (incomingLanding) {
-    const incomingProfile = createIncomingCurlProfile(turn);
+    const incomingProfile = createIncomingCurlProfile(
+      turn,
+      gestureDriven ? 0.6 : 0.4,
+    );
     amplitude = incomingProfile.amplitude;
     rotation = incomingProfile.rotation;
     landedLength = incomingProfile.landedLength;
@@ -504,7 +508,9 @@ function createCurlUniforms(
     projected[offset + 3] = normalZ;
   }
   if (incomingLanding) {
-    const reveal = singlePreviousCurlRevealProgress(animationProgress);
+    const reveal = gestureDriven
+      ? gestureSinglePreviousCurlRevealProgress(animationProgress)
+      : singlePreviousCurlRevealProgress(animationProgress);
     if (reveal < 1) {
       let maximumX = Number.NEGATIVE_INFINITY;
       for (let index = 0; index < PROFILE_POINTS; index += 1) {

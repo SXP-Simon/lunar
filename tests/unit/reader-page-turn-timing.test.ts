@@ -79,6 +79,32 @@ describe('reader page turn effect timing', () => {
     expect(curlPageTurnEffect.visual.isIncomingPageLanding(-1, 'single')).toBe(true);
     expect(curlPageTurnEffect.native?.motion.automatic.backward)
       .toMatchObject({ incomingRevertDurationSeconds: 0.72 });
+    expect(curlPageTurnEffect.native?.motion.gesture.forward).toEqual({
+      releaseX: 0.4,
+      liftVelocity: 1,
+      liftToLeft: 1,
+      curvatureRelaxation: 10,
+    });
+    expect(curlPageTurnEffect.native?.motion.gesture.backward).toMatchObject({
+      releaseX: 0.6,
+      incomingRevealEndProgress: 0.1,
+      incomingSettleDurationSeconds: 0.7,
+      incomingSettleEasingPower: 2,
+      incomingRevertDurationSeconds: 0.7,
+    });
+    expect(curlPageTurnEffect.native?.gesture.getReleaseTuning(1, 'single'))
+      .toMatchObject({
+        commitThreshold: 0.8,
+        minimumSpeedScale: 1,
+        maximumSpeedScale: 5,
+        velocityGain: 0.2,
+        idleDecaySeconds: 0.1,
+      });
+    expect(curlPageTurnEffect.native?.gesture.getReleaseTuning(-1, 'single'))
+      .toMatchObject({
+        commitThreshold: 0.15,
+        minimumSpeedScale: 0.8,
+      });
     expect(slidePageTurnEffect.native).toBeUndefined();
   });
 
@@ -87,44 +113,100 @@ describe('reader page turn effect timing', () => {
       fromProgress: 0.7,
       targetProgress: 1,
       releaseVelocity: 0,
+      throwVelocity: 0,
       animationDuration: 360,
       pageWidth: 0,
+      direction: 1,
+      spreadMode: 'single',
+      fingerX: 0.3,
+      pressedEdgeX: 0.3,
+      heldRollTilt: 0,
+      startBookX: 1,
     })).toBe(108);
     expect(slidePageTurnEffect.motion.getSettleDuration({
       fromProgress: 0.7,
       targetProgress: 0,
       releaseVelocity: 0,
+      throwVelocity: 0,
       animationDuration: 360,
       pageWidth: 0,
+      direction: 1,
+      spreadMode: 'single',
+      fingerX: 0.3,
+      pressedEdgeX: 0.3,
+      heldRollTilt: 0,
+      startBookX: 1,
     })).toBe(252);
     expect(slidePageTurnEffect.motion.getSettleDuration({
       fromProgress: 0.95,
       targetProgress: 1,
       releaseVelocity: 4,
+      throwVelocity: 4,
       animationDuration: 360,
       pageWidth: 400,
+      direction: 1,
+      spreadMode: 'single',
+      fingerX: 0.3,
+      pressedEdgeX: 0.3,
+      heldRollTilt: 0,
+      startBookX: 1,
     })).toBe(18);
     expect(slidePageTurnEffect.motion.getSettleDuration({
       fromProgress: 0.5,
       targetProgress: 1,
       releaseVelocity: 3.75,
+      throwVelocity: 3.75,
       animationDuration: 1000,
       pageWidth: 400,
+      direction: 1,
+      spreadMode: 'single',
+      fingerX: 0.3,
+      pressedEdgeX: 0.3,
+      heldRollTilt: 0,
+      startBookX: 1,
     })).toBe(250);
     expect(slidePageTurnEffect.motion.getSettleDuration({
       fromProgress: 0.5,
       targetProgress: 1,
       releaseVelocity: -3.75,
+      throwVelocity: 0,
       animationDuration: 1000,
       pageWidth: 400,
+      direction: 1,
+      spreadMode: 'single',
+      fingerX: 0.3,
+      pressedEdgeX: 0.3,
+      heldRollTilt: 0,
+      startBookX: 1,
     })).toBe(500);
     expect(curlPageTurnEffect.motion.getSettleDuration({
       fromProgress: 0.5,
       targetProgress: 1,
       releaseVelocity: 0,
+      throwVelocity: 0,
       animationDuration: 360,
       pageWidth: 400,
-    })).toBe(260);
+      direction: 1,
+      spreadMode: 'single',
+      fingerX: 0,
+      pressedEdgeX: 0.15148003824552042,
+      heldRollTilt: 0.3918236689953761,
+      startBookX: 1,
+    })).toBe(798);
+    expect(curlPageTurnEffect.motion.getSettleDuration({
+      fromProgress: 0.5,
+      targetProgress: 1,
+      releaseVelocity: 0,
+      throwVelocity: 0,
+      animationDuration: 360,
+      pageWidth: 400,
+      direction: -1,
+      spreadMode: 'single',
+      fingerX: 0.5,
+      pressedEdgeX: 0.5,
+      heldRollTilt: 0,
+      startBookX: 0.5,
+    })).toBe(486);
   });
 
   it('uses the Readest slide curve when settling without release momentum', () => {
@@ -135,6 +217,27 @@ describe('reader page turn effect timing', () => {
     expect(easing(0.5)).toBe(0.5);
     expect(easing(0.75)).toBeCloseTo(0.875);
     expect(easing(1)).toBe(1);
+  });
+
+  it('uses Persimmon curl release curves', () => {
+    const forward = curlPageTurnEffect.motion.getEasing({
+      fromProgress: 0.5,
+      targetProgress: 1,
+      releaseVelocityPxPerMs: 0,
+      incomingPageLanding: false,
+      interactive: true,
+    });
+    const backward = curlPageTurnEffect.motion.getEasing({
+      fromProgress: 0,
+      targetProgress: 1,
+      releaseVelocityPxPerMs: 0,
+      incomingPageLanding: true,
+      interactive: true,
+    });
+
+    expect(forward(0.5)).toBe(0.5);
+    expect(backward(0.1)).toBeCloseTo(0.1);
+    expect(backward(0.5)).toBeCloseTo(0.7222222222);
   });
 
   it('blends toward ease-out only when release momentum points at the target', () => {

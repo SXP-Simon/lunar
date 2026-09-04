@@ -251,7 +251,9 @@ export function ReaderSurface({
     pageTurnEffect,
     currentContent,
     interactiveTurn,
-    interactiveSource: activeTransition?.from,
+    interactiveSource: interactiveTurn?.nativeGesture
+      ? currentContent
+      : activeTransition?.from,
     surfaceBinding: pageTurnSurfaceBinding,
   });
   const nativeAutomaticPageTurnsVisible = automaticPageTurnsVisible

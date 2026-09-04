@@ -252,6 +252,10 @@ export function usePageTurnPanGesture({
         pressedEdgeX.value = geometry.pressedEdgeX;
         let nativeReleased = false;
         if (nativeActive.value) {
+          const releaseTuning = nativeGesturePolicy?.getReleaseTuning(
+            activeDirection,
+            spreadMode,
+          );
           updateNativePagerGestureOnUI(nativePagerId.value, {
             fingerX,
             turnProgress: progress.value,
@@ -265,13 +269,13 @@ export function usePageTurnPanGesture({
             fingerX,
             throwVelocity,
             throwAcceleration: 0,
-            pageWeight: 1,
-            commitThreshold: 0.5,
-            slowCommitEdgeX: 0,
-            minimumSpeedScale: nativeGesturePolicy?.minimumSpeedScale ?? 1,
-            maximumSpeedScale: nativeGesturePolicy?.maximumSpeedScale ?? 1,
-            velocityGain: nativeGesturePolicy?.velocityGain ?? 0,
-            idleDecaySeconds: nativeGesturePolicy?.idleDecaySeconds ?? 0,
+            pageWeight: releaseTuning?.pageWeight ?? 1,
+            commitThreshold: releaseTuning?.commitThreshold ?? 0.5,
+            slowCommitEdgeX: releaseTuning?.slowCommitEdgeX ?? 0,
+            minimumSpeedScale: releaseTuning?.minimumSpeedScale ?? 1,
+            maximumSpeedScale: releaseTuning?.maximumSpeedScale ?? 1,
+            velocityGain: releaseTuning?.velocityGain ?? 0,
+            idleDecaySeconds: releaseTuning?.idleDecaySeconds ?? 0,
           }) === true;
           nativeActive.value = false;
         }

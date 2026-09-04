@@ -27,7 +27,7 @@ interface PageTurnReleaseOptions {
   readonly gestureValues: PageTurnGestureValues;
   readonly handoffGenerationRef: RefObject<number>;
   readonly interactiveTurn?: ReaderInteractiveTurn;
-  readonly nativeGestureHandoffRef: RefObject<ReaderNativeGestureHandoff | undefined>;
+  readonly nativeGestureHandoffRef: RefObject<Map<number, ReaderNativeGestureHandoff>>;
   readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly runtime: LunarReaderRuntime;
   readonly setCommittedHandoff: Dispatch<SetStateAction<ReaderCommittedHandoff | undefined>>;
@@ -64,9 +64,9 @@ export function usePageTurnRelease({
     if (dragStateRef.current === state) dragStateRef.current = undefined;
     if (
       !nativeReleased
-      && nativeGestureHandoffRef.current?.gestureToken === state.nativeGestureToken
+      && nativeGestureHandoffRef.current.has(state.nativeGestureToken)
     ) {
-      nativeGestureHandoffRef.current = undefined;
+      nativeGestureHandoffRef.current.delete(state.nativeGestureToken);
     }
     if (!state.directionLocked) {
       readerDiagnostic('turn.gesture.end', `turn=${state.id} decision=none reason=direction-unlocked`);
@@ -110,8 +110,14 @@ export function usePageTurnRelease({
         / Math.max(1, viewport.width)
       : 0;
     const commit = pageTurnEffect.gesture.shouldCommit({
-      progress: state.physicalProgress,
+      progress: state.renderProgress,
       towardTargetVelocity,
+      direction: state.direction,
+      spreadMode,
+      startBookX: state.startBookX,
+      fingerX: state.fingerX,
+      throwVelocity,
+      throwAcceleration: state.throwAcceleration,
     });
     readerDiagnostic(
       'turn.release',
@@ -127,17 +133,18 @@ export function usePageTurnRelease({
       ].join(' '),
     );
     if (nativeReleased && state.preparedTurn && state.prepared) {
-      const existingHandoff = nativeGestureHandoffRef.current;
-      const generation = existingHandoff?.gestureToken === state.nativeGestureToken
+      const existingHandoff = nativeGestureHandoffRef.current.get(state.nativeGestureToken);
+      const generation = existingHandoff
         ? existingHandoff.generation
         : ++handoffGenerationRef.current;
-      if (existingHandoff?.gestureToken !== state.nativeGestureToken) {
-        nativeGestureHandoffRef.current = {
+      if (!existingHandoff) {
+        nativeGestureHandoffRef.current.set(state.nativeGestureToken, {
+          turnId: state.id,
           gestureToken: state.nativeGestureToken,
           preparedTurn: state.preparedTurn,
           generation,
           terminalEventHandled: false,
-        };
+        });
       }
       setInteractiveTurn((turn) => turn ? {
         ...turn,
@@ -146,6 +153,7 @@ export function usePageTurnRelease({
         pressedEdgeX: state.pressedEdgeX,
         heldRollTilt: state.heldRollTilt,
         fingerX: state.fingerX,
+        startBookX: state.startBookX,
         releaseVelocity: towardTargetVelocity,
         throwVelocity,
         settling: true,
@@ -177,8 +185,15 @@ export function usePageTurnRelease({
         fromProgress: state.renderProgress,
         targetProgress: 0,
         releaseVelocity: towardTargetVelocity,
+        throwVelocity,
         animationDuration,
         pageWidth: viewport?.width ?? 0,
+        direction: state.direction,
+        spreadMode,
+        fingerX: state.fingerX,
+        pressedEdgeX: state.pressedEdgeX,
+        heldRollTilt: state.heldRollTilt,
+        startBookX: state.startBookX,
       });
       const generation = ++handoffGenerationRef.current;
       const preparedTurn = state.preparedTurn;
@@ -200,6 +215,7 @@ export function usePageTurnRelease({
         pressedEdgeXValue: gestureValues.pressedEdgeX,
         heldRollTilt: state.heldRollTilt,
         heldRollTiltValue: gestureValues.heldRollTilt,
+        startBookX: state.startBookX,
         releaseVelocity: towardTargetVelocity,
         settling: true,
         settleTo: 0,
@@ -253,6 +269,26 @@ export function usePageTurnRelease({
       return;
     }
 
+    const navigate = runtime.commitPreparedTurn(preparedTurn);
+    const settleDuration = pageTurnEffect.motion.getSettleDuration({
+      fromProgress: state.renderProgress,
+      targetProgress: 1,
+      releaseVelocity: towardTargetVelocity,
+      throwVelocity,
+      animationDuration,
+      pageWidth: viewport?.width ?? 0,
+      direction: state.direction,
+      spreadMode,
+      fingerX: state.fingerX,
+      pressedEdgeX: state.pressedEdgeX,
+      heldRollTilt: state.heldRollTilt,
+      startBookX: state.startBookX,
+    });
+    const generation = ++handoffGenerationRef.current;
+    let notifyVisualSettle: () => void = () => undefined;
+    const visualSettle = new Promise<void>((resolve) => {
+      notifyVisualSettle = resolve;
+    });
     setInteractiveTurn((turn) => turn ? {
       ...turn,
       progress: state.renderProgress,
@@ -260,25 +296,24 @@ export function usePageTurnRelease({
       pressedEdgeX: state.pressedEdgeX,
       heldRollTilt: state.heldRollTilt,
       fingerX: state.fingerX,
+      startBookX: state.startBookX,
       releaseVelocity: towardTargetVelocity,
       throwVelocity,
       settling: true,
       settleTo: 1,
+      onSettleComplete: notifyVisualSettle,
     } : turn);
-    const navigate = runtime.commitPreparedTurn(preparedTurn);
-    const settleDuration = pageTurnEffect.motion.getSettleDuration({
-      fromProgress: state.renderProgress,
-      targetProgress: 1,
-      releaseVelocity: towardTargetVelocity,
-      animationDuration,
-      pageWidth: viewport?.width ?? 0,
-    });
-    const generation = ++handoffGenerationRef.current;
     readerDiagnostic(
       'turn.commit.begin',
       `turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)} durationMs=${settleDuration} generation=${generation}`,
     );
-    void Promise.allSettled([navigate, waitForPageTurn(settleDuration)]).then(() => {
+    void Promise.allSettled([
+      navigate,
+      Promise.race([
+        visualSettle,
+        waitForPageTurn(settleDuration + PAGE_TURN_SETTLE_FALLBACK_DELAY_MS),
+      ]),
+    ]).then(() => {
       if (handoffGenerationRef.current !== generation) return;
       const currentSnapshot = runtime.getSnapshot();
       if (

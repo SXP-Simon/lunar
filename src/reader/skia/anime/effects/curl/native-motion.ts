@@ -25,6 +25,28 @@ const AUTOMATIC_BACKWARD_TUNING: ReaderNativePageTurnMotionTuning = {
   incomingRevertDurationSeconds: 0.72,
 };
 
+const GESTURE_FORWARD_TUNING: ReaderNativePageTurnMotionTuning = {
+  releaseX: 0.4,
+  liftVelocity: 1,
+  liftToLeft: 1,
+  curvatureRelaxation: 10,
+};
+
+const GESTURE_BACKWARD_TUNING: ReaderNativePageTurnMotionTuning = {
+  releaseX: 0.6,
+  liftVelocity: 1,
+  liftToLeft: 1,
+  curvatureRelaxation: 10,
+  incomingLandingStartProgress: 0.15,
+  incomingRevealStartProgress: 0,
+  incomingRevealEndProgress: 0.1,
+  incomingDragProgressScale: 1,
+  incomingDragProgressExponent: 1,
+  incomingSettleDurationSeconds: 0.7,
+  incomingSettleEasingPower: 2,
+  incomingRevertDurationSeconds: 0.7,
+};
+
 export const NATIVE_CURL_MOTION_CONFIG: ReaderNativePageTurnMotionConfig = {
   automatic: {
     forward: AUTOMATIC_FORWARD_TUNING,
@@ -35,7 +57,7 @@ export const NATIVE_CURL_MOTION_CONFIG: ReaderNativePageTurnMotionConfig = {
     backward: AUTOMATIC_BACKWARD_TUNING,
   },
   gesture: {
-    forward: AUTOMATIC_FORWARD_TUNING,
-    backward: AUTOMATIC_BACKWARD_TUNING,
+    forward: GESTURE_FORWARD_TUNING,
+    backward: GESTURE_BACKWARD_TUNING,
   },
 };
