@@ -63,62 +63,7 @@ export const useReaderStore = create<ReaderStoreState>()(
     {
       name: 'settings.reader',
       storage: createJSONStorage(() => mmkvStateStorage),
-      version: 1,
       partialize: ({ typography, animationStyle }) => ({ typography, animationStyle }),
-      merge: (persistedState, currentState) => {
-        const preferences = readReaderPreferences(persistedState);
-        return {
-          ...currentState,
-          ...preferences,
-        };
-      },
     },
   ),
 );
-
-function readReaderPreferences(value: unknown): PersistedReaderPreferences {
-  if (typeof value !== 'object' || value === null) {
-    return getDefaultReaderPreferences();
-  }
-
-  return {
-    typography: readTypography('typography' in value ? value.typography : undefined),
-    animationStyle: readAnimationStyle(
-      'animationStyle' in value ? value.animationStyle : undefined,
-    ),
-  };
-}
-
-function readTypography(value: unknown): ReaderTypography {
-  if (typeof value !== 'object' || value === null) {
-    return DEFAULT_READER_TYPOGRAPHY;
-  }
-
-  const candidate = {
-    ...DEFAULT_READER_TYPOGRAPHY,
-    ...value,
-  } as ReaderTypography;
-
-  if (candidate.spreadMode !== 'single' && candidate.spreadMode !== 'double') {
-    return DEFAULT_READER_TYPOGRAPHY;
-  }
-
-  try {
-    return normalizeReaderTypography(candidate);
-  } catch {
-    return DEFAULT_READER_TYPOGRAPHY;
-  }
-}
-
-function readAnimationStyle(value: unknown): ReaderPageAnimationStyle {
-  return value === 'cover' || value === 'page' || value === 'slide'
-    ? value
-    : DEFAULT_ANIMATION_STYLE;
-}
-
-function getDefaultReaderPreferences(): PersistedReaderPreferences {
-  return {
-    typography: DEFAULT_READER_TYPOGRAPHY,
-    animationStyle: DEFAULT_ANIMATION_STYLE,
-  };
-}

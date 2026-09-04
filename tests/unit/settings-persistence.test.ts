@@ -89,24 +89,6 @@ describe('settings persistence', () => {
       animationStyle: 'page',
     });
   });
-
-  it('uses reader defaults when persisted values are invalid', () => {
-    mmkvStateStorage.setItem(READER_SETTINGS_KEY, JSON.stringify({
-      state: {
-        typography: {
-          ...readerDefaults,
-          fontSize: -1,
-        },
-        animationStyle: 'unknown',
-      },
-      version: 1,
-    }));
-
-    useReaderStore.persist.rehydrate();
-
-    expect(useReaderStore.getState().typography).toEqual(readerDefaults);
-    expect(useReaderStore.getState().animationStyle).toBe('slide');
-  });
 });
 
 function readPersistedState(key: string): unknown {

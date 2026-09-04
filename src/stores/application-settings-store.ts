@@ -29,45 +29,7 @@ export const useApplicationSettingsStore = create<ApplicationSettingsState>()(
     {
       name: 'settings.application',
       storage: createJSONStorage(() => mmkvStateStorage),
-      version: 2,
       partialize: ({ themeMode, language }) => ({ themeMode, language }),
-      merge: (persistedState, currentState) => ({
-        ...currentState,
-        themeMode: readThemeMode(persistedState),
-        language: readLanguage(persistedState),
-      }),
     },
   ),
 );
-
-function readThemeMode(value: unknown): ApplicationThemeMode {
-  if (
-    typeof value === 'object'
-    && value !== null
-    && 'themeMode' in value
-    && isThemeMode(value.themeMode)
-  ) {
-    return value.themeMode;
-  }
-  return DEFAULT_THEME_MODE;
-}
-
-function readLanguage(value: unknown): LanguagePreference {
-  if (
-    typeof value === 'object'
-    && value !== null
-    && 'language' in value
-    && isLanguagePreference(value.language)
-  ) {
-    return value.language;
-  }
-  return DEFAULT_LANGUAGE;
-}
-
-function isThemeMode(value: unknown): value is ApplicationThemeMode {
-  return value === 'system' || value === 'light' || value === 'dark';
-}
-
-function isLanguagePreference(value: unknown): value is LanguagePreference {
-  return value === 'system' || value === 'zh-CN' || value === 'en';
-}
