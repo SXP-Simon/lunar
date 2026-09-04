@@ -1277,7 +1277,7 @@ index aad94429344434bd0b4c3a78e3bcff15fb0d27ce..aac698af2355567d4c2e904f29c5068a
    size_t getMemoryPressure() const override { return 2048; }
  
 diff --git a/cpp/rnskia/RNSkJsiViewApi.h b/cpp/rnskia/RNSkJsiViewApi.h
-index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..2d7f3190cff851dc730970ee74a6457ea2bdd89b 100644
+index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..1a190f007c052e128bf4002daacc77c5e9c1786c 100644
 --- a/cpp/rnskia/RNSkJsiViewApi.h
 +++ b/cpp/rnskia/RNSkJsiViewApi.h
 @@ -10,6 +10,7 @@
@@ -1288,7 +1288,7 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..2d7f3190cff851dc730970ee74a6457e
  #include "RNSkPictureView.h"
  #include "RNSkPlatformContext.h"
  #include "RNSkView.h"
-@@ -268,11 +269,617 @@ public:
+@@ -268,11 +269,619 @@ public:
      return sizeObj;
    }
  
@@ -1549,11 +1549,12 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..2d7f3190cff851dc730970ee74a6457e
 +  }
 +
 +  JSI_HOST_FUNCTION(pagerConfigureMotion) {
-+    if (count != 9 || !arguments[0].isNumber() ||
-+        !arguments[1].isNumber()) {
++    if (count != 11 || !arguments[0].isNumber() ||
++        !arguments[1].isNumber() || !arguments[2].isNumber() ||
++        !arguments[3].isNumber()) {
 +      _platformContext->raiseError(
-+          "pagerConfigureMotion: Expected native id, visual kind, six motion "
-+          "arrays, and planar tuning.");
++          "pagerConfigureMotion: Expected native id, visual kind, fixed "
++          "chrome bounds, six motion arrays, and planar tuning.");
 +      return jsi::Value::undefined();
 +    }
 +
@@ -1621,13 +1622,13 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..2d7f3190cff851dc730970ee74a6457e
 +    RNSkPagerCompositor::MotionTuning gestureForward;
 +    RNSkPagerCompositor::MotionTuning gestureBackward;
 +    RNSkPagerCompositor::PlanarMotionTuning planarMotion;
-+    if (!readTuning(2, automaticForward) ||
-+        !readTuning(3, automaticBackward) ||
-+        !readTuning(4, rapidForward) ||
-+        !readTuning(5, rapidBackward) ||
-+        !readTuning(6, gestureForward) ||
-+        !readTuning(7, gestureBackward) ||
-+        !readPlanarTuning(8, planarMotion)) {
++    if (!readTuning(4, automaticForward) ||
++        !readTuning(5, automaticBackward) ||
++        !readTuning(6, rapidForward) ||
++        !readTuning(7, rapidBackward) ||
++        !readTuning(8, gestureForward) ||
++        !readTuning(9, gestureBackward) ||
++        !readPlanarTuning(10, planarMotion)) {
 +      _platformContext->raiseError(
 +          "pagerConfigureMotion: Invalid motion tuning arrays.");
 +      return jsi::Value::undefined();
@@ -1639,7 +1640,8 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..2d7f3190cff851dc730970ee74a6457e
 +    auto pictureView = std::dynamic_pointer_cast<RNSkPictureView>(view);
 +    if (pictureView != nullptr) {
 +      pictureView->configurePagerMotion(
-+          arguments[1].asNumber(), automaticForward, automaticBackward,
++          arguments[1].asNumber(), arguments[2].asNumber(),
++          arguments[3].asNumber(), automaticForward, automaticBackward,
 +          rapidForward, rapidBackward, gestureForward, gestureBackward,
 +          planarMotion);
 +    }
@@ -1850,7 +1852,7 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..2d7f3190cff851dc730970ee74a6457e
 +          "pagerProtocolVersion: Expected no arguments.");
 +      return jsi::Value::undefined();
 +    }
-+    return jsi::Value(11);
++    return jsi::Value(12);
 +  }
 +
 +  JSI_HOST_FUNCTION(pagerReady) {
@@ -1909,10 +1911,10 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..2d7f3190cff851dc730970ee74a6457e
     * Constructor
 diff --git a/cpp/rnskia/RNSkPagerCompositor.h b/cpp/rnskia/RNSkPagerCompositor.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f92537969
+index 0000000000000000000000000000000000000000..33e74e00628a1946d580790994ade5814a27ab19
 --- /dev/null
 +++ b/cpp/rnskia/RNSkPagerCompositor.h
-@@ -0,0 +1,3311 @@
+@@ -0,0 +1,3360 @@
 +#pragma once
 +
 +#include <algorithm>
@@ -2008,7 +2010,9 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +  explicit RNSkPagerCompositor(std::function<void()> requestRedraw)
 +      : _requestRedraw(std::move(requestRedraw)) {}
 +
-+  void configureMotion(int visualKind, MotionTuning automaticForward,
++  void configureMotion(int visualKind, float fixedChromeTop,
++                       float fixedChromeBottom,
++                       MotionTuning automaticForward,
 +                       MotionTuning automaticBackward,
 +                       MotionTuning rapidForward, MotionTuning rapidBackward,
 +                       MotionTuning gestureForward,
@@ -2016,6 +2020,8 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +                       PlanarMotionTuning planarMotion) {
 +    std::lock_guard<std::mutex> lock(_mutex);
 +    _visualKind = visualKind == 1 ? VisualKind::Slide : VisualKind::Curl;
++    _fixedChromeTop = std::max(0.0f, fixedChromeTop);
++    _fixedChromeBottom = std::max(0.0f, fixedChromeBottom);
 +    _automaticForwardTuning = clampMotionTuning(automaticForward);
 +    _automaticBackwardTuning = clampMotionTuning(automaticBackward);
 +    _rapidForwardTuning = clampMotionTuning(rapidForward);
@@ -2051,6 +2057,8 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +      Turn turn;
 +      turn.visualKind = _visualKind;
 +      turn.planarTuning = _planarMotionTuning;
++      turn.fixedChromeTop = _fixedChromeTop;
++      turn.fixedChromeBottom = _fixedChromeBottom;
 +      turn.id = std::move(id);
 +      turn.frontImageId = frontImage->uniqueID();
 +      turn.backImageId =
@@ -2101,6 +2109,8 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +      Turn turn;
 +      turn.visualKind = _visualKind;
 +      turn.planarTuning = _planarMotionTuning;
++      turn.fixedChromeTop = _fixedChromeTop;
++      turn.fixedChromeBottom = _fixedChromeBottom;
 +      turn.id = std::move(id);
 +      turn.frontPicture = std::move(frontPicture);
 +      turn.backPicture = std::move(backPicture);
@@ -2409,6 +2419,8 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +      Turn turn;
 +      turn.visualKind = _visualKind;
 +      turn.planarTuning = _planarMotionTuning;
++      turn.fixedChromeTop = _fixedChromeTop;
++      turn.fixedChromeBottom = _fixedChromeBottom;
 +      turn.id = nextStockTurnIdLocked(stock->id);
 +      turn.fromPageKey = stock->fromPageKey;
 +      turn.toPageKey = stock->toPageKey;
@@ -2745,6 +2757,8 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +        };
 +        renderTurn.visualKind = turn.visualKind;
 +        renderTurn.lifecycleProgress = sample.lifecycleProgress;
++        renderTurn.fixedChromeTop = turn.fixedChromeTop;
++        renderTurn.fixedChromeBottom = turn.fixedChromeBottom;
 +        if (turn.visualKind == VisualKind::Curl) {
 +          buildRenderProfileLocked(
 +              turn, sample.shape, sample.lifecycleProgress,
@@ -3009,6 +3023,8 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +    float driveStartRotation = 0;
 +    float driveSpeedScale = 1;
 +    float planarEaseOutBlend = 0;
++    float fixedChromeTop = 0;
++    float fixedChromeBottom = 0;
 +    float previousCurvature = 0;
 +    double lastGestureUpdateAtSteadyMs = 0;
 +    double settleStartedAtSteadyMs = 0;
@@ -3035,6 +3051,8 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +    float shadowStrength;
 +    VisualKind visualKind = VisualKind::Curl;
 +    float lifecycleProgress = 0;
++    float fixedChromeTop = 0;
++    float fixedChromeBottom = 0;
 +  };
 +
 +  struct PresentationHandoff {
@@ -4407,6 +4425,8 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +    Turn turn;
 +    turn.visualKind = _visualKind;
 +    turn.planarTuning = _planarMotionTuning;
++    turn.fixedChromeTop = _fixedChromeTop;
++    turn.fixedChromeBottom = _fixedChromeBottom;
 +    turn.id = nextStockTurnIdLocked(stock->id, rapidInput);
 +    turn.fromPageKey = stock->fromPageKey;
 +    turn.toPageKey = stock->toPageKey;
@@ -5003,16 +5023,27 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +        paint);
 +  }
 +
++  static void drawClippedPage(SkCanvas *canvas, float clipTop,
++                              float clipBottom, float destinationX,
++                              float viewportWidth, float viewportHeight,
++                              const sk_sp<SkImage> &image) {
++    if (clipBottom <= clipTop || image == nullptr) {
++      return;
++    }
++    canvas->save();
++    canvas->clipRect(
++        SkRect::MakeLTRB(0, clipTop, viewportWidth, clipBottom));
++    drawBackgroundPage(canvas, destinationX, viewportWidth, viewportHeight,
++                       image);
++    canvas->restore();
++  }
++
 +  static void drawSlideTurns(SkCanvas *canvas, float viewportWidth,
 +                             float viewportHeight,
 +                             const std::vector<RenderTurn> &turns) {
 +    if (turns.empty()) {
 +      return;
 +    }
-+    SkPaint paperPaint;
-+    paperPaint.setColor(turns.back().paperColor);
-+    canvas->drawRect(SkRect::MakeWH(viewportWidth, viewportHeight),
-+                     paperPaint);
 +    for (const auto &turn : turns) {
 +      const auto &source = turn.direction > 0
 +                               ? turn.frontImage
@@ -5030,11 +5061,29 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +      const float targetX =
 +          static_cast<float>(turn.direction) * viewportWidth *
 +          (1.0f - progress);
-+      drawBackgroundPage(canvas, sourceX, viewportWidth, viewportHeight,
-+                         source);
-+      drawBackgroundPage(canvas, targetX, viewportWidth, viewportHeight,
-+                         target);
++      const float bodyTop =
++          std::clamp(turn.fixedChromeTop, 0.0f, viewportHeight);
++      const float bodyBottom = std::clamp(
++          viewportHeight - turn.fixedChromeBottom, bodyTop, viewportHeight);
++      drawClippedPage(canvas, bodyTop, bodyBottom, sourceX, viewportWidth,
++                      viewportHeight, source);
++      drawClippedPage(canvas, bodyTop, bodyBottom, targetX, viewportWidth,
++                      viewportHeight, target);
 +    }
++
++    const auto &chromeTurn = turns.back();
++    const auto &chrome = chromeTurn.direction > 0
++                             ? chromeTurn.backgroundLeftImage
++                             : chromeTurn.frontImage;
++    const float chromeTop =
++        std::clamp(chromeTurn.fixedChromeTop, 0.0f, viewportHeight);
++    const float chromeBottom = std::clamp(
++        viewportHeight - chromeTurn.fixedChromeBottom, chromeTop,
++        viewportHeight);
++    drawClippedPage(canvas, 0, chromeTop, 0, viewportWidth, viewportHeight,
++                    chrome);
++    drawClippedPage(canvas, chromeBottom, viewportHeight, 0, viewportWidth,
++                    viewportHeight, chrome);
 +  }
 +
 +  static void drawTurn(SkCanvas *canvas, float viewportWidth,
@@ -5215,6 +5264,8 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +  bool _inputEnabled = false;
 +  VisualKind _visualKind = VisualKind::Curl;
 +  PlanarMotionTuning _planarMotionTuning;
++  float _fixedChromeTop = 0;
++  float _fixedChromeBottom = 0;
 +  MotionTuning _automaticForwardTuning = {0.72f, 1.5f, 2.2f, 6.75f};
 +  MotionTuning _automaticBackwardTuning = {0.72f, 1.5f, 2.2f, 6.75f};
 +  MotionTuning _rapidForwardTuning = {0.72f, 1.5f, 2.2f, 6.75f};
@@ -5225,7 +5276,7 @@ index 0000000000000000000000000000000000000000..f07303ebd500693efeb27b7aea31a10f
 +
 +} // namespace RNSkia
 diff --git a/cpp/rnskia/RNSkPictureView.h b/cpp/rnskia/RNSkPictureView.h
-index 0059ea1c7ed47adb189095bc9f1110525668d11a..33f5bf88f5623f5e94a72e1560cc8fe9355f1f8d 100644
+index 0059ea1c7ed47adb189095bc9f1110525668d11a..0c705027fddb08c22cd7cfbdeb8e763b24687b44 100644
 --- a/cpp/rnskia/RNSkPictureView.h
 +++ b/cpp/rnskia/RNSkPictureView.h
 @@ -11,6 +11,7 @@
@@ -5246,7 +5297,7 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..33f5bf88f5623f5e94a72e1560cc8fe9
  
    virtual ~RNSkPictureRenderer() = default;
  
-@@ -52,31 +54,182 @@ public:
+@@ -52,31 +54,183 @@ public:
    }
  
    void setPicture(sk_sp<SkPicture> picture) {
@@ -5326,7 +5377,7 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..33f5bf88f5623f5e94a72e1560cc8fe9
 +  }
 +
 +  void configurePagerMotion(
-+      int visualKind,
++      int visualKind, float fixedChromeTop, float fixedChromeBottom,
 +      RNSkPagerCompositor::MotionTuning automaticForward,
 +      RNSkPagerCompositor::MotionTuning automaticBackward,
 +      RNSkPagerCompositor::MotionTuning rapidForward,
@@ -5335,8 +5386,9 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..33f5bf88f5623f5e94a72e1560cc8fe9
 +      RNSkPagerCompositor::MotionTuning gestureBackward,
 +      RNSkPagerCompositor::PlanarMotionTuning planarMotion) {
 +    _pagerCompositor.configureMotion(
-+        visualKind, automaticForward, automaticBackward, rapidForward,
-+        rapidBackward, gestureForward, gestureBackward, planarMotion);
++        visualKind, fixedChromeTop, fixedChromeBottom, automaticForward,
++        automaticBackward, rapidForward, rapidBackward, gestureForward,
++        gestureBackward, planarMotion);
 +  }
 +
 +  bool consumePagerInput(int direction) {
@@ -5433,7 +5485,7 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..33f5bf88f5623f5e94a72e1560cc8fe9
  };
  
  class RNSkPictureView : public RNSkView {
-@@ -108,5 +261,145 @@ public:
+@@ -108,5 +262,146 @@ public:
        }
      }
    }
@@ -5504,7 +5556,7 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..33f5bf88f5623f5e94a72e1560cc8fe9
 +  }
 +
 +  void configurePagerMotion(
-+      int visualKind,
++      int visualKind, float fixedChromeTop, float fixedChromeBottom,
 +      RNSkPagerCompositor::MotionTuning automaticForward,
 +      RNSkPagerCompositor::MotionTuning automaticBackward,
 +      RNSkPagerCompositor::MotionTuning rapidForward,
@@ -5514,8 +5566,9 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..33f5bf88f5623f5e94a72e1560cc8fe9
 +      RNSkPagerCompositor::PlanarMotionTuning planarMotion) {
 +    std::static_pointer_cast<RNSkPictureRenderer>(getRenderer())
 +        ->configurePagerMotion(
-+            visualKind, automaticForward, automaticBackward, rapidForward,
-+            rapidBackward, gestureForward, gestureBackward, planarMotion);
++            visualKind, fixedChromeTop, fixedChromeBottom, automaticForward,
++            automaticBackward, rapidForward, rapidBackward, gestureForward,
++            gestureBackward, planarMotion);
 +  }
 +
 +  bool consumePagerInput(int direction) {

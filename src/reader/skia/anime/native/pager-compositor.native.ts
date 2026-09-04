@@ -80,6 +80,8 @@ interface NativePagerSkiaViewApi {
   pagerConfigureMotion?: (
     nativeId: number,
     visualKind: number,
+    fixedChromeTop: number,
+    fixedChromeBottom: number,
     automaticForward: readonly number[],
     automaticBackward: readonly number[],
     rapidForward: readonly number[],
@@ -176,7 +178,7 @@ export function nativePagerCompositorAvailable(): boolean {
     return false;
   }
   nativePagerAvailability =
-    protocolVersion >= 11 &&
+    protocolVersion >= 12 &&
     typeof nativePagerRnApi.ready === "function" &&
     typeof nativePagerRnApi.enqueue === "function" &&
     typeof nativePagerRnApi.enqueuePicture === "function" &&
@@ -390,6 +392,8 @@ export function configureNativePagerInput(
 export function configureNativePagerMotion(
   canvas: NativePagerCanvasHandle | null,
   visualKind: NativePagerVisualKind,
+  fixedChromeTop: number,
+  fixedChromeBottom: number,
   config: NativePagerMotionConfig,
   planarMotion?: NativePagerPlanarMotionTuning,
 ): boolean {
@@ -401,6 +405,8 @@ export function configureNativePagerMotion(
     configureMotion(
       canvas.getNativeId(),
       visualKind === "slide" ? 1 : 0,
+      fixedChromeTop,
+      fixedChromeBottom,
       motionTuningValues(config.automatic.forward),
       motionTuningValues(config.automatic.backward),
       motionTuningValues(config.rapid.forward),

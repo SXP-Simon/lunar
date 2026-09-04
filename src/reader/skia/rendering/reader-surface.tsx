@@ -249,6 +249,8 @@ export function ReaderSurface({
     createPicture: createNativePagePicture,
     onComplete: onAutomaticTurnComplete,
     pageTurnEffect,
+    fixedChromeTop: overlayTop + 24,
+    fixedChromeBottom: overlayBottom + 24,
     currentContent,
     interactiveTurn,
     interactiveSource: interactiveTurn?.nativeGesture

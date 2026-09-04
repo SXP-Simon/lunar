@@ -29,6 +29,8 @@ interface NativePageTurnsOptions {
   readonly createPicture: (content: ReaderPageContent) => SkPicture;
   readonly onComplete?: (turnId: number) => void;
   readonly pageTurnEffect: ReaderPageTurnEffect;
+  readonly fixedChromeTop: number;
+  readonly fixedChromeBottom: number;
   readonly currentContent?: ReaderPageContent;
   readonly interactiveSource?: ReaderPageContent;
   readonly interactiveTurn?: ReaderInteractiveTurn;
@@ -50,6 +52,8 @@ export function useNativePageTurns({
   createPicture,
   onComplete,
   pageTurnEffect,
+  fixedChromeTop,
+  fixedChromeBottom,
   currentContent,
   interactiveSource,
   interactiveTurn,
@@ -59,16 +63,19 @@ export function useNativePageTurns({
     () => enabled && nativePagerCompositorAvailable(),
     [enabled],
   );
-  const [configuredEffect, setConfiguredEffect] = useState<ReaderPageTurnEffect>();
-  const active = supported && configuredEffect === pageTurnEffect;
+  const nativeConfigKey = pageTurnEffect.native
+    ? `${pageTurnEffect.native.visualKind}:${fixedChromeTop}:${fixedChromeBottom}`
+    : undefined;
+  const [configuredNativeKey, setConfiguredNativeKey] = useState<string>();
+  const active = supported && configuredNativeKey === nativeConfigKey;
   const automaticActive = active && onComplete !== undefined;
   const submittedTurnIds = useRef(new Set<number>());
   const submittedGestureStockIds = useRef(new Set<string>());
   const anchorKey = useRef<string | undefined>(undefined);
-  const rejectAutomaticSubmission = useCallback(() => setConfiguredEffect(undefined), []);
+  const rejectAutomaticSubmission = useCallback(() => setConfiguredNativeKey(undefined), []);
 
   useEffect(() => {
-    if (!supported || configuredEffect === pageTurnEffect || turns.length > 0) return;
+    if (!supported || configuredNativeKey === nativeConfigKey || turns.length > 0) return;
     let cancelled = false;
     let frame = 0;
     const probe = () => {
@@ -81,11 +88,13 @@ export function useNativePageTurns({
         && configureNativePagerMotion(
           canvas,
           pageTurnEffect.native.visualKind,
+          fixedChromeTop,
+          fixedChromeBottom,
           pageTurnEffect.native.motion,
           pageTurnEffect.native.planarMotion,
         )
       ) {
-        setConfiguredEffect(pageTurnEffect);
+        setConfiguredNativeKey(nativeConfigKey);
         return;
       }
       frame = requestAnimationFrame(probe);
@@ -95,7 +104,16 @@ export function useNativePageTurns({
       cancelled = true;
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [canvasRef, configuredEffect, pageTurnEffect, supported, turns.length]);
+  }, [
+    canvasRef,
+    configuredNativeKey,
+    fixedChromeBottom,
+    fixedChromeTop,
+    pageTurnEffect,
+    nativeConfigKey,
+    supported,
+    turns.length,
+  ]);
 
   useEffect(() => {
     if (!active) {
