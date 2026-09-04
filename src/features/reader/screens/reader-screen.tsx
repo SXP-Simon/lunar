@@ -15,6 +15,7 @@ import {
 import { useResolveClassNames, useUniwind } from 'uniwind';
 
 import { IconTabBar } from '@/components/ui/icon-tab-bar';
+import { useTranslation } from '@/i18n';
 import type { ReaderViewport } from '@/reader';
 import { ReaderSurface, useReaderPageTurn } from '@/reader/native';
 import { useReaderStore } from '@/stores';
@@ -29,6 +30,7 @@ const ReaderSurfaceTopSpacing = 4;
 const ReaderSurfaceBottomSpacing = 4;
 
 export default function ReaderScreen() {
+  const { t } = useTranslation();
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -79,14 +81,14 @@ export default function ReaderScreen() {
   const chapterTitle = session.snapshot.chapterTitle
     ?? session.metadata?.title
     ?? session.book?.title
-    ?? '正在读取章节';
+    ?? t('reader.loadingChapter');
   const bookTitle = session.book?.title
     ?? session.metadata?.title
-    ?? '正在读取书籍';
+    ?? t('reader.loadingBook');
   const totalSpreads = session.snapshot.totalSpreads;
   const currentSpread = session.snapshot.bookSpreadIndex ?? session.snapshot.spreadIndex;
   const progressText = totalSpreads === undefined
-    ? '页码计算中'
+    ? t('reader.calculatingPages')
     : `${currentSpread + 1} / ${totalSpreads}`;
   const progressPercentage = totalSpreads === undefined
     ? undefined
@@ -118,10 +120,10 @@ export default function ReaderScreen() {
     errorToastKey.current = nextErrorToastKey;
     toast.show({
       variant: 'danger',
-      label: '阅读器加载失败',
+      label: t('reader.loadingFailed'),
       description: session.errorMessage,
     });
-  }, [bookId, session.errorMessage, toast]);
+  }, [bookId, session.errorMessage, t, toast]);
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -174,15 +176,15 @@ export default function ReaderScreen() {
   const statusText = useMemo(() => {
     switch (session.snapshot.phase) {
       case 'opening':
-        return '正在读取 EPUB';
+        return t('reader.loadingEpub');
       case 'paginating':
-        return '正在使用 Rito 分页';
+        return t('reader.paginating');
       case 'reflowing':
-        return '正在更新版面';
+        return t('reader.reflowing');
       default:
-        return '正在准备阅读页面';
+        return t('reader.preparing');
     }
-  }, [session.snapshot.phase]);
+  }, [session.snapshot.phase, t]);
 
   return (
     <View className="flex-1" style={{ backgroundColor: canvasBackground }}>
@@ -223,7 +225,7 @@ export default function ReaderScreen() {
         <GestureDetector gesture={pageTurnGesture}>
           <View collapsable={false} className="absolute inset-0">
             <Pressable
-              accessibilityLabel="阅读页面"
+              accessibilityLabel={t('reader.readerPage')}
               accessibilityRole="adjustable"
               accessibilityValue={{
                 min: 1,
@@ -250,9 +252,9 @@ export default function ReaderScreen() {
         <IconTabBar
           activeKey={isTocOpen ? 'toc' : isProgressOpen ? 'progress' : isTypographyOpen ? 'typography' : undefined}
           items={[
-            { key: 'toc', accessibilityLabel: '打开目录', name: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'list' } },
-            { key: 'progress', accessibilityLabel: '打开阅读进度', name: { ios: 'chart.bar', android: 'timeline', web: 'timeline' } },
-            { key: 'typography', accessibilityLabel: '打开阅读设置', name: { ios: 'textformat.size', android: 'format_size', web: 'format_size' } },
+            { key: 'toc', accessibilityLabel: t('reader.openToc'), name: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'list' } },
+            { key: 'progress', accessibilityLabel: t('reader.openProgress'), name: { ios: 'chart.bar', android: 'timeline', web: 'timeline' } },
+            { key: 'typography', accessibilityLabel: t('reader.openTypography'), name: { ios: 'textformat.size', android: 'format_size', web: 'format_size' } },
           ]}
           onSelect={handleTabSelect}
           safeAreaInsets={reservedInsets}
@@ -268,7 +270,9 @@ export default function ReaderScreen() {
 
       {session.errorMessage && (
         <View className="absolute inset-0 items-center justify-center gap-3 bg-background px-8">
-          <Text className="text-center text-xl font-semibold text-foreground">阅读器加载失败</Text>
+          <Text className="text-center text-xl font-semibold text-foreground">
+            {t('reader.loadingFailed')}
+          </Text>
           <Text className="text-center text-sm leading-6 text-muted">
             {session.errorMessage}
           </Text>

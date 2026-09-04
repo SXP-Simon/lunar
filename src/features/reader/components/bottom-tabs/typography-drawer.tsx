@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ReaderTypography } from '@/reader';
 import type { ReaderPageAnimationStyle } from '@/reader/native';
+import { useTranslation } from '@/i18n';
 import { useReaderStore } from '@/stores';
 import { getReaderBottomTabBarInset } from './constants';
 
@@ -16,15 +17,6 @@ interface TypographyDrawerProps {
 }
 
 type TypographyKey = 'fontSize' | 'marginHorizontal' | 'lineHeight';
-
-const ANIMATION_OPTIONS: readonly {
-  readonly style: ReaderPageAnimationStyle;
-  readonly label: string;
-}[] = [
-  { style: 'cover', label: '覆盖' },
-  { style: 'page', label: '仿真书页' },
-  { style: 'slide', label: '平移' },
-];
 
 interface TypographySliderProps {
   readonly accessibilityLabel: string;
@@ -43,6 +35,7 @@ interface CompactTypographySliderProps extends TypographySliderProps {
 }
 
 export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const typography = useReaderStore((state) => state.typography);
@@ -50,6 +43,14 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
   const animationStyle = useReaderStore((state) => state.animationStyle);
   const setAnimationStyle = useReaderStore((state) => state.setAnimationStyle);
   const [draft, setDraft] = useState<ReaderTypography>(typography);
+  const animationOptions: readonly {
+    readonly style: ReaderPageAnimationStyle;
+    readonly label: string;
+  }[] = [
+    { style: 'cover', label: t('reader.transitionCover') },
+    { style: 'page', label: t('reader.transitionPage') },
+    { style: 'slide', label: t('reader.transitionSlide') },
+  ];
 
   const updateDraft = (key: TypographyKey, value: number) => {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -76,16 +77,18 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
           snapPoints={['42%']}>
           <View className="gap-5 px-5 pb-5 pt-3">
             <View className="gap-1">
-              <BottomSheet.Title className="text-xl text-foreground">阅读设置</BottomSheet.Title>
+              <BottomSheet.Title className="text-xl text-foreground">
+                {t('reader.typography')}
+              </BottomSheet.Title>
             </View>
             <View className="gap-2">
               <View className="flex-row gap-2">
-                {ANIMATION_OPTIONS.map((option) => {
+                {animationOptions.map((option) => {
                   const selected = animationStyle === option.style;
                   return (
                     <Button
                       key={option.style}
-                      accessibilityLabel={`翻页动画：${option.label}`}
+                      accessibilityLabel={t('reader.transition', { style: option.label })}
                       accessibilityState={{ selected }}
                       className="min-w-0 flex-1 rounded-xl px-2"
                       onPress={() => setAnimationStyle(option.style)}
@@ -98,7 +101,7 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
               </View>
             </View>
             <TypographySlider
-              accessibilityLabel="调整字号"
+              accessibilityLabel={t('reader.adjustFontSize')}
               maxValue={32}
               minValue={12}
               onChange={(value) => updateDraft('fontSize', value)}
@@ -108,26 +111,26 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
             />
             <View className="flex-row gap-4">
               <CompactTypographySlider
-                accessibilityLabel="调整左右边距"
-                endLabel="大"
-                label="边距"
+                accessibilityLabel={t('reader.adjustMargins')}
+                endLabel={t('reader.large')}
+                label={t('reader.margin')}
                 maxValue={56}
                 minValue={8}
                 onChange={(value) => updateDraft('marginHorizontal', value)}
                 onChangeEnd={(value) => commit('marginHorizontal', value)}
-                startLabel="小"
+                startLabel={t('reader.small')}
                 step={4}
                 value={draft.marginHorizontal}
               />
               <CompactTypographySlider
-                accessibilityLabel="调整行距"
-                endLabel="松"
-                label="行距"
+                accessibilityLabel={t('reader.adjustLineHeight')}
+                endLabel={t('reader.loose')}
+                label={t('reader.lineHeight')}
                 maxValue={2.4}
                 minValue={1.1}
                 onChange={(value) => updateDraft('lineHeight', value)}
                 onChangeEnd={(value) => commit('lineHeight', value)}
-                startLabel="紧"
+                startLabel={t('reader.tight')}
                 step={0.05}
                 value={draft.lineHeight}
               />

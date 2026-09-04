@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 import { useSafeAreaInsets, type EdgeInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
+import { useTranslation } from '@/i18n';
 
 const ControlHorizontalPadding = 12;
 
@@ -18,6 +19,7 @@ export function ReaderControls({
   onBack,
   safeAreaInsets,
 }: ReaderControlsProps) {
+  const { t } = useTranslation();
   const contextInsets = useSafeAreaInsets();
   const insets = safeAreaInsets ?? contextInsets;
 
@@ -32,7 +34,7 @@ export function ReaderControls({
         }}>
         <View className="h-12 w-full flex-row items-center gap-2">
           <ReaderIconButton
-            accessibilityLabel="返回书架"
+            accessibilityLabel={t('reader.backToLibrary')}
             name={{ ios: 'chevron.backward', android: 'arrow_back', web: 'arrow_back' }}
             onPress={onBack}
           />

@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
 import { useTheme } from '@/hooks/use-theme';
+import { useTranslation } from '@/i18n';
 
 type TabButtonProps = TabTriggerSlotProps & {
   label: string;
@@ -21,6 +22,7 @@ type TabButtonProps = TabTriggerSlotProps & {
 export const APP_TAB_BAR_HEIGHT = 58;
 
 export default function AppTabs() {
+  const { t } = useTranslation();
   const tabsStyle = useResolveClassNames('flex-1');
   const tabSlotStyle = useResolveClassNames('h-full');
 
@@ -30,10 +32,10 @@ export default function AppTabs() {
       <TabList asChild>
         <TabBar>
           <TabTrigger name="library" href="/" asChild>
-            <TabButton label="书架" type="library" />
+            <TabButton label={t('tabs.library')} type="library" />
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>
-            <TabButton label="设置" type="settings" />
+            <TabButton label={t('tabs.settings')} type="settings" />
           </TabTrigger>
         </TabBar>
       </TabList>

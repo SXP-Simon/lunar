@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ReaderSnapshot } from '@/reader';
 import type { LunarReaderRuntime } from '@/reader/native';
 import { useTheme } from '@/hooks/use-theme';
+import { useTranslation } from '@/i18n';
 import { getReaderBottomTabBarInset } from './constants';
 
 interface ProgressDrawerProps {
@@ -24,6 +25,7 @@ export function ProgressDrawer({
   runtime,
   snapshot,
 }: ProgressDrawerProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const total = snapshot.totalSpreads;
@@ -57,15 +59,17 @@ export function ProgressDrawer({
           <View className="gap-6 px-5 pb-8 pt-2">
             <View className="items-center gap-2">
               <BottomSheet.Title className="rounded-full bg-background px-5 py-2 text-2xl tabular-nums text-foreground">
-                {total === undefined ? '页码计算中' : `${displayedPage + 1} / ${total}`}
+                {total === undefined ? t('reader.calculatingPages') : `${displayedPage + 1} / ${total}`}
               </BottomSheet.Title>
               <BottomSheet.Description className="text-sm text-muted">
-                {percentage === undefined ? '正在计算全书页数' : `阅读进度 ${percentage}%`}
+                {percentage === undefined
+                  ? t('reader.calculatingBookPages')
+                  : t('reader.readingProgress', { percentage })}
               </BottomSheet.Description>
             </View>
 
             <Slider
-              accessibilityLabel="选择阅读页面"
+              accessibilityLabel={t('reader.choosePage')}
               isDisabled={!hasAbsolutePosition || total <= 1}
               maxValue={sliderMax}
               minValue={0}
@@ -85,25 +89,25 @@ export function ProgressDrawer({
 
             <View className="flex-row items-center justify-between">
               <ProgressAction
-                accessibilityLabel="回到第一页"
+                accessibilityLabel={t('reader.firstPage')}
                 isDisabled={!hasAbsolutePosition || currentPage === 0}
                 name={{ ios: 'backward.end.fill', android: 'first_page', web: 'first_page' }}
                 onPress={() => goToPage(0)}
               />
               <ProgressAction
-                accessibilityLabel="后退十页"
+                accessibilityLabel={t('reader.previousTenPages')}
                 isDisabled={!hasAbsolutePosition || currentPage === 0}
                 name={{ ios: 'gobackward.10', android: 'replay_10', web: 'replay_10' }}
                 onPress={() => goToPage((currentPage ?? 0) - 10)}
               />
               <ProgressAction
-                accessibilityLabel="前进十页"
+                accessibilityLabel={t('reader.nextTenPages')}
                 isDisabled={!hasAbsolutePosition || (currentPage ?? 0) >= (total ?? 1) - 1}
                 name={{ ios: 'goforward.10', android: 'forward_10', web: 'forward_10' }}
                 onPress={() => goToPage((currentPage ?? 0) + 10)}
               />
               <ProgressAction
-                accessibilityLabel="前往最后一页"
+                accessibilityLabel={t('reader.lastPage')}
                 isDisabled={!hasAbsolutePosition || (currentPage ?? 0) >= (total ?? 1) - 1}
                 name={{ ios: 'forward.end.fill', android: 'last_page', web: 'last_page' }}
                 onPress={() => total !== undefined && goToPage(total - 1)}

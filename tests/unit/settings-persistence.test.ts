@@ -47,6 +47,7 @@ const READER_SETTINGS_KEY = 'settings.reader';
 
 afterEach(() => {
   useApplicationSettingsStore.getState().setThemeMode('system');
+  useApplicationSettingsStore.getState().setLanguage('system');
   useReaderStore.getState().reset();
   mmkvStateStorage.removeItem(APPLICATION_SETTINGS_KEY);
   mmkvStateStorage.removeItem(READER_SETTINGS_KEY);
@@ -58,6 +59,16 @@ describe('settings persistence', () => {
 
     expect(readPersistedState(APPLICATION_SETTINGS_KEY)).toEqual({
       themeMode: 'dark',
+      language: 'system',
+    });
+  });
+
+  it('stores the selected application language in MMKV', () => {
+    useApplicationSettingsStore.getState().setLanguage('en');
+
+    expect(readPersistedState(APPLICATION_SETTINGS_KEY)).toEqual({
+      themeMode: 'system',
+      language: 'en',
     });
   });
 

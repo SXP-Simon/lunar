@@ -3,6 +3,7 @@ import { Dialog } from 'heroui-native/dialog';
 import { type ReactNode } from 'react';
 import { View } from 'react-native';
 
+import { useTranslation } from '@/i18n';
 export interface ConfirmModalProps {
   readonly isOpen: boolean;
   readonly title: string;
@@ -22,12 +23,13 @@ export function ConfirmModal({
   description,
   confirmLabel,
   confirmingLabel,
-  cancelLabel = '取消',
+  cancelLabel,
   isConfirming = false,
   isDestructive = false,
   onConfirm,
   onOpenChange,
 }: ConfirmModalProps) {
+  const { t } = useTranslation();
   const handleOpenChange = (nextIsOpen: boolean) => {
     if (!isConfirming) {
       onOpenChange(nextIsOpen);
@@ -47,7 +49,7 @@ export function ConfirmModal({
               isDisabled={isConfirming}
               onPress={() => onOpenChange(false)}
               variant="tertiary">
-              {cancelLabel}
+              {cancelLabel ?? t('action.cancel')}
             </Button>
             <Button
               className="flex-1"

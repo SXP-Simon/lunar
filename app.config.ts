@@ -25,6 +25,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     plugins: [
       ...(config.plugins ?? []),
       './plugins/with-rito-react-native',
+      'expo-localization',
       [
         'expo-build-properties',
         {
@@ -38,7 +39,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             : {},
         },
       ],
-      "expo-asset"
+      'expo-asset',
     ],
   };
 };

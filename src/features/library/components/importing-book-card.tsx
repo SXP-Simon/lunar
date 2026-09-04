@@ -2,6 +2,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { Text, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
+import { useTranslation } from '@/i18n';
 
 const RING_SIZE = 54;
 const RING_STROKE_WIDTH = 4;
@@ -19,14 +20,15 @@ export function ImportingBookCard({
   progress,
   isWaiting,
 }: ImportingBookCardProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const percentage = Math.round(Math.min(1, Math.max(0, progress)) * 100);
   const progressOffset = RING_CIRCUMFERENCE * (1 - percentage / 100);
-  const status = isWaiting ? '等待导入' : '导入中';
+  const status = isWaiting ? t('library.waitingImport') : t('library.importing');
 
   return (
     <View
-      accessibilityLabel={`${status}《${title}》，${percentage}%`}
+      accessibilityLabel={t('library.importingProgress', { progress: percentage, status, title })}
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: percentage }}
       className="mb-6 w-1/3 px-[6px]">

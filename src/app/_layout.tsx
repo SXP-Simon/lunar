@@ -3,20 +3,40 @@ import '@/global.css';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
-import { useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
+import { AppState } from 'react-native';
 import { Uniwind, useUniwind } from 'uniwind';
 
 import { AppProviders } from '@/components/providers/app-providers';
+import { applyLanguagePreference } from '@/i18n';
 import { useApplicationSettingsStore } from '@/stores';
 
 export default function RootLayout() {
   const { theme } = useUniwind();
   const themeMode = useApplicationSettingsStore((state) => state.themeMode);
+  const language = useApplicationSettingsStore((state) => state.language);
   const isDark = theme === 'dark';
 
   useLayoutEffect(() => {
     Uniwind.setTheme(themeMode);
   }, [themeMode]);
+
+  useLayoutEffect(() => {
+    applyLanguagePreference(language);
+  }, [language]);
+
+  useEffect(() => {
+    if (language !== 'system') {
+      return undefined;
+    }
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        applyLanguagePreference('system');
+      }
+    });
+    return () => subscription.remove();
+  }, [language]);
 
   return (
     <AppProviders>

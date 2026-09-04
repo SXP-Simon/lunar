@@ -8,6 +8,7 @@ import { useCSSVariable } from 'uniwind';
 
 import type { ReaderSnapshot, ReaderTocEntry } from '@/reader';
 import type { LunarReaderRuntime } from '@/reader/native';
+import { useTranslation } from '@/i18n';
 import { getReaderBottomTabBarInset } from './constants';
 
 interface TocDrawerProps {
@@ -23,6 +24,7 @@ interface FlatTocEntry extends ReaderTocEntry {
 }
 
 export function TocDrawer({ isOpen, onOpenChange, runtime, snapshot, toc }: TocDrawerProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const activeColor = useCSSVariable('--color-navigation-active') as string;
@@ -43,9 +45,13 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, snapshot, toc }: TocD
           snapPoints={['62%', '88%']}>
           <View className="flex-row items-center justify-between border-b border-border px-5 pb-3">
             <View className="min-w-0 flex-1 gap-1 pr-3">
-              <BottomSheet.Title className="text-xl text-foreground">目录</BottomSheet.Title>
+              <BottomSheet.Title className="text-xl text-foreground">
+                {t('reader.toc')}
+              </BottomSheet.Title>
               <BottomSheet.Description className="text-sm text-muted">
-                {entries.length > 0 ? `共 ${entries.length} 项` : '这本书没有提供目录'}
+                {entries.length > 0
+                  ? t('reader.tocCount', { count: entries.length })
+                  : t('reader.noToc')}
               </BottomSheet.Description>
             </View>
           </View>
@@ -58,7 +64,7 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, snapshot, toc }: TocD
               return (
                 <Button
                   key={`${entry.href}:${index}`}
-                  accessibilityLabel={`前往${entry.label}`}
+                  accessibilityLabel={t('reader.goToToc', { title: entry.label })}
                   accessibilityState={{ selected: isCurrent }}
                   className="h-auto min-h-12 justify-start rounded-xl px-3"
                   onPress={() => {
@@ -76,7 +82,7 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, snapshot, toc }: TocD
               );
             })}
             {entries.length === 0 && (
-              <Text className="px-4 py-8 text-center text-muted">这本书没有提供目录。</Text>
+              <Text className="px-4 py-8 text-center text-muted">{t('reader.noToc')}。</Text>
             )}
           </BottomSheetScrollView>
         </BottomSheet.Content>

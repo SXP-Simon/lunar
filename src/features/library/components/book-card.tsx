@@ -7,6 +7,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { withUniwind } from 'uniwind';
 
 import { Fonts, useTheme } from '@/hooks/use-theme';
+import { useTranslation } from '@/i18n';
 import { BOOK_CARD_COVER_ASPECT_RATIO } from './library-grid-selection';
 
 export type LibraryBook = {
@@ -72,6 +73,7 @@ export function BookCard({
   onSelectionGestureMove,
   onSelectionGestureStart,
 }: BookCardProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const selectedIconColor = useThemeColor('accent-foreground');
   const selectionGesture = useMemo(
@@ -93,8 +95,10 @@ export function BookCard({
         accessibilityRole="button"
         accessibilityLabel={
           isSelectionMode
-            ? `${isSelected ? '取消选择' : '选择'}《${book.title}》`
-            : `打开《${book.title}》`
+            ? isSelected
+              ? t('library.cancelSelection', { title: book.title })
+              : t('library.selectBook', { title: book.title })
+            : t('library.openBook', { title: book.title })
         }
         accessibilityState={{ selected: isSelectionMode ? isSelected : undefined }}
         onPress={onPress}

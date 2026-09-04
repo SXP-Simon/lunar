@@ -28,6 +28,7 @@ import {
   LibraryGridSelectionSession,
 } from '@/features/library/components/library-grid-selection';
 import { Spacing } from '@/hooks/use-theme';
+import { i18n, useTranslation } from '@/i18n';
 import {
   importEpubFile,
   listLibraryBooks,
@@ -49,6 +50,7 @@ type LibraryItem =
   | { readonly kind: 'importing'; readonly book: ImportingBook };
 
 export default function LibraryScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [libraryBooks, setLibraryBooks] = useState<LibraryBook[]>([]);
@@ -78,14 +80,14 @@ export default function LibraryScreen() {
     listLibraryBooks()
       .then((records) => {
         if (active) {
-          setLibraryBooks(records.map(toLibraryBook));
+          setLibraryBooks(records.map((record) => toLibraryBook(record, t)));
         }
       })
       .catch((error: unknown) => {
         if (active) {
           toast.show({
             variant: 'danger',
-            label: '书架加载失败',
+            label: t('library.loadFailed'),
             description: getErrorMessage(error),
           });
         }
@@ -99,7 +101,7 @@ export default function LibraryScreen() {
     return () => {
       active = false;
     };
-  }, [toast]));
+  }, [t, toast]));
 
   const handleImport = useCallback(async () => {
     if (isImporting) {
@@ -140,19 +142,19 @@ export default function LibraryScreen() {
           });
           setImportingBooks((current) => current.filter((book) => book.id !== task.id));
           setLibraryBooks((current) => [
-            toLibraryBook(imported),
+            toLibraryBook(imported, t),
             ...current.filter((book) => book.id !== imported.id),
           ]);
           toast.show({
             variant: 'success',
-            label: 'EPUB 导入完成',
+            label: t('library.importCompleted'),
             description: imported.title,
           });
         } catch (error) {
           setImportingBooks((current) => current.filter((book) => book.id !== task.id));
           toast.show({
             variant: 'danger',
-            label: 'EPUB 导入失败',
+            label: t('library.importFailed'),
             description: `${task.file.fileName}：${getErrorMessage(error)}`,
           });
         }
@@ -160,13 +162,13 @@ export default function LibraryScreen() {
     } catch (error) {
       toast.show({
         variant: 'danger',
-        label: '无法选择 EPUB',
+        label: t('library.cannotSelectEpub'),
         description: getErrorMessage(error),
       });
     } finally {
       setIsImporting(false);
     }
-  }, [isImporting, toast]);
+  }, [isImporting, t, toast]);
 
   const items = useMemo<readonly LibraryItem[]>(() => {
     const keyword = query.trim().toLocaleLowerCase();
@@ -269,30 +271,30 @@ export default function LibraryScreen() {
       closeSelectionMode();
       toast.show({
         variant: 'success',
-        label: `已删除 ${result.removedIds.length} 本书`,
+        label: t('library.booksDeleted', { count: result.removedIds.length }),
       });
       if (result.fileCleanupFailedIds.length > 0) {
         toast.show({
           variant: 'danger',
-          label: '部分书籍文件清理失败',
-          description: '书架记录已经移除，可稍后清理应用存储。',
+          label: t('library.fileCleanupFailed'),
+          description: t('library.fileCleanupFailedDescription'),
         });
       }
     } catch (error) {
       toast.show({
         variant: 'danger',
-        label: '书籍删除失败',
+        label: t('library.deleteFailed'),
         description: getErrorMessage(error),
       });
     } finally {
       setIsDeleting(false);
     }
-  }, [closeSelectionMode, isDeleting, selectedBookIds, toast]);
+  }, [closeSelectionMode, isDeleting, selectedBookIds, t, toast]);
 
   const toolbarActions = useMemo<readonly FloatingToolbarAction[]>(() => [
     {
       key: 'select-all',
-      label: allVisibleBooksSelected ? '取消全选' : '全选',
+      label: allVisibleBooksSelected ? t('action.deselectAll') : t('action.selectAll'),
       icon: {
         ios: allVisibleBooksSelected ? 'checkmark.circle.fill' : 'checkmark.circle',
         android: 'select_all',
@@ -303,7 +305,9 @@ export default function LibraryScreen() {
     },
     {
       key: 'delete',
-      label: selectedBookIds.size > 0 ? `删除 ${selectedBookIds.size}` : '删除',
+      label: selectedBookIds.size > 0
+        ? `${t('action.delete')} ${selectedBookIds.size}`
+        : t('action.delete'),
       icon: { ios: 'trash', android: 'delete', web: 'delete' },
       isDisabled: selectedBookIds.size === 0 || isDeleting,
       isDestructive: true,
@@ -311,7 +315,7 @@ export default function LibraryScreen() {
     },
     {
       key: 'close',
-      label: '关闭',
+      label: t('action.close'),
       icon: { ios: 'xmark', android: 'close', web: 'close' },
       isDisabled: isDeleting,
       onPress: closeSelectionMode,
@@ -322,6 +326,7 @@ export default function LibraryScreen() {
     handleSelectAll,
     isDeleting,
     selectedBookIds.size,
+    t,
     visibleBookIds.length,
   ]);
 
@@ -351,16 +356,16 @@ export default function LibraryScreen() {
               <SearchField.Group className="h-9 rounded-3xl bg-field shadow-field">
                 <SearchField.SearchIcon iconProps={{ size: 20, color: searchIconColor }} />
                 <SearchField.Input
-                  placeholder="搜索书名或作者"
-                  accessibilityLabel="搜索书架"
+                  placeholder={t('library.searchPlaceholder')}
+                  accessibilityLabel={t('library.searchLibrary')}
                   className="h-9 min-h-9 rounded-3xl py-0 text-sm leading-5 ios:focus:outline-transparent android:focus:border-transparent"
                   style={{ textAlignVertical: 'center', includeFontPadding: false }}
                 />
-                <SearchField.ClearButton accessibilityLabel="清空搜索" />
+                <SearchField.ClearButton accessibilityLabel={t('library.clearSearch')} />
               </SearchField.Group>
             </SearchField>
             <Button
-              accessibilityLabel="导入 EPUB"
+              accessibilityLabel={t('library.importEpub')}
               className="h-9 rounded-full"
               hitSlop={4}
               isDisabled={isImporting}
@@ -427,14 +432,14 @@ export default function LibraryScreen() {
                   {isLoadingLibrary && <Spinner color="default" size="md" />}
                   <Text className="font-serif text-xl font-semibold text-foreground">
                     {isLoadingLibrary
-                      ? '正在读取书架'
+                      ? t('library.loading')
                       : query.trim()
-                        ? '没有找到相关书籍'
-                        : '书架还是空的'}
+                        ? t('library.noSearchResults')
+                        : t('library.empty')}
                   </Text>
                   {!isLoadingLibrary && (
                     <Text className="mt-2 text-[13px] text-muted">
-                      {query.trim() ? '尝试搜索其他书名或作者' : '使用右上角的添加按钮导入 EPUB'}
+                      {query.trim() ? t('library.searchSuggestion') : t('library.importSuggestion')}
                     </Text>
                   )}
                 </View>
@@ -446,42 +451,45 @@ export default function LibraryScreen() {
 
       {isSelectionMode && (
         <FloatingActionToolbar
-          accessibilityLabel={`书架多选工具栏，已选择 ${selectedBookIds.size} 本书`}
+          accessibilityLabel={t('library.selectionToolbar', { count: selectedBookIds.size })}
           actions={toolbarActions}
           bottom={APP_TAB_BAR_HEIGHT + insets.bottom + Spacing.two}
         />
       )}
 
       <ConfirmModal
-        confirmLabel="删除"
-        confirmingLabel="正在删除"
-        description={`将移除 ${selectedBookIds.size} 本书及其阅读进度和书签`}
+        confirmLabel={t('action.delete')}
+        confirmingLabel={t('action.deleting')}
+        description={t('library.deleteDescription', { count: selectedBookIds.size })}
         isConfirming={isDeleting}
         isDestructive
         isOpen={isDeleteDialogOpen}
         onConfirm={() => void handleDeleteSelectedBooks()}
         onOpenChange={setIsDeleteDialogOpen}
-        title="删除选中的书籍？"
+        title={t('library.deleteTitle')}
       />
     </View>
   );
 }
 
-function toLibraryBook(record: Awaited<ReturnType<typeof listLibraryBooks>>[number]): LibraryBook {
+function toLibraryBook(
+  record: Awaited<ReturnType<typeof listLibraryBooks>>[number],
+  t: ReturnType<typeof useTranslation>['t'],
+): LibraryBook {
   return {
     id: record.id,
     title: record.title,
-    author: record.author ?? '未知作者',
+    author: record.author ?? t('library.unknownAuthor'),
     readingProgress: record.readingProgress ?? 0,
     cover: {
       imageUri: record.coverUri,
-      mark: Array.from(record.title.trim())[0] ?? '书',
+      mark: Array.from(record.title.trim())[0] ?? t('library.fallbackBookMark'),
     },
   };
 }
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : '发生了未知错误。';
+  return error instanceof Error ? error.message : i18n.t('library.unknownError');
 }
 
 function fileNameWithoutExtension(fileName: string): string {

@@ -15,6 +15,7 @@ import {
 } from '@/reader/native';
 import { createLunarRitoPinnedFonts } from '@/reader/rito/pinned-font';
 import { useReaderStore } from '@/stores';
+import { i18n } from '@/i18n';
 import { readReaderBook } from '../infrastructure/expo-reader-book-loader';
 import type { ReaderReadingState } from '../domain/reader-reading-state';
 import { findReaderReadingState, saveReaderReadingState } from '../services/reading-state-service';
@@ -97,7 +98,7 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
         if (record) {
           setBook(record);
         } else {
-          setBookError({ bookId, message: '书架中没有找到这本书。' });
+          setBookError({ bookId, message: i18n.t('reader.bookMissing') });
         }
       })
       .catch((error: unknown) => {

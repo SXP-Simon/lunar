@@ -22,6 +22,7 @@ import {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { i18n } from '@/i18n';
 import type { ReaderSnapshot, ReaderSpreadMode } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
 import { readerDiagnostic, readerPerformanceMark } from '../../runtime/core/performance';
@@ -715,7 +716,7 @@ function progressLabelForSnapshot(snapshot: ReaderSnapshot): string {
   const totalSpreads = snapshot.totalSpreads;
   const currentSpread = snapshot.bookSpreadIndex ?? snapshot.spreadIndex;
   const progressText = totalSpreads === undefined
-    ? '页码计算中'
+    ? i18n.t('reader.calculatingPages')
     : `${currentSpread + 1} / ${totalSpreads}`;
   if (totalSpreads === undefined) return progressText;
   const progressPercentage = Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
