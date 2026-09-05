@@ -48,7 +48,6 @@ export function MarksDrawer(props: MarksDrawerProps) {
   const [removing, setRemoving] = useState(false);
   const pending = useRef(false);
   const navigation = useDrawerNavigation({
-    isOpen: props.isOpen,
     onOpenChange: props.onOpenChange,
     onNavigated: props.onNavigated,
     onFailure: () => toast.show({ variant: 'danger', label: t('reader.markNavigationFailed') }),
@@ -92,7 +91,7 @@ export function MarksDrawer(props: MarksDrawerProps) {
     <BottomSheet isOpen={props.isOpen} onOpenChange={props.onOpenChange}>
       <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
-        <BottomSheet.Content onChange={navigation.onSheetChange} backgroundClassName="rounded-t-3xl" bottomInset={bottomInset}
+        <BottomSheet.Content backgroundClassName="rounded-t-3xl" bottomInset={bottomInset}
           contentContainerClassName="h-full flex-1 p-0!" detached enableDynamicSizing={false}
           enableOverDrag={false} snapPoints={['62%', '88%']}>
           <View className="gap-3 border-b border-border px-5 pb-3">

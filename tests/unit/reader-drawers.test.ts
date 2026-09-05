@@ -4,10 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarksDrawer } from '../../src/features/reader/components/bottom-tabs/marks-drawer';
 import { TocDrawer } from '../../src/features/reader/components/bottom-tabs/toc-drawer';
 
-const { buttons, showToast, sheetEvents } = vi.hoisted(() => ({
+const { buttons, showToast } = vi.hoisted(() => ({
   buttons: new Map<string, () => void>(),
   showToast: vi.fn(),
-  sheetEvents: { onChange: undefined as undefined | ((index: number) => Promise<void>) },
 }));
 
 vi.mock('react-native', () => ({
@@ -40,13 +39,10 @@ vi.mock('react-native-gesture-handler/ReanimatedSwipeable', () => ({
     }), children),
 }));
 vi.mock('heroui-native/bottom-sheet', () => {
-  // Closing sheets retain their children while the native exit animation runs.
   const Container = ({ children }: { children: ReactNode }) => children;
-  const Content = ({ children, onChange }: {
+  const Content = ({ children }: {
     children: ReactNode;
-    onChange: (index: number) => Promise<void>;
   }) => {
-    sheetEvents.onChange = onChange;
     return children;
   };
   return { BottomSheet: Object.assign(Container, {
@@ -73,7 +69,6 @@ beforeEach(() => {
   vi.stubGlobal('React', React);
   buttons.clear();
   showToast.mockClear();
-  sheetEvents.onChange = undefined;
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -129,7 +124,7 @@ describe('reader drawer navigation', () => {
     expect(closing).not.toContain('reader.noToc');
   });
 
-  it.each(['marks', 'toc'] as const)('waits for %s to finish closing and ignores duplicate presses and close events', async (kind) => {
+  it.each(['marks', 'toc'] as const)('navigates once and closes %s after the jump completes', async (kind) => {
     let complete!: () => void;
     const navigation = vi.fn(() => new Promise<void>((resolve) => { complete = resolve; }));
     const props = kind === 'marks' ? marksProps() : tocProps();
@@ -143,21 +138,9 @@ describe('reader drawer navigation', () => {
     const press = buttons.get(kind === 'marks' ? 'reader.goToMark' : 'reader.goToToc')!;
     press();
     press();
-    expect(navigation).not.toHaveBeenCalled();
-    expect(props.onOpenChange).toHaveBeenCalledExactlyOnceWith(false);
-    await sheetEvents.onChange!(0);
-    await sheetEvents.onChange!(1);
-    expect(navigation).not.toHaveBeenCalled();
-    const finished = sheetEvents.onChange!(-1);
-    await sheetEvents.onChange!(-1);
-    press();
     expect(navigation).toHaveBeenCalledTimes(1);
-    if (kind === 'marks') expect((props as ComponentProps<typeof MarksDrawer>).onNavigated).not.toHaveBeenCalled();
     complete();
-    await finished;
-    await sheetEvents.onChange!(-1);
-    expect(navigation).toHaveBeenCalledTimes(1);
-    expect(props.onOpenChange).toHaveBeenCalledExactlyOnceWith(false);
+    await vi.waitFor(() => expect(props.onOpenChange).toHaveBeenCalledExactlyOnceWith(false));
     if (kind === 'marks') expect((props as ComponentProps<typeof MarksDrawer>).onNavigated).toHaveBeenCalledOnce();
   });
 
@@ -172,17 +155,15 @@ describe('reader drawer navigation', () => {
       renderToStaticMarkup(React.createElement(TocDrawer, props as ComponentProps<typeof TocDrawer>));
     }
     buttons.get(kind === 'marks' ? 'reader.goToMark' : 'reader.goToToc')!();
-    expect(navigation).not.toHaveBeenCalled();
-    await sheetEvents.onChange!(-1);
     await vi.waitFor(() => expect(showToast).toHaveBeenCalledWith({
       variant: 'danger', label: kind === 'marks' ? 'reader.markNavigationFailed' : 'reader.tocNavigationFailed',
     }));
-    expect(vi.mocked(props.onOpenChange).mock.calls).toEqual([[false], [true]]);
+    expect(navigation).toHaveBeenCalledOnce();
+    expect(vi.mocked(props.onOpenChange)).not.toHaveBeenCalled();
     if (kind === 'marks') expect((props as ComponentProps<typeof MarksDrawer>).onNavigated).not.toHaveBeenCalled();
     // Failure releases the guard so the same target can be retried.
     buttons.get(kind === 'marks' ? 'reader.goToMark' : 'reader.goToToc')!();
-    await sheetEvents.onChange!(-1);
-    expect(navigation).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => expect(navigation).toHaveBeenCalledTimes(2));
   });
 
   it.each(['marks', 'toc'] as const)('ignores a normal %s dismissal with no requested jump', async (kind) => {
@@ -192,7 +173,6 @@ describe('reader drawer navigation', () => {
     } else {
       renderToStaticMarkup(React.createElement(TocDrawer, props as ComponentProps<typeof TocDrawer>));
     }
-    await sheetEvents.onChange!(-1);
     const navigation = kind === 'marks' ? props.runtime.goToLocator : props.runtime.goToToc;
     expect(navigation).not.toHaveBeenCalled();
     expect(props.onOpenChange).not.toHaveBeenCalled();
@@ -204,7 +184,6 @@ describe('reader drawer navigation', () => {
     buttons.get('reader.goToMark')!();
     buttons.get('reader.removeBookmark')!();
     expect(props.onRemoveBookmark).not.toHaveBeenCalled();
-    await sheetEvents.onChange!(-1);
     expect(props.runtime.goToLocator).toHaveBeenCalledOnce();
   });
 });

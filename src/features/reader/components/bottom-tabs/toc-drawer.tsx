@@ -34,8 +34,7 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, toc, snapshot }: TocD
   const entries = useMemo(() => flattenToc(toc), [toc]);
   const manifestHref = snapshot.position?.locator?.manifestHref;
   const anchorId = snapshot.position?.locator?.anchorId;
-  const { busy, requestNavigation, onSheetChange } = useDrawerNavigation({
-    isOpen,
+  const { busy, requestNavigation } = useDrawerNavigation({
     onOpenChange,
     onFailure: () => toast.show({ variant: 'danger', label: t('reader.tocNavigationFailed') }),
   });
@@ -45,7 +44,6 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, toc, snapshot }: TocD
       <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
         <BottomSheet.Content
-          onChange={onSheetChange}
           backgroundClassName="rounded-t-3xl"
           bottomInset={bottomInset}
           contentContainerClassName="h-full"
