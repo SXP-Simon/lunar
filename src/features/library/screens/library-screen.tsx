@@ -5,6 +5,7 @@ import { useThemeColor } from 'heroui-native/hooks';
 import { Menu, type MenuKey } from 'heroui-native/menu';
 import { SearchField } from 'heroui-native/search-field';
 import { Separator } from 'heroui-native/separator';
+import { Skeleton } from 'heroui-native/skeleton';
 import { Spinner } from 'heroui-native/spinner';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -28,6 +29,7 @@ import {
 import { BookCard, type LibraryBook } from '@/features/library/components/book-card';
 import { ImportingBookCard } from '@/features/library/components/importing-book-card';
 import {
+  BOOK_CARD_COVER_ASPECT_RATIO,
   LibraryGridSelectionSession,
   resolveLibraryGridEdgeScroll,
 } from '@/features/library/components/library-grid-selection';
@@ -51,6 +53,7 @@ import {
 
 const SELECTION_TOOLBAR_HEIGHT = 64;
 const LIBRARY_COLUMN_COUNT = 3;
+const LIBRARY_SKELETON_COUNT = 9;
 const TOP_ROW_VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 0 } as const;
 const AUTO_SCROLL_INITIAL_FRAME_DURATION = 1000 / 60;
 const AUTO_SCROLL_MAX_FRAME_DURATION = 32;
@@ -712,21 +715,18 @@ export default function LibraryScreen() {
                 )
               )}
               ListEmptyComponent={
-                <View className="items-center px-6 pt-20">
-                  {isLoadingLibrary && <Spinner color="default" size="md" />}
-                  <Text className="font-serif text-xl font-semibold text-foreground">
-                    {isLoadingLibrary
-                      ? t('library.loading')
-                      : query.trim()
-                        ? t('library.noSearchResults')
-                        : t('library.empty')}
-                  </Text>
-                  {!isLoadingLibrary && (
+                isLoadingLibrary ? (
+                  <LibraryLoadingSkeleton />
+                ) : (
+                  <View className="items-center px-6 pt-20">
+                    <Text className="font-serif text-xl font-semibold text-foreground">
+                      {query.trim() ? t('library.noSearchResults') : t('library.empty')}
+                    </Text>
                     <Text className="mt-2 text-[13px] text-muted">
                       {query.trim() ? t('library.searchSuggestion') : t('library.importSuggestion')}
                     </Text>
-                  )}
-                </View>
+                  </View>
+                )
               }
             />
           </View>
@@ -782,6 +782,23 @@ export default function LibraryScreen() {
         onOpenChange={setIsDeleteDialogOpen}
         title={t('library.deleteTitle')}
       />
+    </View>
+  );
+}
+
+function LibraryLoadingSkeleton() {
+  return (
+    <View className="w-full flex-row flex-wrap items-start">
+      {Array.from({ length: LIBRARY_SKELETON_COUNT }, (_, index) => (
+        <View key={index} className="mb-6 w-1/3 overflow-visible px-[6px]">
+          <Skeleton
+            className="w-full rounded bg-surface-secondary"
+            style={{ aspectRatio: BOOK_CARD_COVER_ASPECT_RATIO }}
+          />
+          <Skeleton className="mt-[7px] h-4 w-4/5 rounded-md" />
+          <Skeleton className="mt-px h-[14px] w-3/5 rounded-md" />
+        </View>
+      ))}
     </View>
   );
 }
