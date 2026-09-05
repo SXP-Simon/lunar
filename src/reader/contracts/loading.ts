@@ -471,6 +471,8 @@ export interface ReaderPublicationView {
   getImage(source: string): Uint8Array | undefined;
   /** Resolves a TOC target, paginating it on demand when necessary. */
   resolveToc(href: string): number | undefined | Promise<number | undefined>;
+  /** Resolves a durable source location independently of render slots and typography. */
+  resolveLocator?(locator: ReaderLocator): Promise<number | undefined>;
   /** Reads a note owned by the artifact assigned to a spread. */
   readFootnote?(key: string, spreadIndex?: number): Promise<ReaderFootnote | undefined>;
   resolveTextRangeGeometry?(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]>;

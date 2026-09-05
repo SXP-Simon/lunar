@@ -1,5 +1,6 @@
 import type {
   ReaderLayoutRequest,
+  ReaderLocator,
   ReaderFootnote,
   ReaderOpenRequest,
   ReaderOpenResult,
@@ -20,6 +21,7 @@ export interface ReaderRuntime {
   updateLayout(request: ReaderLayoutRequest): Promise<ReaderSnapshot>;
   goToSpread(spreadIndex: number): Promise<ReaderSnapshot>;
   goToToc(href: string): Promise<ReaderSnapshot>;
+  goToLocator(locator: ReaderLocator): Promise<ReaderSnapshot>;
   next(): Promise<ReaderSnapshot>;
   previous(): Promise<ReaderSnapshot>;
   getCurrentHitMap(spreadIndex?: number): ReaderHitMap | undefined;

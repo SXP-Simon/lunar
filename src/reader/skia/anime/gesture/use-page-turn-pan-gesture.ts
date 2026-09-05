@@ -137,8 +137,10 @@ export function usePageTurnPanGesture({
   /* eslint-disable react-hooks/immutability */
   const gesture = useMemo(
     () => Gesture.Pan()
-      .minDistance(2)
-      .onBegin((event) => {
+      .activeOffsetX([-12, 12])
+      .failOffsetY([-12, 12])
+      .maxPointers(1)
+      .onStart((event) => {
         'worklet';
         if (gestureBlocked) {
           started.value = false;
@@ -147,7 +149,7 @@ export function usePageTurnPanGesture({
         started.value = true;
         directionLocked.value = false;
         direction.value = 1;
-        startX.value = event.x;
+        startX.value = event.x - event.translationX;
         startBookX.value = 1;
         progress.value = 0;
         grabY.value = event.y;
@@ -156,7 +158,7 @@ export function usePageTurnPanGesture({
         nativeActive.value = false;
         nativeStockedToken.value = 0;
         token.value += 1;
-        scheduleOnRN(beginDrag, event.x, event.y, token.value);
+        scheduleOnRN(beginDrag, event.x - event.translationX, event.y - event.translationY, token.value);
       })
       .onUpdate((event) => {
         'worklet';

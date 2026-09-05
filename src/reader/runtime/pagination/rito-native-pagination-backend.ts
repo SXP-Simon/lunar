@@ -1,9 +1,10 @@
 import type {
   LoadedReaderPublication, ReaderFontRegistry, ReaderImageDecoder, ReaderLayoutRequest, ReaderOpenRequest,
-  ReaderPreparedAdjacent, ReaderRenderFrame,
+  ReaderPreparedAdjacent, ReaderRenderFrame, ReaderLocator,
 } from '../../contracts';
 import { toReaderV1DisplayList } from '../../rito';
 import { discoverReaderInitialSpineHref } from '../../rito/epub-inspector';
+import { toRitoSavedLocator } from '../../rito/saved-locator';
 import type { RitoNativePinnedFontFace, RitoArtifact, RitoLayoutRequest, RitoNativeReaderModule } from '../../rito/rito-native';
 import type { RitoReaderSession } from '../../../../modules/rito-rn/src/session';
 import type { RitoPublication, RitoTocEntry } from '../../../../modules/rito-rn/src/protocol/artifact-types';
@@ -583,6 +584,45 @@ class RitoNativePublication implements LoadedReaderPublication {
       end: request.end,
     });
     return geometry.rects;
+  }
+
+  async resolveLocator(locator: ReaderLocator): Promise<number | undefined> {
+    return this.operationQueue.enqueue(async () => {
+      const source = this.currentArtifact;
+      if (!source || this.preparedAdjacent) return undefined;
+      const href = locator.manifestHref ?? this.spine.find((item) => item.idref === locator.spineIdref)?.href;
+      if (!href || !this.spine.some((item) => item.href === href)) return undefined;
+      const targetIndex = this.visibleIndex;
+      const sourceSlot = this.slots.get(targetIndex);
+      const artifact = await this.session.requestArtifact({
+        ...this.artifactRequest,
+        requestId: this.session.nextRequestId,
+        locator: toRitoSavedLocator(locator, href),
+        work: { ...this.artifactRequest.work, maxForegroundQuanta: 8, localPageCap: 16 },
+      });
+      try {
+        await this.prepare(artifact, targetIndex, true);
+        const preparedSlot = this.slots.get(targetIndex);
+        if (sourceSlot) this.slots.set(targetIndex, sourceSlot);
+        await this.session.adoptForeground({
+          sessionId: artifact.sessionId,
+          expectedVisibleArtifactId: source.artifactId,
+          candidateArtifactId: artifact.artifactId,
+        });
+        if (preparedSlot) this.slots.set(targetIndex, preparedSlot);
+      } catch (error) {
+        if (sourceSlot) this.slots.set(targetIndex, sourceSlot);
+        else this.slots.delete(targetIndex);
+        await this.session.releaseArtifact(artifact.artifactId).catch(() => undefined);
+        throw error;
+      }
+      this.assignArtifact(targetIndex, artifact);
+      this.totalSpreadsValue = artifact.bookPageCount === undefined
+        ? undefined : spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode);
+      await this.releaseAfterNavigation(source);
+      this.pruneSlots();
+      return targetIndex;
+    });
   }
 
   async readFootnote(key: string, spreadIndex = this.visibleIndex): Promise<import('../../contracts').ReaderFootnote | undefined> {

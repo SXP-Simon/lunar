@@ -2,6 +2,7 @@ import type { SkFont } from '@shopify/react-native-skia';
 
 import type {
   ReaderLayoutRequest,
+  ReaderLocator,
   ReaderOpenRequest,
   ReaderOpenResult,
   ReaderPosition,
@@ -361,6 +362,18 @@ export class LunarReaderRuntime implements ReaderRuntime {
       if (target === undefined) {
         throw new RangeError(`The table-of-contents target ${href} was not found.`);
       }
+      this.invalidatePicture(target);
+      return target;
+    });
+  }
+
+  async goToLocator(locator: ReaderLocator): Promise<ReaderSnapshot> {
+    return this.enqueueAsyncNavigation(async () => {
+      if (this.preparedTurn) throw new Error('Finish the active page turn before navigating.');
+      const operation = this.operation;
+      const target = await this.publication?.resolveLocator?.(locator);
+      this.assertCurrent(operation);
+      if (target === undefined) throw new RangeError('The saved reading location was not found.');
       this.invalidatePicture(target);
       return target;
     });

@@ -93,4 +93,9 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       "ALTER TABLE reader_highlights ADD COLUMN color TEXT NOT NULL DEFAULT 'yellow'",
     ],
   },
+  {
+    version: 5,
+    name: 'bookmark_excerpts',
+    statements: ["ALTER TABLE bookmarks ADD COLUMN text TEXT NOT NULL DEFAULT ''"],
+  },
 ];
