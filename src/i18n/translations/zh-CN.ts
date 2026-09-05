@@ -40,6 +40,7 @@ export const zhCN = {
     searchLibrary: '搜索书架',
     clearSearch: '清空搜索',
     importEpub: '导入 EPUB',
+    backToTop: '返回书架顶部',
     loading: '正在读取书架',
     noSearchResults: '没有找到相关书籍',
     empty: '书架还是空的',

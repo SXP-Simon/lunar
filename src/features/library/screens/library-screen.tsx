@@ -14,6 +14,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { APP_TAB_BAR_HEIGHT } from '@/components/ui/app-tabs';
@@ -26,6 +27,7 @@ import { BookCard, type LibraryBook } from '@/features/library/components/book-c
 import { ImportingBookCard } from '@/features/library/components/importing-book-card';
 import {
   LibraryGridSelectionSession,
+  resolveLibraryGridEdgeScroll,
 } from '@/features/library/components/library-grid-selection';
 import { Spacing } from '@/hooks/use-theme';
 import { i18n, useTranslation } from '@/i18n';
@@ -37,6 +39,12 @@ import {
 } from '../services/library-service';
 
 const SELECTION_TOOLBAR_HEIGHT = 64;
+const LIBRARY_COLUMN_COUNT = 3;
+const TOP_ROW_VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 0 } as const;
+const AUTO_SCROLL_INITIAL_FRAME_DURATION = 1000 / 60;
+const AUTO_SCROLL_MAX_FRAME_DURATION = 32;
+const BACK_TO_TOP_ENTERING = FadeIn.duration(180);
+const BACK_TO_TOP_EXITING = FadeOut.duration(150);
 
 type ImportingBook = {
   readonly id: string;
@@ -63,13 +71,27 @@ export default function LibraryScreen() {
   );
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBackToTopVisible, setIsBackToTopVisible] = useState(false);
   const insets = useSafeAreaInsets();
-  const [importIconColor, searchIconColor] = useThemeColor(['accent-foreground', 'muted']);
+  const [importIconColor, searchIconColor, backToTopIconColor] = useThemeColor([
+    'accent-foreground',
+    'muted',
+    'foreground',
+  ]);
   const { toast } = useToast();
   const [gridSelectionSession] = useState(() => new LibraryGridSelectionSession());
   const gridContainerRef = useRef<View>(null);
+  const libraryListRef = useRef<FlatList<LibraryItem>>(null);
   const selectedBookIdsRef = useRef(selectedBookIds);
   const slidingSelectionValueRef = useRef(true);
+  const slidingSelectionPointRef = useRef<{ readonly x: number; readonly y: number } | null>(null);
+  const gridViewportRef = useRef({ viewportHeight: 0, windowOriginY: 0 });
+  const gridContentHeightRef = useRef(0);
+  const gridScrollOffsetRef = useRef(0);
+  const autoScrollFrameRef = useRef<number | null>(null);
+  const previousAutoScrollTimestampRef = useRef<number | null>(null);
+  const selectionToolbarObscuredHeight =
+    APP_TAB_BAR_HEIGHT + insets.bottom + Spacing.two + SELECTION_TOOLBAR_HEIGHT;
 
   useEffect(() => {
     selectedBookIdsRef.current = selectedBookIds;
@@ -212,41 +234,147 @@ export default function LibraryScreen() {
     });
   }, []);
 
+  const toggleBookSelection = useCallback((bookId: string) => {
+    setSelectedBookIds((current) => {
+      const next = new Set(current);
+      if (next.has(bookId)) {
+        next.delete(bookId);
+      } else {
+        next.add(bookId);
+      }
+      return next;
+    });
+  }, []);
+
   const handleBookPress = useCallback((book: LibraryBook) => {
     if (isSelectionMode) {
-      updateBookSelection([book.id], !selectedBookIds.has(book.id));
+      toggleBookSelection(book.id);
       return;
     }
     router.push(`/reader/${encodeURIComponent(book.id)}` as Href);
-  }, [isSelectionMode, router, selectedBookIds, updateBookSelection]);
+  }, [isSelectionMode, router, toggleBookSelection]);
 
-  const selectBooksAtGridPoint = useCallback((x: number, y: number) => {
-    const newlyVisitedIds = gridSelectionSession.continueFromWindow({ x, y });
+  const continueSlidingSelectionAtPoint = useCallback((x: number, y: number) => {
+    const edgeScrollState = resolveLibraryGridEdgeScroll(y, {
+      obscuredBottomHeight: selectionToolbarObscuredHeight,
+      ...gridViewportRef.current,
+    });
+    const newlyVisitedIds = gridSelectionSession.continueFromWindow({
+      x,
+      y: edgeScrollState.selectionWindowY,
+    });
     if (newlyVisitedIds.length > 0) {
       setIsSelectionMode(true);
       updateBookSelection(newlyVisitedIds, slidingSelectionValueRef.current);
     }
-  }, [gridSelectionSession, updateBookSelection]);
+  }, [gridSelectionSession, selectionToolbarObscuredHeight, updateBookSelection]);
+
+  const runAutoScroll = useCallback(function runFrame(timestamp: number) {
+    autoScrollFrameRef.current = null;
+    const point = slidingSelectionPointRef.current;
+    if (point === null) {
+      previousAutoScrollTimestampRef.current = null;
+      return;
+    }
+
+    const { scrollVelocity } = resolveLibraryGridEdgeScroll(point.y, {
+      obscuredBottomHeight: selectionToolbarObscuredHeight,
+      ...gridViewportRef.current,
+    });
+    if (scrollVelocity === 0) {
+      previousAutoScrollTimestampRef.current = null;
+      return;
+    }
+
+    const previousTimestamp = previousAutoScrollTimestampRef.current;
+    const frameDuration = previousTimestamp === null
+      ? AUTO_SCROLL_INITIAL_FRAME_DURATION
+      : Math.min(timestamp - previousTimestamp, AUTO_SCROLL_MAX_FRAME_DURATION);
+    previousAutoScrollTimestampRef.current = timestamp;
+
+    const currentOffset = gridScrollOffsetRef.current;
+    const maximumOffset = Math.max(
+      0,
+      gridContentHeightRef.current - gridViewportRef.current.viewportHeight,
+    );
+    const nextOffset = Math.min(
+      maximumOffset,
+      Math.max(0, currentOffset + scrollVelocity * frameDuration / 1000),
+    );
+    if (Math.abs(nextOffset - currentOffset) < 0.1) {
+      previousAutoScrollTimestampRef.current = null;
+      return;
+    }
+
+    gridScrollOffsetRef.current = nextOffset;
+    gridSelectionSession.update({ scrollOffset: nextOffset });
+    libraryListRef.current?.scrollToOffset({ animated: false, offset: nextOffset });
+    continueSlidingSelectionAtPoint(point.x, point.y);
+    autoScrollFrameRef.current = requestAnimationFrame(runFrame);
+  }, [
+    continueSlidingSelectionAtPoint,
+    gridSelectionSession,
+    selectionToolbarObscuredHeight,
+  ]);
+
+  const scheduleAutoScroll = useCallback(() => {
+    if (autoScrollFrameRef.current === null) {
+      autoScrollFrameRef.current = requestAnimationFrame(runAutoScroll);
+    }
+  }, [runAutoScroll]);
+
+  const stopAutoScroll = useCallback(() => {
+    if (autoScrollFrameRef.current !== null) {
+      cancelAnimationFrame(autoScrollFrameRef.current);
+      autoScrollFrameRef.current = null;
+    }
+    previousAutoScrollTimestampRef.current = null;
+  }, []);
+
+  const selectBooksAtGridPoint = useCallback((x: number, y: number) => {
+    slidingSelectionPointRef.current = { x, y };
+    continueSlidingSelectionAtPoint(x, y);
+    scheduleAutoScroll();
+  }, [continueSlidingSelectionAtPoint, scheduleAutoScroll]);
 
   const beginSlidingSelection = useCallback((x: number, y: number) => {
-    const newlyVisitedIds = gridSelectionSession.beginFromWindow({ x, y });
+    const edgeScrollState = resolveLibraryGridEdgeScroll(y, {
+      obscuredBottomHeight: selectionToolbarObscuredHeight,
+      ...gridViewportRef.current,
+    });
+    const newlyVisitedIds = gridSelectionSession.beginFromWindow({
+      x,
+      y: edgeScrollState.selectionWindowY,
+    });
     if (newlyVisitedIds.length > 0) {
       const shouldSelect = !selectedBookIdsRef.current.has(newlyVisitedIds[0]);
       slidingSelectionValueRef.current = shouldSelect;
+      slidingSelectionPointRef.current = { x, y };
       setIsSelectionMode(true);
       updateBookSelection(newlyVisitedIds, shouldSelect);
+      scheduleAutoScroll();
     }
-  }, [gridSelectionSession, updateBookSelection]);
+  }, [
+    gridSelectionSession,
+    scheduleAutoScroll,
+    selectionToolbarObscuredHeight,
+    updateBookSelection,
+  ]);
 
   const finishSlidingSelection = useCallback(() => {
+    slidingSelectionPointRef.current = null;
+    stopAutoScroll();
     gridSelectionSession.finish();
     slidingSelectionValueRef.current = true;
-  }, [gridSelectionSession]);
+  }, [gridSelectionSession, stopAutoScroll]);
+
+  useEffect(() => stopAutoScroll, [stopAutoScroll]);
 
   const closeSelectionMode = useCallback(() => {
+    finishSlidingSelection();
     setIsSelectionMode(false);
     setSelectedBookIds(new Set());
-  }, []);
+  }, [finishSlidingSelection]);
 
   const handleSelectAll = useCallback(() => {
     if (allVisibleBooksSelected) {
@@ -331,10 +459,19 @@ export default function LibraryScreen() {
   ]);
 
   const handleGridLayout = useCallback((event: LayoutChangeEvent) => {
-    gridSelectionSession.update({ viewportWidth: event.nativeEvent.layout.width });
-    gridContainerRef.current?.measureInWindow((x, y, width) => {
+    const { height, width } = event.nativeEvent.layout;
+    gridViewportRef.current = {
+      ...gridViewportRef.current,
+      viewportHeight: height,
+    };
+    gridSelectionSession.update({ viewportWidth: width });
+    gridContainerRef.current?.measureInWindow((x, y, measuredWidth, measuredHeight) => {
+      gridViewportRef.current = {
+        viewportHeight: measuredHeight,
+        windowOriginY: y,
+      };
       gridSelectionSession.update({
-        viewportWidth: width,
+        viewportWidth: measuredWidth,
         windowOriginX: x,
         windowOriginY: y,
       });
@@ -342,8 +479,30 @@ export default function LibraryScreen() {
   }, [gridSelectionSession]);
 
   const handleGridScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    gridSelectionSession.update({ scrollOffset: event.nativeEvent.contentOffset.y });
+    const scrollOffset = event.nativeEvent.contentOffset.y;
+    gridScrollOffsetRef.current = scrollOffset;
+    gridSelectionSession.update({ scrollOffset });
   }, [gridSelectionSession]);
+
+  const handleGridContentSizeChange = useCallback((_width: number, height: number) => {
+    gridContentHeightRef.current = height;
+  }, []);
+
+  const handleViewableItemsChanged = useCallback(({
+    viewableItems,
+  }: {
+    viewableItems: readonly { readonly index: number | null }[];
+  }) => {
+    const hasVisibleItems = viewableItems.some(({ index }) => index !== null);
+    const isTopRowVisible = viewableItems.some(
+      ({ index }) => index !== null && index < LIBRARY_COLUMN_COUNT,
+    );
+    setIsBackToTopVisible(hasVisibleItems && !isTopRowVisible);
+  }, []);
+
+  const handleBackToTop = useCallback(() => {
+    libraryListRef.current?.scrollToOffset({ animated: true, offset: 0 });
+  }, []);
 
   return (
     <View className="flex-1 bg-background">
@@ -391,14 +550,18 @@ export default function LibraryScreen() {
             className="flex-1"
             onLayout={handleGridLayout}>
             <FlatList
+              ref={libraryListRef}
               data={items}
               extraData={selectedBookIds}
               keyExtractor={(item) => item.book.id}
-              numColumns={3}
+              numColumns={LIBRARY_COLUMN_COUNT}
               keyboardShouldPersistTaps="handled"
+              onContentSizeChange={handleGridContentSizeChange}
               onScroll={handleGridScroll}
+              onViewableItemsChanged={handleViewableItemsChanged}
               scrollEventThrottle={16}
               showsVerticalScrollIndicator={false}
+              viewabilityConfig={TOP_ROW_VIEWABILITY_CONFIG}
               columnWrapperClassName="items-start"
               contentContainerClassName="px-[10px] pt-2"
               contentContainerStyle={{
@@ -420,7 +583,7 @@ export default function LibraryScreen() {
                     book={item.book}
                     isSelected={selectedBookIds.has(item.book.id)}
                     isSelectionMode={isSelectionMode}
-                    onPress={() => handleBookPress(item.book)}
+                    onPress={handleBookPress}
                     onSelectionGestureFinish={finishSlidingSelection}
                     onSelectionGestureMove={selectBooksAtGridPoint}
                     onSelectionGestureStart={beginSlidingSelection}
@@ -455,6 +618,36 @@ export default function LibraryScreen() {
           actions={toolbarActions}
           bottom={APP_TAB_BAR_HEIGHT + insets.bottom + Spacing.two}
         />
+      )}
+
+      {isBackToTopVisible && (
+        <Animated.View
+          className="absolute z-20"
+          entering={BACK_TO_TOP_ENTERING}
+          exiting={BACK_TO_TOP_EXITING}
+          style={{
+            bottom:
+              APP_TAB_BAR_HEIGHT
+              + insets.bottom
+              + Spacing.four
+              + (isSelectionMode ? SELECTION_TOOLBAR_HEIGHT + Spacing.two : 0),
+            right: insets.right + Spacing.four,
+          }}>
+          <Button
+            accessibilityLabel={t('library.backToTop')}
+            className="size-12 rounded-full border border-border shadow-lg"
+            hitSlop={6}
+            isIconOnly
+            onPress={handleBackToTop}
+            size="lg"
+            variant="secondary">
+            <SymbolView
+              name={{ ios: 'arrow.up', android: 'arrow_upward', web: 'arrow_upward' }}
+              size={23}
+              tintColor={backToTopIconColor}
+            />
+          </Button>
+        </Animated.View>
       )}
 
       <ConfirmModal

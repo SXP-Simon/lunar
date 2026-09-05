@@ -34,7 +34,7 @@ type BookCardProps = {
   book: LibraryBook;
   isSelected?: boolean;
   isSelectionMode?: boolean;
-  onPress?: () => void;
+  onPress?: (book: LibraryBook) => void;
   onSelectionGestureFinish?: () => void;
   onSelectionGestureMove?: (absoluteX: number, absoluteY: number) => void;
   onSelectionGestureStart?: (absoluteX: number, absoluteY: number) => void;
@@ -77,7 +77,7 @@ const BookCoverArtwork = memo(function BookCoverArtwork({
   );
 });
 
-export function BookCard({
+export const BookCard = memo(function BookCard({
   book,
   isSelected = false,
   isSelectionMode = false,
@@ -100,15 +100,11 @@ export function BookCard({
   }, [feedbackScale]);
   const handleGestureBegin = useCallback(() => {
     selectionActivatedRef.current = false;
-    if (isSelectionMode) {
-      resetFeedback();
-      return;
-    }
     feedbackScale.set(withDelay(
       PRESS_FEEDBACK_DELAY,
       withTiming(0.95, PRESS_FEEDBACK_TIMING),
     ));
-  }, [feedbackScale, isSelectionMode, resetFeedback]);
+  }, [feedbackScale]);
   const handleGestureStart = useCallback((event: { absoluteX: number; absoluteY: number }) => {
     selectionActivatedRef.current = true;
     resetFeedback();
@@ -121,21 +117,17 @@ export function BookCard({
     }
   }, [onSelectionGestureFinish, resetFeedback]);
   const selectionGesture = useMemo(() => {
-    const gesture = configureBookSelectionGesture(Gesture.Pan(), isSelectionMode)
+    const gesture = configureBookSelectionGesture(Gesture.Pan())
       .averageTouches(true)
       .cancelsTouchesInView(true)
       .runOnJS(true)
-      // These builder methods register callbacks; refs are accessed only on touch events.
-      // eslint-disable-next-line react-hooks/refs
       .onBegin(handleGestureBegin)
-      // eslint-disable-next-line react-hooks/refs
       .onStart(handleGestureStart)
       .onUpdate((event) => onSelectionGestureMove?.(event.absoluteX, event.absoluteY))
-      // eslint-disable-next-line react-hooks/refs
       .onFinalize(handleGestureFinalize);
 
     return gesture;
-  }, [handleGestureBegin, handleGestureFinalize, handleGestureStart, isSelectionMode, onSelectionGestureMove]);
+  }, [handleGestureBegin, handleGestureFinalize, handleGestureStart, onSelectionGestureMove]);
 
   return (
     <GestureDetector gesture={selectionGesture}>
@@ -153,7 +145,7 @@ export function BookCard({
         accessibilityState={{ selected: isSelectionMode ? isSelected : undefined }}
         onPress={() => {
           if (!selectionActivatedRef.current) {
-            onPress?.();
+            onPress?.(book);
           }
         }}
         className="mb-6 w-1/3 overflow-visible px-[6px]">
@@ -214,4 +206,4 @@ export function BookCard({
       </PressableFeedback>
     </GestureDetector>
   );
-}
+});

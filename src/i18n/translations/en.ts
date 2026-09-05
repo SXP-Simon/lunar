@@ -42,6 +42,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     searchLibrary: 'Search library',
     clearSearch: 'Clear search',
     importEpub: 'Import EPUB',
+    backToTop: 'Back to top of library',
     loading: 'Loading library',
     noSearchResults: 'No matching books found',
     empty: 'Your library is empty',

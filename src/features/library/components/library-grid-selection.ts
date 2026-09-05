@@ -5,6 +5,8 @@ export const BOOK_CARD_HORIZONTAL_PADDING = 6;
 export const BOOK_CARD_COVER_ASPECT_RATIO = 2 / 3;
 export const BOOK_CARD_DETAILS_HEIGHT = 38;
 export const BOOK_CARD_BOTTOM_MARGIN = 24;
+export const LIBRARY_GRID_AUTO_SCROLL_EDGE_SIZE = 72;
+export const LIBRARY_GRID_AUTO_SCROLL_MAX_SPEED = 640;
 
 interface GridPoint {
   readonly x: number;
@@ -23,6 +25,52 @@ interface LibraryGridHitTestOptions {
   readonly itemCount: number;
   readonly scrollOffset: number;
   readonly viewportWidth: number;
+}
+
+interface LibraryGridEdgeScrollOptions {
+  readonly obscuredBottomHeight: number;
+  readonly viewportHeight: number;
+  readonly windowOriginY: number;
+}
+
+export interface LibraryGridEdgeScrollState {
+  readonly scrollVelocity: number;
+  readonly selectionWindowY: number;
+}
+
+export function resolveLibraryGridEdgeScroll(
+  windowY: number,
+  options: LibraryGridEdgeScrollOptions,
+): LibraryGridEdgeScrollState {
+  const viewportTop = options.windowOriginY;
+  const viewportBottom = Math.max(
+    viewportTop,
+    viewportTop + options.viewportHeight - options.obscuredBottomHeight,
+  );
+  if (viewportBottom <= viewportTop) {
+    return { scrollVelocity: 0, selectionWindowY: windowY };
+  }
+
+  const topStrength = clamp(
+    (viewportTop + LIBRARY_GRID_AUTO_SCROLL_EDGE_SIZE - windowY)
+      / LIBRARY_GRID_AUTO_SCROLL_EDGE_SIZE,
+    0,
+    1,
+  );
+  const bottomStrength = clamp(
+    (windowY - (viewportBottom - LIBRARY_GRID_AUTO_SCROLL_EDGE_SIZE))
+      / LIBRARY_GRID_AUTO_SCROLL_EDGE_SIZE,
+    0,
+    1,
+  );
+  const scrollVelocity = topStrength > bottomStrength
+    ? -LIBRARY_GRID_AUTO_SCROLL_MAX_SPEED * topStrength
+    : LIBRARY_GRID_AUTO_SCROLL_MAX_SPEED * bottomStrength;
+
+  return {
+    scrollVelocity,
+    selectionWindowY: clamp(windowY, viewportTop, viewportBottom - 1),
+  };
 }
 
 export function libraryItemIndexAtPoint(
@@ -144,4 +192,8 @@ export class LibraryGridSelectionSession {
       return [bookId];
     });
   }
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(Math.max(value, minimum), maximum);
 }

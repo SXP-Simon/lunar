@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   LibraryGridSelectionSession,
   libraryItemIndexAtPoint,
+  resolveLibraryGridEdgeScroll,
 } from '../../src/features/library/components/library-grid-selection';
 
 const VIEWPORT_WIDTH = 320;
@@ -56,6 +57,20 @@ describe('library grid selection', () => {
       'e',
       'f',
     ]);
+  });
+
+  it('scrolls toward either visible grid edge and keeps selection above the toolbar', () => {
+    const options = {
+      obscuredBottomHeight: 130,
+      viewportHeight: 600,
+      windowOriginY: 100,
+    };
+
+    expect(resolveLibraryGridEdgeScroll(200, options).scrollVelocity).toBe(0);
+    expect(resolveLibraryGridEdgeScroll(110, options).scrollVelocity).toBeLessThan(0);
+    expect(resolveLibraryGridEdgeScroll(560, options).scrollVelocity).toBeGreaterThan(0);
+    expect(resolveLibraryGridEdgeScroll(80, options).selectionWindowY).toBe(100);
+    expect(resolveLibraryGridEdgeScroll(620, options).selectionWindowY).toBe(569);
   });
 });
 

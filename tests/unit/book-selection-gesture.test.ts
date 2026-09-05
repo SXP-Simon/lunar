@@ -1,10 +1,13 @@
 import type { PanGesture } from 'react-native-gesture-handler';
 import { describe, expect, it, vi } from 'vitest';
 
-import { configureBookSelectionGesture } from '../../src/features/library/components/book-selection-gesture';
+import {
+  BOOK_SELECTION_LONG_PRESS_DURATION,
+  configureBookSelectionGesture,
+} from '../../src/features/library/components/book-selection-gesture';
 
 describe('bookshelf scroll and hold arbitration', () => {
-  it('allows immediate sliding selection without hold or scroll failure constraints in selection mode', () => {
+  it('requires a hold before every sliding selection gesture', () => {
     const gesture = {
       minDistance: vi.fn().mockReturnThis(),
       activateAfterLongPress: vi.fn().mockReturnThis(),
@@ -12,13 +15,13 @@ describe('bookshelf scroll and hold arbitration', () => {
       failOffsetY: vi.fn().mockReturnThis(),
       maxPointers: vi.fn().mockReturnThis(),
     };
-    configureBookSelectionGesture(gesture as unknown as PanGesture, true);
+    configureBookSelectionGesture(gesture as unknown as PanGesture);
 
-    expect(gesture.minDistance.mock.calls[0][0]).toBeGreaterThan(0);
-    expect(gesture.minDistance.mock.calls[0][0]).toBeLessThanOrEqual(1);
-    expect(gesture.activateAfterLongPress).not.toHaveBeenCalled();
-    expect(gesture.failOffsetX).not.toHaveBeenCalled();
-    expect(gesture.failOffsetY).not.toHaveBeenCalled();
+    expect(gesture.activateAfterLongPress).toHaveBeenCalledWith(
+      BOOK_SELECTION_LONG_PRESS_DURATION,
+    );
+    expect(gesture.failOffsetX).toHaveBeenCalled();
+    expect(gesture.failOffsetY).toHaveBeenCalled();
   });
 
   it('makes distance activation unreachable throughout the allowed hold area', () => {

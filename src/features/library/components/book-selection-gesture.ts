@@ -5,12 +5,7 @@ const PRE_LONG_PRESS_SCROLL_TOLERANCE = 8;
 
 export function configureBookSelectionGesture(
   gesture: PanGesture,
-  isSelectionMode = false,
 ): PanGesture {
-  if (isSelectionMode) {
-    return gesture.minDistance(1).maxPointers(1);
-  }
-
   return gesture
     // Android evaluates distance activation independently of the hold timer.
     // Even diagonal movement must reach a failure boundary before activation.
