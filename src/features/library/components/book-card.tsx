@@ -23,6 +23,8 @@ export type LibraryBook = {
   id: string;
   title: string;
   author: string;
+  addedAt: number;
+  lastOpenedAt?: number;
   readingProgress?: number;
   cover: {
     imageUri?: string;

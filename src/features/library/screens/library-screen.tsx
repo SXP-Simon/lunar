@@ -2,7 +2,9 @@ import { SymbolView } from 'expo-symbols';
 import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
+import { Menu, type MenuKey } from 'heroui-native/menu';
 import { SearchField } from 'heroui-native/search-field';
+import { Separator } from 'heroui-native/separator';
 import { Spinner } from 'heroui-native/spinner';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,8 +31,16 @@ import {
   LibraryGridSelectionSession,
   resolveLibraryGridEdgeScroll,
 } from '@/features/library/components/library-grid-selection';
+import {
+  sortLibraryBooks,
+} from '@/features/library/domain/library-sort';
 import { Spacing } from '@/hooks/use-theme';
 import { i18n, useTranslation } from '@/i18n';
+import {
+  isLibrarySortDirection,
+  isLibrarySortField,
+  useLibraryStore,
+} from '@/stores';
 import {
   importEpubFile,
   listLibraryBooks,
@@ -60,8 +70,12 @@ type LibraryItem =
 export default function LibraryScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const librarySortLocale = i18n.resolvedLanguage;
   const [query, setQuery] = useState('');
   const [libraryBooks, setLibraryBooks] = useState<LibraryBook[]>([]);
+  const librarySort = useLibraryStore((state) => state.sort);
+  const setSortField = useLibraryStore((state) => state.setSortField);
+  const setSortDirection = useLibraryStore((state) => state.setSortDirection);
   const [importingBooks, setImportingBooks] = useState<readonly ImportingBook[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
@@ -73,9 +87,10 @@ export default function LibraryScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBackToTopVisible, setIsBackToTopVisible] = useState(false);
   const insets = useSafeAreaInsets();
-  const [importIconColor, searchIconColor, backToTopIconColor] = useThemeColor([
-    'accent-foreground',
+  const [importIconColor, searchIconColor, backToTopIconColor, sortIconColor] = useThemeColor([
+    'foreground',
     'muted',
+    'foreground',
     'foreground',
   ]);
   const { toast } = useToast();
@@ -199,12 +214,42 @@ export default function LibraryScreen() {
         `${book.title} ${book.author}`.toLocaleLowerCase().includes(keyword),
       )
       : libraryBooks;
+    const sortedBooks = sortLibraryBooks(
+      filteredBooks,
+      librarySort,
+      librarySortLocale,
+    );
 
     return [
       ...importingBooks.map((book) => ({ kind: 'importing' as const, book })),
-      ...filteredBooks.map((book) => ({ kind: 'book' as const, book })),
+      ...sortedBooks.map((book) => ({ kind: 'book' as const, book })),
     ];
-  }, [importingBooks, libraryBooks, query]);
+  }, [importingBooks, libraryBooks, librarySort, librarySortLocale, query]);
+
+  const selectedSortFields = useMemo<ReadonlySet<MenuKey>>(
+    () => new Set([librarySort.field]),
+    [librarySort.field],
+  );
+  const selectedSortDirections = useMemo<ReadonlySet<MenuKey>>(
+    () => new Set([librarySort.direction]),
+    [librarySort.direction],
+  );
+
+  const handleSortFieldChange = useCallback((keys: Set<MenuKey>) => {
+    const field = keys.values().next().value;
+    if (isLibrarySortField(field)) {
+      setSortField(field);
+      libraryListRef.current?.scrollToOffset({ animated: false, offset: 0 });
+    }
+  }, [setSortField]);
+
+  const handleSortDirectionChange = useCallback((keys: Set<MenuKey>) => {
+    const direction = keys.values().next().value;
+    if (isLibrarySortDirection(direction)) {
+      setSortDirection(direction);
+      libraryListRef.current?.scrollToOffset({ animated: false, offset: 0 });
+    }
+  }, [setSortDirection]);
 
   const visibleBookIds = useMemo(
     () => items.flatMap((item) => item.kind === 'book' ? [item.book.id] : []),
@@ -531,7 +576,7 @@ export default function LibraryScreen() {
               isIconOnly
               onPress={() => void handleImport()}
               size="sm"
-              variant="primary">
+              variant="secondary">
               {isImporting ? (
                 <Spinner color={importIconColor} size="sm" />
               ) : (
@@ -542,6 +587,80 @@ export default function LibraryScreen() {
                 />
               )}
             </Button>
+            <Menu>
+              <Menu.Trigger asChild>
+                <Button
+                  accessibilityLabel={t('library.sortMenuCurrent', {
+                    direction: t(`library.sortDirection.${librarySort.direction}`),
+                    field: t(`library.sortField.${librarySort.field}`),
+                  })}
+                  className="h-9 rounded-full"
+                  hitSlop={4}
+                  isIconOnly
+                  size="sm"
+                  variant="secondary">
+                  <SymbolView
+                    name={{
+                      ios: 'line.3.horizontal.decrease',
+                      android: 'filter_list',
+                      web: 'filter_list',
+                    }}
+                    size={19}
+                    tintColor={sortIconColor}
+                  />
+                </Button>
+              </Menu.Trigger>
+              <Menu.Portal>
+                <Menu.Overlay />
+                <Menu.Content
+                  align="end"
+                  placement="bottom"
+                  presentation="popover"
+                  width={240}>
+                  <Menu.Label>{t('library.sortBy')}</Menu.Label>
+                  <Menu.Group
+                    disallowEmptySelection
+                    onSelectionChange={handleSortFieldChange}
+                    selectedKeys={selectedSortFields}
+                    selectionMode="single"
+                    shouldCloseOnSelect={false}>
+                    <Menu.Item id="addedAt">
+                      <Menu.ItemIndicator />
+                      <Menu.ItemTitle>{t('library.sortField.addedAt')}</Menu.ItemTitle>
+                    </Menu.Item>
+                    <Menu.Item id="recentlyRead">
+                      <Menu.ItemIndicator />
+                      <Menu.ItemTitle>{t('library.sortField.recentlyRead')}</Menu.ItemTitle>
+                    </Menu.Item>
+                    <Menu.Item id="title">
+                      <Menu.ItemIndicator />
+                      <Menu.ItemTitle>{t('library.sortField.title')}</Menu.ItemTitle>
+                    </Menu.Item>
+                    <Menu.Item id="author">
+                      <Menu.ItemIndicator />
+                      <Menu.ItemTitle>{t('library.sortField.author')}</Menu.ItemTitle>
+                    </Menu.Item>
+                  </Menu.Group>
+                  <Separator className="mx-2 my-2 opacity-75" />
+                  <Menu.Label>{t('library.sortOrder')}</Menu.Label>
+                  <Menu.Group
+                    disallowEmptySelection
+                    onSelectionChange={handleSortDirectionChange}
+                    selectedKeys={selectedSortDirections}
+                    selectionMode="single"
+                    shouldCloseOnSelect={false}>
+                    <Menu.Item id="ascending">
+                      <Menu.ItemIndicator />
+                      <Menu.ItemTitle>{t('library.sortDirection.ascending')}</Menu.ItemTitle>
+                    </Menu.Item>
+                    <Menu.Item id="descending">
+                      <Menu.ItemIndicator />
+                      <Menu.ItemTitle>{t('library.sortDirection.descending')}</Menu.ItemTitle>
+                    </Menu.Item>
+                  </Menu.Group>
+                </Menu.Content>
+              </Menu.Portal>
+            </Menu>
           </View>
 
           <View
@@ -673,6 +792,8 @@ function toLibraryBook(
     id: record.id,
     title: record.title,
     author: record.author ?? t('library.unknownAuthor'),
+    addedAt: record.addedAt,
+    lastOpenedAt: record.lastOpenedAt,
     readingProgress: record.readingProgress ?? 0,
     cover: {
       imageUri: record.coverUri,

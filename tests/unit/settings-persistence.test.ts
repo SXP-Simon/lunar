@@ -4,6 +4,7 @@ import { useApplicationSettingsStore } from '../../src/stores/application-settin
 import {
   mmkvStateStorage,
 } from '../../src/stores/mmkv-state-storage';
+import { useLibraryStore } from '../../src/stores/library-store';
 import { useReaderStore } from '../../src/stores/reader-store';
 
 const persistedValues = vi.hoisted(() => new Map<string, string>());
@@ -43,13 +44,16 @@ vi.mock('@/reader', () => ({
 }));
 
 const APPLICATION_SETTINGS_KEY = 'settings.application';
+const LIBRARY_SETTINGS_KEY = 'settings.library';
 const READER_SETTINGS_KEY = 'settings.reader';
 
 afterEach(() => {
   useApplicationSettingsStore.getState().setThemeMode('system');
   useApplicationSettingsStore.getState().setLanguage('system');
+  useLibraryStore.getState().resetSort();
   useReaderStore.getState().reset();
   mmkvStateStorage.removeItem(APPLICATION_SETTINGS_KEY);
+  mmkvStateStorage.removeItem(LIBRARY_SETTINGS_KEY);
   mmkvStateStorage.removeItem(READER_SETTINGS_KEY);
 });
 
@@ -69,6 +73,37 @@ describe('settings persistence', () => {
     expect(readPersistedState(APPLICATION_SETTINGS_KEY)).toEqual({
       themeMode: 'system',
       language: 'en',
+    });
+  });
+
+  it('stores the selected library sorting field and direction in MMKV', () => {
+    useLibraryStore.getState().setSortField('author');
+    useLibraryStore.getState().setSortDirection('ascending');
+
+    expect(readPersistedState(LIBRARY_SETTINGS_KEY)).toEqual({
+      sort: {
+        field: 'author',
+        direction: 'ascending',
+      },
+    });
+  });
+
+  it('restores the library sorting preference from MMKV', async () => {
+    mmkvStateStorage.setItem(LIBRARY_SETTINGS_KEY, JSON.stringify({
+      state: {
+        sort: {
+          field: 'title',
+          direction: 'descending',
+        },
+      },
+      version: 0,
+    }));
+
+    await useLibraryStore.persist.rehydrate();
+
+    expect(useLibraryStore.getState().sort).toEqual({
+      field: 'title',
+      direction: 'descending',
     });
   });
 
