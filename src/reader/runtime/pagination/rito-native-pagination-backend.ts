@@ -558,7 +558,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     });
     this.assignArtifact(targetIndex, artifact);
     this.totalSpreadsValue = artifact.bookPageCount === undefined
-      ? undefined
+      ? this.totalSpreadsValue
       : spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode);
     await this.releaseAfterNavigation(source);
     this.pruneSlots();
@@ -618,7 +618,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       }
       this.assignArtifact(targetIndex, artifact);
       this.totalSpreadsValue = artifact.bookPageCount === undefined
-        ? undefined : spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode);
+        ? this.totalSpreadsValue : spreadCountFromBookPages(artifact.bookPageCount, this.spreadMode);
       await this.releaseAfterNavigation(source);
       this.pruneSlots();
       return targetIndex;

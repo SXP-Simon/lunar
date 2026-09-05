@@ -572,6 +572,11 @@ export class LunarReaderRuntime implements ReaderRuntime {
       throw error;
     }
     this.assertCurrent(operation);
+    // Exact seeks and chapter-local turns need a publication handoff even
+    // when the whole-book layout finished before this navigation.
+    if (publication.getBookPageIndex && publication.getBookPageIndex(target) === undefined) {
+      this.paginationComplete = false;
+    }
     const snapshot = this.createReadySnapshot(target);
     this.emit(snapshot);
     readerDiagnostic('runtime.show.ready', `target=${target} snapshot=${describeSnapshot(snapshot)}`);
@@ -655,7 +660,8 @@ export class LunarReaderRuntime implements ReaderRuntime {
     readerDiagnostic('runtime.bg.result', `operation=${operation} result=${describeBackgroundResult(result)} snapshot=${describeSnapshot(this.snapshot)}`);
     if (operation !== this.operation || this.abortController?.signal.aborted) return;
     const totalSpreads = this.publication?.totalSpreads;
-    if (totalSpreads !== this.snapshot.totalSpreads) {
+    if (totalSpreads !== this.snapshot.totalSpreads
+      || this.publication?.getBookPageIndex?.(this.snapshot.spreadIndex) !== this.snapshot.position?.bookPageIndex) {
       this.emit(this.createReadySnapshot(this.snapshot.spreadIndex));
     }
     if (isBackgroundComplete(result)) {

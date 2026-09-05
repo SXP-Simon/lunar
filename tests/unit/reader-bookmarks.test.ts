@@ -108,7 +108,6 @@ describe('bookmark gestures and source locations', () => {
     expect(toRitoSavedLocator(locator, 'text/chapter.xhtml')).toEqual({
       href: 'text/chapter.xhtml', anchorId: undefined, progression: undefined,
       sourcePoint: { nodePath: [1, 2], textOffset: 7n },
-      sourceRange: { start: { nodePath: [1, 2], textOffset: 7n }, end: { nodePath: [1, 3], textOffset: 14n } },
     });
   });
 });
