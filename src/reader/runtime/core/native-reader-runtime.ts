@@ -543,7 +543,13 @@ export class LunarReaderRuntime implements ReaderRuntime {
       getBytes: (source) => publication.getImage(source),
     });
 
-    const target = progressionToSpread(progression, publication.totalSpreads);
+    // When a locator is available, the pagination backend has already opened
+    // the artifact at that exact source position. Recomputing a whole-book
+    // spread from progression would overwrite the chapter-local slot and can
+    // send the reader to an unrelated page after a typography reflow.
+    const target = request.restorePosition?.locator
+      ? 0
+      : progressionToSpread(progression, publication.totalSpreads);
     await this.preparePicture(target, operation);
     this.assertCurrent(operation);
     const snapshot = this.createReadySnapshot(target);
