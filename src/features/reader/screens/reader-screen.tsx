@@ -746,7 +746,10 @@ export default function ReaderScreen() {
             style={absoluteFillStyle}
           />
           {!isReady && !session.errorMessage && (
-            <View pointerEvents="none" className="absolute inset-0 items-center justify-center gap-4">
+            <View
+              pointerEvents="none"
+              className="absolute inset-0 items-center justify-center gap-4"
+              style={{ backgroundColor: initialPaperColor }}>
               <Spinner color="default" size="lg" />
               <Text className="text-sm text-muted">{statusText}</Text>
             </View>
