@@ -11,3 +11,5 @@ The snapshot comes from Rito commit
 The `target` directory is machine-local build output and is excluded from
 source packages. The Android build task reuses an existing
 `target/aarch64-linux-android/release/librito_ffi.a` when available.
+
+Changed in commit: 5199ba8af02b86e3922911810d70907a9916fa59

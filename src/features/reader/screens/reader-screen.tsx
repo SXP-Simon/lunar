@@ -40,6 +40,7 @@ import { TypographyDrawer } from '../components/bottom-tabs/typography-drawer';
 import { ReaderControls } from '../components/reader-controls';
 import { FootnoteDrawer } from '../components/footnote-drawer';
 import { ReaderSelectionControls } from '../components/reader-selection-controls';
+import { configureReaderSelectionGesture } from '../components/reader-selection-gesture';
 import { useReaderHighlights } from '../hooks/use-reader-highlights';
 import { useReaderSession } from '../hooks/use-reader-session';
 import { containsHighlightRange } from '../domain/highlight-ranges';
@@ -323,13 +324,11 @@ export default function ReaderScreen() {
   }, [expandHighlightSelection, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
 
   /* eslint-disable react-hooks/refs */
-  const selectionGesture = useMemo(() => Gesture.Pan()
+  const selectionGesture = useMemo(() => configureReaderSelectionGesture(Gesture.Pan())
     .enabled(isReady && !isSettling)
-    .minDistance(0)
     .averageTouches(true)
     .cancelsTouchesInView(true)
     .runOnJS(true)
-    .activateAfterLongPress(420)
     .onStart((event) => beginSelection(event.x, event.y))
     .onUpdate((event) => updateSelection(event.x, event.y))
     .onEnd(() => {
