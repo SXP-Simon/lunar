@@ -5,12 +5,19 @@ import type {
   ReaderRuntime,
   ReaderSearchResult,
   ReaderSourceRange,
+  ReaderRenderFrame,
+  ReaderSnapshot,
 } from '../../src/reader';
 import {
   resolveReaderHighlightOverlays,
   resolveReaderSelectionSourceRange,
+  createReaderHighlightOverlayResolver,
+  createReaderHighlightRegions,
 } from '../../src/features/reader/services/highlight-overlay-service';
 import { createReaderTextSelection } from '../../src/reader/interaction/text-selection';
+import { decorateReaderPageOverlays } from '../../src/reader/skia/rendering/page-overlays';
+import { nativeAutomaticPageTurnFaces } from '../../src/reader/skia/anime/native/page-turn';
+import type { ReaderPageContent } from '../../src/reader/skia/anime/core/page-turn-types';
 
 const entries: ReaderHitEntry[] = [
   hit('第一行', 0, 0),
@@ -22,6 +29,84 @@ const sourceRanges: ReaderSourceRange[] = [
 ];
 
 describe('reader highlight overlays', () => {
+  const colors = { yellow: '#ffee00', pink: '#ffaaaa', purple: '#bbaaff', blue: '#aabbff', green: '#aaffaa' };
+  const highlight = {
+    id: 'highlight', bookId: 'book', href: 'chapter.xhtml', createdAt: 1,
+    text: '第一行第二行。',
+    sourceRange: { start: sourceRanges[0].start, end: sourceRanges[1].end },
+  };
+  const sourceEntries = entries.map((entry, index) => ({ ...entry, sourcePoint: sourceRanges[index].start }));
+  const snapshot = { revisionId: 7, spreadIndex: 0, position: { locator: { manifestHref: 'chapter.xhtml' } } } as ReaderSnapshot;
+  const frame = { spreadIndex: 0, hits: sourceEntries } as ReaderRenderFrame;
+
+  it('computes persistent overlays synchronously and caches them with the immutable frame', () => {
+    const resolve = createReaderHighlightOverlayResolver([highlight], colors);
+    const overlays = resolve(snapshot, frame);
+    expect(overlays).toHaveLength(2);
+    expect(resolve({ ...snapshot }, frame)).toBe(overlays);
+    expect(overlays[0]).toEqual({ revisionId: 7, bounds: entries[0].bounds, color: colors.yellow, radius: 2 });
+  });
+
+  it('restores a saved source-backed selection without searching or retaining the selection overlay', async () => {
+    const runtime = runtimeWithSearchResults([]);
+    const selection = createReaderTextSelection(sourceEntries, 0, 1)!;
+    const sourceRange = await resolveReaderSelectionSourceRange(runtime, selection, highlight.href);
+    expect(sourceRange).toEqual(highlight.sourceRange);
+    const stored = JSON.parse(JSON.stringify({ ...highlight, sourceRange }));
+    const overlays = createReaderHighlightOverlayResolver([stored], colors)(snapshot, frame);
+    expect(overlays.map((overlay) => overlay.bounds)).toEqual(selection.bounds);
+    expect(runtime.search).not.toHaveBeenCalled();
+    expect(runtime.resolveTextRangeGeometry).not.toHaveBeenCalled();
+  });
+
+  it('never searches the chapter for an off-page highlight when source coordinates exist', async () => {
+    const runtime = runtimeWithSearchResults([]);
+    const offPage = { ...highlight, sourceRange: { start: { nodePath: [9], textOffset: 0 }, end: { nodePath: [9], textOffset: 20 } } };
+    const overlays = await resolveReaderHighlightOverlays(runtime, 7, highlight.href, sourceEntries, [offPage], colors.yellow);
+    expect(overlays).toEqual([]);
+    expect(runtime.search).not.toHaveBeenCalled();
+    expect(runtime.resolveTextRangeGeometry).not.toHaveBeenCalled();
+  });
+
+  it('clips a cross-page highlight to the current page while retaining its complete record', () => {
+    const regions = createReaderHighlightRegions(sourceEntries.slice(1), [highlight], highlight.href);
+    expect(regions).toHaveLength(1);
+    expect(regions[0].highlight).toBe(highlight);
+    expect(regions[0].selection.bounds).toEqual([entries[1].bounds]);
+  });
+
+  it('uses the prepared frame chapter even while the snapshot still names the source chapter', () => {
+    const target = { ...highlight, href: 'target.xhtml', color: 'pink' as const };
+    const resolve = createReaderHighlightOverlayResolver([highlight, target], colors);
+    expect(resolve(snapshot, { ...frame, manifestHref: 'target.xhtml' })[0].color).toBe(colors.pink);
+  });
+
+  it('rebuilds geometry when a private slot is reused and invalidates colors and deletions', () => {
+    const resolve = createReaderHighlightOverlayResolver([highlight], colors);
+    const first = resolve(snapshot, frame);
+    const replacement = { ...frame, hits: sourceEntries.map((entry) => ({ ...entry, bounds: { ...entry.bounds, y: 100 } })) };
+    expect(resolve(snapshot, replacement)[0].bounds.y).toBe(100);
+    expect(resolve({ ...snapshot, revisionId: 8 }, frame)[0].revisionId).toBe(8);
+    expect(createReaderHighlightOverlayResolver([{ ...highlight, color: 'blue' }], colors)(snapshot, frame)[0].color).toBe(colors.blue);
+    expect(createReaderHighlightOverlayResolver([], colors)(snapshot, frame)).toEqual([]);
+    expect(first[0].color).toBe(colors.yellow);
+  });
+
+  it('carries both page highlights into forward and backward native tap-turn faces', () => {
+    const resolve = createReaderHighlightOverlayResolver([highlight], colors);
+    const source = { key: 'source', snapshot, frame } as ReaderPageContent;
+    const target = { key: 'target', snapshot, frame: { ...frame, hits: sourceEntries.slice(1) } } as ReaderPageContent;
+    const from = decorateReaderPageOverlays(source, resolve);
+    const to = decorateReaderPageOverlays(target, resolve);
+    for (const direction of [1, -1] as const) {
+      const faces = nativeAutomaticPageTurnFaces({ id: 1, from, to, direction });
+      expect(faces.front.overlays).toHaveLength(direction === 1 ? 2 : 1);
+      expect(faces.background.overlays).toHaveLength(direction === 1 ? 1 : 2);
+    }
+    expect(source.overlays).toBeUndefined();
+    expect(decorateReaderPageOverlays(source)).toBe(source);
+  });
+
   it('resolves one page query containing a Chinese punctuation run', async () => {
     const runtime = runtimeWithSearchResults([
       searchResultAcrossLines('第一行\n第二行。', {

@@ -2,8 +2,8 @@ import type { EdgeInsets } from 'react-native-safe-area-context';
 
 import type { ReaderRect } from '@/reader';
 
-export const ReaderSelectionToolbarWidth = 112;
-export const ReaderSelectionToolbarHeight = 52;
+export const ReaderSelectionToolbarWidth = 252;
+export const ReaderSelectionToolbarHeight = 108;
 
 const ToolbarGap = 12;
 const ViewportPadding = 12;
@@ -39,8 +39,8 @@ export function computeReaderSelectionControlsLayout(
     : Math.min(maximumTop, Math.max(minimumTop, belowTop));
   const centerX = (minX + maxX) / 2;
   const left = Math.min(
-    viewportWidth - ViewportPadding - ReaderSelectionToolbarWidth,
-    Math.max(ViewportPadding, centerX - ReaderSelectionToolbarWidth / 2),
+    viewportWidth - safeAreaInsets.right - ViewportPadding - ReaderSelectionToolbarWidth,
+    Math.max(safeAreaInsets.left + ViewportPadding, centerX - ReaderSelectionToolbarWidth / 2),
   );
   return {
     toolbar: { left, top },

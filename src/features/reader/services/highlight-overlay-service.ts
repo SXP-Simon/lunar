@@ -7,10 +7,62 @@ import {
   type ReaderSourcePoint,
   type ReaderSourceRange,
   type ReaderTextSelection,
+  type ReaderRenderFrame,
+  type ReaderSnapshot,
 } from '../../../reader';
 import type { ReaderOverlayRect } from '../../../reader/native';
 
-import type { ReaderHighlight } from '../domain/reader-highlight';
+import type { ReaderHighlight, ReaderHighlightColor } from '../domain/reader-highlight';
+
+export function createReaderHighlightOverlayResolver(
+  highlights: readonly ReaderHighlight[],
+  colors: Readonly<Record<ReaderHighlightColor, string>>,
+) {
+  const chapters = new Map<string, ReaderHighlight[]>();
+  for (const highlight of highlights) {
+    const chapter = chapters.get(highlight.href) ?? [];
+    chapter.push(highlight);
+    chapters.set(highlight.href, chapter);
+  }
+  const cache = new WeakMap<ReaderRenderFrame, { key: string; overlays: readonly ReaderOverlayRect[] }>();
+  return (snapshot: ReaderSnapshot, frame: ReaderRenderFrame): readonly ReaderOverlayRect[] => {
+    const href = frame.manifestHref ?? snapshot.position?.locator?.manifestHref ?? '';
+    const key = `${snapshot.revisionId}:${href}`;
+    const cached = cache.get(frame);
+    if (cached?.key === key) return cached.overlays;
+    const overlays = createReaderHighlightOverlays(snapshot.revisionId, href, frame.hits ?? [], chapters.get(href) ?? [], colors);
+    cache.set(frame, { key, overlays });
+    return overlays;
+  };
+}
+
+export function createReaderHighlightRegions(
+  entries: readonly ReaderHitEntry[],
+  highlights: readonly ReaderHighlight[],
+  href: string,
+) {
+  return highlights.flatMap((highlight) => {
+    if (highlight.href !== href) return [];
+    const selection = createReaderTextSelectionFromSourceRange(entries, highlight.sourceRange);
+    return selection ? [{ highlight, selection }] : [];
+  });
+}
+
+export function createReaderHighlightOverlays(
+  revisionId: number,
+  href: string,
+  entries: readonly ReaderHitEntry[],
+  highlights: readonly ReaderHighlight[],
+  colors: Readonly<Record<ReaderHighlightColor, string>>,
+): readonly ReaderOverlayRect[] {
+  return createReaderHighlightRegions(entries, highlights, href).flatMap(({ highlight, selection }) =>
+    selection.bounds.map((bounds) => ({
+      revisionId,
+      bounds,
+      color: colors[highlight.color ?? 'yellow'],
+      radius: 2,
+    })));
+}
 
 export async function resolveReaderSelectionSourceRange(
   runtime: ReaderRuntime,
@@ -67,6 +119,8 @@ export async function resolveReaderHighlightOverlays(
       })));
       continue;
     }
+
+    if (entries.some((entry) => entry.sourcePoint)) continue;
 
     const results = await resolveHighlightSegments(runtime, highlight, href, pageIndexes);
     for (const result of results) {

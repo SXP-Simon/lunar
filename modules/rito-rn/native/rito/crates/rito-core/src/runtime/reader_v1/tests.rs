@@ -1805,6 +1805,84 @@ fn text_range_geometry_lands_in_display_list_space() {
 }
 
 #[test]
+fn fragment_hit_sources_match_search_ranges() {
+    assert_fragment_hit_sources(crate::runtime::tests::fixture::fixture_epub());
+}
+
+#[test]
+fn fragment_hit_sources_preserve_utf16_offsets_across_wraps_and_duplicate_text() {
+    let chapter = r#"<html xmlns="http://www.w3.org/1999/xhtml"><body><p>你好😀世界。你好😀世界。 Alpha   beta gamma delta epsilon zeta eta theta iota kappa lambda mu.</p><p>你好😀世界。 <em>Alpha beta</em> gamma.</p></body></html>"#;
+    assert_fragment_hit_sources(
+        crate::runtime::tests::fixture::fixture_epub_with_chapter_and_stylesheet(
+            chapter.as_bytes(),
+            "p { margin: 0; }",
+        ),
+    );
+}
+
+fn assert_fragment_hit_sources(publication: Vec<u8>) {
+    let mut session = open_test_session(171, publication).expect("reader session opens");
+    let mut artifact_request = request(171, 1, "");
+    artifact_request.layout.viewport_width = 180.0;
+    let artifact = session
+        .request_artifact(artifact_request)
+        .expect("artifact resolves");
+    let encoded = encode_reader_artifact_v1(&artifact).expect("artifact encodes");
+    let decoded = decode_reader_artifact_v1(&encoded).expect("artifact decodes");
+    assert_eq!(decoded.pages, artifact.pages);
+    let mut checked = 0;
+    for page in &decoded.pages {
+        let text_hits = page.hits.iter().filter(|hit| !hit.text.is_empty());
+        for (hit, position) in text_hits.zip(&page.text_runs) {
+            let query = hit.text.trim_end();
+            if query.is_empty() {
+                continue;
+            }
+            let point = hit
+                .source_point
+                .as_ref()
+                .unwrap_or_else(|| panic!("text hit carries its source point: {:?}", hit.text));
+            let response = session
+                .search(ReaderSearchRequestV1 {
+                    session_id: 171,
+                    artifact_id: artifact.artifact_id,
+                    query: query.to_owned(),
+                    case_sensitive: true,
+                    whole_word: false,
+                    limit: 256,
+                })
+                .expect("text run search resolves");
+            let result = response
+                .results
+                .iter()
+                .find(|result| {
+                    result.page_index == page.page_index
+                        && result.start.block_index == position.block_index
+                        && result.start.line_index == position.line_index
+                        && result.start.run_index == position.run_index
+                        && result.start.char_index == 0
+                })
+                .expect("search identifies the same text run");
+            let range = result
+                .locator
+                .as_ref()
+                .and_then(|locator| locator.source_range.as_ref())
+                .unwrap_or_else(|| {
+                    panic!("search returns a durable range for {:?}: {result:?}", hit.text)
+                });
+            assert_eq!(point, &range.start);
+            assert_eq!(point.node_path, range.end.node_path);
+            assert_eq!(
+                point.text_offset + query.encode_utf16().count() as u64,
+                range.end.text_offset,
+            );
+            checked += 1;
+        }
+    }
+    assert!(checked > 0);
+}
+
+#[test]
 fn search_hits_feed_straight_into_text_geometry() {
     let mut session = open_test_session(170, crate::runtime::tests::fixture::fixture_epub())
         .expect("reader session opens");

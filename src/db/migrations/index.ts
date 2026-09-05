@@ -86,4 +86,11 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       'CREATE INDEX IF NOT EXISTS reader_highlights_book_id_index ON reader_highlights(book_id)',
     ],
   },
+  {
+    version: 4,
+    name: 'reader_highlight_colors',
+    statements: [
+      "ALTER TABLE reader_highlights ADD COLUMN color TEXT NOT NULL DEFAULT 'yellow'",
+    ],
+  },
 ];

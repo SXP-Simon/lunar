@@ -559,8 +559,12 @@ impl PageArtifact for FragmentPageArtifact {
                 text_length: run.end - run.start,
                 text: run_text,
                 href: run.href.clone(),
-                source_path: None,
-                source_text_offset: None,
+                source_path: run.source.as_ref().map(|source| source.path.clone()),
+                source_text_offset: run
+                    .source
+                    .as_ref()
+                    .and_then(|source| source.source_offset(0))
+                    .map(|offset| offset as usize),
                 image_src: None,
                 image_alt: None,
             });

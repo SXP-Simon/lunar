@@ -1,0 +1,86 @@
+import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
+import type { SQLiteDatabase } from 'expo-sqlite';
+import { afterEach, describe, expect, it } from 'vitest';
+
+import { DATABASE_MIGRATIONS } from '../../src/db/migrations';
+import type { ReaderHighlight } from '../../src/features/reader/domain/reader-highlight';
+import { SQLiteHighlightRepository } from '../../src/features/reader/repositories/sqlite-highlight-repository';
+
+const databases: DatabaseSync[] = [];
+afterEach(() => { for (const database of databases.splice(0)) database.close(); });
+
+function createDatabase(version = 4) {
+  const sqlite = new DatabaseSync(':memory:');
+  databases.push(sqlite);
+  sqlite.exec('PRAGMA foreign_keys = ON');
+  for (const migration of DATABASE_MIGRATIONS.filter((item) => item.version <= version)) {
+    for (const statement of migration.statements) sqlite.exec(statement);
+  }
+  for (const id of ['book', 'other']) sqlite.prepare(`INSERT INTO books
+    (id, title, epub_identifier, file_uri, file_name, file_size, sha256, added_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 1, ?, 1, 1)`).run(id, id, id, id, id, id);
+  const adapter = {
+    getAllAsync: async (sql: string, ...params: SQLInputValue[]) => sqlite.prepare(sql).all(...params),
+    runAsync: async (sql: string, ...params: SQLInputValue[]) => sqlite.prepare(sql).run(...params),
+    withExclusiveTransactionAsync: async (callback: (transaction: SQLiteDatabase) => Promise<void>) => {
+      sqlite.exec('BEGIN');
+      try {
+        await callback(adapter as unknown as SQLiteDatabase);
+        sqlite.exec('COMMIT');
+      } catch (error) {
+        sqlite.exec('ROLLBACK');
+        throw error;
+      }
+    },
+  };
+  return { sqlite, repository: new SQLiteHighlightRepository(adapter as unknown as SQLiteDatabase) };
+}
+
+const highlight: ReaderHighlight = {
+  id: 'highlight', bookId: 'book', href: 'chapter.xhtml', text: 'text', createdAt: 1,
+  sourceRange: { start: { nodePath: [1], textOffset: 0 }, end: { nodePath: [1], textOffset: 4 } },
+};
+
+describe('SQLite highlight persistence', () => {
+  it('migrates existing records to yellow without losing their ranges or text', async () => {
+    const { sqlite, repository } = createDatabase(3);
+    sqlite.prepare('INSERT INTO reader_highlights VALUES (?, ?, ?, ?, ?, ?)').run(
+      highlight.id, highlight.bookId, highlight.href, JSON.stringify(highlight.sourceRange), highlight.text, highlight.createdAt,
+    );
+    for (const statement of DATABASE_MIGRATIONS[3].statements) sqlite.exec(statement);
+    expect(await repository.listByBookId('book')).toEqual([{ ...highlight, color: 'yellow' }]);
+  });
+
+  it('persists color edits and atomically replaces overlapping records', async () => {
+    const { repository } = createDatabase();
+    await repository.save(highlight);
+    const updated = { ...highlight, color: 'green' as const, text: 'expanded', sourceRange: { ...highlight.sourceRange, end: { nodePath: [1], textOffset: 8 } } };
+    await repository.replace(updated, [highlight.id]);
+    expect(await repository.listByBookId('book')).toEqual([updated]);
+    await repository.remove('book', [highlight.id]);
+    expect(await repository.listByBookId('book')).toEqual([]);
+  });
+
+  it('rolls back deletion if saving the replacement fails', async () => {
+    const { repository } = createDatabase();
+    await repository.save(highlight);
+    await expect(repository.replace({ ...highlight, text: null as unknown as string }, [highlight.id])).rejects.toThrow();
+    expect(await repository.listByBookId('book')).toEqual([{ ...highlight, color: 'yellow' }]);
+  });
+
+  it('scopes deletions to the owning book', async () => {
+    const { repository } = createDatabase();
+    await repository.save(highlight);
+    await repository.remove('other', [highlight.id]);
+    expect(await repository.listByBookId('book')).toHaveLength(1);
+  });
+
+  it('retains unique range enforcement and validates stored colors', async () => {
+    const { sqlite, repository } = createDatabase();
+    await repository.save(highlight);
+    await repository.save({ ...highlight, id: 'replacement', color: 'purple' });
+    expect(await repository.listByBookId('book')).toHaveLength(1);
+    sqlite.exec("UPDATE reader_highlights SET color = 'invalid'");
+    expect((await repository.listByBookId('book'))[0].color).toBe('yellow');
+  });
+});

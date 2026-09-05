@@ -20,6 +20,7 @@ import { IconTabBar } from '@/components/ui/icon-tab-bar';
 import { useTranslation } from '@/i18n';
 import {
   createReaderWordSelectionAtPoint,
+  createReaderTextSelectionFromSourceRange,
   findReaderHitIndex,
   updateReaderTextSelectionBoundaryAtPoint,
   updateReaderTextSelectionAtPoint,
@@ -30,7 +31,6 @@ import {
 import {
   ReaderSurface,
   useReaderPageTurn,
-  type ReaderOverlayRect,
   type ReaderSurfaceTransform,
 } from '@/reader/native';
 import { useReaderStore } from '@/stores';
@@ -42,8 +42,11 @@ import { FootnoteDrawer } from '../components/footnote-drawer';
 import { ReaderSelectionControls } from '../components/reader-selection-controls';
 import { useReaderHighlights } from '../hooks/use-reader-highlights';
 import { useReaderSession } from '../hooks/use-reader-session';
+import { containsHighlightRange } from '../domain/highlight-ranges';
+import type { ReaderHighlightColor } from '../domain/reader-highlight';
 import {
-  resolveReaderHighlightOverlays,
+  createReaderHighlightOverlayResolver,
+  createReaderHighlightRegions,
   resolveReaderSelectionSourceRange,
 } from '../services/highlight-overlay-service';
 
@@ -55,6 +58,7 @@ const EmptyReaderHitEntries = [] as const;
 interface OwnedReaderTextSelection extends ReaderTextSelection {
   readonly revisionId: number;
   readonly spreadIndex: number;
+  readonly renderId?: number;
 }
 
 export default function ReaderScreen() {
@@ -67,6 +71,14 @@ export default function ReaderScreen() {
   const { theme } = useUniwind();
   const selectionFillColor = useCSSVariable('--color-reader-selection-fill') as string;
   const highlightFillColor = useCSSVariable('--color-reader-highlight-fill') as string;
+  const highlightPink = useCSSVariable('--color-reader-highlight-pink') as string;
+  const highlightPurple = useCSSVariable('--color-reader-highlight-purple') as string;
+  const highlightBlue = useCSSVariable('--color-reader-highlight-blue') as string;
+  const highlightGreen = useCSSVariable('--color-reader-highlight-green') as string;
+  const highlightColors = useMemo(() => ({
+    yellow: highlightFillColor, pink: highlightPink, purple: highlightPurple,
+    blue: highlightBlue, green: highlightGreen,
+  }), [highlightFillColor, highlightPink, highlightPurple, highlightBlue, highlightGreen]);
   const absoluteFillStyle = useResolveClassNames('absolute inset-0');
   const [viewport, setViewport] = useState<ReaderViewport>();
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -77,11 +89,6 @@ export default function ReaderScreen() {
   const [isFootnoteOpen, setIsFootnoteOpen] = useState(false);
   const [selectionState, setSelection] = useState<OwnedReaderTextSelection>();
   const [isHighlighting, setIsHighlighting] = useState(false);
-  const [highlightOverlayState, setHighlightOverlayState] = useState<{
-    readonly revisionId: number;
-    readonly spreadIndex: number;
-    readonly overlays: readonly ReaderOverlayRect[];
-  }>({ revisionId: -1, spreadIndex: -1, overlays: [] });
   const selectionRef = useRef<ReaderTextSelection | undefined>(undefined);
   const isHighlightingRef = useRef(false);
   const [surfaceTransform, setSurfaceTransform] = useState<ReaderSurfaceTransform>();
@@ -102,7 +109,9 @@ export default function ReaderScreen() {
     contentInsets,
     theme: readerTheme,
   });
-  const { highlights, addHighlight } = useReaderHighlights(bookId ?? '');
+  const { highlights, addHighlight, removeHighlights, isLoaded: highlightsLoaded, error: highlightsError } = useReaderHighlights(bookId ?? '');
+  const resolvePageHighlights = useMemo(() => createReaderHighlightOverlayResolver(highlights, highlightColors),
+    [highlights, highlightColors]);
   const {
     gesture: pageTurnGesture,
     interactiveTurn,
@@ -121,14 +130,30 @@ export default function ReaderScreen() {
     spreadMode,
     surfaceTop: 0,
   });
-  const isReady = session.snapshot.phase === 'ready';
+  const isReady = session.snapshot.phase === 'ready' && (highlightsLoaded || Boolean(highlightsError));
   const currentHitEntries = isReady
     ? session.runtime.getCurrentHitMap()?.entries ?? EmptyReaderHitEntries
     : EmptyReaderHitEntries;
   const selection = selectionState?.revisionId === session.snapshot.revisionId
     && selectionState.spreadIndex === session.snapshot.spreadIndex
+    && selectionState.renderId === session.snapshot.renderId
     ? selectionState
     : undefined;
+  const chapterHref = session.snapshot.position?.locator?.manifestHref ?? '';
+  const highlightRegions = useMemo(() => createReaderHighlightRegions(currentHitEntries, highlights, chapterHref),
+    [chapterHref, currentHitEntries, highlights]);
+  const activeHighlight = selection?.sourceRange
+    ? highlights.find((highlight) => highlight.href === chapterHref
+      && containsHighlightRange(highlight.sourceRange, selection.sourceRange!))
+    : undefined;
+  const expandHighlightSelection = useCallback((value: ReaderTextSelection): ReaderTextSelection => {
+    const range = value.sourceRange;
+    if (!range) return value;
+    const highlight = highlights.find((item) => item.href === chapterHref && containsHighlightRange(item.sourceRange, range));
+    if (!highlight) return value;
+    const expanded = createReaderTextSelectionFromSourceRange(currentHitEntries, highlight.sourceRange);
+    return expanded ? { ...expanded, text: highlight.text, sourceRange: highlight.sourceRange } : value;
+  }, [chapterHref, currentHitEntries, highlights]);
   const chapterTitle = session.snapshot.chapterTitle
     ?? session.metadata?.title
     ?? session.book?.title
@@ -155,6 +180,10 @@ export default function ReaderScreen() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (highlightsError) toast.show({ variant: 'danger', label: t('reader.highlightLoadFailed') });
+  }, [highlightsError, t, toast]);
 
   useEffect(() => {
     if (!session.errorMessage) {
@@ -206,16 +235,18 @@ export default function ReaderScreen() {
     const hitMap = session.runtime.getCurrentHitMap();
     if (!hitMap) return;
     const point = displayPoint(x, y);
-    const nextSelection = createReaderWordSelectionAtPoint(hitMap.entries, point.x, point.y);
-    if (!nextSelection) return;
+    const wordSelection = createReaderWordSelectionAtPoint(hitMap.entries, point.x, point.y);
+    if (!wordSelection) return;
+    const nextSelection = expandHighlightSelection(wordSelection);
     selectionRef.current = nextSelection;
     setSelection({
       ...nextSelection,
       revisionId: session.snapshot.revisionId,
       spreadIndex: session.snapshot.spreadIndex,
+      renderId: session.snapshot.renderId,
     });
     setControlsVisible(false);
-  }, [displayPoint, session.runtime, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+  }, [displayPoint, expandHighlightSelection, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
 
   const updateSelection = useCallback((x: number, y: number) => {
     const currentSelection = selectionRef.current;
@@ -234,8 +265,9 @@ export default function ReaderScreen() {
       ...nextSelection,
       revisionId: session.snapshot.revisionId,
       spreadIndex: session.snapshot.spreadIndex,
+      renderId: session.snapshot.renderId,
     });
-  }, [displayPoint, session.runtime, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+  }, [displayPoint, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
 
   const updateSelectionBoundary = useCallback((
     boundary: 'start' | 'end',
@@ -259,14 +291,20 @@ export default function ReaderScreen() {
       ...nextSelection,
       revisionId: session.snapshot.revisionId,
       spreadIndex: session.snapshot.spreadIndex,
+      renderId: session.snapshot.renderId,
     });
-  }, [displayPoint, session.runtime, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+  }, [displayPoint, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
 
   const refineSelectionGeometry = useCallback(async () => {
-    const requestedSelection = selectionRef.current;
-    if (!requestedSelection || requestedSelection.geometryRequests.length === 0) return;
+    const currentSelection = selectionRef.current;
+    if (!currentSelection) return;
+    const requestedSelection = expandHighlightSelection(currentSelection);
     const revisionId = session.snapshot.revisionId;
     const spreadIndex = session.snapshot.spreadIndex;
+    const renderId = session.snapshot.renderId;
+    selectionRef.current = requestedSelection;
+    setSelection({ ...requestedSelection, revisionId, spreadIndex, renderId });
+    if (requestedSelection.geometryRequests.length === 0) return;
     const groups = await Promise.all(
       requestedSelection.geometryRequests.map((request) =>
         session.runtime.resolveTextRangeGeometry(request).catch(() => [])),
@@ -275,13 +313,14 @@ export default function ReaderScreen() {
       selectionRef.current !== requestedSelection
       || session.runtime.getSnapshot().revisionId !== revisionId
       || session.runtime.getSnapshot().spreadIndex !== spreadIndex
+      || session.runtime.getSnapshot().renderId !== renderId
     ) return;
     const bounds = groups.flat().map((rect) => rect.bounds);
     if (bounds.length === 0) return;
     const refinedSelection = { ...requestedSelection, bounds };
     selectionRef.current = refinedSelection;
-    setSelection({ ...refinedSelection, revisionId, spreadIndex });
-  }, [session.runtime, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+    setSelection({ ...refinedSelection, revisionId, spreadIndex, renderId });
+  }, [expandHighlightSelection, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
 
   /* eslint-disable react-hooks/refs */
   const selectionGesture = useMemo(() => Gesture.Pan()
@@ -365,6 +404,21 @@ export default function ReaderScreen() {
       }
       const hitMap = session.runtime.getCurrentHitMap();
       const point = displayPoint(x, y);
+      const region = highlightRegions.find(({ selection: highlightedSelection }) =>
+        highlightedSelection.bounds.some((bounds) => point.x >= bounds.x && point.x <= bounds.x + bounds.width
+          && point.y >= bounds.y && point.y <= bounds.y + bounds.height));
+      if (region) {
+        const nextSelection = { ...region.selection, sourceRange: region.highlight.sourceRange, text: region.highlight.text };
+        selectionRef.current = nextSelection;
+        setSelection({
+          ...nextSelection,
+          revisionId: session.snapshot.revisionId,
+          spreadIndex: session.snapshot.spreadIndex,
+          renderId: session.snapshot.renderId,
+        });
+        setControlsVisible(false);
+        return;
+      }
       const hitIndex = hitMap
         ? findReaderHitIndex(hitMap.entries, point.x, point.y)
         : undefined;
@@ -385,7 +439,7 @@ export default function ReaderScreen() {
         setControlsVisible((value) => !value);
       }
     },
-    [clearSelection, displayPoint, isReady, isSettling, next, openFootnote, openHyperlink, previous, selection, session.runtime, viewport],
+    [clearSelection, displayPoint, highlightRegions, isReady, isSettling, next, openFootnote, openHyperlink, previous, selection, session.runtime, session.snapshot, viewport],
   );
 
   const copySelection = useCallback(async () => {
@@ -395,7 +449,7 @@ export default function ReaderScreen() {
     clearSelection();
   }, [clearSelection, selection, t, toast]);
 
-  const highlightSelection = useCallback(async () => {
+  const highlightSelection = useCallback(async (color?: ReaderHighlightColor) => {
     const href = session.snapshot.position?.locator?.manifestHref;
     if (isHighlightingRef.current) return;
     if (!selection || !href || !bookId) {
@@ -414,30 +468,28 @@ export default function ReaderScreen() {
         toast.show({ variant: 'danger', label: t('reader.highlightUnavailable') });
         return;
       }
-      await addHighlight({
+      const selected = selectionRef.current;
+      const operation = addHighlight({
         href,
         sourceRange,
         text: selection.text,
+        color: color ?? activeHighlight?.color ?? 'yellow',
       });
-      const revisionId = session.snapshot.revisionId;
-      const spreadIndex = session.snapshot.spreadIndex;
-      setHighlightOverlayState((current) => ({
-        revisionId,
-        spreadIndex,
-        overlays: [
-          ...(current.revisionId === revisionId && current.spreadIndex === spreadIndex
-            ? current.overlays
-            : []),
-          ...selection.bounds.map((bounds) => ({
-            revisionId,
-            bounds,
-            color: highlightFillColor,
-            radius: 2,
-          })),
-        ],
-      }));
+      const saved = await operation;
       toast.show({ variant: 'success', label: t('reader.highlightSaved') });
-      clearSelection();
+      if (!color && selectionRef.current === selected) clearSelection();
+      const latest = session.runtime.getSnapshot();
+      if (color && selectionRef.current === selected
+        && latest.revisionId === selection.revisionId
+        && latest.spreadIndex === selection.spreadIndex
+        && latest.renderId === selection.renderId) {
+        const expanded = createReaderTextSelectionFromSourceRange(currentHitEntries, saved.sourceRange);
+        if (expanded) {
+          const updated = { ...selection, ...expanded, sourceRange: saved.sourceRange, text: saved.text };
+          selectionRef.current = updated;
+          setSelection(updated);
+        }
+      }
     } catch (error) {
       toast.show({
         variant: 'danger',
@@ -448,51 +500,33 @@ export default function ReaderScreen() {
       isHighlightingRef.current = false;
       setIsHighlighting(false);
     }
-  }, [addHighlight, bookId, clearSelection, highlightFillColor, selection, session.runtime, session.snapshot.position?.locator?.manifestHref, session.snapshot.revisionId, session.snapshot.spreadIndex, t, toast]);
+  }, [activeHighlight, addHighlight, bookId, clearSelection, currentHitEntries, selection, session.runtime, session.snapshot.position?.locator?.manifestHref, t, toast]);
 
-  useEffect(() => {
-    const href = session.snapshot.position?.locator?.manifestHref;
-    if (!isReady || !href || currentHitEntries.length === 0) return;
-    const revisionId = session.snapshot.revisionId;
-    const spreadIndex = session.snapshot.spreadIndex;
-    let active = true;
-    void resolveReaderHighlightOverlays(
-      session.runtime,
-      revisionId,
-      href,
-      currentHitEntries,
-      highlights,
-      highlightFillColor,
-    ).then((overlays) => {
-      const latest = session.runtime.getSnapshot();
-      if (
-        active
-        && latest.revisionId === revisionId
-        && latest.spreadIndex === spreadIndex
-      ) {
-        setHighlightOverlayState({ revisionId, spreadIndex, overlays });
-      }
-    }).catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [currentHitEntries, highlightFillColor, highlights, isReady, session.runtime, session.snapshot.position?.locator?.manifestHref, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+  const deleteHighlight = useCallback(async () => {
+    if (!activeHighlight || isHighlightingRef.current) return;
+    isHighlightingRef.current = true;
+    setIsHighlighting(true);
+    const selected = selectionRef.current;
+    try {
+      await removeHighlights([activeHighlight.id]);
+      if (selectionRef.current === selected) clearSelection();
+      toast.show({ variant: 'success', label: t('reader.highlightRemoved') });
+    } catch (error) {
+      toast.show({ variant: 'danger', label: t('reader.highlightSaveFailed'), description: error instanceof Error ? error.message : undefined });
+    } finally {
+      isHighlightingRef.current = false;
+      setIsHighlighting(false);
+    }
+  }, [activeHighlight, clearSelection, removeHighlights, t, toast]);
 
-  const selectionOverlays = useMemo(() => {
-    const visibleHighlightOverlays = highlightOverlayState.revisionId === session.snapshot.revisionId
-      && highlightOverlayState.spreadIndex === session.snapshot.spreadIndex
-      ? highlightOverlayState.overlays
-      : [];
-    return [
-      ...visibleHighlightOverlays,
-      ...(selection?.bounds.map((bounds) => ({
+  const selectionOverlays = useMemo(() =>
+    activeHighlight ? [] : (selection?.bounds.map((bounds) => ({
         revisionId: session.snapshot.revisionId,
         bounds,
         color: selectionFillColor,
         radius: 2,
       })) ?? []),
-    ];
-  }, [highlightOverlayState, selection?.bounds, selectionFillColor, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+  [activeHighlight, selection?.bounds, selectionFillColor, session.snapshot.revisionId]);
   const selectionViewportRects = useMemo(() => {
     if (!selection || !surfaceTransform) return [];
     return selection.bounds.map((bounds) => {
@@ -583,6 +617,7 @@ export default function ReaderScreen() {
           overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}
           overlayInsets={contentInsets}
           overlays={selectionOverlays}
+          resolvePageOverlays={resolvePageHighlights}
           onTransformChange={handleSurfaceTransform}
           style={absoluteFillStyle}
         />
@@ -639,12 +674,16 @@ export default function ReaderScreen() {
         <ReaderSelectionControls
           copyLabel={t('reader.copySelection')}
           endHandleLabel={t('reader.selectionEndHandle')}
-          highlightLabel={t('reader.highlightSelection')}
-          isHighlightDisabled={isHighlighting}
+          highlightLabel={t(activeHighlight ? 'reader.removeHighlight' : 'reader.highlightSelection')}
+          isExistingHighlight={Boolean(activeHighlight)}
+          selectedColor={activeHighlight?.color ?? 'yellow'}
+          colorLabels={{ yellow: t('reader.highlightYellow'), pink: t('reader.highlightPink'), purple: t('reader.highlightPurple'), blue: t('reader.highlightBlue'), green: t('reader.highlightGreen') }}
+          onColorChange={(color) => void highlightSelection(color)}
+          isHighlightDisabled={isHighlighting || !highlightsLoaded}
           onBoundaryMove={updateSelectionBoundary}
           onBoundaryMoveEnd={() => void refineSelectionGeometry()}
           onCopy={() => void copySelection()}
-          onHighlight={() => void highlightSelection()}
+          onHighlight={() => void (activeHighlight ? deleteHighlight() : highlightSelection())}
           rects={selectionViewportRects}
           safeAreaInsets={reservedInsets}
           selectionLabel={t('reader.selectionToolbar')}

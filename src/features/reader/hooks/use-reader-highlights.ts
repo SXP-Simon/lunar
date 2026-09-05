@@ -1,54 +1,76 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { ReaderSourceRange } from '@/reader';
 import type { ReaderHighlight } from '../domain/reader-highlight';
 import {
-  createReaderHighlight,
   listReaderHighlights,
+  prepareReaderHighlight,
+  removeReaderHighlights,
+  saveReaderHighlight,
+  type CreateReaderHighlightInput,
 } from '../services/highlight-service';
 
-interface AddReaderHighlightInput {
-  readonly href: string;
-  readonly sourceRange: ReaderSourceRange;
-  readonly text: string;
-}
+const EmptyHighlights: readonly ReaderHighlight[] = [];
 
 export function useReaderHighlights(bookId: string) {
   const [state, setState] = useState<{
     readonly bookId: string;
     readonly highlights: readonly ReaderHighlight[];
-  }>({ bookId: '', highlights: [] });
+  }>({ bookId: '', highlights: EmptyHighlights });
+  const [failure, setFailure] = useState<{ bookId: string; error: unknown }>();
+  const pending = useRef(false);
 
   useEffect(() => {
     let active = true;
-    listReaderHighlights(bookId)
-      .then((highlights) => {
-        if (active) setState({ bookId, highlights });
-      })
-      .catch(() => {
-        if (active) setState({ bookId, highlights: [] });
-      });
-    return () => {
-      active = false;
-    };
+    if (bookId) void listReaderHighlights(bookId).then((highlights) => {
+      if (active) {
+        setState({ bookId, highlights });
+        setFailure(undefined);
+      }
+    }).catch((cause: unknown) => {
+      if (active) setFailure({ bookId, error: cause });
+    });
+    return () => { active = false; };
   }, [bookId]);
 
-  const addHighlight = useCallback(async (input: AddReaderHighlightInput) => {
-    const highlight = await createReaderHighlight({ ...input, bookId });
-    setState((current) => ({
-      bookId,
-      highlights: [
-        ...(current.bookId === bookId ? current.highlights : []).filter((item) =>
-          item.href !== highlight.href
-          || JSON.stringify(item.sourceRange) !== JSON.stringify(highlight.sourceRange)),
-        highlight,
-      ],
-    }));
-    return highlight;
-  }, [bookId]);
+  const addHighlight = useCallback(async (input: Omit<CreateReaderHighlightInput, 'bookId'>) => {
+    if (state.bookId !== bookId || pending.current) throw new Error('Highlights are still loading');
+    const previous = state;
+    const { highlight, removedIds } = prepareReaderHighlight({ ...input, bookId }, state.highlights);
+    const updated = { bookId, highlights: [...state.highlights.filter((item) => !removedIds.includes(item.id)), highlight] };
+    pending.current = true;
+    setState(updated);
+    try {
+      await saveReaderHighlight(highlight, removedIds);
+      return highlight;
+    } catch (cause) {
+      setState((current) => current === updated ? previous : current);
+      throw cause;
+    } finally {
+      pending.current = false;
+    }
+  }, [bookId, state]);
+
+  const removeHighlights = useCallback(async (ids: readonly string[]) => {
+    if (state.bookId !== bookId || pending.current) return;
+    pending.current = true;
+    const previous = state;
+    const updated = { bookId, highlights: state.highlights.filter((item) => !ids.includes(item.id)) };
+    setState(updated);
+    try {
+      await removeReaderHighlights(bookId, ids);
+    } catch (cause) {
+      setState((current) => current === updated ? previous : current);
+      throw cause;
+    } finally {
+      pending.current = false;
+    }
+  }, [bookId, state]);
 
   return {
-    highlights: state.bookId === bookId ? state.highlights : [],
+    highlights: state.bookId === bookId ? state.highlights : EmptyHighlights,
+    isLoaded: state.bookId === bookId,
+    error: failure?.bookId === bookId ? failure.error : undefined,
     addHighlight,
+    removeHighlights,
   };
 }

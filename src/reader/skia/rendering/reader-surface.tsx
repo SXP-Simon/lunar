@@ -47,6 +47,7 @@ import {
   type ReaderOverlayRect,
 } from './overlay-renderer';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
+import { decorateReaderPageOverlays, type ReaderPageOverlayResolver } from './page-overlays';
 
 export type { ReaderSurfaceTransform } from './surface-transform';
 export { PAGE_TURN_DURATION_MS, READER_PAGE_ANIMATION_STYLES } from '../anime';
@@ -64,6 +65,7 @@ export interface ReaderSurfaceProps {
   /** Canvas color used before the runtime has produced its first page. */
   readonly initialBackgroundColor?: string;
   readonly overlays?: readonly ReaderOverlayRect[];
+  readonly resolvePageOverlays?: ReaderPageOverlayResolver;
   readonly onTransformChange?: (transform: ReaderSurfaceTransform) => void;
   /** Defaults to `slide`, which keeps the page content legible throughout the turn. */
   readonly animationStyle?: ReaderPageAnimationStyle;
@@ -90,12 +92,13 @@ export function ReaderSurface({
   style,
   initialBackgroundColor = '#000000',
   overlays = [],
+  resolvePageOverlays,
   onTransformChange,
   animationStyle = 'slide',
   animationDuration = 360,
   spreadMode = 'double',
-  interactiveTurn,
-  automaticTurns = [],
+  interactiveTurn: preparedInteractiveTurn,
+  automaticTurns: preparedAutomaticTurns = [],
   automaticNavigationActive = false,
   onAutomaticTurnComplete,
   pageTurnSurfaceBinding,
@@ -104,6 +107,15 @@ export function ReaderSurface({
   overlayColor = '#777777',
   overlayInsets = { top: 0, right: 0, bottom: 0, left: 0 },
 }: ReaderSurfaceProps) {
+  const interactiveTurn = useMemo(() => preparedInteractiveTurn ? {
+    ...preparedInteractiveTurn,
+    content: decorateReaderPageOverlays(preparedInteractiveTurn.content, resolvePageOverlays),
+  } : undefined, [preparedInteractiveTurn, resolvePageOverlays]);
+  const automaticTurns = useMemo(() => preparedAutomaticTurns.map((turn) => ({
+    ...turn,
+    from: decorateReaderPageOverlays(turn.from, resolvePageOverlays),
+    to: decorateReaderPageOverlays(turn.to, resolvePageOverlays),
+  })), [preparedAutomaticTurns, resolvePageOverlays]);
   const pageTurnEffect = getReaderPageTurnEffect(animationStyle);
   const { ref, size: viewport } = useCanvasSize();
   const compiled = snapshot.phase === 'ready'
@@ -125,9 +137,12 @@ export function ReaderSurface({
     ? `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 0}`
     : undefined;
   const currentOverlays = useMemo(
-    () => mergeReaderOverlayRects(overlays.filter((overlay) =>
+    () => mergeReaderOverlayRects([
+      ...(frame ? resolvePageOverlays?.(snapshot, frame) ?? [] : []),
+      ...overlays,
+    ].filter((overlay) =>
       overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId)),
-    [overlays, snapshot.revisionId],
+    [frame, overlays, resolvePageOverlays, snapshot],
   );
   const currentContent = useMemo<ReaderPageContent | undefined>(
     () => currentKey && compiled && frame

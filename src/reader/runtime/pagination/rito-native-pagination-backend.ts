@@ -180,6 +180,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     }
     const frame: ReaderRenderFrame = {
       spreadIndex,
+      manifestHref: artifact.locator.href,
       sourceKey,
       renderKey: artifactRenderKey(artifact, this.imageCache),
       pageIndices: artifact.localPageIndexes,

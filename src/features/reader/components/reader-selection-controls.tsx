@@ -8,6 +8,7 @@ import { useCSSVariable } from 'uniwind';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 
 import type { ReaderRect } from '@/reader';
+import { ReaderHighlightColors, type ReaderHighlightColor } from '../domain/reader-highlight';
 import {
   computeReaderSelectionControlsLayout,
   ReaderSelectionToolbarWidth,
@@ -16,6 +17,13 @@ import {
 const HandleTouchSize = 48;
 const HandleVisualOffsetY = 8;
 const HandleKnobCenterOffsetY = 14;
+const HighlightColorClasses: Record<ReaderHighlightColor, string> = {
+  yellow: 'bg-reader-highlight-fill',
+  pink: 'bg-reader-highlight-pink',
+  purple: 'bg-reader-highlight-purple',
+  blue: 'bg-reader-highlight-blue',
+  green: 'bg-reader-highlight-green',
+};
 
 interface ReaderSelectionControlsProps {
   readonly copyLabel: string;
@@ -24,6 +32,10 @@ interface ReaderSelectionControlsProps {
   readonly startHandleLabel: string;
   readonly endHandleLabel: string;
   readonly isHighlightDisabled?: boolean;
+  readonly isExistingHighlight: boolean;
+  readonly selectedColor: ReaderHighlightColor;
+  readonly colorLabels: Readonly<Record<ReaderHighlightColor, string>>;
+  readonly onColorChange: (color: ReaderHighlightColor) => void;
   readonly rects: readonly ReaderRect[];
   readonly viewportWidth: number;
   readonly viewportHeight: number;
@@ -41,6 +53,10 @@ export function ReaderSelectionControls({
   startHandleLabel,
   endHandleLabel,
   isHighlightDisabled = false,
+  isExistingHighlight,
+  selectedColor,
+  colorLabels,
+  onColorChange,
   rects,
   viewportWidth,
   viewportHeight,
@@ -65,40 +81,65 @@ export function ReaderSelectionControls({
       <View
         accessibilityLabel={selectionLabel}
         accessibilityRole="toolbar"
-        className="absolute z-30 h-[52px] flex-row items-center justify-center rounded-lg border border-border bg-surface px-1 shadow-lg"
+        className="absolute z-30 h-[108px] justify-center rounded-2xl border border-border bg-surface px-2 shadow-lg"
         style={{
           left: layout.toolbar.left,
           top: layout.toolbar.top,
           width: ReaderSelectionToolbarWidth,
         }}>
-        <Button
-          accessibilityLabel={copyLabel}
-          className="h-11 w-12 rounded-md px-0"
-          isIconOnly
-          onPress={onCopy}
-          size="sm"
-          variant="ghost">
-          <SymbolView
-            name={{ ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' }}
-            size={21}
-            tintColor={foreground}
-          />
-        </Button>
-        <View className="h-7 w-px bg-border" />
-        <Button
-          accessibilityLabel={highlightLabel}
-          className="h-11 w-12 rounded-md px-0"
-          isIconOnly
-          isDisabled={isHighlightDisabled}
-          onPress={onHighlight}
-          size="sm"
-          variant="ghost">
-          <SymbolView
-            name={{ ios: 'highlighter', android: 'ink_highlighter', web: 'ink_highlighter' }}
-            size={22}
-            tintColor={foreground}
-          />
-        </Button>
+        <View className="h-12 flex-row items-center justify-center">
+          {ReaderHighlightColors.map((color) => (
+            <Button
+              key={color}
+              accessibilityLabel={colorLabels[color]}
+              accessibilityState={{ selected: selectedColor === color }}
+              className="h-11 w-11 rounded-full px-0"
+              isIconOnly
+              isDisabled={isHighlightDisabled}
+              onPress={() => onColorChange(color)}
+              size="sm"
+              variant="ghost">
+              <View className={`h-7 w-7 items-center justify-center rounded-full ${HighlightColorClasses[color]}`}>
+                {selectedColor === color && (
+                  <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={17} tintColor={foreground} />
+                )}
+              </View>
+            </Button>
+          ))}
+        </View>
+        <View className="h-px bg-border" />
+        <View className="h-12 flex-row items-center justify-center">
+          <Button
+            accessibilityLabel={copyLabel}
+            className="h-11 flex-1 rounded-md px-1"
+            onPress={onCopy}
+            size="sm"
+            variant="ghost">
+            <SymbolView
+              name={{ ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' }}
+              size={21}
+              tintColor={foreground}
+            />
+            <Button.Label className="text-xs">{copyLabel}</Button.Label>
+          </Button>
+          <View className="h-7 w-px bg-border" />
+          <Button
+            accessibilityLabel={highlightLabel}
+            className="h-11 flex-1 rounded-md px-1"
+            isDisabled={isHighlightDisabled}
+            onPress={onHighlight}
+            size="sm"
+            variant="ghost">
+            <SymbolView
+              name={isExistingHighlight
+                ? { ios: 'trash', android: 'delete', web: 'delete' }
+                : { ios: 'highlighter', android: 'ink_highlighter', web: 'ink_highlighter' }}
+              size={22}
+              tintColor={foreground}
+            />
+            <Button.Label className="text-xs">{highlightLabel}</Button.Label>
+          </Button>
+        </View>
       </View>
       <SelectionHandle
         boundary="start"

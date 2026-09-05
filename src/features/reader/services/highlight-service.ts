@@ -2,7 +2,8 @@ import { randomUUID } from 'expo-crypto';
 
 import { getLunarDatabase } from '@/db';
 import type { ReaderSourceRange } from '@/reader';
-import type { ReaderHighlight } from '../domain/reader-highlight';
+import type { ReaderHighlight, ReaderHighlightColor } from '../domain/reader-highlight';
+import { mergeReaderHighlight, normalizeReaderHighlights } from '../domain/highlight-ranges';
 import { SQLiteHighlightRepository } from '../repositories/sqlite-highlight-repository';
 
 export interface CreateReaderHighlightInput {
@@ -10,22 +11,51 @@ export interface CreateReaderHighlightInput {
   readonly href: string;
   readonly sourceRange: ReaderSourceRange;
   readonly text: string;
+  readonly color?: ReaderHighlightColor;
 }
 
 export async function listReaderHighlights(bookId: string): Promise<readonly ReaderHighlight[]> {
   const database = await getLunarDatabase();
-  return new SQLiteHighlightRepository(database).listByBookId(bookId);
+  const repository = new SQLiteHighlightRepository(database);
+  const original = await repository.listByBookId(bookId);
+  const normalized = normalizeReaderHighlights(original);
+  if (normalized.length < original.length) {
+    await database.withExclusiveTransactionAsync(async (transaction) => {
+      const transactionalRepository = new SQLiteHighlightRepository(transaction);
+      await transactionalRepository.remove(bookId, original.map((highlight) => highlight.id));
+      for (const highlight of normalized) await transactionalRepository.save(highlight);
+    });
+  }
+  return normalized;
 }
 
-export async function createReaderHighlight(
+export async function createReaderHighlight(input: CreateReaderHighlightInput): Promise<ReaderHighlight> {
+  const highlights = await listReaderHighlights(input.bookId);
+  const { highlight, removedIds } = prepareReaderHighlight(input, highlights);
+  await saveReaderHighlight(highlight, removedIds);
+  return highlight;
+}
+
+export function prepareReaderHighlight(
   input: CreateReaderHighlightInput,
-): Promise<ReaderHighlight> {
+  highlights: readonly ReaderHighlight[],
+) {
   const highlight: ReaderHighlight = {
     ...input,
     id: randomUUID(),
     createdAt: Date.now(),
   };
+  return mergeReaderHighlight(highlights, highlight);
+}
+
+export async function saveReaderHighlight(highlight: ReaderHighlight, removedIds: readonly string[]) {
   const database = await getLunarDatabase();
-  await new SQLiteHighlightRepository(database).save(highlight);
-  return highlight;
+  await new SQLiteHighlightRepository(database).replace(highlight, removedIds);
+}
+
+export async function removeReaderHighlights(bookId: string, ids: readonly string[]) {
+  const database = await getLunarDatabase();
+  await database.withExclusiveTransactionAsync(async (transaction) => {
+    await new SQLiteHighlightRepository(transaction).remove(bookId, ids);
+  });
 }

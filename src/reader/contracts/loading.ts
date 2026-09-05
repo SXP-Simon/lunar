@@ -328,6 +328,7 @@ export interface ReaderChapterTiming {
 
 export interface ReaderRenderFrame {
   readonly spreadIndex: number;
+  readonly manifestHref?: string;
   /** Stable artifact identity used to validate cached frames and Pictures. */
   readonly sourceKey?: string;
   /** Stable painted-content identity reusable across artifact handoffs. */

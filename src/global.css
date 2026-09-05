@@ -21,6 +21,10 @@
   --color-reader-selection: hsl(176 56% 55%);
   --color-reader-selection-fill: hsl(176 56% 55% / 0.38);
   --color-reader-highlight-fill: hsl(48 96% 62% / 0.48);
+  --color-reader-highlight-pink: hsl(350 80% 72% / 0.48);
+  --color-reader-highlight-purple: hsl(260 80% 76% / 0.48);
+  --color-reader-highlight-blue: hsl(215 85% 70% / 0.48);
+  --color-reader-highlight-green: hsl(115 50% 65% / 0.48);
 
   --font-display:
     Spline Sans, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,

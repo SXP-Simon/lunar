@@ -12,7 +12,7 @@ describe('reader selection controls layout', () => {
       844,
       insets,
     );
-    expect(layout?.toolbar).toEqual({ left: 104, top: 236 });
+    expect(layout?.toolbar).toEqual({ left: 34, top: 180 });
     expect(layout?.startHandle).toEqual({ x: 100, y: 324 });
     expect(layout?.endHandle).toEqual({ x: 220, y: 324 });
   });
@@ -34,6 +34,6 @@ describe('reader selection controls layout', () => {
       640,
       insets,
     );
-    expect(layout?.toolbar.left).toBe(196);
+    expect(layout?.toolbar.left).toBe(56);
   });
 });
