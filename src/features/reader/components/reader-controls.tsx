@@ -1,5 +1,6 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
+import { memo } from 'react';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets, type EdgeInsets } from 'react-native-safe-area-context';
 
@@ -14,7 +15,7 @@ interface ReaderControlsProps {
   readonly safeAreaInsets?: EdgeInsets;
 }
 
-export function ReaderControls({
+export const ReaderControls = memo(function ReaderControls({
   bookTitle,
   onBack,
   safeAreaInsets,
@@ -48,7 +49,7 @@ export function ReaderControls({
       </View>
     </View>
   );
-}
+});
 
 interface ReaderIconButtonProps {
   readonly accessibilityLabel: string;

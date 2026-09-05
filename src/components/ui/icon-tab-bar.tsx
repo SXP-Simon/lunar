@@ -1,5 +1,6 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
+import { memo } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets, type EdgeInsets } from 'react-native-safe-area-context';
 import { useCSSVariable } from 'uniwind';
@@ -18,6 +19,7 @@ export interface IconTabBarItem {
   readonly key: string;
   readonly accessibilityLabel: string;
   readonly name: SymbolViewProps['name'];
+  readonly isDisabled?: boolean;
 }
 
 interface IconTabBarProps {
@@ -27,7 +29,7 @@ interface IconTabBarProps {
   readonly safeAreaInsets?: EdgeInsets;
 }
 
-export function IconTabBar({ items, activeKey, onSelect, safeAreaInsets }: IconTabBarProps) {
+export const IconTabBar = memo(function IconTabBar({ items, activeKey, onSelect, safeAreaInsets }: IconTabBarProps) {
   const contextInsets = useSafeAreaInsets();
   const insets = safeAreaInsets ?? contextInsets;
   const theme = useTheme();
@@ -51,6 +53,7 @@ export function IconTabBar({ items, activeKey, onSelect, safeAreaInsets }: IconT
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
               className="h-10 flex-1 rounded-lg px-0"
+              isDisabled={item.isDisabled}
               onPress={() => onSelect(item.key)}
               size="sm"
               variant="ghost">
@@ -61,4 +64,4 @@ export function IconTabBar({ items, activeKey, onSelect, safeAreaInsets }: IconT
       </View>
     </View>
   );
-}
+});

@@ -683,6 +683,13 @@ export default function ReaderScreen() {
     }
   }, [clearSelection]);
 
+  const tabItems = useMemo(() => [
+    { key: 'toc', accessibilityLabel: t('reader.openToc'), name: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'list' }, isDisabled: !isReady },
+    { key: 'marks', accessibilityLabel: t('reader.openMarks'), name: { ios: 'bookmark', android: 'bookmarks', web: 'bookmarks' }, isDisabled: !isReady },
+    { key: 'progress', accessibilityLabel: t('reader.openProgress'), name: { ios: 'chart.bar', android: 'timeline', web: 'timeline' }, isDisabled: !isReady },
+    { key: 'typography', accessibilityLabel: t('reader.openTypography'), name: { ios: 'textformat.size', android: 'format_size', web: 'format_size' } },
+  ] as const, [isReady, t]);
+
   const statusText = useMemo(() => {
     switch (session.snapshot.phase) {
       case 'opening':
@@ -738,6 +745,12 @@ export default function ReaderScreen() {
             onTransformChange={handleSurfaceTransform}
             style={absoluteFillStyle}
           />
+          {!isReady && !session.errorMessage && (
+            <View pointerEvents="none" className="absolute inset-0 items-center justify-center gap-4">
+              <Spinner color="default" size="lg" />
+              <Text className="text-sm text-muted">{statusText}</Text>
+            </View>
+          )}
           {currentBookmark && (
             <View pointerEvents="none" className="absolute right-5" style={{ top: reservedInsets.top + 4 }}>
               <SymbolView name={{ ios: 'bookmark.fill', android: 'bookmark', web: 'bookmark' }} size={24} tintColor={bookmarkColor} />
@@ -834,22 +847,10 @@ export default function ReaderScreen() {
       {(controlsVisible || isTocOpen || isProgressOpen || isTypographyOpen || isMarksOpen) && (
         <IconTabBar
           activeKey={isTocOpen ? 'toc' : isProgressOpen ? 'progress' : isTypographyOpen ? 'typography' : isMarksOpen ? 'marks' : undefined}
-          items={[
-            { key: 'toc', accessibilityLabel: t('reader.openToc'), name: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'list' } },
-            { key: 'marks', accessibilityLabel: t('reader.openMarks'), name: { ios: 'bookmark', android: 'bookmarks', web: 'bookmarks' } },
-            { key: 'progress', accessibilityLabel: t('reader.openProgress'), name: { ios: 'chart.bar', android: 'timeline', web: 'timeline' } },
-            { key: 'typography', accessibilityLabel: t('reader.openTypography'), name: { ios: 'textformat.size', android: 'format_size', web: 'format_size' } },
-          ]}
+          items={tabItems}
           onSelect={handleTabSelect}
           safeAreaInsets={reservedInsets}
         />
-      )}
-
-      {!isReady && !session.errorMessage && (
-        <View className="absolute inset-0 items-center justify-center gap-4 bg-background">
-          <Spinner color="default" size="lg" />
-          <Text className="text-sm text-muted">{statusText}</Text>
-        </View>
       )}
 
       {session.errorMessage && (
