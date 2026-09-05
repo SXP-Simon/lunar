@@ -81,7 +81,7 @@ function TabBar({ style, ...props }: TabListProps) {
   return (
     <View
       {...props}
-      className="absolute inset-x-0 bottom-0 flex-row items-start border-t border-border bg-surface"
+      className="absolute inset-x-0 bottom-0 flex-row items-start bg-surface"
       style={[{ height: APP_TAB_BAR_HEIGHT + insets.bottom, paddingBottom: insets.bottom }, style]}>
       {props.children}
     </View>

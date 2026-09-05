@@ -1,7 +1,7 @@
 import type { PanGesture } from 'react-native-gesture-handler';
 import { describe, expect, it, vi } from 'vitest';
 
-import { configureReaderSelectionGesture } from '../../src/features/reader/components/reader-selection-gesture';
+import { configureReaderSelectionGesture } from '../../src/features/reader/components/reader-selection-controls';
 
 function configuredGesture() {
   const gesture = {

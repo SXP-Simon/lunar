@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeReaderSelectionControlsLayout } from '../../src/features/reader/components/reader-selection-layout';
+import { computeReaderSelectionControlsLayout } from '../../src/features/reader/components/reader-selection-controls';
 
 const insets = { top: 40, right: 0, bottom: 24, left: 0 };
 

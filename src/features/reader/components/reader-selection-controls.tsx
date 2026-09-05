@@ -3,16 +3,19 @@ import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
 import { Fragment, useMemo } from 'react';
 import { View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import { useCSSVariable } from 'uniwind';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 
 import type { ReaderRect } from '@/reader';
 import { ReaderHighlightColors, type ReaderHighlightColor } from '../domain/reader-highlight';
-import {
-  computeReaderSelectionControlsLayout,
-  ReaderSelectionToolbarWidth,
-} from './reader-selection-layout';
+export const ReaderSelectionToolbarWidth = 252;
+export const ReaderSelectionToolbarHeight = 108;
+
+const SelectionHoldDuration = 500;
+const SelectionMovementTolerance = 2;
+const ToolbarGap = 12;
+const ViewportPadding = 12;
 
 const HandleTouchSize = 48;
 const HandleVisualOffsetY = 8;
@@ -24,6 +27,56 @@ const HighlightColorClasses: Record<ReaderHighlightColor, string> = {
   blue: 'bg-reader-highlight-blue',
   green: 'bg-reader-highlight-green',
 };
+
+export function configureReaderSelectionGesture(gesture: PanGesture): PanGesture {
+  return gesture
+    .minDistance(SelectionMovementTolerance * 2)
+    .failOffsetX([-SelectionMovementTolerance, SelectionMovementTolerance])
+    .failOffsetY([-SelectionMovementTolerance, SelectionMovementTolerance])
+    .maxPointers(1)
+    .activateAfterLongPress(SelectionHoldDuration);
+}
+
+export interface ReaderSelectionControlsLayout {
+  readonly toolbar: { readonly left: number; readonly top: number };
+  readonly startHandle: { readonly x: number; readonly y: number };
+  readonly endHandle: { readonly x: number; readonly y: number };
+}
+
+export function computeReaderSelectionControlsLayout(
+  rects: readonly ReaderRect[],
+  viewportWidth: number,
+  viewportHeight: number,
+  safeAreaInsets: EdgeInsets,
+): ReaderSelectionControlsLayout | undefined {
+  const first = rects[0];
+  const last = rects.at(-1);
+  if (!first || !last || viewportWidth <= 0 || viewportHeight <= 0) return undefined;
+  const minX = Math.min(...rects.map((rect) => rect.x));
+  const maxX = Math.max(...rects.map((rect) => rect.x + rect.width));
+  const minY = Math.min(...rects.map((rect) => rect.y));
+  const maxY = Math.max(...rects.map((rect) => rect.y + rect.height));
+  const minimumTop = safeAreaInsets.top + ViewportPadding;
+  const maximumTop = viewportHeight
+    - safeAreaInsets.bottom
+    - ViewportPadding
+    - ReaderSelectionToolbarHeight;
+  const aboveTop = minY - ToolbarGap - ReaderSelectionToolbarHeight;
+  const belowTop = maxY + ToolbarGap;
+  const top = aboveTop >= minimumTop
+    ? aboveTop
+    : Math.min(maximumTop, Math.max(minimumTop, belowTop));
+  const centerX = (minX + maxX) / 2;
+  const left = Math.min(
+    viewportWidth - safeAreaInsets.right - ViewportPadding - ReaderSelectionToolbarWidth,
+    Math.max(safeAreaInsets.left + ViewportPadding, centerX - ReaderSelectionToolbarWidth / 2),
+  );
+  return {
+    toolbar: { left, top },
+    startHandle: { x: first.x, y: first.y + first.height },
+    endHandle: { x: last.x + last.width, y: last.y + last.height },
+  };
+}
 
 interface ReaderSelectionControlsProps {
   readonly copyLabel: string;

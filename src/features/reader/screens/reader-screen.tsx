@@ -39,8 +39,10 @@ import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
 import { TypographyDrawer } from '../components/bottom-tabs/typography-drawer';
 import { ReaderControls } from '../components/reader-controls';
 import { FootnoteDrawer } from '../components/footnote-drawer';
-import { ReaderSelectionControls } from '../components/reader-selection-controls';
-import { configureReaderSelectionGesture } from '../components/reader-selection-gesture';
+import {
+  configureReaderSelectionGesture,
+  ReaderSelectionControls,
+} from '../components/reader-selection-controls';
 import { useReaderHighlights } from '../hooks/use-reader-highlights';
 import { useReaderSession } from '../hooks/use-reader-session';
 import { containsHighlightRange } from '../domain/highlight-ranges';

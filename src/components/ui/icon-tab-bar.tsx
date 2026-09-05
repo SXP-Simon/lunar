@@ -35,7 +35,7 @@ export function IconTabBar({ items, activeKey, onSelect, safeAreaInsets }: IconT
 
   return (
     <View
-      className="absolute bottom-0 left-0 right-0 border-t border-border bg-reader-controls px-3"
+      className="absolute bottom-0 left-0 right-0 bg-reader-controls px-3"
       pointerEvents="box-none"
       style={{
         paddingTop: IconTabBarTopPadding,
