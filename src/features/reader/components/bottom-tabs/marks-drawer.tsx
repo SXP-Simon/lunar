@@ -10,6 +10,7 @@ import type { ReaderLocator, ReaderRuntime, ReaderTocEntry } from '@/reader';
 import type { ReaderBookmark } from '../../domain/reader-bookmark';
 import type { ReaderHighlight } from '../../domain/reader-highlight';
 import { getReaderBottomTabBarInset } from './constants';
+import { useDrawerNavigation } from '../../hooks/use-drawer-navigation';
 
 interface MarksDrawerProps {
   readonly isOpen: boolean;
@@ -40,8 +41,15 @@ export function MarksDrawer(props: MarksDrawerProps) {
   const insets = useSafeAreaInsets();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const [tab, setTab] = useState<'bookmarks' | 'highlights'>('bookmarks');
-  const [busy, setBusy] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const pending = useRef(false);
+  const navigation = useDrawerNavigation({
+    isOpen: props.isOpen,
+    onOpenChange: props.onOpenChange,
+    onNavigated: props.onNavigated,
+    onFailure: () => toast.show({ variant: 'danger', label: t('reader.markNavigationFailed') }),
+  });
+  const busy = removing || navigation.busy;
   const entries = useMemo<MarkEntry[]>(() => {
     if (tab === 'bookmarks') return props.bookmarks.map((bookmark) => ({
       ...bookmark, title: bookmark.label || t('reader.bookmark'),
@@ -59,36 +67,28 @@ export function MarksDrawer(props: MarksDrawerProps) {
   const loaded = tab === 'bookmarks' ? props.bookmarksLoaded : props.highlightsLoaded;
   const error = tab === 'bookmarks' ? props.bookmarksError : props.highlightsError;
 
-  async function navigate(entry: MarkEntry) {
+  function navigate(entry: MarkEntry) {
     if (pending.current) return;
-    pending.current = true;
-    setBusy(true);
-    try {
-      await props.runtime.goToLocator(entry.locator);
-      props.onNavigated();
-      props.onOpenChange(false);
-    } catch {
-      toast.show({ variant: 'danger', label: t('reader.markNavigationFailed') });
-    } finally { pending.current = false; setBusy(false); }
+    navigation.requestNavigation(() => props.runtime.goToLocator(entry.locator));
   }
 
   async function remove(id: string) {
-    if (pending.current) return;
+    if (pending.current || navigation.isPending()) return;
     pending.current = true;
-    setBusy(true);
+    setRemoving(true);
     try {
       await props.onRemoveBookmark(id);
       toast.show({ variant: 'success', label: t('reader.bookmarkRemoved') });
     } catch {
       toast.show({ variant: 'danger', label: t('reader.bookmarkSaveFailed') });
-    } finally { pending.current = false; setBusy(false); }
+    } finally { pending.current = false; setRemoving(false); }
   }
 
   return (
     <BottomSheet isOpen={props.isOpen} onOpenChange={props.onOpenChange}>
       <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
-        <BottomSheet.Content backgroundClassName="rounded-t-3xl" bottomInset={bottomInset}
+        <BottomSheet.Content onChange={navigation.onSheetChange} backgroundClassName="rounded-t-3xl" bottomInset={bottomInset}
           contentContainerClassName="h-full flex-1 p-0!" detached enableDynamicSizing={false}
           enableOverDrag={false} snapPoints={['62%', '88%']}>
           <View className="gap-3 border-b border-border px-5 pb-3">

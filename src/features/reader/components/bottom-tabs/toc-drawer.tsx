@@ -2,7 +2,7 @@ import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
 import { useToast } from 'heroui-native/toast';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCSSVariable } from 'uniwind';
@@ -11,6 +11,7 @@ import type { ReaderSnapshot, ReaderTocEntry } from '@/reader';
 import type { LunarReaderRuntime } from '@/reader/native';
 import { useTranslation } from '@/i18n';
 import { getReaderBottomTabBarInset } from './constants';
+import { useDrawerNavigation } from '../../hooks/use-drawer-navigation';
 
 interface TocDrawerProps {
   readonly isOpen: boolean;
@@ -24,36 +25,27 @@ interface FlatTocEntry extends ReaderTocEntry {
   readonly depth: number;
 }
 
-export function TocDrawer({ isOpen, onOpenChange, runtime, snapshot, toc }: TocDrawerProps) {
+export function TocDrawer({ isOpen, onOpenChange, runtime, toc, snapshot }: TocDrawerProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const insets = useSafeAreaInsets();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const activeColor = useCSSVariable('--color-navigation-active') as string;
   const entries = useMemo(() => flattenToc(toc), [toc]);
-  const [busy, setBusy] = useState(false);
-  const pending = useRef(false);
-
-  async function navigate(entry: FlatTocEntry) {
-    if (pending.current) return;
-    pending.current = true;
-    setBusy(true);
-    try {
-      await runtime.goToToc(entry.href);
-      onOpenChange(false);
-    } catch {
-      toast.show({ variant: 'danger', label: t('reader.tocNavigationFailed') });
-    } finally {
-      pending.current = false;
-      setBusy(false);
-    }
-  }
+  const manifestHref = snapshot.position?.locator?.manifestHref;
+  const anchorId = snapshot.position?.locator?.anchorId;
+  const { busy, requestNavigation, onSheetChange } = useDrawerNavigation({
+    isOpen,
+    onOpenChange,
+    onFailure: () => toast.show({ variant: 'danger', label: t('reader.tocNavigationFailed') }),
+  });
 
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
         <BottomSheet.Content
+          onChange={onSheetChange}
           backgroundClassName="rounded-t-3xl"
           bottomInset={bottomInset}
           contentContainerClassName="h-full"
@@ -76,20 +68,20 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, snapshot, toc }: TocD
           </View>
           <BottomSheetFlatList<FlatTocEntry>
             data={entries}
-            extraData={{ busy, position: snapshot.position }}
+            extraData={{ busy, manifestHref, anchorId }}
             keyExtractor={(entry: FlatTocEntry, index: number) => `${entry.href}:${index}`}
             contentContainerClassName="gap-1 px-3"
             showsVerticalScrollIndicator={false}
             style={{ flex: 1 }}
             renderItem={({ item: entry }: { item: FlatTocEntry }) => {
-              const isCurrent = isCurrentTocEntry(entry, snapshot);
+              const isCurrent = isCurrentTocEntry(entry, manifestHref, anchorId);
               return (
                 <Button
                   accessibilityLabel={t('reader.goToToc', { title: entry.label })}
                   accessibilityState={{ selected: isCurrent }}
                   className="h-auto min-h-12 justify-start rounded-xl px-3"
                   isDisabled={busy}
-                  onPress={() => void navigate(entry)}
+                  onPress={() => requestNavigation(() => runtime.goToToc(entry.href))}
                   style={{ marginLeft: Math.min(entry.depth, 4) * 14 }}
                   variant="ghost">
                   <Button.Label
@@ -111,11 +103,12 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, snapshot, toc }: TocD
   );
 }
 
-function isCurrentTocEntry(entry: ReaderTocEntry, snapshot: ReaderSnapshot): boolean {
-  const locator = snapshot.position?.locator;
-  if (!locator?.manifestHref) return false;
+function isCurrentTocEntry(
+  entry: ReaderTocEntry, manifestHref?: string, currentAnchorId?: string,
+): boolean {
+  if (!manifestHref) return false;
   const [href, anchorId] = entry.href.split('#', 2);
-  return href === locator.manifestHref && anchorId === locator.anchorId;
+  return href === manifestHref && anchorId === currentAnchorId;
 }
 
 function flattenToc(entries: readonly ReaderTocEntry[], depth = 0): FlatTocEntry[] {
