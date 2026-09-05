@@ -94,7 +94,6 @@ export function MarksDrawer(props: MarksDrawerProps) {
           enableOverDrag={false} snapPoints={['62%', '88%']}>
           <View className="gap-3 border-b border-border px-5 pb-3">
             <BottomSheet.Title className="text-xl text-foreground">{t('reader.marks')}</BottomSheet.Title>
-            <BottomSheet.Description className="text-sm text-muted">{t('reader.marksDescription')}</BottomSheet.Description>
             <View className="flex-row gap-2">
               {(['bookmarks', 'highlights'] as const).map((key) => (
                 <Button key={key} className="flex-1" size="sm" variant={tab === key ? 'secondary' : 'ghost'}
