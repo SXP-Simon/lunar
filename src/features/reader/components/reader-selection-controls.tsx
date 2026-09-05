@@ -12,8 +12,8 @@ import { ReaderHighlightColors, type ReaderHighlightColor } from '../domain/read
 export const ReaderSelectionToolbarWidth = 252;
 export const ReaderSelectionToolbarHeight = 108;
 
-const SelectionHoldDuration = 500;
-const SelectionMovementTolerance = 2;
+const SelectionHoldDuration = 400;
+const SelectionMovementTolerance = 4;
 const ToolbarGap = 12;
 const ViewportPadding = 12;
 
