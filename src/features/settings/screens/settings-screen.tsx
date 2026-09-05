@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
 import { type LanguagePreference, useTranslation } from '@/i18n';
+import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useApplicationSettingsStore } from '@/stores';
 import { LanguageSelectionSheet } from '../components/language-selection-sheet';
 import { SettingRow } from '../components/setting-row';
@@ -14,6 +15,7 @@ export function SettingsScreen() {
   const { t } = useTranslation();
   const { theme } = useUniwind();
   const insets = useSafeAreaInsets();
+  useMarkInitialContentReady(true);
   const setThemeMode = useApplicationSettingsStore((state) => state.setThemeMode);
   const language = useApplicationSettingsStore((state) => state.language);
   const setLanguage = useApplicationSettingsStore((state) => state.setLanguage);

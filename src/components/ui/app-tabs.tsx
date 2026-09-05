@@ -6,6 +6,7 @@ import {
   type TabListProps,
   type TabTriggerSlotProps,
 } from 'expo-router/ui';
+import type { Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,7 +32,7 @@ export default function AppTabs() {
       <TabSlot style={tabSlotStyle} />
       <TabList asChild>
         <TabBar>
-          <TabTrigger name="library" href="/" asChild>
+          <TabTrigger name="library" href={'/library' as Href} asChild>
             <TabButton label={t('tabs.library')} type="library" />
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>

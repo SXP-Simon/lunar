@@ -2,22 +2,25 @@ import '@/global.css';
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { NavigationBar } from 'expo-navigation-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useLayoutEffect } from 'react';
 import { AppState } from 'react-native';
 import { Uniwind, useUniwind } from 'uniwind';
 
 import { AppProviders } from '@/components/providers/app-providers';
-import { useLaunchReadingRestoration } from '@/features/reader';
 import { applyLanguagePreference } from '@/i18n';
-import { useApplicationSettingsStore } from '@/stores';
+import { useApplicationLaunchStore, useApplicationSettingsStore } from '@/stores';
+
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
+SplashScreen.setOptions({ duration: 180, fade: true });
 
 export default function RootLayout() {
   const { theme } = useUniwind();
   const themeMode = useApplicationSettingsStore((state) => state.themeMode);
   const language = useApplicationSettingsStore((state) => state.language);
+  const initialContentReady = useApplicationLaunchStore((state) => state.initialContentReady);
   const isDark = theme === 'dark';
-  useLaunchReadingRestoration();
 
   useLayoutEffect(() => {
     Uniwind.setTheme(themeMode);
@@ -40,12 +43,19 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, [language]);
 
+  useEffect(() => {
+    if (initialContentReady) {
+      void SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [initialContentReady]);
+
   return (
     <AppProviders>
       <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <NavigationBar hidden={false} style={isDark ? 'dark' : 'light'} />
         <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="reader/[bookId]" />
         </Stack>

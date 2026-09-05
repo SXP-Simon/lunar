@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import * as Clipboard from 'expo-clipboard';
@@ -6,7 +6,14 @@ import * as Linking from 'expo-linking';
 import { Spinner } from 'heroui-native/spinner';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PixelRatio, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
+import {
+  BackHandler,
+  PixelRatio,
+  Pressable,
+  Text,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useCSSVariable, useResolveClassNames, useUniwind } from 'uniwind';
 import Animated from 'react-native-reanimated';
@@ -19,6 +26,7 @@ import {
 } from 'react-native-safe-area-context';
 
 import { IconTabBar } from '@/components/ui/icon-tab-bar';
+import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
 import {
   createReaderWordSelectionAtPoint,
@@ -151,6 +159,14 @@ export default function ReaderScreen() {
     surfaceTop: 0,
   });
   const isReady = session.snapshot.phase === 'ready' && (highlightsLoaded || Boolean(highlightsError));
+  const isReaderFrameReady = isReady
+    && session.runtime.getCurrentPicture(
+      session.snapshot.revisionId,
+      session.snapshot.spreadIndex,
+      session.snapshot.renderId,
+    ) !== undefined
+    && session.runtime.getCurrentFrame(session.snapshot.spreadIndex) !== undefined;
+  useMarkInitialContentReady(isReaderFrameReady || Boolean(session.errorMessage));
   const currentHitEntries = isReady
     ? session.runtime.getCurrentHitMap()?.entries ?? EmptyReaderHitEntries
     : EmptyReaderHitEntries;
@@ -293,6 +309,27 @@ export default function ReaderScreen() {
   const handleSurfaceTransform = useCallback((transform: ReaderSurfaceTransform) => {
     setSurfaceTransform(transform);
   }, []);
+
+  const handleBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/library' as Href);
+  }, [router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (router.canGoBack()) {
+          return false;
+        }
+        router.replace('/library' as Href);
+        return true;
+      });
+      return () => subscription.remove();
+    }, [router]),
+  );
 
   const clearSelection = useCallback(() => {
     selectionRef.current = undefined;
@@ -788,7 +825,7 @@ export default function ReaderScreen() {
 
       {readerChromeVisible && (
         <ReaderControls
-          onBack={() => router.back()}
+          onBack={handleBack}
           safeAreaInsets={reservedInsets}
           bookTitle={bookTitle}
         />

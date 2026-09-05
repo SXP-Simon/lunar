@@ -35,6 +35,7 @@ import {
   sortLibraryBooks,
 } from '@/features/library/domain/library-sort';
 import { Spacing } from '@/hooks/use-theme';
+import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { i18n, useTranslation } from '@/i18n';
 import {
   isLibrarySortDirection,
@@ -70,6 +71,7 @@ type LibraryItem =
 export default function LibraryScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  useMarkInitialContentReady(true);
   const librarySortLocale = i18n.resolvedLanguage;
   const [query, setQuery] = useState('');
   const [libraryBooks, setLibraryBooks] = useState<LibraryBook[]>([]);

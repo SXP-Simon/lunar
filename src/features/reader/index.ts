@@ -6,7 +6,6 @@ export {
   findReaderReadingState,
   saveReaderReadingState,
 } from './services/reading-state-service';
-export { useLaunchReadingRestoration } from './hooks/use-launch-reading-restoration';
 export {
   createReaderHighlight,
   listReaderHighlights,
