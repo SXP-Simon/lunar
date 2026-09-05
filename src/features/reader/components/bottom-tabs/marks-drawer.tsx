@@ -1,9 +1,12 @@
 import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import { SymbolView } from 'expo-symbols';
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
+import { useThemeColor } from 'heroui-native/hooks';
 import { useToast } from 'heroui-native/toast';
 import { useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '@/i18n';
 import type { ReaderLocator, ReaderRuntime, ReaderTocEntry } from '@/reader';
@@ -40,6 +43,7 @@ export function MarksDrawer(props: MarksDrawerProps) {
   const { toast } = useToast();
   const insets = useSafeAreaInsets();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
+  const dangerForeground = useThemeColor('danger-foreground');
   const [tab, setTab] = useState<'bookmarks' | 'highlights'>('bookmarks');
   const [removing, setRemoving] = useState(false);
   const pending = useRef(false);
@@ -109,9 +113,9 @@ export function MarksDrawer(props: MarksDrawerProps) {
             className="flex-1"
             data={entries} keyExtractor={(item: MarkEntry) => item.id}
             contentContainerClassName="px-3 pb-6" showsVerticalScrollIndicator={false}
-            renderItem={({ item }: { item: MarkEntry }) => (
-              <View className="flex-row items-center border-b border-border">
-                <Button className="h-auto min-h-20 flex-1 justify-start rounded-xl px-3 py-4"
+            renderItem={({ item }: { item: MarkEntry }) => {
+              const content = (
+                <Button className="h-auto min-h-20 w-full justify-start rounded-none px-3 py-4"
                   variant="ghost" isDisabled={busy} accessibilityLabel={t('reader.goToMark', { text: item.text || item.title })}
                   onPress={() => void navigate(item)}>
                   <View className="flex-1 gap-2">
@@ -120,14 +124,41 @@ export function MarksDrawer(props: MarksDrawerProps) {
                     <Text className="text-xs text-muted">{new Date(item.createdAt).toLocaleDateString()}</Text>
                   </View>
                 </Button>
-                {tab === 'bookmarks' && (
-                  <Button size="sm" variant="ghost" isDisabled={busy}
-                    accessibilityLabel={t('reader.removeBookmark', { title: item.title })} onPress={() => void remove(item.id)}>
-                    <Button.Label>{t('action.delete')}</Button.Label>
-                  </Button>
-                )}
-              </View>
-            )}
+              );
+              if (tab === 'highlights') {
+                return <View className="border-b border-border">{content}</View>;
+              }
+              return (
+                <View className="overflow-hidden border-b border-border">
+                  <ReanimatedSwipeable
+                    dragOffsetFromRightEdge={12}
+                    enabled={!busy}
+                    enableTrackpadTwoFingerGesture
+                    overshootRight={false}
+                    rightThreshold={40}
+                    renderRightActions={(_progress, _translation, swipeableMethods) => (
+                      <Button
+                        accessibilityLabel={t('reader.removeBookmark', { title: item.title })}
+                        className="h-full w-20 self-stretch rounded-none px-0"
+                        isDisabled={busy}
+                        onPress={() => {
+                          swipeableMethods.close();
+                          void remove(item.id);
+                        }}
+                        size="sm"
+                        variant="danger">
+                        <SymbolView
+                          name={{ ios: 'trash', android: 'delete', web: 'delete' }}
+                          size={22}
+                          tintColor={dangerForeground}
+                        />
+                      </Button>
+                    )}>
+                    <View className="bg-surface">{content}</View>
+                  </ReanimatedSwipeable>
+                </View>
+              );
+            }}
             ListEmptyComponent={<Text className="px-5 py-10 text-center leading-6 text-muted">{
               error ? t(tab === 'bookmarks' ? 'reader.bookmarkLoadFailed' : 'reader.highlightLoadFailed')
                 : !loaded ? t('reader.loadingMarks') : t(tab === 'bookmarks' ? 'reader.noBookmarks' : 'reader.noHighlights')

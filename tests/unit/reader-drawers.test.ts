@@ -16,11 +16,29 @@ vi.mock('react-native', () => ({
 }));
 vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }));
 vi.mock('uniwind', () => ({ useCSSVariable: () => '#000000' }));
+vi.mock('expo-symbols', () => ({
+  SymbolView: ({ name }: { name: { web: string } }) => React.createElement('i', { 'data-symbol': name.web }),
+}));
 vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock('../../src/features/reader/components/bottom-tabs/constants', () => ({
   getReaderBottomTabBarInset: () => 48,
 }));
 vi.mock('heroui-native/toast', () => ({ useToast: () => ({ toast: { show: showToast } }) }));
+vi.mock('heroui-native/hooks', () => ({ useThemeColor: () => '#ffffff' }));
+vi.mock('react-native-gesture-handler/ReanimatedSwipeable', () => ({
+  default: ({ children, renderRightActions }: {
+    children: ReactNode;
+    renderRightActions?: (progress: unknown, translation: unknown, methods: {
+      close: () => void;
+      openLeft: () => void;
+      openRight: () => void;
+      reset: () => void;
+    }) => ReactNode;
+  }) => React.createElement(React.Fragment, null,
+    renderRightActions?.({}, {}, {
+      close: vi.fn(), openLeft: vi.fn(), openRight: vi.fn(), reset: vi.fn(),
+    }), children),
+}));
 vi.mock('heroui-native/bottom-sheet', () => {
   // Closing sheets retain their children while the native exit animation runs.
   const Container = ({ children }: { children: ReactNode }) => children;
@@ -93,6 +111,13 @@ describe('reader drawer navigation', () => {
     expect(closing).toBe(open);
     expect(closing).toContain('Saved passage');
     expect(closing).not.toContain('reader.noBookmarks');
+  });
+
+  it('renders bookmark deletion as a right-side swipe action with an icon', () => {
+    const markup = renderToStaticMarkup(React.createElement(MarksDrawer, marksProps()));
+    expect(markup).toContain('data-symbol="delete"');
+    expect(markup).not.toContain('action.delete');
+    expect(buttons.has('reader.removeBookmark')).toBe(true);
   });
 
   it('retains the chapter list and count throughout the closing render', () => {
