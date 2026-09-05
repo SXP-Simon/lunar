@@ -89,6 +89,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     bookmarkLoadFailed: 'Could not load bookmarks. Reopen the book to retry.',
     bookmarkSaveFailed: 'Could not save the bookmark. Please try again.',
     markNavigationFailed: 'Could not navigate to this record',
+    tocNavigationFailed: 'Could not navigate to this chapter',
     loadingMarks: 'Loading records',
     noBookmarks: 'No bookmarks yet',
     noHighlights: 'No highlights yet',

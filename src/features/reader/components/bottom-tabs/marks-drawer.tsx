@@ -43,7 +43,6 @@ export function MarksDrawer(props: MarksDrawerProps) {
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
   const entries = useMemo<MarkEntry[]>(() => {
-    if (!props.isOpen) return [];
     if (tab === 'bookmarks') return props.bookmarks.map((bookmark) => ({
       ...bookmark, title: bookmark.label || t('reader.bookmark'),
     }));
@@ -56,7 +55,7 @@ export function MarksDrawer(props: MarksDrawerProps) {
       locator: { spineIdref: highlight.href, manifestHref: highlight.href, chapterProgress: 0,
         sourcePoint: highlight.sourceRange.start, sourceRange: highlight.sourceRange },
     })).sort((a, b) => b.createdAt - a.createdAt);
-  }, [props.bookmarks, props.highlights, props.isOpen, props.toc, t, tab]);
+  }, [props.bookmarks, props.highlights, props.toc, t, tab]);
   const loaded = tab === 'bookmarks' ? props.bookmarksLoaded : props.highlightsLoaded;
   const error = tab === 'bookmarks' ? props.bookmarksError : props.highlightsError;
 

@@ -1,7 +1,8 @@
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
-import { useMemo } from 'react';
+import { useToast } from 'heroui-native/toast';
+import { useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCSSVariable } from 'uniwind';
@@ -25,10 +26,28 @@ interface FlatTocEntry extends ReaderTocEntry {
 
 export function TocDrawer({ isOpen, onOpenChange, runtime, snapshot, toc }: TocDrawerProps) {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const insets = useSafeAreaInsets();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const activeColor = useCSSVariable('--color-navigation-active') as string;
-  const entries = useMemo(() => isOpen ? flattenToc(toc) : [], [isOpen, toc]);
+  const entries = useMemo(() => flattenToc(toc), [toc]);
+  const [busy, setBusy] = useState(false);
+  const pending = useRef(false);
+
+  async function navigate(entry: FlatTocEntry) {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    try {
+      await runtime.goToToc(entry.href);
+      onOpenChange(false);
+    } catch {
+      toast.show({ variant: 'danger', label: t('reader.tocNavigationFailed') });
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
 
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -55,21 +74,22 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, snapshot, toc }: TocD
               </BottomSheet.Description>
             </View>
           </View>
-          <BottomSheetScrollView
+          <BottomSheetFlatList<FlatTocEntry>
+            data={entries}
+            extraData={{ busy, position: snapshot.position }}
+            keyExtractor={(entry: FlatTocEntry, index: number) => `${entry.href}:${index}`}
             contentContainerClassName="gap-1 px-3"
             showsVerticalScrollIndicator={false}
-            style={{ flex: 1 }}>
-            {entries.map((entry, index) => {
+            style={{ flex: 1 }}
+            renderItem={({ item: entry }: { item: FlatTocEntry }) => {
               const isCurrent = isCurrentTocEntry(entry, snapshot);
               return (
                 <Button
-                  key={`${entry.href}:${index}`}
                   accessibilityLabel={t('reader.goToToc', { title: entry.label })}
                   accessibilityState={{ selected: isCurrent }}
                   className="h-auto min-h-12 justify-start rounded-xl px-3"
-                  onPress={() => {
-                    void runtime.goToToc(entry.href).then(() => onOpenChange(false));
-                  }}
+                  isDisabled={busy}
+                  onPress={() => void navigate(entry)}
                   style={{ marginLeft: Math.min(entry.depth, 4) * 14 }}
                   variant="ghost">
                   <Button.Label
@@ -80,11 +100,11 @@ export function TocDrawer({ isOpen, onOpenChange, runtime, snapshot, toc }: TocD
                   </Button.Label>
                 </Button>
               );
-            })}
-            {entries.length === 0 && (
+            }}
+            ListEmptyComponent={(
               <Text className="px-4 py-8 text-center text-muted">{t('reader.noToc')}。</Text>
             )}
-          </BottomSheetScrollView>
+          />
         </BottomSheet.Content>
       </BottomSheet.Portal>
     </BottomSheet>

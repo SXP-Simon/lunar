@@ -87,6 +87,7 @@ export const zhCN = {
     bookmarkLoadFailed: '读取书签失败，请重新打开书籍',
     bookmarkSaveFailed: '书签保存失败，请稍后重试',
     markNavigationFailed: '暂时无法跳转到这条记录',
+    tocNavigationFailed: '暂时无法跳转到这个章节',
     loadingMarks: '正在读取记录',
     noBookmarks: '暂无书签',
     noHighlights: '暂无标记',

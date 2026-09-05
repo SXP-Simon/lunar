@@ -845,7 +845,7 @@ export default function ReaderScreen() {
         bookmarksError={bookmarksError}
         highlightsError={highlightsError}
         onRemoveBookmark={removeBookmark}
-        onNavigated={() => { clearSelection(); setControlsVisible(false); }}
+        onNavigated={clearSelection}
       />
       <ProgressDrawer
         isOpen={isProgressOpen}
