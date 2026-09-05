@@ -20,6 +20,10 @@ interface ReadingStateRow {
   readonly updated_at: number;
 }
 
+interface RecentReadingStateRow {
+  readonly book_id: string;
+}
+
 const RITO_READER_VERSION = '1';
 
 export class SQLiteReadingStateRepository implements ReadingStateRepository {
@@ -31,6 +35,16 @@ export class SQLiteReadingStateRepository implements ReadingStateRepository {
       bookId,
     );
     return row ? fromRow(row) : undefined;
+  }
+
+  async findMostRecentlyReadBookId(): Promise<string | undefined> {
+    const row = await this.database.getFirstAsync<RecentReadingStateRow>(
+      `SELECT book_id
+       FROM reading_states
+       ORDER BY updated_at DESC, book_id ASC
+       LIMIT 1`,
+    );
+    return row?.book_id;
   }
 
   async save(state: ReaderReadingState): Promise<void> {

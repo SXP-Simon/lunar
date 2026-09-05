@@ -8,6 +8,7 @@ import { AppState } from 'react-native';
 import { Uniwind, useUniwind } from 'uniwind';
 
 import { AppProviders } from '@/components/providers/app-providers';
+import { useLaunchReadingRestoration } from '@/features/reader';
 import { applyLanguagePreference } from '@/i18n';
 import { useApplicationSettingsStore } from '@/stores';
 
@@ -16,6 +17,7 @@ export default function RootLayout() {
   const themeMode = useApplicationSettingsStore((state) => state.themeMode);
   const language = useApplicationSettingsStore((state) => state.language);
   const isDark = theme === 'dark';
+  useLaunchReadingRestoration();
 
   useLayoutEffect(() => {
     Uniwind.setTheme(themeMode);

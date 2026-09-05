@@ -28,6 +28,10 @@ export const en: TranslationSchema<typeof zhCN> = {
     systemLanguage: 'System default',
     chinese: '简体中文',
     english: 'English',
+    reading: 'Reading',
+    resumeReadingOnLaunch: 'Continue reading on launch',
+    resumeReadingOnLaunchDescription: 'Open the most recently read book when the app starts',
+    resumeReadingOnLaunchHint: 'Choose whether to restore the most recent reading session on launch',
   },
   library: {
     loadFailed: 'Could not load library',

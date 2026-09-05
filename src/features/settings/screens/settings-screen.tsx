@@ -17,6 +17,12 @@ export function SettingsScreen() {
   const setThemeMode = useApplicationSettingsStore((state) => state.setThemeMode);
   const language = useApplicationSettingsStore((state) => state.language);
   const setLanguage = useApplicationSettingsStore((state) => state.setLanguage);
+  const resumeReadingOnLaunch = useApplicationSettingsStore(
+    (state) => state.resumeReadingOnLaunch,
+  );
+  const setResumeReadingOnLaunch = useApplicationSettingsStore(
+    (state) => state.setResumeReadingOnLaunch,
+  );
   const [isLanguageSelectionOpen, setIsLanguageSelectionOpen] = useState(false);
   const isDark = theme === 'dark';
 
@@ -68,6 +74,19 @@ export function SettingsScreen() {
                 onPress={() => setIsLanguageSelectionOpen(true)}
               />
             </SettingSection>
+            <View className="mt-8">
+              <SettingSection title={t('settings.reading')}>
+                <SettingRow
+                  variant="switch"
+                  title={t('settings.resumeReadingOnLaunch')}
+                  description={t('settings.resumeReadingOnLaunchDescription')}
+                  accessibilityLabel={t('settings.resumeReadingOnLaunch')}
+                  accessibilityHint={t('settings.resumeReadingOnLaunchHint')}
+                  isSelected={resumeReadingOnLaunch}
+                  onSelectedChange={setResumeReadingOnLaunch}
+                />
+              </SettingSection>
+            </View>
           </View>
         </ScrollView>
       </View>

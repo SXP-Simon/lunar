@@ -10,6 +10,11 @@ export async function findReaderReadingState(
   return new SQLiteReadingStateRepository(database).findByBookId(bookId);
 }
 
+export async function findMostRecentlyReadBookId(): Promise<string | undefined> {
+  const database = await getLunarDatabase();
+  return new SQLiteReadingStateRepository(database).findMostRecentlyReadBookId();
+}
+
 export async function saveReaderReadingState(state: ReaderReadingState): Promise<void> {
   const database = await getLunarDatabase();
   await new SQLiteReadingStateRepository(database).save(state);

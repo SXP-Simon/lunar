@@ -26,6 +26,10 @@ export const zhCN = {
     systemLanguage: '跟随系统',
     chinese: '简体中文',
     english: 'English',
+    reading: '阅读',
+    resumeReadingOnLaunch: '启动时继续阅读',
+    resumeReadingOnLaunchDescription: '启动应用后打开最近阅读的书籍',
+    resumeReadingOnLaunchHint: '控制应用启动后是否恢复最近一次阅读',
   },
   library: {
     loadFailed: '书架加载失败',

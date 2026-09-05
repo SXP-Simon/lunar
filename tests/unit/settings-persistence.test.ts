@@ -50,6 +50,7 @@ const READER_SETTINGS_KEY = 'settings.reader';
 afterEach(() => {
   useApplicationSettingsStore.getState().setThemeMode('system');
   useApplicationSettingsStore.getState().setLanguage('system');
+  useApplicationSettingsStore.getState().setResumeReadingOnLaunch(true);
   useLibraryStore.getState().resetSort();
   useReaderStore.getState().reset();
   mmkvStateStorage.removeItem(APPLICATION_SETTINGS_KEY);
@@ -64,6 +65,7 @@ describe('settings persistence', () => {
     expect(readPersistedState(APPLICATION_SETTINGS_KEY)).toEqual({
       themeMode: 'dark',
       language: 'system',
+      resumeReadingOnLaunch: true,
     });
   });
 
@@ -73,6 +75,17 @@ describe('settings persistence', () => {
     expect(readPersistedState(APPLICATION_SETTINGS_KEY)).toEqual({
       themeMode: 'system',
       language: 'en',
+      resumeReadingOnLaunch: true,
+    });
+  });
+
+  it('stores the launch reading preference in MMKV', () => {
+    useApplicationSettingsStore.getState().setResumeReadingOnLaunch(false);
+
+    expect(readPersistedState(APPLICATION_SETTINGS_KEY)).toEqual({
+      themeMode: 'system',
+      language: 'system',
+      resumeReadingOnLaunch: false,
     });
   });
 
