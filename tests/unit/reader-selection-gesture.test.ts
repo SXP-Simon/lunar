@@ -3,6 +3,14 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { configureReaderSelectionGesture } from '../../src/features/reader/components/reader-selection-controls';
 
+// These tests exercise gesture configuration without rendering native controls.
+vi.mock('react-native', () => ({ View: 'View' }));
+vi.mock('react-native-gesture-handler', () => ({ Gesture: {}, GestureDetector: 'GestureDetector' }));
+vi.mock('expo-symbols', () => ({ SymbolView: 'SymbolView' }));
+vi.mock('heroui-native/button', () => ({ Button: 'Button' }));
+vi.mock('heroui-native/hooks', () => ({ useThemeColor: vi.fn() }));
+vi.mock('uniwind', () => ({ useCSSVariable: vi.fn() }));
+
 function configuredGesture() {
   const gesture = {
     minDistance: vi.fn().mockReturnThis(),
@@ -16,16 +24,16 @@ function configuredGesture() {
 }
 
 describe('reader selection gesture activation', () => {
-  it('requires a 750ms single-finger hold', () => {
+  it('requires a 400ms single-finger hold', () => {
     const gesture = configuredGesture();
-    expect(gesture.activateAfterLongPress).toHaveBeenCalledWith(750);
+    expect(gesture.activateAfterLongPress).toHaveBeenCalledWith(400);
     expect(gesture.maxPointers).toHaveBeenCalledWith(1);
   });
 
   it('fails before activation when either axis exceeds the small movement tolerance', () => {
     const gesture = configuredGesture();
-    expect(gesture.failOffsetX).toHaveBeenCalledWith([-2, 2]);
-    expect(gesture.failOffsetY).toHaveBeenCalledWith([-2, 2]);
+    expect(gesture.failOffsetX).toHaveBeenCalledWith([-4, 4]);
+    expect(gesture.failOffsetY).toHaveBeenCalledWith([-4, 4]);
   });
 
   it('prevents movement from activating the selection before the hold timer, including diagonals', () => {

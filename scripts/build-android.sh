@@ -3,12 +3,15 @@ set -euo pipefail
 
 PROFILE="${1:-}"
 
-if [[ -z "$PROFILE" ]]; then
-  echo "Usage: $0 <profile>" >&2
-  exit 1
-fi
+case "$PROFILE" in
+  development|preview|release) EXTENSION=apk ;;
+  production) EXTENSION=aab ;;
+  *) echo "Usage: $0 <development|preview|release|production> [output]" >&2; exit 1 ;;
+esac
+OUTPUT="${2:-lunar-${PROFILE}.${EXTENSION}}"
+EAS_CLI_VERSION=21.8.0
 
-: "${EXPO_TOKEN:?EXPO_TOKEN must be provided by the CNB secret import}"
+: "${EXPO_TOKEN:?EXPO_TOKEN must be provided by the build environment}"
 
 SYSTEM_PACKAGES=()
 command -v javac >/dev/null 2>&1 || SYSTEM_PACKAGES+=(openjdk-17-jdk-headless)
@@ -16,6 +19,7 @@ command -v unzip >/dev/null 2>&1 || SYSTEM_PACKAGES+=(unzip)
 command -v wget >/dev/null 2>&1 || SYSTEM_PACKAGES+=(wget)
 command -v curl >/dev/null 2>&1 || SYSTEM_PACKAGES+=(curl)
 command -v git >/dev/null 2>&1 || SYSTEM_PACKAGES+=(git)
+command -v cc >/dev/null 2>&1 || SYSTEM_PACKAGES+=(build-essential)
 
 if (( ${#SYSTEM_PACKAGES[@]} > 0 )); then
   if ! command -v apt-get >/dev/null 2>&1; then
@@ -59,14 +63,14 @@ if ! command -v sdkmanager >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ ! -d "$ANDROID_HOME/platforms/android-36" || ! -d "$ANDROID_HOME/ndk/27.1.12297006" ]]; then
+if [[ ! -d "$ANDROID_HOME/platforms/android-36" || ! -d "$ANDROID_HOME/ndk/27.1.12297006" || ! -d "$ANDROID_HOME/build-tools/36.0.0" || ! -d "$ANDROID_HOME/cmake/3.30.5" || ! -d "$ANDROID_HOME/platform-tools" ]]; then
   yes | sdkmanager --licenses || true
   sdkmanager \
     "platform-tools" \
     "platforms;android-36" \
     "build-tools;36.0.0" \
     "ndk;27.1.12297006" \
-    "cmake;3.22.1"
+    "cmake;3.30.5"
 fi
 
 if command -v corepack >/dev/null 2>&1; then
@@ -82,11 +86,24 @@ fi
 
 pnpm install --frozen-lockfile
 
+if [[ "$PROFILE" == release ]]; then
+  pnpm run check
+  pnpm run test:release
+  EXPO_OFFLINE=1 pnpm run check:expo
+  export RITO_FFI_REBUILD=1
+fi
+
 rm -rf "${TMPDIR:-/tmp}/metro-cache" "${TMPDIR:-/tmp}"/haste-map-*
 
-pnpm dlx eas-cli@latest build \
+mkdir -p "$(dirname "$OUTPUT")"
+pnpm dlx "eas-cli@$EAS_CLI_VERSION" build \
   --profile "$PROFILE" \
   --platform android \
   --local \
   --non-interactive \
-  --output "lunar-${PROFILE}.apk"
+  --output "$OUTPUT"
+
+test -s "$OUTPUT"
+if [[ "$EXTENSION" == apk ]]; then
+  "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$OUTPUT"
+fi

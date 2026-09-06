@@ -22,6 +22,19 @@
     },
     "production": {
       "autoIncrement": true
+    },
+    "release": {
+      "extends": "production",
+      "environment": "production",
+      "distribution": "internal",
+      "developmentClient": false,
+      "credentialsSource": "remote",
+      "env": {
+        "LUNAR_ANDROID_ABIS": "arm64-v8a"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

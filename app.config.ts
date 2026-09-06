@@ -36,7 +36,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 networkInspector: false,
                 useLegacyPackaging: true,
               }
-            : {},
+            : { buildArchs },
         },
       ],
       'expo-asset',

@@ -29,3 +29,9 @@ example
 # Rito sources are vendored in the npm module; the local checkout is only
 # needed when running `pnpm run sync:rito-native` before publishing changes.
 /lib/Rito/
+
+# Build artifacts and local signing credentials
+/artifacts/
+/*.apk
+/*.aab
+/credentials.json

@@ -78,6 +78,7 @@
     "styles:generate": "uniwind generate-artifacts --css ./src/global.css --dts ./src/uniwind-types.d.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:release": "node --test tests/release/*.test.mjs",
     "sync:rito-native": "node modules/rito-rn/scripts/sync-rito-source.mjs",
     "test:watch": "vitest",
     "check": "pnpm run typecheck && pnpm run test && pnpm run lint",
