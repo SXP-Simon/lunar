@@ -40,12 +40,11 @@ export function inspectReaderBookAssets(data: ArrayBuffer): ReaderBookInspection
 /** Returns the first linear spine document in the EPUB archive. */
 export function discoverReaderInitialSpineHref(data: ArrayBuffer | Uint8Array): string {
   const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
-  const entries = unzipSync(bytes);
-  const container = readText(entries, 'META-INF/container.xml');
+  const container = readSelectedText(bytes, 'META-INF/container.xml');
   const packagePath = normalizeArchivePath(
     attribute(container.match(/<rootfile\b[^>]*full-path=["']([^"']+)["']/i)?.[1]),
   );
-  const packageXml = readText(entries, packagePath);
+  const packageXml = readSelectedText(bytes, packagePath);
   const packageBase = packagePath.includes('/') ? packagePath.slice(0, packagePath.lastIndexOf('/') + 1) : '';
   const manifest = new Map<string, { href: string; mediaType: string }>();
   for (const match of packageXml.matchAll(/<item\b([^>]+)>/gi)) {
@@ -67,6 +66,14 @@ export function discoverReaderInitialSpineHref(data: ArrayBuffer | Uint8Array): 
   const href = firstDocument ? manifest.get(firstDocument.idref)?.href : undefined;
   if (!href) throw new Error('The EPUB package has no HTML document in its spine.');
   return href;
+}
+
+/** Extracts one small metadata entry without inflating every EPUB resource. */
+function readSelectedText(bytes: Uint8Array, path: string): string {
+  const entries = unzipSync(bytes, {
+    filter: (entry) => entry.name === path,
+  });
+  return readText(entries, path);
 }
 
 interface ManifestItem { readonly id: string; readonly href: string; readonly mediaType: string; readonly properties: string }

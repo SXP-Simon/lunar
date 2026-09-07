@@ -82,7 +82,6 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private readonly pictureRenderIds = new Map<string, number>();
   private readonly pictureRenderIdsByRenderKey = new Map<string, number>();
   private request?: ReaderOpenRequest;
-  private data?: ArrayBuffer;
   private operation = 0;
   private abortController?: AbortController;
   private paginationComplete = false;
@@ -128,8 +127,9 @@ export class LunarReaderRuntime implements ReaderRuntime {
       const data = await this.loadData(request);
       readerPerformanceMark('reader.bookBytesReady', `bytes=${data.byteLength}`);
       this.assertCurrent(operation);
-      this.data = data;
       return await this.loadCurrentRequest(
+        request,
+        data,
         request.restorePosition?.progression ?? 0,
         operation,
         'paginating',
@@ -144,13 +144,14 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   async updateLayout(request: ReaderLayoutRequest): Promise<ReaderSnapshot> {
-    if (!this.request || !this.data) {
+    if (!this.request) {
       throw new Error('A book must be open before updating its layout.');
     }
     const progression = this.snapshot.position?.progression ?? 0;
     const restorePosition = this.snapshot.position ?? this.request.restorePosition;
     const operation = this.beginOperation();
-    this.request = { ...this.request, ...request, restorePosition };
+    const openRequest = { ...this.request, ...request, restorePosition };
+    this.request = openRequest;
     this.emit({
       ...this.snapshot,
       phase: 'reflowing',
@@ -160,7 +161,16 @@ export class LunarReaderRuntime implements ReaderRuntime {
     await this.releaseResources();
 
     try {
-      const result = await this.loadCurrentRequest(progression, operation, 'reflowing');
+      const data = await this.loadData(openRequest);
+      readerPerformanceMark('reader.bookBytesReady', `bytes=${data.byteLength}`);
+      this.assertCurrent(operation);
+      const result = await this.loadCurrentRequest(
+        openRequest,
+        data,
+        progression,
+        operation,
+        'reflowing',
+      );
       return result.snapshot;
     } catch (error) {
       await this.fail(operation, error);
@@ -497,7 +507,6 @@ export class LunarReaderRuntime implements ReaderRuntime {
       this.emit({ ...this.snapshot, phase: 'closing' });
     }
     await this.releaseResources();
-    this.data = undefined;
     this.request = undefined;
     this.emit({
       phase: 'idle',
@@ -507,16 +516,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   private async loadCurrentRequest(
+    request: ReaderOpenRequest,
+    data: ArrayBuffer,
     progression: number,
     operation: number,
     phase: 'paginating' | 'reflowing',
   ): Promise<ReaderOpenResult> {
-    const request = this.request;
-    const data = this.data;
-    if (!request || !data) {
-      throw new Error('The reader request is incomplete.');
-    }
-
     const fontRegistry = new LunarSkiaFontRegistry();
     fontRegistry.loadBuiltinFont(await loadBundledLunarFontBytes());
     const textMeasurer = new LunarSkiaTextMeasurer(fontRegistry);

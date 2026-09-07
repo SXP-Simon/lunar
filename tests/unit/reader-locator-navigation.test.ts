@@ -69,23 +69,39 @@ async function setup(options: { completed?: boolean; runtime?: boolean; spreadMo
     releaseArtifact: vi.fn(async (id: bigint) => { artifacts.delete(id); }),
     dispose: vi.fn(async () => undefined),
   };
-  openSession.mockResolvedValue({ session, artifact: source });
+  openSession.mockImplementation(async () => {
+    artifacts.set(source.artifactId, source);
+    visible = source;
+    return { session, artifact: source };
+  });
   const backend = new RitoNativePaginationBackend({ initialHref: 'first.xhtml', pinnedFonts: [] });
   const layout = { typography: { ...DEFAULT_READER_TYPOGRAPHY, spreadMode: options.spreadMode ?? 'single' }, theme: 'light' as const, viewport: { width: 400, height: 800, pixelRatio: 1 } };
   const request = { ...layout, bookId: 'book', fileUri: 'book.epub' };
-  const runtime = new LunarReaderRuntime(async () => new ArrayBuffer(0), backend);
+  const loadData = vi.fn(async () => new ArrayBuffer(0));
+  const runtime = new LunarReaderRuntime(loadData, backend);
   if (options.runtime) {
     const open = vi.spyOn(backend, 'open');
     await runtime.open(request);
     const { publication } = await open.mock.results[0].value;
-    return { backend, publication, session, destination, runtime };
+    return { backend, publication, session, destination, runtime, loadData, layout };
   }
   const { publication } = await backend.open({ request, layout,
     data: new ArrayBuffer(0), revisionId: 1, operationId: 1, signal: new AbortController().signal });
-  return { backend, publication, session, destination, runtime };
+  return { backend, publication, session, destination, runtime, loadData, layout };
 }
 
 describe('saved reader location navigation', () => {
+  it('reloads source bytes when a layout revision opens a new native session', async () => {
+    const { runtime, loadData, layout } = await setup({ completed: true, runtime: true });
+    try {
+      expect(loadData).toHaveBeenCalledTimes(1);
+      await runtime.updateLayout(layout);
+      expect(loadData).toHaveBeenCalledTimes(2);
+    } finally {
+      await runtime.close();
+    }
+  });
+
   it('sends only the start point for a highlight with both saved selectors', async () => {
     const { backend, publication, session } = await setup();
     const range = { start: target.sourcePoint!, end: { nodePath: [2], textOffset: 20 } };
