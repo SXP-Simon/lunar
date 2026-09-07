@@ -108,6 +108,10 @@ CI 与 CNB 的 Expo 依赖检查设置 `EXPO_OFFLINE=1`，依据当前安装的 
 
 该任务完成编译与附件上传，日志保存在 GitHub Actions。正式版本发布继续使用现有标签发布任务。继承的 `production.autoIncrement` 会递增 EAS 远程 Android 构建编号。
 
+任务在安装依赖前清理闲置预装工具和 Android 模拟器资源，同时删除 `27.1.12297006` 之外的预装 NDK，并将 NDK 环境变量设置为项目所用版本。构建脚本负责安装所需 NDK。任务输出清理前后的可用空间和各个待清理 NDK 的占用量。
+
+30 GiB 是为 EAS 项目副本、Gradle 缓存及 Rust、C++ 中间文件设置的估算预留值。低于该值时显示提示并继续编译，实际容量需求以构建记录为依据。构建结束后记录磁盘容量、inode 与主要构建目录占用。
+
 ## 失败处理
 
 GitHub 同步失败时，修正 `CNB_SECRET` 或仓库权限，再重试 GitHub Actions。也可通过 `Release Android via CNB` 的手动入口输入现有 GitHub 标签。

@@ -50,14 +50,20 @@ jobs:
             /opt/hostedtoolcache/CodeQL \
             /usr/local/lib/android/sdk/system-images \
             /usr/local/lib/android/sdk/emulator
+          # The runner includes several NDKs. The build script installs 27.1.12297006.
+          for installed_ndk in /usr/local/lib/android/sdk/ndk/*; do
+            [[ -d "$installed_ndk" ]] || continue
+            [[ "${installed_ndk##*/}" != 27.1.12297006 ]] || continue
+            du -sh "$installed_ndk"
+            sudo rm -rf -- "$installed_ndk"
+          done
           df -h "$GITHUB_WORKSPACE" /tmp
           # EAS creates another project copy; Gradle, Rust and C++ add build outputs.
-          # Reserve headroom before installing the project's SDK and dependencies.
+          # 30 GiB is an estimate, not a measured minimum for this project.
           for build_directory in "$GITHUB_WORKSPACE" /tmp; do
             available_kib=$(df -Pk "$build_directory" | awk 'NR == 2 { print $4 }')
             if (( available_kib < 30 * 1024 * 1024 )); then
-              echo "::error::At least 30 GiB of free disk space is required on $build_directory before installing build dependencies."
-              exit 1
+              echo "::warning::Free space on $build_directory is below the estimated 30 GiB budget; continuing the build to measure actual requirements."
             fi
           done
 
@@ -75,7 +81,13 @@ jobs:
       - name: Build signed production APK locally on GitHub
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: bash scripts/build-android.sh release artifacts/lunar-production.apk
+        run: |
+          # Replace runner defaults that refer to the removed preinstalled NDKs.
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.1.12297006"
+          export ANDROID_NDK="$ANDROID_NDK_HOME"
+          export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
+          export ANDROID_NDK_LATEST_HOME="$ANDROID_NDK_HOME"
+          bash scripts/build-android.sh release artifacts/lunar-production.apk
 
       - name: Upload production APK
         uses: actions/upload-artifact@v4
