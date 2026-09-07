@@ -34,6 +34,33 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Make room for the native Android build
+        run: |
+          # These preinstalled tools are unused by this Android-only job.
+          # Restrict cleanup to GitHub's disposable Linux runners.
+          if [[ "$RUNNER_ENVIRONMENT" != github-hosted || "$RUNNER_OS" != Linux ]]; then
+            echo '::error::Disk preparation requires a GitHub-hosted Linux runner.'
+            exit 1
+          fi
+          df -h "$GITHUB_WORKSPACE" /tmp
+          sudo rm -rf -- \
+            /usr/share/dotnet \
+            /usr/share/swift \
+            /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL \
+            /usr/local/lib/android/sdk/system-images \
+            /usr/local/lib/android/sdk/emulator
+          df -h "$GITHUB_WORKSPACE" /tmp
+          # EAS creates another project copy; Gradle, Rust and C++ add build outputs.
+          # Reserve headroom before installing the project's SDK and dependencies.
+          for build_directory in "$GITHUB_WORKSPACE" /tmp; do
+            available_kib=$(df -Pk "$build_directory" | awk 'NR == 2 { print $4 }')
+            if (( available_kib < 30 * 1024 * 1024 )); then
+              echo "::error::At least 30 GiB of free disk space is required on $build_directory before installing build dependencies."
+              exit 1
+            fi
+          done
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -58,6 +85,13 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
+
+      - name: Report final disk usage
+        if: always()
+        run: |
+          df -h "$GITHUB_WORKSPACE" /tmp
+          df -i "$GITHUB_WORKSPACE" /tmp
+          du -sh "$HOME/.gradle" "$HOME/.cargo" "$RUNNER_TEMP" /tmp/runner 2>/dev/null || true
 
       - name: Record build details
         env:
