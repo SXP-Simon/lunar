@@ -5,6 +5,7 @@ mod command_hash;
 mod continuation_tests;
 pub(in crate::runtime) mod fixture;
 mod fragment_page_table_tests;
+mod fragment_chapter_memory_tests;
 mod pinned_font_policy_fixtures;
 mod pinned_font_policy_tests;
 mod pinned_font_policy_validation_tests;

@@ -46,16 +46,19 @@ pub use layout_bridge::{
 };
 pub(crate) use layout_bridge::{
     build_prepared_loaded_document_runtime_layout, prepare_runtime_layout_chapter,
-    project_prepared_document_styles, ChapterStyleTable, PreparedRuntimeLayoutChapter,
+    ChapterStyleTable, PreparedRuntimeLayoutChapter,
     PreparedRuntimeLayoutOptions,
 };
+#[cfg(test)]
+pub(crate) use layout_bridge::project_prepared_document_styles;
 pub use layout_bridge::{
     load_publication, load_publication_with_layout, load_publication_with_layout_and_line_breaking,
     summarize_loaded_document_with_layout, summarize_loaded_document_with_layout_and_line_breaking,
 };
 pub(crate) use paths::{is_external_href, join_epub_href, join_zip_path, opf_dir};
 pub(crate) use prepared::{
-    loaded_document_resources, parsed_loaded_chapter_source, prepare_loaded_document,
+    loaded_document_resources, parsed_loaded_chapter_source,
+    parsed_loaded_chapter_source_from_text, prepare_loaded_document,
     prepare_loaded_document_base, prepare_loaded_document_with_base,
     prepare_loaded_document_with_base_and_footnote_targets, ParsedLoadedChapterSource,
     PreparedLoadedDocument, PreparedLoadedDocumentBase, StylesheetSourceLedger,
