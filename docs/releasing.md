@@ -35,6 +35,20 @@ GitHub Actions 的成功状态表示标签同步成功。编译结果与日志�
 
 ### CNB 发布凭证
 
+现有 `expo.yml` 需要同时授权分支推送与版本标签事件：
+
+```yaml
+allow_slugs:
+  - Umbrae-Labs/lunar
+allow_events:
+  - push
+  - tag_push
+
+EXPO_TOKEN: '<Expo access token>'
+```
+
+这里省略 `allow_branches`，使开发分支与 `v*` 标签能够共用 Expo 凭证。需要限制普通分支时，可以为开发构建与发版构建拆分两个凭证文件。
+
 在私密凭证仓库 `Umbrae-Labs/secrets` 的 `main` 分支中创建 `github-release.yml`：
 
 ```yaml
