@@ -573,7 +573,10 @@ impl RuntimeDocument {
                     };
                     let _ = self.full_chapter_text_indices.set(entries);
                 }
-                Ok(self.full_chapter_text_indices.get().expect("text indices were initialized"))
+                Ok(self
+                    .full_chapter_text_indices
+                    .get()
+                    .expect("text indices were initialized"))
             }
         }
     }

@@ -40,7 +40,6 @@ impl RuntimeDocument {
                             .pinned_font_policy
                             .measurement_faces_for_layout(config),
                     );
-                let mut footnotes = BTreeMap::new();
                 let mut tables = BTreeMap::new();
                 let mut chapters = Vec::with_capacity(document.document.chapters.len());
                 let mut anchors = BTreeMap::new();
@@ -52,7 +51,7 @@ impl RuntimeDocument {
                         document
                             .document
                             .ensure_chapter_image_dimensions_loaded(chapter_index, 1)?;
-                        let mut prepared = document.prepare_fragment_chapter(chapter_index)?;
+                        let prepared = document.prepare_fragment_chapter(chapter_index)?;
                         let chapter_tables = {
                             let mut fallbacks =
                                 document.pinned_font_policy.family_fallbacks_for_layout(
@@ -84,10 +83,10 @@ impl RuntimeDocument {
                             true,
                         )?;
                         let idref = idref.clone();
-                        footnotes.append(&mut prepared.interaction.footnotes);
                         // The formatting tree owns its inputs; parsed and projected
                         // source data can be dropped before allocating page results.
                         drop(prepared);
+                        document.release_fragment_chapter_source(chapter_index, was_loaded);
                         let chapter = document
                             .paginate_built_chapter(
                                 &built,
@@ -102,12 +101,7 @@ impl RuntimeDocument {
                     })();
                     // Restore laziness even when chapter preparation fails. Keep
                     // sources that existed before this build for other live users.
-                    if !was_loaded && document.document.archive_source.is_some() {
-                        let chapter = &mut document.document.chapters[chapter_index];
-                        chapter.xhtml_source = String::new();
-                        chapter.source_loaded = false;
-                        chapter.image_refs = None;
-                    }
+                    document.release_fragment_chapter_source(chapter_index, was_loaded);
                     if let Some(engine) = document.fragment_engine.get().and_then(Option::as_ref) {
                         engine.engine.clear_inline_cache();
                     }
@@ -128,7 +122,7 @@ impl RuntimeDocument {
                 );
                 let interactions = RuntimeRevisionInteractions {
                     publication_footnotes: Some(index.footnotes),
-                    footnotes,
+                    footnotes: BTreeMap::new(),
                     pending_footnote_keys: Default::default(),
                     footnote_index_complete: true,
                     chapter_text_indices: RuntimeChapterTextIndexSource::FullDocument,
@@ -209,5 +203,15 @@ impl RuntimeDocument {
                 &index.targets,
             ),
         )
+    }
+
+    fn release_fragment_chapter_source(&mut self, chapter_index: usize, was_loaded: bool) {
+        if was_loaded || self.document.archive_source.is_none() {
+            return;
+        }
+        let chapter = &mut self.document.chapters[chapter_index];
+        chapter.xhtml_source = String::new();
+        chapter.source_loaded = false;
+        chapter.image_refs = None;
     }
 }

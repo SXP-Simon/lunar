@@ -101,6 +101,8 @@ fn chapter_scoped_build_matches_eager_pages_interactions_and_reflow() {
                     .unwrap()
                     .entries
             );
+            assert!(scoped.prepared.is_none());
+            assert!(scoped.parsed_chapters.is_empty());
             let last_idref = scoped.document.chapters.last().unwrap().idref.clone();
             scoped
                 .chapter_formatting_tree(&actual.revision_id, &last_idref)
