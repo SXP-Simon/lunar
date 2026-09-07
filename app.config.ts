@@ -14,16 +14,25 @@ function getAndroidAbis(value: string | undefined): string[] | undefined {
 }
 
 export default ({ config }: ConfigContext): ExpoConfig => {
+  const isDevelopment = process.env.APP_VARIANT === 'development';
+  const name = config.name ?? 'lunar';
+  const androidPackage = config.android?.package ?? 'com.lunarain_079.lunar';
   const compactAndroidDevBuild =
     process.env.LUNAR_ANDROID_COMPACT_DEV_BUILD === 'true';
   const buildArchs = getAndroidAbis(process.env.LUNAR_ANDROID_ABIS);
 
   return {
     ...config,
-    name: config.name ?? 'lunar',
+    name: isDevelopment ? `${name} Dev` : name,
     slug: config.slug ?? 'lunar',
+    scheme: isDevelopment ? 'lunar-dev' : config.scheme,
+    android: {
+      ...config.android,
+      package: isDevelopment ? `${androidPackage}.dev` : androidPackage,
+    },
     plugins: [
       ...(config.plugins ?? []),
+      ['expo-dev-client', { addGeneratedScheme: isDevelopment }],
       './plugins/with-rito-react-native',
       'expo-localization',
       [

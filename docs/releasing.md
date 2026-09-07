@@ -10,6 +10,34 @@ EAS 使用 `--local`，编译发生在 CNB。Expo 账号用于项目校验、签
 
 当前发布对象为 Android arm64 APK。`production` 保留 AAB 构建用途；iOS 原生集成需要完成构建与设备验证后再配置发布。
 
+## 开发版与生产版共存
+
+`app.config.ts` 根据 `APP_VARIANT` 设置 Android 包名、应用显示名称和启动链接协议。EAS 的 `development` 配置设置 `APP_VARIANT=development`；`production` 与 `preview` 设置 `APP_VARIANT=production`，`release` 继承 `production`。环境变量省略时使用生产版标识。
+
+| 构建配置 | Android 包名 | 显示名称 | 启动链接协议 |
+| --- | --- | --- | --- |
+| `development` | `com.lunarain_079.lunar.dev` | `lunar Dev` | `lunar-dev` |
+| `production`、`release`、`preview` | `com.lunarain_079.lunar` | `lunar` | `lunar` |
+
+开发版与生产版可以同时安装，书库和设置由各自的应用存储独立保存。`preview` 与生产版共用包名。Expo 开发客户端的自动协议 `exp+lunar` 仅在开发版注册，开发服务器的二维码会打开开发版。现有开发 APK 使用原包名；重新构建并安装开发版后，`.dev` 应用会获得独立的数据目录。
+
+本地 PowerShell 启动开发服务器：
+
+```powershell
+$env:APP_VARIANT = 'development'
+pnpm start --dev-client
+```
+
+本地切换应用变体时，需要先重新生成 Android 工程，使原生包名与 Expo 配置一致。`prebuild --clean` 会替换生成的 `android` 目录，原生定制应保存在配置插件中。在同一个 PowerShell 终端执行：
+
+```powershell
+$env:APP_VARIANT = 'development'
+pnpm exec expo prebuild --clean --platform android
+pnpm android
+```
+
+切换生产版时将变量设为 `production`，重新执行 prebuild，再执行 `pnpm android --variant release`。CNB 和 GitHub 的 EAS 构建会根据构建配置生成原生工程。[Expo 应用变体文档](https://docs.expo.dev/build-reference/variants/) 与 [SDK 57 开发客户端配置](https://docs.expo.dev/versions/v57.0.0/sdk/dev-client/) 描述了上述配置方式。
+
 ## 执行过程
 
 ```mermaid
