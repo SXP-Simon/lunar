@@ -98,6 +98,16 @@ git push origin v1.0.0
 
 CI 与 CNB 的 Expo 依赖检查设置 `EXPO_OFFLINE=1`，依据当前安装的 SDK 所附依赖清单执行。日常维护时执行 `pnpm run check:expo` 可查询 Expo 在线推荐版本。构建使用 `pnpm install --frozen-lockfile`，依赖更新应在发布前提交。
 
+## GitHub production 编译测试
+
+`.github/workflows/build-production.yml` 提供独立的 `Build production APK on GitHub` 手动入口。它使用标准 `ubuntu-24.04` 执行器，通过 `eas build --local` 编译 arm64 APK。构建使用继承 `production` 的 `release` 配置，执行正式模式编译与签名。公开仓库使用标准执行器免费；私有仓库消耗账号的 Actions 免费分钟额度，超过额度后的费用由账号计费设置决定。[GitHub 执行器说明](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+
+首先将配置文件与依赖修复提交到 GitHub 默认分支，并在仓库 `Settings → Secrets and variables → Actions` 添加 `EXPO_TOKEN`。令牌对应的 Expo 账号需要具有本项目访问权限，Android 签名凭证沿用 EAS 托管配置。CNB 私密配置中的令牌需要单独配置到 GitHub Secret。
+
+在 GitHub 的 `Actions → Build production APK on GitHub → Run workflow` 中选择包含依赖修复的分支，再点击 `Run workflow`。成功后，在该次运行的 `Artifacts` 区域下载 `lunar-production-<运行编号>-<尝试次数>`，其中包含可安装的 `lunar-production.apk`，附件保留 7 天。[GitHub 手动运行说明](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
+
+该任务完成编译与附件上传，日志保存在 GitHub Actions。正式版本发布继续使用现有标签发布任务。继承的 `production.autoIncrement` 会递增 EAS 远程 Android 构建编号。
+
 ## 失败处理
 
 GitHub 同步失败时，修正 `CNB_SECRET` 或仓库权限，再重试 GitHub Actions。也可通过 `Release Android via CNB` 的手动入口输入现有 GitHub 标签。

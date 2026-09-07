@@ -1,0 +1,71 @@
+name: Build production APK on GitHub
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-production-android
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      CI: 'true'
+      LUNAR_ANDROID_ABIS: arm64-v8a
+      RITO_FFI_REBUILD: '1'
+      CARGO_BUILD_JOBS: '2'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check Expo authentication configuration
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          : "${EXPO_TOKEN:?Add EXPO_TOKEN in repository Settings > Secrets and variables > Actions}"
+
+      - name: Check out the selected branch or tag
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Build signed production APK locally on GitHub
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: bash scripts/build-android.sh release artifacts/lunar-production.apk
+
+      - name: Upload production APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunar-production-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/lunar-production.apk
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Record build details
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: |
+          {
+            echo "### Production Android build"
+            echo "Commit: $BUILD_COMMIT"
+            echo 'Profile: release (extends production); ABI: arm64-v8a'
+            echo 'Download lunar-production.apk from this run’s Artifacts section.'
+          } >> "$GITHUB_STEP_SUMMARY"
