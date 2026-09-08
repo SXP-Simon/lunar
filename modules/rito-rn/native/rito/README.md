@@ -13,4 +13,5 @@ source packages. The Android build task reuses an existing
 `target/aarch64-linux-android/release/librito_ffi.a` when available.
 
 Changed in commit: 5199ba8af02b86e3922911810d70907a9916fa59
+e5eb8ffc38741fd58f13d224a38aac8cd6f4a136
 17e4c0b637931c333467b252563e8f1b5e28288a

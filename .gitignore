@@ -51,3 +51,6 @@ example
 /*.apk
 /*.aab
 /credentials.json
+
+target/
+reports/

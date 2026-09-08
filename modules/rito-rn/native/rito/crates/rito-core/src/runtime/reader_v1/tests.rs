@@ -1868,7 +1868,10 @@ fn assert_fragment_hit_sources(publication: Vec<u8>) {
                 .as_ref()
                 .and_then(|locator| locator.source_range.as_ref())
                 .unwrap_or_else(|| {
-                    panic!("search returns a durable range for {:?}: {result:?}", hit.text)
+                    panic!(
+                        "search returns a durable range for {:?}: {result:?}",
+                        hit.text
+                    )
                 });
             assert_eq!(point, &range.start);
             assert_eq!(point.node_path, range.end.node_path);
