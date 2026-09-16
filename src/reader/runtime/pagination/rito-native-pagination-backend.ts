@@ -2,7 +2,7 @@ import type {
   LoadedReaderPublication, ReaderFontRegistry, ReaderImageDecoder, ReaderLayoutRequest, ReaderOpenRequest,
   ReaderPreparedAdjacent, ReaderRenderFrame, ReaderLocator,
 } from '../../contracts';
-import { toReaderV1DisplayList } from '../../rito';
+import { toReaderDisplayList } from '../../rito';
 import { discoverReaderInitialSpineHref } from '../../rito/epub-inspector';
 import { toRitoSavedLocator } from '../../rito/saved-locator';
 import type { RitoNativePinnedFontFace, RitoArtifact, RitoLayoutRequest, RitoNativeReaderModule } from '../../rito/rito-native';
@@ -173,7 +173,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       const image = await this.session.readResource(artifact.artifactId, 0, resource.href);
       this.imageCache?.set(resource.href, image.bytes, imageSources);
     }
-    const display = toReaderV1DisplayList(artifact.displayList.displayList, artifact.width, artifact.height);
+    const display = toReaderDisplayList(artifact.displayList.displayList, artifact.width, artifact.height);
     const pages = artifact.pages.filter((page) => artifact.localPageIndexes.includes(page.pageIndex));
     if (pages.length === 0 || artifact.localPageIndexes.length === 0) {
       readerDiagnostic('frame.empty', `artifact=${describeArtifact(artifact)} matchedPages=${pages.length}`);
@@ -269,7 +269,6 @@ class RitoNativePublication implements LoadedReaderPublication {
           requestId: this.session.nextRequestId,
           fromArtifactId: current.artifactId,
           direction,
-          work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 16 },
         });
       } catch (error) {
         readerDiagnostic('nav.turn.error', `direction=${direction} visibleIndex=${this.visibleIndex} artifact=${describeArtifact(current)} error=${describeError(error)}`);
@@ -335,7 +334,7 @@ class RitoNativePublication implements LoadedReaderPublication {
   canNavigate(direction: 'next' | 'previous'): boolean {
     const artifact = this.currentArtifact;
     const availability = artifact?.navigation[direction];
-    const allowed = availability !== 'terminal' && availability !== 'blocked';
+    const allowed = availability !== 'terminal';
     readerDiagnostic('nav.availability', `direction=${direction} allowed=${String(allowed)} availability=${availability ?? 'none'} visibleIndex=${this.visibleIndex} artifact=${describeArtifact(artifact)}`);
     return allowed;
   }
@@ -382,7 +381,6 @@ class RitoNativePublication implements LoadedReaderPublication {
           requestId: this.session.nextRequestId,
           fromArtifactId: sourceArtifact.artifactId,
           direction,
-          work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 16 },
         });
         await this.prepare(candidate, targetSpreadIndex);
         const prepared: PreparedAdjacentState = {
@@ -547,7 +545,6 @@ class RitoNativePublication implements LoadedReaderPublication {
         href: targetBase,
         anchorId: targetAnchor,
       },
-      work: { ...this.artifactRequest.work, maxForegroundQuanta: 8, localPageCap: 16 },
     });
     readerDiagnostic('toc.candidate', `href=${href} targetSpread=${targetIndex} artifact=${describeArtifact(artifact)}`);
     await this.prepare(artifact, targetIndex, true);
@@ -598,7 +595,6 @@ class RitoNativePublication implements LoadedReaderPublication {
         ...this.artifactRequest,
         requestId: this.session.nextRequestId,
         locator: toRitoSavedLocator(locator, href),
-        work: { ...this.artifactRequest.work, maxForegroundQuanta: 8, localPageCap: 16 },
       });
       try {
         await this.prepare(artifact, targetIndex, true);
@@ -1037,7 +1033,7 @@ function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutR
   const typography = request.typography;
   const margins = resolveLayoutMargins(layout);
   const locator = request.restorePosition?.locator;
-  const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, ...margins, spreadMode: typography.spreadMode, firstPageAlone: typography.spreadMode === 'double', spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily };
+  const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, ...margins, spreadMode: typography.spreadMode, firstPageAlone: typography.spreadMode === 'double', spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily, renderRatio: layout.viewport.pixelRatio };
   return {
     sessionId: BigInt(Math.max(1, revisionId)),
     requestId: BigInt(Math.max(1, operationId)),
@@ -1056,10 +1052,6 @@ function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutR
         : undefined,
       progression: locator?.sourcePoint || locator?.sourceRange ? undefined : request.restorePosition?.progression,
     },
-    // The engine requires every adjacent request's localPageCap to match the
-    // source chapter-local revision's cap, so open, TOC seeks and turns must
-    // all use the same value or the first turn after open is rejected.
-    work: { maxTopLevelNodesPerQuantum: 64, maxForegroundQuanta: 8, localPageCap: 16 },
     textProfile: 'platform-string-runs',
   };
 }

@@ -28,7 +28,7 @@ export function encodeRitoTextRangeRequest(request: RitoTextRangeRequest): Uint8
 
 export function decodeRitoSearchResponse(data: Uint8Array): RitoSearchResponse {
   const reader = open(data, 'RITOSRS1');
-  const result = { artifactId: reader.readExternalId('search artifact id'), query: reader.readUtf8(), truncated: reader.readBoolean('search truncated'), searchedPageCount: reader.readU32(), scopeComplete: reader.readBoolean('search scope complete'), results: Array.from({ length: reader.readCount('search results') }, () => reader.readRecord('search result', readSearchResult)) };
+  const result = { artifactId: reader.readExternalId('search artifact id'), query: reader.readUtf8(), truncated: reader.readBoolean('search truncated'), searchedPageCount: reader.readU32(), scopeComplete: true, results: Array.from({ length: reader.readCount('search results') }, () => reader.readRecord('search result', readSearchResult)) };
   reader.expectExhausted(); return result;
 }
 

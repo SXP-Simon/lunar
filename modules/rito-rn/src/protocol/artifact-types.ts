@@ -1,9 +1,10 @@
 import type { RitoDisplayList } from './display-types';
+import type { RitoReaderPrimitiveList } from './rito2/reader-session-primitive';
 
 export type RitoLocatorMatch = 'source-range' | 'source-point' | 'anchor' | 'progression' | 'href';
 export type RitoTextProfile = 'platform-string-runs' | 'positioned-glyph-runs';
 export type RitoResourceKind = 'image' | 'font' | 'stylesheet';
-export type RitoAdjacentAvailability = 'available' | 'pending' | 'chapter-boundary' | 'terminal' | 'blocked';
+export type RitoAdjacentAvailability = 'available' | 'chapter-boundary' | 'terminal';
 export type RitoSemanticRole = 'heading' | 'paragraph' | 'list' | 'list-item' | 'image' | 'link' | 'blockquote' | 'table' | 'generic';
 
 export interface RitoSourcePoint { readonly nodePath: readonly number[]; readonly textOffset: bigint }
@@ -43,14 +44,14 @@ export interface RitoPage {
 }
 export interface RitoDisplayListPayload {
   readonly formatVersion: number; readonly commandCount: number; readonly semanticDigest: Uint8Array;
-  readonly wireBytes: Uint8Array; readonly displayList: RitoDisplayList;
+  readonly wireBytes: Uint8Array; readonly displayList: RitoDisplayList | RitoReaderPrimitiveList;
 }
 export interface RitoArtifact {
   readonly protocolVersion: number; readonly capabilityProfileId: number; readonly sessionId: bigint;
   readonly requestId: bigint; readonly revisionId: bigint; readonly revisionVersion: number; readonly artifactId: bigint;
   readonly locator: RitoLocator; readonly matchedBy: RitoLocatorMatch; readonly localPageIndex: number;
   readonly localSpreadIndex: number; readonly localPageIndexes: readonly number[]; readonly width: number; readonly height: number;
-  readonly terminalExtent: boolean; readonly bookPageIndex?: number; readonly bookPageCount?: number;
+  readonly bookPageIndex?: number; readonly bookPageCount?: number;
   readonly navigation: RitoNavigation; readonly textProfile: RitoTextProfile; readonly displayList: RitoDisplayListPayload;
   readonly resources: readonly RitoResourceRef[]; readonly fonts: readonly RitoFontRef[]; readonly pages: readonly RitoPage[];
 }

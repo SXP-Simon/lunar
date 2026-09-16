@@ -13,7 +13,7 @@ export function decodeRitoPublication(data: Uint8Array): RitoPublication {
   if (reader.readU32() !== 1) throw new RitoWireError('Unsupported RITOPUB1 wire version.');
   if (reader.readU64() !== BigInt(data.byteLength)) throw new RitoWireError('Publication total length does not match input.');
   const protocolVersion = reader.readU32();
-  if (protocolVersion !== 2) throw new RitoWireError(`Unsupported publication protocol version: ${protocolVersion}.`);
+  if (protocolVersion !== 5) throw new RitoWireError(`Unsupported publication protocol version: ${protocolVersion}.`);
   const sessionId = reader.readExternalId('publication session id');
   const metadata = reader.readRecord('publication metadata', readMetadata);
   const spine = Array.from({ length: reader.readCount('publication spine') }, () => reader.readRecord('publication spine item', readSpineItem));

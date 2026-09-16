@@ -14,6 +14,7 @@ export interface RitoLayoutRequest {
   readonly rootFontSize: number;
   readonly lineHeightOverride?: number;
   readonly fontFamilyOverride?: string;
+  readonly renderRatio?: number;
 }
 
 export interface RitoLocator {
@@ -27,18 +28,11 @@ export interface RitoLocator {
   readonly progression?: number;
 }
 
-export interface RitoWorkBudget {
-  readonly maxTopLevelNodesPerQuantum: number;
-  readonly maxForegroundQuanta: number;
-  readonly localPageCap: number;
-}
-
 export interface RitoArtifactRequest {
   readonly sessionId: bigint;
   readonly requestId: bigint;
   readonly layout: RitoLayoutRequest;
   readonly locator: RitoLocator;
-  readonly work: RitoWorkBudget;
   readonly textProfile?: 'platform-string-runs' | 'positioned-glyph-runs';
 }
 
@@ -47,7 +41,6 @@ export interface RitoAdjacentRequest {
   readonly requestId: bigint;
   readonly fromArtifactId: bigint;
   readonly direction: 'previous' | 'next';
-  readonly work: RitoWorkBudget;
 }
 
 export function encodeRitoArtifactRequest(request: RitoArtifactRequest): Uint8Array {
@@ -55,7 +48,6 @@ export function encodeRitoArtifactRequest(request: RitoArtifactRequest): Uint8Ar
   writer.writeU64(request.sessionId).writeU64(request.requestId);
   writer.writeRecord((layout) => writeLayout(layout, request.layout));
   writer.writeRecord((locator) => writeLocator(locator, request.locator));
-  writer.writeRecord((work) => writeWork(work, request.work));
   writer.writeU32(request.textProfile === 'positioned-glyph-runs' ? 1 : 0);
   return finishMessage(writer);
 }
@@ -67,10 +59,9 @@ export function encodeRitoAdjacentRequest(request: RitoAdjacentRequest): Uint8Ar
     .writeU64(request.requestId)
     .writeU64(request.fromArtifactId)
     .writeU32(request.direction === 'previous' ? 0 : 1);
-  writeWork(writer, request.work);
   const bytes = finishMessage(writer);
-  if (bytes.byteLength !== 60) {
-    throw new RitoWireError('RITONAV1 must be exactly 60 bytes.');
+  if (bytes.byteLength !== 48) {
+    throw new RitoWireError('RITONAV1 must be exactly 48 bytes.');
   }
   return bytes;
 }
@@ -139,6 +130,7 @@ function writeLayout(writer: RitoBinaryWriter, value: RitoLayoutRequest): void {
     .writeF64(value.rootFontSize);
   writeOption(writer, value.lineHeightOverride, (lineHeight) => writer.writeF64(lineHeight));
   writeOption(writer, value.fontFamilyOverride, (family) => writer.writeUtf8(family));
+  writer.writeF64(value.renderRatio ?? 1);
 }
 
 function writeLocator(writer: RitoBinaryWriter, value: RitoLocator): void {
@@ -164,13 +156,6 @@ function writeSourcePointRecord(
     for (const item of point.nodePath) record.writeU32(item);
     record.writeU64(point.textOffset);
   });
-}
-
-function writeWork(writer: RitoBinaryWriter, value: RitoWorkBudget): void {
-  writer
-    .writeU32(value.maxTopLevelNodesPerQuantum)
-    .writeU32(value.maxForegroundQuanta)
-    .writeU32(value.localPageCap);
 }
 
 function writeOption<T>(writer: RitoBinaryWriter, value: T | undefined, write: (value: T) => void): void {

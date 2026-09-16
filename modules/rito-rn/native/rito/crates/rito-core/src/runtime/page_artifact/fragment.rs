@@ -185,24 +185,6 @@ struct FragmentSemanticRecord {
 }
 
 impl FragmentPageArtifact {
-    /// A textless page for backend-storage tests that only need shape.
-    #[cfg(test)]
-    pub(in crate::runtime) fn empty_for_tests(page_index: usize, width: f64, height: f64) -> Self {
-        Self {
-            page_index,
-            width,
-            height,
-            text: String::new(),
-            text_length: 0,
-            text_hash: hash_page_text(""),
-            runs: Vec::new(),
-            images: Vec::new(),
-            links: Vec::new(),
-            semantics: Vec::new(),
-            hard_breaks: Vec::new(),
-        }
-    }
-
     /// Page-text offsets of interline separators standing for hard breaks.
     pub(in crate::runtime) fn hard_break_offsets(&self) -> &[usize] {
         &self.hard_breaks
@@ -559,12 +541,8 @@ impl PageArtifact for FragmentPageArtifact {
                 text_length: run.end - run.start,
                 text: run_text,
                 href: run.href.clone(),
-                source_path: run.source.as_ref().map(|source| source.path.clone()),
-                source_text_offset: run
-                    .source
-                    .as_ref()
-                    .and_then(|source| source.source_offset(0))
-                    .map(|offset| offset as usize),
+                source_path: None,
+                source_text_offset: None,
                 image_src: None,
                 image_alt: None,
             });
@@ -795,7 +773,7 @@ mod tests {
     };
     use rito_inline::{plain_paragraph_style, ParleyInlineContext};
     use rito_style_contract::{
-        FontFamilies, FontFamily, FontFamilyName, InlineStyleTableV1, LayoutStyleTableV1,
+        FontFamilies, FontFamily, FontFamilyName, InlineStyleTable, LayoutStyleTable,
     };
     use std::collections::BTreeMap;
 
@@ -808,13 +786,13 @@ mod tests {
     }
 
     fn chapter(text: &str) -> ChapterFormattingTree {
-        let mut inline = InlineStyleTableV1::new(1);
+        let mut inline = InlineStyleTable::new(1);
         let families = FontFamilies::new(vec![FontFamily::Named(FontFamilyName::new("Tinos"))])
             .expect("family list");
         let style = inline
             .intern_for_node(0, plain_paragraph_style(families, 16.0, 0.0))
             .expect("style interns");
-        let mut layout = LayoutStyleTableV1::new(1);
+        let mut layout = LayoutStyleTable::new(1);
         let block = layout
             .intern_for_node(0, crate::fragment_bridge::tests_block_style())
             .expect("layout style interns");
@@ -856,6 +834,7 @@ mod tests {
             source_anchors: BTreeMap::new(),
             node_tags: BTreeMap::new(),
             list_markers: BTreeMap::new(),
+            ruby_annotation_runs: BTreeMap::new(),
             degradations: Vec::new(),
         }
     }

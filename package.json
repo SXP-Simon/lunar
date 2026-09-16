@@ -58,6 +58,7 @@
     "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@types/node": "^22.20.2",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "~57.0.9",
     "eslint": "^9.39.5",

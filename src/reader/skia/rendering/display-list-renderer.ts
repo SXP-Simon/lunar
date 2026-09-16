@@ -28,6 +28,7 @@ import {
   type SkiaParagraphFactory,
 } from '../text/paragraph-factory';
 import { skiaColor } from './color-adapter';
+import { renderResolvedPrimitives } from './resolved-primitive-renderer';
 import {
   declaredGroundFor,
   effectiveTextColor,
@@ -72,6 +73,11 @@ export class SkiaDisplayListRenderer
   ): void {
     if (!options) {
       throw new Error('Skia display-list rendering requires image and text resources.');
+    }
+
+    if (displayList.resolvedPrimitives) {
+      renderResolvedPrimitives(canvas, displayList.resolvedPrimitives, options);
+      return;
     }
 
     validateDisplayList(displayList);

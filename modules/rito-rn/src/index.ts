@@ -12,6 +12,8 @@ export {
   toExternalIdString,
 } from './protocol/binary';
 export { decodeRitoDisplayList, decodeRitoDisplayListWithTypedColors } from './protocol/display-list';
+export { decodeRitoReaderPrimitiveList } from './protocol/rito2/reader-session-primitive-decoder-runtime.js';
+export type { RitoReaderPrimitiveList, RitoReaderPrimitive } from './protocol/rito2/reader-session-primitive';
 export { decodeRitoArtifact, decodeRitoResource } from './protocol/artifact';
 export { decodeRitoPublication } from './protocol/publication';
 export {
@@ -41,7 +43,6 @@ export {
   type RitoArtifactRequest,
   type RitoLayoutRequest,
   type RitoLocator,
-  type RitoWorkBudget,
   type RitoForegroundHandoff,
   type RitoBackgroundRequest,
   type RitoBackgroundHandoff,

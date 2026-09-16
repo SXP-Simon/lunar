@@ -21,7 +21,7 @@ Pod::Spec.new do |spec|
   spec.dependency 'RCT-Folly'
 
   # RITO_FFI_IOS_LIBRARY_DIR contains per-architecture static libraries built
-  # from the Rito 1.0.1 source checkout by the consuming application's script.
+  # from the Rito 2.0.0 source checkout by the consuming application's script.
   library_dir = ENV['RITO_FFI_IOS_LIBRARY_DIR']
   if library_dir && !library_dir.empty?
     spec.vendored_libraries = "#{library_dir}/librito_ffi.a"

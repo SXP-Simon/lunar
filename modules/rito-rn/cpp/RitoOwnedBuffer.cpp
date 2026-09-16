@@ -10,7 +10,7 @@ namespace {
 // Keep the bridge limit aligned with Rito core's MAX_WIRE_BYTES (256 MiB).
 constexpr std::uint64_t kMaximumWireBytes = 256ULL * 1024ULL * 1024ULL;
 
-std::vector<std::uint8_t> copyBuffer(rito_owned_buffer_v1* buffer, const char* field) {
+std::vector<std::uint8_t> copyBuffer(rito_owned_buffer* buffer, const char* field) {
   if (buffer == nullptr) {
     throw std::invalid_argument(std::string(field) + " descriptor is null.");
   }
@@ -25,44 +25,44 @@ std::vector<std::uint8_t> copyBuffer(rito_owned_buffer_v1* buffer, const char* f
 }
 }  // namespace
 
-std::vector<std::uint8_t> copyOwnedBuffer(rito_owned_buffer_v1* buffer, const char* field) {
+std::vector<std::uint8_t> copyOwnedBuffer(rito_owned_buffer* buffer, const char* field) {
   try {
     const auto result = copyBuffer(buffer, field);
-    rito_buffer_free_v1(buffer);
+    rito_buffer_free(buffer);
     return result;
   } catch (...) {
-    rito_buffer_free_v1(buffer);
+    rito_buffer_free(buffer);
     throw;
   }
 }
 
-std::string copyOwnedError(rito_owned_buffer_v1* buffer) {
+std::string copyOwnedError(rito_owned_buffer* buffer) {
   const auto bytes = copyOwnedBuffer(buffer, "Rito error buffer");
   return {bytes.begin(), bytes.end()};
 }
 
 RitoFfiResult collectRitoResult(
     std::uint32_t status,
-    rito_owned_buffer_v1* data,
-    rito_owned_buffer_v1* error) {
+    rito_owned_buffer* data,
+    rito_owned_buffer* error) {
   RitoFfiResult result{.status = status};
   try {
-    if (status == RITO_STATUS_OK_V1) {
+    if (status == RITO_STATUS_OK) {
       result.data = copyOwnedBuffer(data, "Rito output buffer");
-      rito_buffer_free_v1(error);
+      rito_buffer_free(error);
       return result;
     }
-    rito_buffer_free_v1(data);
+    rito_buffer_free(data);
     result.error = copyOwnedError(error);
     if (result.error.empty()) {
       result.error = "Rito native call failed without a diagnostic.";
     }
     return result;
   } catch (const std::exception& exception) {
-    rito_buffer_free_v1(data);
-    rito_buffer_free_v1(error);
+    rito_buffer_free(data);
+    rito_buffer_free(error);
     return {
-        .status = RITO_STATUS_ENGINE_ERROR_V1,
+        .status = RITO_STATUS_ENGINE_ERROR,
         .error = std::string("Rito ABI output validation failed: ") + exception.what(),
     };
   }

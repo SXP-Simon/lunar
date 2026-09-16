@@ -13,7 +13,6 @@ import { decodeRitoFootnote, decodeRitoSearchResponse, decodeRitoTextRangeGeomet
 
 const STATUS_OK = 0;
 const STATUS_TARGET_NOT_PUBLISHED = 6;
-const STATUS_EXACT_PENDING = 9;
 const STATUS_ADJACENT_PENDING = 10;
 
 export interface RitoReaderSessionOptions { readonly native?: RitoNativeReaderModule; readonly maxContinuationQuanta?: number }
@@ -47,14 +46,9 @@ export class RitoReaderSession {
     const session = new RitoReaderSession(request.sessionId, { ...options, native });
     try {
       const response = await native.open(publication, encodeRitoArtifactRequest(request), fonts);
-      let artifact: RitoArtifact;
-      if (response.status === STATUS_EXACT_PENDING) {
-        artifact = await session.requestArtifact({ ...request, requestId: request.requestId + 1n, work: { ...request.work, maxForegroundQuanta: 1 } });
-      } else {
-        if (response.status !== STATUS_OK) throw nativeError(response, 'open');
-        artifact = decodeRitoArtifact(response.data);
-        if (artifact.sessionId !== request.sessionId) throw new RitoNativeError(4, 'Rito open artifact session ID does not match the request.', 'open');
-      }
+      if (response.status !== STATUS_OK) throw nativeError(response, 'open');
+      const artifact = decodeRitoArtifact(response.data);
+      if (artifact.sessionId !== request.sessionId) throw new RitoNativeError(4, 'Rito open artifact session ID does not match the request.', 'open');
       // The opening artifact has already consumed the request ID supplied to
       // native open. Publish it to the session allocator before any later
       // turn asks for nextRequestId.
@@ -80,18 +74,11 @@ export class RitoReaderSession {
   async requestArtifact(request: RitoArtifactRequest): Promise<RitoArtifact> {
     this.assertSession(request.sessionId);
     const navigation = this.beginNavigation(request.requestId);
-    let current = request;
     try {
-      for (let index = 0; index < this.maxContinuationQuanta; index += 1) {
-        const result = await this.native.requestArtifact(this.sessionId, encodeRitoArtifactRequest(current));
-        this.recordConsumedRequestId(current.requestId);
-        if (result.status === STATUS_EXACT_PENDING) {
-          current = { ...current, requestId: current.requestId + 1n, work: { ...current.work, maxForegroundQuanta: 1 } };
-          await yieldHostTurn();
-          continue;
-        }
+        const result = await this.native.requestArtifact(this.sessionId, encodeRitoArtifactRequest(request));
+        this.recordConsumedRequestId(request.requestId);
         if (result.status !== STATUS_OK) throw nativeError(result, 'requestArtifact');
-        const artifact = this.decodeCandidate(result.data, current.requestId, 'requestArtifact');
+        const artifact = this.decodeCandidate(result.data, request.requestId, 'requestArtifact');
         this.recordConsumedRequestId(artifact.requestId);
         if (navigation.superseded) {
           await this.releaseOrInvalidate(artifact, navigation.requestId);
@@ -100,8 +87,6 @@ export class RitoReaderSession {
         navigation.pendingArtifactId = artifact.artifactId;
         this.pendingForeground.set(artifact.artifactId, navigation);
         return artifact;
-      }
-      throw new RitoNativeError(9, 'Rito exact seek exceeded the continuation limit.', 'requestArtifact');
     } finally {
       if (navigation.pendingArtifactId === undefined) this.finishNavigation(navigation);
     }
@@ -116,7 +101,7 @@ export class RitoReaderSession {
         const result = await this.native.requestAdjacent(this.sessionId, encodeRitoAdjacentRequest(current));
         this.recordConsumedRequestId(current.requestId);
         if (result.status === STATUS_ADJACENT_PENDING) {
-          current = { ...current, requestId: current.requestId + 1n, work: { ...current.work, maxForegroundQuanta: 1 } };
+          current = { ...current, requestId: current.requestId + 1n };
           await yieldHostTurn();
           continue;
         }

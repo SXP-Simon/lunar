@@ -47,7 +47,6 @@ android {
 }
 
 tasks.register('buildRitoFfiArm64') {
-    onlyIf { ritoForceRebuild || !ritoFfiSourceAvailable || !new File(ritoFfiOutputDir, 'arm64-v8a/release/librito_ffi.a').exists() }
     outputs.upToDateWhen { !ritoForceRebuild }
     inputs.dir(ritoFfiSourceDir)
     outputs.file(new File(ritoFfiOutputDir, 'arm64-v8a/release/librito_ffi.a'))
@@ -56,16 +55,14 @@ tasks.register('buildRitoFfiArm64') {
             throw new GradleException('The bundled Rito source is missing. Expected modules/rito-rn/native/rito or RITO_FFI_SOURCE_DIR.')
         }
         def staticLibrary = new File(ritoFfiTargetDir, 'aarch64-linux-android/release/librito_ffi.a')
-        if (!staticLibrary.exists() || ritoForceRebuild) {
-            def cargoResult = providers.exec {
-                commandLine 'cargo',
-                    'ndk', '-t', 'arm64-v8a', '-o', ritoFfiOutputDir.absolutePath,
-                    'build', '--release', '--target-dir', ritoFfiTargetDir.absolutePath,
-                    '--manifest-path', new File(ritoFfiSourceDir, 'crates/rito-ffi/Cargo.toml').absolutePath
-                workingDir ritoFfiSourceDir
-            }
-            cargoResult.result.get().assertNormalExitValue()
+        def cargoResult = providers.exec {
+            commandLine 'cargo',
+                'ndk', '-t', 'arm64-v8a', '-o', ritoFfiOutputDir.absolutePath,
+                'build', '--release', '--target-dir', ritoFfiTargetDir.absolutePath,
+                '--manifest-path', new File(ritoFfiSourceDir, 'crates/rito-ffi/Cargo.toml').absolutePath
+            workingDir ritoFfiSourceDir
         }
+        cargoResult.result.get().assertNormalExitValue()
     }
     doLast {
         def staticLibrary = new File(ritoFfiTargetDir, 'aarch64-linux-android/release/librito_ffi.a')

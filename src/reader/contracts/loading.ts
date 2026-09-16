@@ -1,4 +1,5 @@
 import type { ReaderBookMetadata, ReaderLayoutRequest, ReaderLocator, ReaderSourcePoint, ReaderTocEntry } from './reader';
+import type { ReaderResolvedPrimitiveList } from './resolved-primitives';
 
 export interface ReaderFontShorthand {
   readonly style: 'normal' | 'italic';
@@ -288,6 +289,7 @@ export interface ReaderDisplayList {
   readonly width: number;
   readonly height: number;
   readonly commands: readonly ReaderDrawCommand[];
+  readonly resolvedPrimitives?: ReaderResolvedPrimitiveList;
 }
 
 export interface ReaderRenderPalette {

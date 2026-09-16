@@ -1,6 +1,6 @@
 import { RitoWireError } from '../errors';
 import { RitoBinaryReader } from './binary';
-import { decodeRitoDisplayListWithTypedColors } from './display-list';
+import { decodeRitoReaderPrimitiveList } from './rito2/reader-session-primitive-decoder-runtime.js';
 import type {
   RitoAdjacentAvailability, RitoArtifact, RitoDisplayListPayload, RitoFontRef, RitoHitEntry,
   RitoLocatorMatch, RitoNavigation, RitoPage, RitoRect, RitoResourceKind, RitoResourceRef,
@@ -13,7 +13,7 @@ const MAX_WIRE_BYTES = 256 * 1024 * 1024;
 export function decodeRitoArtifact(data: Uint8Array): RitoArtifact {
   const reader = openMessage(data, 'RITOART1', MAX_WIRE_BYTES, 'artifact');
   const protocolVersion = reader.readU32();
-  if (protocolVersion !== 2) throw new RitoWireError(`Unsupported artifact protocol version: ${protocolVersion}.`);
+  if (protocolVersion !== 5) throw new RitoWireError(`Unsupported artifact protocol version: ${protocolVersion}.`);
   const capabilityProfileId = reader.readU32();
   if (capabilityProfileId !== 1) throw new RitoWireError(`Unsupported capability profile: ${capabilityProfileId}.`);
   const result: RitoArtifact = {
@@ -31,7 +31,6 @@ export function decodeRitoArtifact(data: Uint8Array): RitoArtifact {
     localPageIndexes: readU32Collection(reader, 'local page indexes'),
     width: reader.readF64(),
     height: reader.readF64(),
-    terminalExtent: reader.readBoolean('terminal extent'),
     bookPageIndex: reader.readOption('book page index', () => reader.readU32()),
     bookPageCount: reader.readOption('book page count', () => reader.readU32()),
     navigation: { previous: readAvailability(reader), next: readAvailability(reader) },
@@ -71,10 +70,11 @@ function openMessage(data: Uint8Array, magic: string, max: number, label: string
 function readDisplayListPayload(reader: RitoBinaryReader): RitoDisplayListPayload {
   return reader.readRecord('display list', (record) => {
     const formatVersion = record.readU32();
+    if (formatVersion !== 2) throw new RitoWireError(`Unsupported RITODL1 format version: ${formatVersion}.`);
     const commandCount = record.readU32();
     const semanticDigest = record.readFixedBytes(32, 'display list digest');
     const wireBytes = record.readBlob('display list bytes');
-    const displayList = decodeRitoDisplayListWithTypedColors(wireBytes);
+    const displayList = decodeRitoReaderPrimitiveList(wireBytes);
     if (displayList.formatVersion !== formatVersion || displayList.commands.length !== commandCount) {
       throw new RitoWireError('Display list metadata does not match RITODL1 bytes.');
     }
@@ -110,7 +110,7 @@ function readSemantic(reader: RitoBinaryReader, depth: number): RitoSemanticNode
 }
 
 function readRect(reader: RitoBinaryReader): RitoRect { return { x: reader.readF64(), y: reader.readF64(), width: reader.readF64(), height: reader.readF64() }; }
-function readAvailability(reader: RitoBinaryReader): RitoAdjacentAvailability { return readEnum(reader, ['available', 'pending', 'chapter-boundary', 'terminal', 'blocked'] as const, 'adjacent availability'); }
+function readAvailability(reader: RitoBinaryReader): RitoAdjacentAvailability { return readEnum(reader, ['available', 'chapter-boundary', 'terminal'] as const, 'adjacent availability'); }
 function readU32Collection(reader: RitoBinaryReader, field: string): readonly number[] { return readCollection(reader, field, () => reader.readU32()); }
 function readCollection<T>(reader: RitoBinaryReader, field: string, read: () => T): readonly T[] { return Array.from({ length: reader.readCount(field) }, read); }
 function readEnum<T extends readonly string[]>(reader: RitoBinaryReader, values: T, field: string): T[number] { const tag = reader.readU32(); const value = values[tag]; if (!value) throw new RitoWireError(`Unknown ${field}: ${tag}.`); return value; }

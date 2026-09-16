@@ -15,12 +15,12 @@ struct RitoFfiResult final {
 };
 
 std::vector<std::uint8_t> copyOwnedBuffer(
-    rito_owned_buffer_v1* buffer,
+    rito_owned_buffer* buffer,
     const char* field);
-std::string copyOwnedError(rito_owned_buffer_v1* buffer);
+std::string copyOwnedError(rito_owned_buffer* buffer);
 RitoFfiResult collectRitoResult(
     std::uint32_t status,
-    rito_owned_buffer_v1* data,
-    rito_owned_buffer_v1* error);
+    rito_owned_buffer* data,
+    rito_owned_buffer* error);
 
 }  // namespace ritojs::reactnative

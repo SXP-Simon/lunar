@@ -30,7 +30,6 @@ describe('RitoReaderSession neighbor navigation', () => {
       requestId: 2n,
       fromArtifactId: 1n,
       direction: 'next' as const,
-      work: { maxTopLevelNodesPerQuantum: 8, maxForegroundQuanta: 1, localPageCap: 8 },
     };
     const peeked = await session.peekAdjacent(request);
     expect(peeked?.artifactId).toBe(2n);
@@ -76,7 +75,6 @@ describe('RitoReaderSession neighbor navigation', () => {
       requestId: 2n,
       fromArtifactId: 1n,
       direction: 'next',
-      work: { maxTopLevelNodesPerQuantum: 8, maxForegroundQuanta: 1, localPageCap: 8 },
     });
     await expect(session.advanceBackground({ sessionId: 1n, expectedVisibleArtifactId: 1n, maxTopLevelNodesPerQuantum: 8 })).rejects.toMatchObject({ status: 8 });
     await session.adoptForeground({ sessionId: 1n, expectedVisibleArtifactId: 1n, candidateArtifactId: candidate.artifactId });
@@ -110,15 +108,15 @@ function result(data: Uint8Array): RitoNativeCallResult {
 }
 
 function artifactWire(sessionId: bigint, requestId: bigint, artifactId: bigint): Uint8Array {
-  const display = new RitoBinaryWriter().writeAscii('RITODL1').writeU32(1).writeU32(0).toUint8Array();
+  const display = new RitoBinaryWriter().writeAscii('RITODL1').writeU32(2).writeF64(1).writeU32(0).toUint8Array();
   const writer = new RitoBinaryWriter()
     .writeAscii('RITOART1').writeU32(1).writeU64(0n)
-    .writeU32(2).writeU32(1).writeU64(sessionId).writeU64(requestId).writeU64(1n).writeU32(1).writeU64(artifactId)
+    .writeU32(5).writeU32(1).writeU64(sessionId).writeU64(requestId).writeU64(1n).writeU32(1).writeU64(artifactId)
     .writeRecord((locator) => locator.writeUtf8('chapter.xhtml').writeU8(0).writeU8(0).writeU8(0).writeU8(0))
     .writeU32(4).writeU32(0).writeU32(0).writeU32(1).writeU32(1)
-    .writeF64(390).writeF64(844).writeU8(0).writeU8(0).writeU8(0)
+    .writeF64(390).writeF64(844).writeU8(0).writeU8(0)
     .writeU32(0).writeU32(0).writeU32(0)
-    .writeRecord((displayRecord) => displayRecord.writeU32(1).writeU32(0).writeU32(32).writeBytes(new Uint8Array(32)).writeU64(BigInt(display.byteLength)).writeBytes(display))
+    .writeRecord((displayRecord) => displayRecord.writeU32(2).writeU32(0).writeU32(32).writeBytes(new Uint8Array(32)).writeU64(BigInt(display.byteLength)).writeBytes(display))
     .writeU32(0).writeU32(0).writeU32(0);
   return finish(writer);
 }

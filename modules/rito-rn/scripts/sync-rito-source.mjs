@@ -20,6 +20,10 @@ const crates = [
 if (!fs.existsSync(sourceRoot)) {
   throw new Error(`Rito source directory does not exist: ${sourceRoot}`);
 }
+const sourcePackage = JSON.parse(fs.readFileSync(path.join(sourceRoot, 'packages/rito/package.json'), 'utf8'));
+if (sourcePackage.name !== '@ritojs/core' || sourcePackage.version !== '2.0.0') {
+  throw new Error(`Expected Rito @ritojs/core 2.0.0 source, found ${sourcePackage.name}@${sourcePackage.version}.`);
+}
 
 copyFile('Cargo.lock');
 for (const crate of crates) {
@@ -44,5 +48,6 @@ function copyDirectory(relative) {
   const source = path.join(sourceRoot, relative);
   const destination = path.join(destinationRoot, relative);
   if (!fs.existsSync(source)) throw new Error(`Missing Rito source directory: ${source}`);
+  fs.rmSync(destination, { recursive: true, force: true });
   fs.cpSync(source, destination, { recursive: true });
 }

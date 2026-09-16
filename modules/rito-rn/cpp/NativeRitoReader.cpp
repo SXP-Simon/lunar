@@ -34,7 +34,7 @@ RitoNativeBufferResult toNativeResult(RitoFfiResult result) {
 
 RitoNativeBufferResult executorBusyResult() {
   return {
-      static_cast<double>(RITO_STATUS_BUSY_V1),
+      static_cast<double>(RITO_STATUS_BUSY),
       RitoBinary{},
       "The Rito React Native native executor queue is full.",
   };
@@ -42,7 +42,7 @@ RitoNativeBufferResult executorBusyResult() {
 
 RitoNativeBufferResult invalidArgumentResult(std::string message) {
   return {
-      static_cast<double>(RITO_STATUS_INVALID_ARGUMENT_V1),
+      static_cast<double>(RITO_STATUS_INVALID_ARGUMENT),
       RitoBinary{},
       std::move(message),
   };
@@ -158,8 +158,8 @@ struct OwnedPinnedFontFace final {
   std::optional<std::string> language;
   std::uint32_t role{};
 
-  rito_pinned_font_face_v1 toFfi() const {
-    rito_pinned_font_face_v1 result{};
+  rito_pinned_font_face toFfi() const {
+    rito_pinned_font_face result{};
     result.bytes_data = bytes.data();
     result.bytes_len = bytes.size();
     std::memcpy(result.sha256_hex, digest.data(), digest.size());
@@ -181,7 +181,7 @@ std::vector<OwnedPinnedFontFace> copyPinnedFonts(
   copied.reserve(faces.size());
   for (const auto& face : faces) {
     const auto role = static_cast<std::uint32_t>(face.genericRole);
-    if (role > RITO_PINNED_FONT_ROLE_MONOSPACE_V1) {
+    if (role > RITO_PINNED_FONT_ROLE_MONOSPACE) {
       throw std::invalid_argument("Pinned font has an unsupported generic role.");
     }
     copied.push_back({
@@ -219,14 +219,14 @@ RitoFfiResult invokeOpen(
     std::vector<std::uint8_t> publication,
     std::vector<std::uint8_t> request,
     std::vector<OwnedPinnedFontFace> faces) {
-  std::vector<rito_pinned_font_face_v1> ffiFaces;
+  std::vector<rito_pinned_font_face> ffiFaces;
   ffiFaces.reserve(faces.size());
   for (const auto& face : faces) {
     ffiFaces.push_back(face.toFfi());
   }
-  rito_owned_buffer_v1 artifact{};
-  rito_owned_buffer_v1 error{};
-  const auto status = rito_open_with_pinned_fonts_v1(
+  rito_owned_buffer artifact{};
+  rito_owned_buffer error{};
+  const auto status = rito_open_with_pinned_fonts(
       publication.data(), publication.size(), request.data(), request.size(),
       ffiFaces.data(), static_cast<std::uint32_t>(ffiFaces.size()), &artifact, &error);
   return ritojs::reactnative::collectRitoResult(status, &artifact, &error);
@@ -239,10 +239,10 @@ RitoFfiResult invokeWireRequest(
         std::uint64_t,
         const std::uint8_t*,
         std::uint64_t,
-        rito_owned_buffer_v1*,
-        rito_owned_buffer_v1*)) {
-  rito_owned_buffer_v1 output{};
-  rito_owned_buffer_v1 error{};
+        rito_owned_buffer*,
+        rito_owned_buffer*)) {
+  rito_owned_buffer output{};
+  rito_owned_buffer error{};
   const auto status = operation(sessionId, request.data(), request.size(), &output, &error);
   return ritojs::reactnative::collectRitoResult(status, &output, &error);
 }
@@ -303,9 +303,9 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::readPublication(
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id] {
-      rito_owned_buffer_v1 output{};
-      rito_owned_buffer_v1 error{};
-      const auto status = rito_read_publication_v1(id, &output, &error);
+      rito_owned_buffer output{};
+      rito_owned_buffer error{};
+      const auto status = rito_read_publication(id, &output, &error);
       return ritojs::reactnative::collectRitoResult(status, &output, &error);
     });
   } catch (const std::exception& exception) {
@@ -322,7 +322,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::requestArtifact(
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id, request = decodeBase64(request, kMaximumRequestBytes, "request")] {
-      return invokeWireRequest(id, request, rito_request_artifact_v1);
+      return invokeWireRequest(id, request, rito_request_artifact);
     });
   } catch (const std::exception& exception) {
     AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
@@ -338,7 +338,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::requestAdjacent(
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id, request = decodeBase64(request, kMaximumRequestBytes, "request")] {
-      return invokeWireRequest(id, request, rito_request_adjacent_v1);
+      return invokeWireRequest(id, request, rito_request_adjacent);
     });
   } catch (const std::exception& exception) {
     AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
@@ -354,7 +354,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::peekAdjacent(
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id, request = decodeBase64(request, kMaximumRequestBytes, "request")] {
-      return invokeWireRequest(id, request, rito_peek_adjacent_v1);
+      return invokeWireRequest(id, request, rito_peek_adjacent);
     });
   } catch (const std::exception& exception) {
     AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
@@ -370,7 +370,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::adoptForeground(
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id, request = decodeBase64(request, kMaximumRequestBytes, "request")] {
-      return invokeWireRequest(id, request, rito_adopt_foreground_candidate_v1);
+      return invokeWireRequest(id, request, rito_adopt_foreground_candidate);
     });
   } catch (const std::exception& exception) {
     AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
@@ -386,7 +386,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::commitPeekedArtifact(
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id, request = decodeBase64(request, kMaximumRequestBytes, "request")] {
-      return invokeWireRequest(id, request, rito_commit_peeked_artifact_v1);
+      return invokeWireRequest(id, request, rito_commit_peeked_artifact);
     });
   } catch (const std::exception& exception) {
     AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
@@ -402,7 +402,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::advanceBackground(
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id, request = decodeBase64(request, kMaximumRequestBytes, "request")] {
-      return invokeWireRequest(id, request, rito_advance_background_v1);
+      return invokeWireRequest(id, request, rito_advance_background);
     });
   } catch (const std::exception& exception) {
     AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
@@ -418,7 +418,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::adoptBackground(
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id, request = decodeBase64(request, kMaximumRequestBytes, "request")] {
-      return invokeWireRequest(id, request, rito_adopt_background_candidate_v1);
+      return invokeWireRequest(id, request, rito_adopt_background_candidate);
     });
   } catch (const std::exception& exception) {
     AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
@@ -436,17 +436,17 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::readResource(
   try {
     const auto session = parseExternalId(sessionId, "sessionId");
     const auto artifact = parseExternalId(artifactId, "artifactId");
-    if (!std::isfinite(kind) || kind < RITO_RESOURCE_KIND_IMAGE_V1 ||
-        kind > RITO_RESOURCE_KIND_STYLESHEET_V1 || std::floor(kind) != kind) {
+    if (!std::isfinite(kind) || kind < RITO_RESOURCE_KIND_IMAGE ||
+        kind > RITO_RESOURCE_KIND_STYLESHEET || std::floor(kind) != kind) {
       throw std::invalid_argument("resource kind must be an integer declared by rito-ffi.");
     }
     if (href.empty()) {
       throw std::invalid_argument("resource href must not be empty.");
     }
     return submitOperation(executor_, runtime, jsInvoker_, [session, artifact, kind = static_cast<std::uint32_t>(kind), href = std::move(href)] {
-      rito_owned_buffer_v1 output{};
-      rito_owned_buffer_v1 error{};
-      const auto status = rito_read_resource_v1(
+      rito_owned_buffer output{};
+      rito_owned_buffer error{};
+      const auto status = rito_read_resource(
           session, artifact, kind,
           reinterpret_cast<const std::uint8_t*>(href.data()), href.size(), &output, &error);
       return ritojs::reactnative::collectRitoResult(status, &output, &error);
@@ -465,7 +465,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::search(
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id, request = decodeBase64(request, kMaximumRequestBytes, "request")] {
-      return invokeWireRequest(id, request, rito_search_v1);
+      return invokeWireRequest(id, request, rito_search);
     });
   } catch (const std::exception& exception) {
     AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
@@ -481,7 +481,7 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::textRangeGeometry(
   try {
     const auto id = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [id, request = decodeBase64(request, kMaximumRequestBytes, "request")] {
-      return invokeWireRequest(id, request, rito_get_text_range_geometry_v1);
+      return invokeWireRequest(id, request, rito_get_text_range_geometry);
     });
   } catch (const std::exception& exception) {
     AsyncPromise<RitoNativeBufferResult> promise(runtime, jsInvoker_);
@@ -500,9 +500,9 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::readFootnote(
     const auto artifact = parseExternalId(artifactId, "artifactId");
     if (key.empty()) throw std::invalid_argument("footnote key must not be empty.");
     return submitOperation(executor_, runtime, jsInvoker_, [session, artifact, key = std::move(key)] {
-      rito_owned_buffer_v1 output{};
-      rito_owned_buffer_v1 error{};
-      const auto status = rito_read_footnote_v1(
+      rito_owned_buffer output{};
+      rito_owned_buffer error{};
+      const auto status = rito_read_footnote(
           session, artifact, reinterpret_cast<const std::uint8_t*>(key.data()), key.size(), &output, &error);
       return ritojs::reactnative::collectRitoResult(status, &output, &error);
     });
@@ -521,9 +521,9 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::releaseArtifact(
     const auto session = parseExternalId(sessionId, "sessionId");
     const auto artifact = parseExternalId(artifactId, "artifactId");
     return submitOperation(executor_, runtime, jsInvoker_, [session, artifact] {
-      rito_owned_buffer_v1 error{};
-      const auto status = rito_release_artifact_v1(session, artifact, &error);
-      rito_owned_buffer_v1 output{};
+      rito_owned_buffer error{};
+      const auto status = rito_release_artifact(session, artifact, &error);
+      rito_owned_buffer output{};
       return ritojs::reactnative::collectRitoResult(status, &output, &error);
     });
   } catch (const std::exception& exception) {
@@ -539,9 +539,9 @@ AsyncPromise<RitoNativeBufferResult> NativeRitoReader::dispose(
   try {
     const auto session = parseExternalId(sessionId, "sessionId");
     return submitOperation(executor_, runtime, jsInvoker_, [session] {
-      rito_owned_buffer_v1 error{};
-      const auto status = rito_dispose_v1(session, &error);
-      rito_owned_buffer_v1 output{};
+      rito_owned_buffer error{};
+      const auto status = rito_dispose(session, &error);
+      rito_owned_buffer output{};
       return ritojs::reactnative::collectRitoResult(status, &output, &error);
     });
   } catch (const std::exception& exception) {

@@ -1,6 +1,6 @@
 # @ritojs/react-native
 
-`@ritojs/react-native` 为 React Native 提供 Rito 1.0.1 阅读内核的 Turbo Module 绑定。模块把 React Native 的 TypeScript 会话封装连接到 Rito 的 `rito-ffi`，并将二进制协议、原生内存管理和异步执行集中在一个可复用的程序包中。
+`@ritojs/react-native` 为 React Native 提供 Rito 2.0.0 阅读内核的 Turbo Module 绑定。模块把 React Native 的 TypeScript 会话封装连接到 Rito 的 `rito-ffi`，并将二进制协议、原生内存管理和异步执行集中在一个可复用的程序包中。
 
 ## 模块作用
 
@@ -8,7 +8,7 @@
 
 | 层次 | 作用 |
 | --- | --- |
-| TypeScript | 编码和解码 Rito 1.0.1 协议，校验会话、请求和工件身份，提供 `RitoReaderSession`。 |
+| TypeScript | 编码和解码 Rito 2.0.0 阅读协议第 5 版与 `RITODL1` 绘制格式第 2 版，校验会话、请求和工件身份，提供 `RitoReaderSession`。 |
 | 共享 C++ | 实现 `NativeRitoReader` Turbo Module、串行执行器、返回缓冲区复制与释放，以及 `bigint` 到十进制字符串的转换。 |
 | Rito FFI | 调用模块内 `native/rito` 的 Rust `rito-ffi`，完成 EPUB 打开、排版、资源读取、搜索和交互计算。 |
 
@@ -20,10 +20,10 @@ ReaderRuntime
     -> NativeRitoReader Turbo Module
     -> shared C++
     -> rito-ffi
-    -> Rito 1.0.1 Rust 内核
+    -> Rito 2.0.0 Rust 内核
 ```
 
-模块本身只负责阅读内核和原生桥接，未引入 Skia。Lunar 的渲染适配位于 `src/reader/runtime/pagination/rito-native-pagination-backend.ts`，负责把 Rito DisplayList 转换为阅读界面使用的帧数据。
+模块本身只负责阅读内核和原生桥接，未引入 Skia。Lunar 的转换位于 `src/reader/rito/rito-display-list.ts`，Skia 绘制位于 `src/reader/skia/rendering/resolved-primitive-renderer.ts`。绘制格式第 2 版提供设备像素图元和文字簇位置。
 
 ## 当前接口
 
@@ -41,13 +41,13 @@ ReaderRuntime
 
 | 目录或文件 | 内容 |
 | --- | --- |
-| `src/protocol` | Rito 1.0.1 的二进制协议、模型和编解码器。 |
+| `src/protocol` | Rito 2.0.0 的二进制协议、模型和编解码器。 |
 | `src/session.ts` | TypeScript 会话生命周期和请求封装。 |
 | `specs/NativeRitoReader.ts` | React Native Codegen 模块规范。 |
 | `cpp` | Android 与 iOS 共用的 Turbo Module、执行器和缓冲区代码。 |
 | `android-pure-cxx` | Android Pure C++ 自动链接使用的 CMake 目标。 |
 | `ios` | CocoaPods 配置和 Objective-C++ Module Provider。 |
-| `native/rito` | Rito 1.0.1 `rito-ffi` 所需的最小 Rust 工作区，包含 `rito-core` 及其依赖 crate。 |
+| `native/rito` | Rito 2.0.0 `rito-ffi` 所需的最小 Rust 工作区，包含 `rito-core` 及其依赖 crate。 |
 | `scripts` | Codegen 生成脚本。 |
 
 Android 采用 Pure C++ 自动链接，因此模块没有传统 Android Gradle 子工程，也没有 `android/` 目录。React Native 生成的 `autolinking.cpp` 负责注册 `NativeRitoReader`，CMake 目标负责加入共享 C++ 源码和 Rito 静态库。
@@ -70,9 +70,9 @@ Android 采用 Pure C++ 自动链接，因此模块没有传统 Android Gradle �
 | `cargo-ndk` | 4.1.2 |
 | CMake | 4.0.0 |
 | Android NDK | 27.1.12297006 |
-| Rito 源码 | 模块内 `native/rito`，来源为 Rito 1.0.1 提交 `2733ea907762d424eb0c1cb1a8b069e262c3f60a`。 |
+| Rito 源码 | 模块内 `native/rito`，来源为 `@ritojs/core@2.0.0` 标签提交 `fb6453b16a51665913464b0413e7d9a08d73fdc4`。 |
 
-Android 构建默认使用模块内 Rust 工作区。源码更新时，可从本地 Rito 副本同步：
+Android 构建默认使用模块内 Rust 工作区。源码更新时，设置 `RITO_SOURCE_DIR` 为相应标签的检出目录，然后同步：
 
 ```powershell
 pnpm run sync:rito-native
@@ -82,7 +82,7 @@ cd android
 .\gradlew.bat :app:generateRitoCodegen :app:generateAutolinkingNewArchitectureFiles
 ```
 
-`native/rito/target` 被忽略但保留在本机。Gradle 检查到其中已有 `librito_ffi.a` 时，会复用该静态库；删除它或设置 `RITO_FFI_REBUILD=1` 后再执行构建，可重新生成。需要使用其他 Rito 副本时，设置 `RITO_FFI_SOURCE_DIR` 覆盖默认目录。
+`native/rito/target` 被忽略但保留在本机。Gradle 检测源码变化后由 Cargo 重新编译；设置 `RITO_FFI_REBUILD=1` 可以强制重新编译。需要使用其他 Rito 副本时，设置 `RITO_FFI_SOURCE_DIR` 覆盖默认目录。
 
 当前应用通过根目录的 `plugins/with-rito-react-native.js` 把 Cargo 任务、Codegen 输出目录、NDK ABI 和 CMake 参数加入 Expo 生成的工程。使用发布到 npm 的程序包时，建议将这部分构建集成随程序包发布，或由宿主项目提供同等的 Expo 配置插件。
 

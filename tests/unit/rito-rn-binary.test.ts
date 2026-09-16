@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 import {
   RitoBinaryReader,
@@ -8,7 +9,8 @@ import {
 } from '../../modules/rito-rn/src/protocol/binary';
 import { RitoWireError as BinaryRitoWireError } from '../../modules/rito-rn/src/errors';
 import { decodeRitoDisplayList, decodeRitoDisplayListWithTypedColors } from '../../modules/rito-rn/src/protocol/display-list';
-import { toReaderV1DisplayList } from '../../src/reader/rito/rito-v1-display-list';
+import { decodeRitoReaderPrimitiveList } from '../../modules/rito-rn/src/protocol/rito2/reader-session-primitive-decoder-runtime.js';
+import { toReaderDisplayList } from '../../src/reader/rito/rito-display-list';
 import {
   encodeRitoAdjacentRequest,
   encodeRitoBackgroundHandoff,
@@ -21,6 +23,18 @@ import { decodeRitoArtifact, decodeRitoResource } from '../../modules/rito-rn/sr
 import { decodeRitoPublication } from '../../modules/rito-rn/src/protocol/publication';
 
 describe('Rito React Native binary protocol', () => {
+  it('decodes the Rito 2.0.0 Rust primitive fixture', () => {
+    const hex = readFileSync(new URL('../fixtures/rito-2-primitive-list.hex', import.meta.url), 'utf8').trim();
+    const bytes = Uint8Array.from(hex.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
+    const list = decodeRitoReaderPrimitiveList(bytes);
+    expect(list.formatVersion).toBe(2);
+    expect(list.ratio).toBe(2);
+    expect(list.commands.map((command) => command.kind)).toEqual([
+      'push-state', 'pop-state', 'translate', 'opacity', 'transform', 'clip-path',
+      'fill-rect', 'fill-path', 'stroke-path', 'shadow', 'draw-image', 'text', 'ruby',
+    ]);
+    expect(toReaderDisplayList(list, 360, 640).resolvedPrimitives?.commandCount).toBe(13);
+  });
   it('preserves V1 primitive fields in little-endian order', () => {
     const bytes = new RitoBinaryWriter()
       .writeAscii('RITOTST1')
@@ -79,7 +93,7 @@ describe('Rito React Native binary protocol', () => {
       .toUint8Array();
 
     const decoded = decodeRitoDisplayList(bytes);
-    const displayList = toReaderV1DisplayList(decoded, 390, 844);
+    const displayList = toReaderDisplayList(decoded, 390, 844);
 
     expect(displayList).toEqual({
       width: 390,
@@ -127,7 +141,7 @@ describe('Rito React Native binary protocol', () => {
     });
   });
 
-  it('decodes the Rito 1.0.1 text-box and explicit background-size fields', () => {
+  it('retains the legacy format 1 decoder for text-box fixtures', () => {
     const text = new RitoBinaryWriter()
       .writeAscii('RITODL1').writeU32(1).writeU32(1).writeU16(9)
       .writeUtf8('box').writeF64(10).writeF64(20).writeF64(30).writeF64(14)
@@ -165,32 +179,24 @@ describe('Rito React Native binary protocol', () => {
       requestId: 2n,
       fromArtifactId: 3n,
       direction: 'next',
-      work: {
-        maxTopLevelNodesPerQuantum: 8,
-        maxForegroundQuanta: 2,
-        localPageCap: 16,
-      },
     });
 
-    expect(bytes.byteLength).toBe(60);
+    expect(bytes.byteLength).toBe(48);
     const reader = new RitoBinaryReader(bytes);
     reader.expectHeader('RITONAV1');
     expect(reader.readU32()).toBe(1);
-    expect(reader.readU64()).toBe(60n);
+    expect(reader.readU64()).toBe(48n);
     expect(reader.readU64()).toBe(1n);
     expect(reader.readU64()).toBe(2n);
     expect(reader.readU64()).toBe(3n);
     expect(reader.readU32()).toBe(1);
-    expect(reader.readU32()).toBe(8);
-    expect(reader.readU32()).toBe(2);
-    expect(reader.readU32()).toBe(16);
     reader.expectExhausted();
   });
 
   it('strictly decodes RITOART1 and nested RITORES1 messages', () => {
-    const display = new RitoBinaryWriter().writeAscii('RITODL1').writeU32(1).writeU32(0).toUint8Array();
+    const display = new RitoBinaryWriter().writeAscii('RITODL1').writeU32(2).writeF64(1).writeU32(0).toUint8Array();
     const artifact = message('RITOART1')
-      .writeU32(2).writeU32(1).writeU64(91n).writeU64(12n).writeU64(44n).writeU32(3).writeU64(7001n)
+      .writeU32(5).writeU32(1).writeU64(91n).writeU64(12n).writeU64(44n).writeU32(3).writeU64(7001n)
       .writeRecord((locator) => {
         locator.writeUtf8('chapter.xhtml').writeU8(0).writeU8(0).writeU8(1)
           .writeRecord((range) => {
@@ -200,8 +206,8 @@ describe('Rito React Native binary protocol', () => {
           .writeU8(0);
       })
       .writeU32(0).writeU32(7).writeU32(7).writeU32(1).writeU32(7)
-      .writeF64(360).writeF64(640).writeU8(0).writeU8(0).writeU8(0)
-      .writeU32(0).writeU32(1).writeU32(1).writeRecord((record) => record.writeU32(1).writeU32(0).writeU32(32).writeBytes(new Uint8Array(32)).writeU64(BigInt(display.byteLength)).writeBytes(display))
+      .writeF64(360).writeF64(640).writeU8(0).writeU8(0)
+      .writeU32(0).writeU32(1).writeU32(1).writeRecord((record) => record.writeU32(2).writeU32(0).writeU32(32).writeBytes(new Uint8Array(32)).writeU64(BigInt(display.byteLength)).writeBytes(display))
       .writeU32(1).writeRecord((record) => record.writeU32(0).writeUtf8('images/cover.png'))
       .writeU32(1).writeRecord((record) => record.writeUtf8('Rito Serif').writeUtf8('fonts/serif.woff2').writeUtf8('normal').writeU16(400).writeUtf8('shape-v1').writeU64(8192n))
       .writeU32(0);
@@ -221,7 +227,7 @@ describe('Rito React Native binary protocol', () => {
 
   it('strictly decodes publication metadata and nested TOC', () => {
     const publication = message('RITOPUB1')
-      .writeU32(2).writeU64(91n)
+      .writeU32(5).writeU64(91n)
       .writeRecord((record) => record.writeUtf8('Fixture').writeUtf8('en').writeUtf8('urn:fixture').writeU8(0))
       .writeU32(1)
       .writeRecord((record) => record.writeU32(0).writeU8(1).writeU32(0).writeUtf8('chapter').writeUtf8('chapter.xhtml'))
@@ -250,7 +256,7 @@ describe('Rito React Native binary protocol', () => {
     expect(geometry.byteLength).toBe(72);
 
     const searchResponse = message('RITOSRS1')
-      .writeU64(2n).writeUtf8('章').writeU8(0).writeU32(4).writeU8(1).writeU32(1)
+      .writeU64(2n).writeUtf8('章').writeU8(0).writeU32(4).writeU32(1)
       .writeRecord((result) => {
         result.writeU32(3).writeU32(2);
         writeTextPosition(result, 0, 1, 2, 3);
