@@ -91,7 +91,7 @@ describe('reader native automatic page turn', () => {
     })).toBeUndefined();
   });
 
-  it('keeps the source below native animation until its first frame is presented', () => {
+  it('keeps the source until presentation, then keeps the prepared target under the native frame', () => {
     const source = { key: 'source' } as ReaderPageContent;
     const target = { key: 'target' } as ReaderPageContent;
     const current = { key: 'current' } as ReaderPageContent;
@@ -103,7 +103,7 @@ describe('reader native automatic page turn', () => {
     }];
 
     expect(nativeAutomaticPageTurnBaseContent(turns, current, false)).toBe(source);
-    expect(nativeAutomaticPageTurnBaseContent(turns, current, true)).toBe(current);
+    expect(nativeAutomaticPageTurnBaseContent(turns, current, true)).toBe(target);
   });
 
   it('uses current content when native animation is idle', () => {

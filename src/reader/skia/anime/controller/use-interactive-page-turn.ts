@@ -111,15 +111,15 @@ export function useInteractivePageTurn({
       'turn.handoff.snapshot-ready',
       `turn=${committedHandoff.turnId} ui=${uiSnapshotIdentity} generation=${committedHandoff.generation}`,
     );
-    if (committedHandoff.nativeTurnId) {
-      acknowledgeNativePagerPresentationById(
-        nativePagerId.value,
-        committedHandoff.nativeTurnId,
-      );
-    }
     let cancelled = false;
-    queueMicrotask(() => {
+    void waitForPageHandoffFrames().then(() => {
       if (cancelled || handoffGeneration.current !== committedHandoff.generation) return;
+      if (committedHandoff.nativeTurnId) {
+        acknowledgeNativePagerPresentationById(
+          nativePagerId.value,
+          committedHandoff.nativeTurnId,
+        );
+      }
       readerDiagnostic(
         'turn.handoff.clear',
         `turn=${committedHandoff.turnId} ui=${uiSnapshotIdentity} generation=${committedHandoff.generation}`,

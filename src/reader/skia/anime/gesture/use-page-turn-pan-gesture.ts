@@ -26,6 +26,7 @@ export interface PageTurnGestureValues {
   readonly pressedEdgeX: SharedValue<number>;
   readonly heldRollTilt: SharedValue<number>;
   readonly token: SharedValue<number>;
+  readonly jsSampleIndex: SharedValue<number>;
   readonly nativeActive: SharedValue<boolean>;
   readonly nativePagerId: SharedValue<number>;
   readonly nativeInputReady: SharedValue<boolean>;
@@ -57,6 +58,7 @@ export function usePageTurnGestureValues(): PageTurnGestureValues {
   const pressedEdgeX = useSharedValue(1);
   const heldRollTilt = useSharedValue(0);
   const token = useSharedValue(0);
+  const jsSampleIndex = useSharedValue(0);
   const nativeActive = useSharedValue(false);
   const nativePagerId = useSharedValue(-1);
   const nativeInputReady = useSharedValue(false);
@@ -73,6 +75,7 @@ export function usePageTurnGestureValues(): PageTurnGestureValues {
     pressedEdgeX,
     heldRollTilt,
     token,
+    jsSampleIndex,
     nativeActive,
     nativePagerId,
     nativeInputReady,
@@ -92,6 +95,7 @@ export function usePageTurnGestureValues(): PageTurnGestureValues {
     startBookX,
     startX,
     token,
+    jsSampleIndex,
   ]);
 }
 
@@ -132,12 +136,13 @@ export function usePageTurnPanGesture({
     startBookX,
     startX,
     token,
+    jsSampleIndex,
   } = values;
 
   /* eslint-disable react-hooks/immutability */
   const gesture = useMemo(
     () => Gesture.Pan()
-      .activeOffsetX([-12, 12])
+      .activeOffsetX([-6, 6])
       .failOffsetY([-12, 12])
       .maxPointers(1)
       .onStart((event) => {
@@ -158,7 +163,39 @@ export function usePageTurnPanGesture({
         nativeActive.value = false;
         nativeStockedToken.value = 0;
         token.value += 1;
+        jsSampleIndex.value = 0;
         scheduleOnRN(beginDrag, event.x - event.translationX, event.y - event.translationY, token.value);
+        // Recognition already includes horizontal travel. Start preparing its
+        // neighbor now instead of waiting for the next update event.
+        if (Math.abs(event.translationX) >= 2) {
+          const initialDirection: 1 | -1 = event.translationX < 0 ? 1 : -1;
+          direction.value = initialDirection;
+          directionLocked.value = true;
+          startBookX.value = getGestureStartBookX(startX.value, initialDirection, viewportWidth);
+          const geometry = getGestureGeometry({
+            startBookX: startBookX.value,
+            translationX: event.translationX,
+            direction: initialDirection,
+            pageWidth: viewportWidth,
+          });
+          progress.value = renderGestureProgress({
+            physicalProgress: planarTurnProgressForTranslation(
+              event.translationX,
+              initialDirection,
+              viewportWidth,
+            ),
+            direction: initialDirection,
+            spreadMode,
+          });
+          grabY.value = Math.min(
+            viewportHeight,
+            Math.max(0, event.absoluteY - surfaceTop),
+          );
+          heldRollTilt.value = geometry.heldRollTilt;
+          pressedEdgeX.value = geometry.pressedEdgeX;
+          jsSampleIndex.value = 1;
+          scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
+        }
       })
       .onUpdate((event) => {
         'worklet';
@@ -223,7 +260,12 @@ export function usePageTurnPanGesture({
             }
           }
         }
-        scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
+        // The shared values above drive every drawn frame. JavaScript only
+        // needs periodic samples for preparation and release prediction.
+        jsSampleIndex.value += 1;
+        if (jsSampleIndex.value === 1 || jsSampleIndex.value % 2 === 0) {
+          scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
+        }
       })
       .onEnd((event) => {
         'worklet';
@@ -285,6 +327,7 @@ export function usePageTurnPanGesture({
         }
         started.value = false;
         directionLocked.value = false;
+        scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
         scheduleOnRN(endDrag, event.velocityX, event.translationX, nativeReleased);
       })
       .onFinalize(() => {
@@ -309,6 +352,7 @@ export function usePageTurnPanGesture({
       getGestureGeometry,
       getGestureStartBookX,
       markNativeGestureAccepted,
+      jsSampleIndex,
       nativeActive,
       nativeGestureEnabled,
       nativeGesturePolicy,

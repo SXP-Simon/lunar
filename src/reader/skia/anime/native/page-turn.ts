@@ -75,5 +75,8 @@ export function nativeAutomaticPageTurnBaseContent(
   hasPresentedTurn: boolean,
 ): ReaderPageContent | undefined {
   if (turns.length === 0) return current;
-  return hasPresentedTurn ? current ?? turns.at(-1)?.to : turns[0]?.from;
+  // The runtime snapshot can reach React after the native compositor has
+  // presented its first frame. Keep the already prepared target underneath
+  // that frame until the subscriber catches up.
+  return hasPresentedTurn ? turns.at(-1)?.to ?? current : turns[0]?.from;
 }

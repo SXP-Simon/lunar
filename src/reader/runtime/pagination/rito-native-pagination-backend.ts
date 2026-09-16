@@ -802,7 +802,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       // identity alive briefly instead of releasing it: the engine's exact
       // locator cache can only match the next backward seek against the
       // seek-resolved href+progression locator that the old identity carries.
-      this.keepBoundaryArtifactAlive(previous);
+      await this.keepBoundaryArtifactAlive(previous);
     }
     this.retainedBoundaryArtifacts.set(key, artifact.artifactId);
     readerDiagnostic('boundary.retain', `key=${key} artifact=${describeArtifact(artifact)} retained=${this.retainedBoundaryArtifacts.size}`);
@@ -810,13 +810,13 @@ class RitoNativePublication implements LoadedReaderPublication {
       const oldest = this.retainedBoundaryArtifacts.entries().next().value as [string, bigint] | undefined;
       if (!oldest) break;
       this.retainedBoundaryArtifacts.delete(oldest[0]);
-      this.keepBoundaryArtifactAlive(oldest[1]);
+      await this.keepBoundaryArtifactAlive(oldest[1]);
       readerDiagnostic('boundary.release', `key=${oldest[0]} artifact=${oldest[1].toString()} retained=${this.retainedBoundaryArtifacts.size}`);
     }
   }
 
   /** Defers the release of a boundary artifact so recent chapters stay cacheable. */
-  private keepBoundaryArtifactAlive(artifactId: bigint): void {
+  private async keepBoundaryArtifactAlive(artifactId: bigint): Promise<void> {
     if (this.retainedBoundaryKeepAlive.includes(artifactId)) return;
     this.retainedBoundaryKeepAlive.push(artifactId);
     while (this.retainedBoundaryKeepAlive.length > RETAINED_BOUNDARY_KEEP_ALIVE_CAP) {
@@ -825,7 +825,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       // The newest identity of a retained key lives in the map; only release
       // artifacts that are no longer referenced anywhere.
       if (![...this.retainedBoundaryArtifacts.values()].includes(oldest)) {
-        void this.session.releaseArtifact(oldest).catch(() => undefined);
+        await this.session.releaseArtifact(oldest).catch(() => undefined);
         readerDiagnostic('boundary.keepalive.release', `artifact=${oldest.toString()}`);
       }
     }
