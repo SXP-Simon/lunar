@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@shopify/react-native-skia', () => ({ PaintStyle: {}, Skia: {} }));
+
 import type {
   ReaderHitEntry,
   ReaderRuntime,
@@ -15,7 +17,7 @@ import {
   createReaderHighlightRegions,
 } from '../../src/features/reader/services/highlight-overlay-service';
 import { createReaderTextSelection } from '../../src/reader/interaction/text-selection';
-import { decorateReaderPageOverlays } from '../../src/reader/skia/rendering/page-overlays';
+import { decorateReaderPageOverlays } from '../../src/reader/skia/rendering/reader-overlays';
 import { nativeAutomaticPageTurnFaces } from '../../src/reader/skia/anime/native/page-turn';
 import type { ReaderPageContent } from '../../src/reader/skia/anime/core/page-turn-types';
 

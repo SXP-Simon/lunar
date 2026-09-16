@@ -744,6 +744,8 @@ export class LunarReaderRuntime implements ReaderRuntime {
     let picture: CompiledReaderPicture;
     try {
       picture = this.pictureCompiler.compile(frame.displayList, {
+        // ReaderSurface positions Pictures in logical pixels; the Rito renderer
+        // converts its device-pixel primitives to this Picture coordinate space.
         pixelRatio: 1,
         images: imageCache,
         paragraphs: textMeasurer.paragraphs,

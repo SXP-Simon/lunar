@@ -72,29 +72,6 @@ export interface ReaderRect {
   readonly height: number;
 }
 
-export interface ReaderPoint {
-  readonly x: number;
-  readonly y: number;
-}
-
-export interface ReaderSize {
-  readonly width: number;
-  readonly height: number;
-}
-
-export type ReaderLength =
-  | { readonly unit: 'px'; readonly value: number }
-  | { readonly unit: 'percent'; readonly value: number };
-
-export type ReaderBackgroundSize =
-  | 'cover'
-  | 'contain'
-  | 'auto'
-  | {
-      readonly x?: ReaderLength;
-      readonly y?: ReaderLength;
-    };
-
 export type ReaderColorSpace =
   | 'srgb' | 'hsl' | 'hwb' | 'lab' | 'lch' | 'oklab' | 'oklch'
   | 'srgb-linear' | 'display-p3' | 'display-p3-linear' | 'a98-rgb'
@@ -107,48 +84,6 @@ export interface ReaderColor {
   readonly none: { readonly component0: boolean; readonly component1: boolean; readonly component2: boolean; readonly alpha: boolean };
 }
 
-export type ReaderTransform =
-  | {
-      readonly kind: 'translate';
-      readonly x: ReaderLength;
-      readonly y: ReaderLength;
-    }
-  | { readonly kind: 'scale'; readonly sx: number; readonly sy: number }
-  | { readonly kind: 'rotate'; readonly rad: number };
-
-export type ReaderBorderStyle = 'none' | 'hidden' | 'solid' | 'dotted' | 'dashed' | 'double' | 'groove' | 'ridge' | 'inset' | 'outset';
-
-export interface ReaderBorderPaintEdge {
-  readonly color: ReaderColor | string;
-  readonly style: ReaderBorderStyle;
-}
-
-export interface ReaderBorderBox {
-  readonly topWidth: number;
-  readonly rightWidth: number;
-  readonly bottomWidth: number;
-  readonly leftWidth: number;
-}
-
-export interface ReaderSpacing {
-  readonly top: number;
-  readonly right: number;
-  readonly bottom: number;
-  readonly left: number;
-}
-
-export interface ReaderRunBorderEdge {
-  readonly widthPx: number;
-  readonly paint: ReaderBorderPaintEdge;
-}
-
-export interface ReaderRunBorder {
-  readonly top?: ReaderRunBorderEdge;
-  readonly bottom?: ReaderRunBorderEdge;
-  readonly start?: ReaderRunBorderEdge;
-  readonly end?: ReaderRunBorderEdge;
-}
-
 export interface ReaderTextShadow {
   readonly offsetX: number;
   readonly offsetY: number;
@@ -156,140 +91,10 @@ export interface ReaderTextShadow {
   readonly color: ReaderColor | string;
 }
 
-export interface ReaderBoxShadow extends ReaderTextShadow {
-  readonly spread: number;
-  readonly inset: boolean;
-}
-
-export type ReaderRunDecoration =
-  | {
-      readonly kind: 'underline';
-      readonly y: number;
-      readonly thickness: number;
-      readonly color: ReaderColor | string;
-    }
-  | {
-      readonly kind: 'line-through';
-      readonly y: number;
-      readonly thickness: number;
-      readonly color: ReaderColor | string;
-    };
-
-export interface ReaderRunPaint extends ReaderMeasurePaint {
-  readonly color: ReaderColor | string;
-  readonly backgroundColor?: ReaderColor | string;
-  readonly backgroundRadius?: number;
-  readonly textShadow?: readonly ReaderTextShadow[];
-  readonly decoration?: ReaderRunDecoration;
-  readonly padding?: ReaderSpacing;
-  readonly border?: ReaderRunBorder;
-  /** Outer inline-box bounds relative to the text run's top edge. */
-  readonly box?: { readonly topPx: number; readonly bottomPx: number };
-  /** Whether the inline box includes its logical start and end edges. */
-  readonly boxStart?: boolean;
-  readonly boxEnd?: boolean;
-}
-
-export interface ReaderBackgroundPosition {
-  readonly x: ReaderLength;
-  readonly y: ReaderLength;
-}
-
-export interface ReaderBlockPaint {
-  readonly background?: {
-    readonly color?: ReaderColor | string;
-    readonly image?: string;
-    readonly size?: ReaderBackgroundSize;
-    readonly repeat?: 'repeat' | 'no-repeat' | 'repeat-x' | 'repeat-y' | 'space' | 'round';
-    readonly position?: ReaderBackgroundPosition;
-  };
-  readonly border?: {
-    readonly top?: ReaderBorderPaintEdge;
-    readonly right?: ReaderBorderPaintEdge;
-    readonly bottom?: ReaderBorderPaintEdge;
-    readonly left?: ReaderBorderPaintEdge;
-  };
-  readonly radius?: { readonly px?: number; readonly pct?: number; readonly corners?: { readonly topLeft: number; readonly topRight: number; readonly bottomRight: number; readonly bottomLeft: number } };
-  readonly boxShadow?: readonly ReaderBoxShadow[];
-}
-
-export interface ReaderPagePaint {
-  readonly backgroundColor?: ReaderColor | string;
-}
-
-export interface ReaderHorizontalRulePaint {
-  readonly color: ReaderColor | string;
-  readonly style: ReaderBorderStyle;
-}
-
-export type ReaderDrawCommand =
-  | { readonly kind: 'pushState' }
-  | { readonly kind: 'popState' }
-  | { readonly kind: 'translate'; readonly dx: number; readonly dy: number }
-  | {
-      readonly kind: 'transform';
-      readonly origin: ReaderPoint;
-      readonly box: ReaderSize;
-      readonly transforms: readonly ReaderTransform[];
-    }
-  | { readonly kind: 'opacity'; readonly value: number }
-  | {
-      readonly kind: 'clipRect';
-      readonly rect: ReaderRect;
-      readonly radius?: { readonly rx: number; readonly ry: number };
-    }
-  | { readonly kind: 'paintPage'; readonly rect: ReaderRect; readonly paint: ReaderPagePaint }
-  | {
-      readonly kind: 'paintBlock';
-      readonly rect: ReaderRect;
-      readonly paint: ReaderBlockPaint;
-      readonly borderBox?: ReaderBorderBox;
-    }
-  | {
-      readonly kind: 'paintText';
-      readonly text: string;
-      readonly rect: ReaderRect;
-      readonly paint: ReaderRunPaint;
-      readonly lineHeightPx?: number;
-      readonly href?: string;
-      readonly sourceText?: string;
-      readonly sourceTextOffset?: number;
-      readonly vertical?: boolean;
-    }
-  | {
-      readonly kind: 'paintRuby';
-      readonly text: string;
-      readonly rect: ReaderRect;
-      readonly paint: ReaderRunPaint;
-      readonly lineHeightPx?: number;
-      readonly href?: string;
-      readonly sourceText?: string;
-      readonly sourceTextOffset?: number;
-      readonly rubyAlign?: 'space-around' | 'start' | 'center' | 'space-between';
-      readonly vertical?: boolean;
-    }
-  | {
-      readonly kind: 'paintImage';
-      readonly src: string;
-      readonly rect: ReaderRect;
-      readonly alt?: string;
-      readonly href?: string;
-      /** Optional raster-pixel subregion declared by Rito RITODL1 V1. */
-      readonly sourceRect?: ReaderRect;
-    }
-  | {
-      readonly kind: 'paintHorizontalRule';
-      readonly rect: ReaderRect;
-      readonly paint: ReaderHorizontalRulePaint;
-    };
-
-export type ReaderDrawCommandKind = ReaderDrawCommand['kind'];
-
 export interface ReaderDisplayList {
   readonly width: number;
   readonly height: number;
-  readonly commands: readonly ReaderDrawCommand[];
-  readonly resolvedPrimitives?: ReaderResolvedPrimitiveList;
+  readonly resolvedPrimitives: ReaderResolvedPrimitiveList;
 }
 
 export interface ReaderRenderPalette {

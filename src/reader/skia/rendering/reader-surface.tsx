@@ -42,12 +42,13 @@ import {
   type ReaderPageTurnSurfaceBinding,
 } from '../anime';
 import {
+  decorateReaderPageOverlays,
   mergeReaderOverlayRects,
   renderSkiaOverlays,
   type ReaderOverlayRect,
-} from './overlay-renderer';
+  type ReaderPageOverlayResolver,
+} from './reader-overlays';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
-import { decorateReaderPageOverlays, type ReaderPageOverlayResolver } from './page-overlays';
 
 export type { ReaderSurfaceTransform } from './surface-transform';
 export { PAGE_TURN_DURATION_MS, READER_PAGE_ANIMATION_STYLES } from '../anime';

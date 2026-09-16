@@ -26,12 +26,12 @@ afterEach(() => { vi.useRealTimers(); });
 
 function artifact(id: bigint, href: string): RitoArtifact {
   return {
-    protocolVersion: 1, capabilityProfileId: 1, sessionId: 1n, requestId: id, revisionId: 1n,
+    protocolVersion: 5, capabilityProfileId: 1, sessionId: 1n, requestId: id, revisionId: 1n,
     revisionVersion: 1, artifactId: id, locator: { href, sourcePoint: { nodePath: [1], textOffset: 12n } },
     matchedBy: 'source-point', localPageIndex: 0, localSpreadIndex: 0, localPageIndexes: [0],
     width: 400, height: 800, navigation: { previous: 'available', next: 'available' },
     textProfile: 'platform-string-runs', resources: [], fonts: [],
-    displayList: { formatVersion: 1, commandCount: 0, semanticDigest: new Uint8Array(), wireBytes: new Uint8Array(), displayList: { commands: [] } } as RitoArtifact['displayList'],
+    displayList: { formatVersion: 2, commandCount: 0, semanticDigest: new Uint8Array(), wireBytes: new Uint8Array(), displayList: { formatVersion: 2, ratio: 1, commandCount: 0, commands: [] } },
     pages: [{ pageIndex: 0, width: 400, height: 800, hits: [], semantics: [], text: href, textLength: 1n, textRuns: [] }],
   };
 }

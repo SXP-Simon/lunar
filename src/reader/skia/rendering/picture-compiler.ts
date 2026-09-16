@@ -1,8 +1,7 @@
 import { Skia, type SkPicture } from '@shopify/react-native-skia';
 
 import type { ReaderDisplayList } from '../../contracts';
-import type { SkiaDisplayListRenderOptions } from './display-list-renderer';
-import { SkiaDisplayListRenderer } from './display-list-renderer';
+import { renderResolvedPrimitives, type ReaderPrimitiveRenderOptions } from './primitive-renderer';
 
 export interface CompiledReaderPicture {
   readonly picture: SkPicture;
@@ -13,24 +12,22 @@ export interface CompiledReaderPicture {
 export interface PictureCompiler {
   compile(
     displayList: ReaderDisplayList,
-    options: SkiaDisplayListRenderOptions,
+    options: ReaderPrimitiveRenderOptions,
   ): CompiledReaderPicture;
   dispose(picture: CompiledReaderPicture): void;
 }
 
 export class SkiaPictureCompiler implements PictureCompiler {
-  constructor(private readonly renderer = new SkiaDisplayListRenderer()) {}
-
   compile(
     displayList: ReaderDisplayList,
-    options: SkiaDisplayListRenderOptions,
+    options: ReaderPrimitiveRenderOptions,
   ): CompiledReaderPicture {
     const width = displayList.width * options.pixelRatio;
     const height = displayList.height * options.pixelRatio;
     const recorder = Skia.PictureRecorder();
     try {
       const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, width, height));
-      this.renderer.render(displayList, canvas, options);
+      renderResolvedPrimitives(canvas, displayList.resolvedPrimitives, options);
       return {
         picture: recorder.finishRecordingAsPicture(),
         width,

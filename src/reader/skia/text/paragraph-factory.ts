@@ -15,7 +15,7 @@ import type {
   ReaderTextShadow,
 } from '../../contracts';
 import type { SkiaFontRegistry } from '../fonts/font-registry';
-import { skiaColor } from '../rendering/color-adapter';
+import { skiaColor } from '../rendering/reader-colors';
 
 export interface SkiaParagraphCreateOptions {
   readonly color?: ReaderColor | string;

@@ -1,4 +1,3 @@
-import type { RitoDisplayList } from './display-types';
 import type { RitoReaderPrimitiveList } from './rito2/reader-session-primitive';
 
 export type RitoLocatorMatch = 'source-range' | 'source-point' | 'anchor' | 'progression' | 'href';
@@ -43,8 +42,8 @@ export interface RitoPage {
   readonly textRuns: readonly RitoTextRunOffset[];
 }
 export interface RitoDisplayListPayload {
-  readonly formatVersion: number; readonly commandCount: number; readonly semanticDigest: Uint8Array;
-  readonly wireBytes: Uint8Array; readonly displayList: RitoDisplayList | RitoReaderPrimitiveList;
+  readonly formatVersion: 2; readonly commandCount: number; readonly semanticDigest: Uint8Array;
+  readonly wireBytes: Uint8Array; readonly displayList: RitoReaderPrimitiveList;
 }
 export interface RitoArtifact {
   readonly protocolVersion: number; readonly capabilityProfileId: number; readonly sessionId: bigint;

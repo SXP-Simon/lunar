@@ -78,7 +78,7 @@ function readDisplayListPayload(reader: RitoBinaryReader): RitoDisplayListPayloa
     if (displayList.formatVersion !== formatVersion || displayList.commands.length !== commandCount) {
       throw new RitoWireError('Display list metadata does not match RITODL1 bytes.');
     }
-    return { formatVersion, commandCount, semanticDigest, wireBytes, displayList };
+    return { formatVersion: displayList.formatVersion, commandCount, semanticDigest, wireBytes, displayList };
   });
 }
 

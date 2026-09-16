@@ -1,6 +1,6 @@
 import { Skia } from '@shopify/react-native-skia';
 
-import type { ReaderColor, ReaderColorSpace } from '../../contracts';
+import type { ReaderColor, ReaderColorSpace, ReaderResolvedColor } from '../../contracts';
 
 export function skiaColor(value: ReaderColor | string): ReturnType<typeof Skia.Color> {
   if (typeof value === 'string') {
@@ -101,3 +101,57 @@ function d50ToD65(v: [number, number, number]): [number, number, number] { retur
 function oklabToLinear(l: number, a: number, b: number): [number, number, number] { const ll = l + 0.3963377774 * a + 0.2158037573 * b; const mm = l - 0.1055613458 * a - 0.0638541728 * b; const ss = l - 0.0894841775 * a - 1.2914855480 * b; const l3 = ll ** 3, m3 = mm ** 3, s3 = ss ** 3; return [4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3, -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3, -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3]; }
 
 function clamp(value: number): number { return Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0)); }
+
+export interface SkiaColorOverride {
+  readonly backgroundColor: ReaderColor | string;
+  readonly foregroundColor: ReaderColor | string;
+}
+
+export function isOpaqueColor(color: ReaderColor | string): boolean {
+  return (skiaColor(color)[3] ?? 1) >= 1;
+}
+
+export function isBookOwnedPageGround(color: ReaderColor | string): boolean {
+  const value = skiaColor(color);
+  return (value[3] ?? 1) >= 1 && relativeLuminance(value) < 0.75;
+}
+
+export function effectiveTextColor(
+  original: ReaderColor | string,
+  override: SkiaColorOverride | undefined,
+  declaredGround?: ReaderColor | string,
+): ReaderColor | string {
+  if (!override || declaredGround) return original;
+  const ink = skiaColor(original);
+  const ground = skiaColor(override.backgroundColor);
+  if (contrastRatio(ink, ground) >= 4.5) return original;
+  return isGrayscaleColor(original) ? override.foregroundColor : original;
+}
+
+export function resolvedPrimitiveColor(value: ReaderResolvedColor): ReaderColor {
+  return {
+    space: value.space,
+    components: [value.component0, value.component1, value.component2],
+    alpha: value.alpha,
+    none: value.none,
+  };
+}
+
+export function makeResolvedPrimitivePaint(value: ReaderColor | string, alpha: number) {
+  const paint = Skia.Paint();
+  const resolved = skiaColor(value);
+  paint.setAntiAlias(true);
+  paint.setColor(resolved);
+  paint.setAlphaf(Math.max(0, Math.min(1, alpha * (resolved[3] ?? 1))));
+  return paint;
+}
+
+function contrastRatio(first: ArrayLike<number>, second: ArrayLike<number>): number {
+  const a = relativeLuminance(first); const b = relativeLuminance(second);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+function relativeLuminance(color: ArrayLike<number>): number {
+  const channel = (value: number) => value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+  return 0.2126 * channel(color[0] ?? 0) + 0.7152 * channel(color[1] ?? 0) + 0.0722 * channel(color[2] ?? 0);
+}

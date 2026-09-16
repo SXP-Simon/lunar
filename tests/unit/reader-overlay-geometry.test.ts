@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   mergeReaderOverlayRects,
   resolveReaderSearchOverlays,
-} from '../../src/reader/skia/rendering/overlay-renderer';
+} from '../../src/reader/skia/rendering/reader-overlays';
 
 vi.mock('@shopify/react-native-skia', () => ({ PaintStyle: {}, Skia: {} }));
 

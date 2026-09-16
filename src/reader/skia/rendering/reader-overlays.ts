@@ -1,10 +1,27 @@
 import { PaintStyle, Skia, type SkCanvas } from '@shopify/react-native-skia';
 
-import type { ReaderSearchResult, ReaderTextRangeGeometryRequest, ReaderTextRangeRect } from '../../contracts';
-import type { ReaderPageOverlay } from '../anime/core/page-turn-types';
-import { skiaColor } from './color-adapter';
+import type {
+  ReaderRenderFrame, ReaderSearchResult, ReaderSnapshot,
+  ReaderTextRangeGeometryRequest, ReaderTextRangeRect,
+} from '../../contracts';
+import type { ReaderPageContent, ReaderPageOverlay } from '../anime/core/page-turn-types';
+import { skiaColor } from './reader-colors';
 
 export type ReaderOverlayRect = ReaderPageOverlay;
+
+export type ReaderPageOverlayResolver = (
+  snapshot: ReaderSnapshot,
+  frame: ReaderRenderFrame,
+) => readonly ReaderPageOverlay[];
+
+export function decorateReaderPageOverlays(
+  content: ReaderPageContent,
+  resolveOverlays?: ReaderPageOverlayResolver,
+): ReaderPageContent {
+  return resolveOverlays
+    ? { ...content, overlays: resolveOverlays(content.snapshot, content.frame) }
+    : content;
+}
 
 /** Joins adjacent run rectangles so fractional run edges cannot leave visible seams. */
 export function mergeReaderOverlayRects(

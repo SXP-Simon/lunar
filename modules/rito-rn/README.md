@@ -23,7 +23,7 @@ ReaderRuntime
     -> Rito 2.0.0 Rust 内核
 ```
 
-模块本身只负责阅读内核和原生桥接，未引入 Skia。Lunar 的转换位于 `src/reader/rito/rito-display-list.ts`，Skia 绘制位于 `src/reader/skia/rendering/resolved-primitive-renderer.ts`。绘制格式第 2 版提供设备像素图元和文字簇位置。
+模块本身只负责阅读内核和原生桥接，未引入 Skia。Lunar 的转换位于 `src/reader/rito/rito-display-list.ts`，Skia 绘制位于 `src/reader/skia/rendering/primitive-renderer.ts`。绘制格式第 2 版提供设备像素图元和文字簇位置。
 
 ## 当前接口
 

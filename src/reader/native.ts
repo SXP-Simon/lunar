@@ -37,5 +37,5 @@ export {
 } from './skia/anime/controller/use-reader-page-turn';
 export { createReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export type { ReaderSurfaceTransform } from './skia/rendering/surface-transform';
-export { resolveReaderRangeOverlays, resolveReaderSearchOverlays } from './skia/rendering/overlay-renderer';
-export type { ReaderOverlayRect } from './skia/rendering/overlay-renderer';
+export { resolveReaderRangeOverlays, resolveReaderSearchOverlays } from './skia/rendering/reader-overlays';
+export type { ReaderOverlayRect } from './skia/rendering/reader-overlays';

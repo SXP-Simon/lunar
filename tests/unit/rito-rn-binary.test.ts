@@ -8,7 +8,6 @@ import {
   toExternalIdString,
 } from '../../modules/rito-rn/src/protocol/binary';
 import { RitoWireError as BinaryRitoWireError } from '../../modules/rito-rn/src/errors';
-import { decodeRitoDisplayList, decodeRitoDisplayListWithTypedColors } from '../../modules/rito-rn/src/protocol/display-list';
 import { decodeRitoReaderPrimitiveList } from '../../modules/rito-rn/src/protocol/rito2/reader-session-primitive-decoder-runtime.js';
 import { toReaderDisplayList } from '../../src/reader/rito/rito-display-list';
 import {
@@ -73,106 +72,12 @@ describe('Rito React Native binary protocol', () => {
     expect(() => toExternalId('9223372036854775808', 'artifactId')).toThrow(BinaryRitoWireError);
   });
 
-  it('decodes a V1 display list and maps it to Lunar rendering commands', () => {
+  it('rejects the retired format 1 primitive list', () => {
     const bytes = new RitoBinaryWriter()
-      .writeAscii('RITODL1')
-      .writeU32(1)
-      .writeU32(1)
-      .writeU16(7)
-      .writeF64(0)
-      .writeF64(0)
-      .writeF64(390)
-      .writeF64(844)
-      .writeU8(1)
-      .writeU8(1)
-      .writeF32(1)
-      .writeF32(0.5)
-      .writeF32(0)
-      .writeF32(1)
-      .writeU8(0)
+      .writeAscii('RITODL1').writeU32(1).writeF64(1).writeU32(0)
       .toUint8Array();
-
-    const decoded = decodeRitoDisplayList(bytes);
-    const displayList = toReaderDisplayList(decoded, 390, 844);
-
-    expect(displayList).toEqual({
-      width: 390,
-      height: 844,
-      commands: [
-        {
-          kind: 'paintPage',
-          rect: { x: 0, y: 0, width: 390, height: 844 },
-          paint: { backgroundColor: 'rgba(255, 128, 0, 1)' },
-        },
-      ],
-    });
+    expect(() => decodeRitoReaderPrimitiveList(bytes)).toThrow();
   });
-
-  it('decodes extended HSL colors without rejecting the DisplayList', () => {
-    const bytes = new RitoBinaryWriter()
-      .writeAscii('RITODL1').writeU32(1).writeU32(1).writeU16(7)
-      .writeF64(0).writeF64(0).writeF64(10).writeF64(10)
-      .writeU8(1).writeU8(2).writeF32(120).writeF32(100).writeF32(50).writeF32(1).writeU8(0)
-      .toUint8Array();
-    expect(decodeRitoDisplayList(bytes).commands[0]).toEqual({
-      kind: 'paint-page',
-      rect: { x: 0, y: 0, width: 10, height: 10 },
-      paint: { backgroundColor: 'rgba(0, 255, 0, 1)' },
-    });
-  });
-
-  it('preserves typed color spaces and none flags for native artifacts', () => {
-    const bytes = new RitoBinaryWriter()
-      .writeAscii('RITODL1').writeU32(1).writeU32(1).writeU16(7)
-      .writeF64(0).writeF64(0).writeF64(10).writeF64(10)
-      .writeU8(1).writeU8(9).writeF32(1).writeF32(0.2).writeF32(0.1).writeF32(0.75).writeU8(0b0010)
-      .toUint8Array();
-    expect(decodeRitoDisplayListWithTypedColors(bytes).commands[0]).toEqual({
-      kind: 'paint-page',
-      rect: { x: 0, y: 0, width: 10, height: 10 },
-      paint: {
-        backgroundColor: {
-          space: 'display-p3',
-          components: [1, expect.closeTo(0.2), expect.closeTo(0.1)],
-          alpha: 0.75,
-          none: { component0: false, component1: true, component2: false, alpha: false },
-        },
-      },
-    });
-  });
-
-  it('retains the legacy format 1 decoder for text-box fixtures', () => {
-    const text = new RitoBinaryWriter()
-      .writeAscii('RITODL1').writeU32(1).writeU32(1).writeU16(9)
-      .writeUtf8('box').writeF64(10).writeF64(20).writeF64(30).writeF64(14)
-      .writeUtf8('Rito Serif').writeF64(16).writeF64(400).writeU8(1)
-      .writeU8(1).writeF32(0).writeF32(0).writeF32(0).writeF32(1).writeU8(0)
-      .writeU8(0).writeU8(0).writeU8(0).writeU8(0).writeU32(0)
-      .writeU8(0).writeU8(0).writeU8(0)
-      .writeU8(1).writeF64(-2).writeF64(19).writeU8(0).writeU8(1)
-      .writeU8(1).writeF64(22).writeU8(0).writeU8(0).writeU8(0).writeU8(0)
-      .toUint8Array();
-
-    expect(decodeRitoDisplayList(text).commands[0]).toMatchObject({
-      kind: 'paint-text',
-      paint: { box: { topPx: -2, bottomPx: 19 }, boxStart: false, boxEnd: true },
-      lineHeightPx: 22,
-    });
-
-    const background = new RitoBinaryWriter()
-      .writeAscii('RITODL1').writeU32(1).writeU32(1).writeU16(8)
-      .writeF64(0).writeF64(0).writeF64(100).writeF64(40)
-      .writeU8(1).writeU8(0).writeU8(1).writeUtf8('cover.png')
-      .writeU8(1).writeU8(4).writeU8(1).writeU8(2).writeF64(100).writeU8(1).writeU8(1).writeF64(40)
-      .writeU8(0).writeU8(0).writeU8(0).writeU8(0).writeU32(0).writeU8(0)
-      .toUint8Array();
-
-    expect(decodeRitoDisplayList(background).commands[0]).toMatchObject({
-      kind: 'paint-block',
-      paint: { background: { size: { x: { unit: 'percent', value: 100 }, y: { unit: 'px', value: 40 } } } },
-    });
-  });
-
   it('encodes the fixed-size adjacent-page request', () => {
     const bytes = encodeRitoAdjacentRequest({
       sessionId: 1n,

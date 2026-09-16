@@ -7,11 +7,11 @@ vi.mock('@shopify/react-native-skia', () => ({
 }));
 
 import {
-  declaredGroundFor,
   effectiveTextColor,
   isBookOwnedPageGround,
-} from '../../src/reader/skia/rendering/color-override';
-import { isGrayscaleColor, skiaColor } from '../../src/reader/skia/rendering/color-adapter';
+  isGrayscaleColor,
+  skiaColor,
+} from '../../src/reader/skia/rendering/reader-colors';
 
 describe('Skia reader color override', () => {
   it('distinguishes a designed dark page from white paper', () => {
@@ -39,15 +39,9 @@ describe('Skia reader color override', () => {
   });
 
   it('preserves the typesetter color when a declared ground contains the run', () => {
-    const ground = declaredGroundFor(
-      { x: 10, y: 10, width: 20, height: 10 },
-      undefined,
-      [{ rect: { x: 0, y: 0, width: 100, height: 100 }, color: '#222222' }],
-      undefined,
-    );
     expect(effectiveTextColor('#333333', {
       backgroundColor: '#000000', foregroundColor: '#ffffff',
-    }, ground)).toBe('#333333');
+    }, '#222222')).toBe('#333333');
   });
 
   it('converts typed linear and wide-gamut colors onto the sRGB surface', () => {
