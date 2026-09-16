@@ -72,11 +72,10 @@ export function nativeInteractivePageTurnBaseContent(
 export function nativeAutomaticPageTurnBaseContent(
   turns: readonly ReaderAutomaticTurn[],
   current: ReaderPageContent | undefined,
-  hasPresentedTurn: boolean,
+  presentedTurnId: number | undefined,
 ): ReaderPageContent | undefined {
   if (turns.length === 0) return current;
-  // The runtime snapshot can reach React after the native compositor has
-  // presented its first frame. Keep the already prepared target underneath
-  // that frame until the subscriber catches up.
-  return hasPresentedTurn ? turns.at(-1)?.to ?? current : turns[0]?.from;
+  // Queued turns have no visible frame yet. Only advance the base to a target
+  // whose native first frame was actually presented.
+  return turns.find((turn) => turn.id === presentedTurnId)?.to ?? turns[0]?.from;
 }

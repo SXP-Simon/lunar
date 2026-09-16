@@ -26,9 +26,9 @@ export function useNativePageTurnEvents({
   submittedTurnIds,
   surfaceBinding,
   turns,
-}: NativePageTurnEventsOptions): boolean {
+}: NativePageTurnEventsOptions): number | undefined {
   const presentedTurnIds = useRef(new Set<number>());
-  const [presentedTurnCount, setPresentedTurnCount] = useState(0);
+  const [presentedTurnId, setPresentedTurnId] = useState<number>();
   const onCompleteRef = useRef(onComplete);
   const surfaceBindingRef = useRef(surfaceBinding);
 
@@ -43,21 +43,19 @@ export function useNativePageTurnEvents({
   useEffect(() => {
     const liveTurnIds = new Set(turns.map((turn) => turn.id));
     const presented = presentedTurnIds.current;
-    let changed = false;
     for (const turnId of presented) {
       if (!liveTurnIds.has(turnId)) {
         presented.delete(turnId);
-        changed = true;
       }
     }
-    if (changed) setPresentedTurnCount(presented.size);
+    setPresentedTurnId(turns.findLast((turn) => presented.has(turn.id))?.id);
   }, [turns]);
 
   useEffect(() => {
     if (active) return;
     if (presentedTurnIds.current.size === 0) return;
     presentedTurnIds.current.clear();
-    setPresentedTurnCount(0);
+    setPresentedTurnId(undefined);
   }, [active]);
 
   useEffect(() => {
@@ -73,9 +71,8 @@ export function useNativePageTurnEvents({
         }
         if (event.event === 'started') {
           const presented = presentedTurnIds.current;
-          const previousSize = presented.size;
           presented.add(turnId);
-          if (presented.size !== previousSize) setPresentedTurnCount(presented.size);
+          setPresentedTurnId(turnId);
           continue;
         }
         if (event.event !== 'completed' && event.event !== 'cancelled') continue;
@@ -91,5 +88,5 @@ export function useNativePageTurnEvents({
     };
   }, [active, automaticActive, canvasRef, interactiveTurn, submittedTurnIds, turns.length]);
 
-  return presentedTurnCount > 0;
+  return presentedTurnId;
 }

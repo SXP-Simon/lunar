@@ -301,7 +301,7 @@ export function ReaderSurface({
   const nativeAutomaticBaseContent = nativeAutomaticPageTurnBaseContent(
     automaticTurns,
     currentContent,
-    nativeAutomaticPageTurnState.hasPresentedTurn,
+    nativeAutomaticPageTurnState.presentedTurnId,
   );
 
   useEffect(() => {

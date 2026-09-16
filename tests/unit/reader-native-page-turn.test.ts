@@ -102,13 +102,20 @@ describe('reader native automatic page turn', () => {
       direction: 1,
     }];
 
-    expect(nativeAutomaticPageTurnBaseContent(turns, current, false)).toBe(source);
-    expect(nativeAutomaticPageTurnBaseContent(turns, current, true)).toBe(target);
+    expect(nativeAutomaticPageTurnBaseContent(turns, current, undefined)).toBe(source);
+    expect(nativeAutomaticPageTurnBaseContent(turns, current, 1)).toBe(target);
+    const queuedTurns: readonly ReaderAutomaticTurn[] = [
+      ...turns,
+      { id: 2, from: target, to: current, direction: 1 },
+    ];
+    expect(nativeAutomaticPageTurnBaseContent(queuedTurns, current, 1)).toBe(target);
+    expect(nativeAutomaticPageTurnBaseContent(queuedTurns, current, 2)).toBe(current);
+    expect(nativeAutomaticPageTurnBaseContent(queuedTurns.slice(1), current, undefined)).toBe(target);
   });
 
   it('uses current content when native animation is idle', () => {
     const current = { key: 'current' } as ReaderPageContent;
 
-    expect(nativeAutomaticPageTurnBaseContent([], current, false)).toBe(current);
+    expect(nativeAutomaticPageTurnBaseContent([], current, undefined)).toBe(current);
   });
 });

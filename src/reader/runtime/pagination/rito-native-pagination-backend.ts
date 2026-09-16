@@ -32,10 +32,10 @@ interface PreparedAdjacentState extends ReaderPreparedAdjacent {
 }
 
 // The engine enforces a hard live-artifact cap (6). Steady state keeps the
-// visible artifact, the last turn source, the retained boundary map and the
-// keep-alive entry live (1 + 1 + 2 + 1), leaving one slot for the transient
-// foreground/background candidate every mutation mints.
-const RETAINED_BOUNDARY_ARTIFACT_CAP = 2;
+// visible artifact, the last turn source, one retained boundary and its
+// replaced identity live (1 + 1 + 1 + 1), leaving two slots for a neighbor
+// preview and the transient foreground/background candidate.
+const RETAINED_BOUNDARY_ARTIFACT_CAP = 1;
 const RETAINED_BOUNDARY_KEEP_ALIVE_CAP = 1;
 const RETAINED_SLOT_RADIUS = 4;
 
@@ -170,6 +170,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     const imageResources = artifact.resources.filter((resource) => resource.kind === 'image');
     const imageSources = imageResources.map((resource) => resource.href);
     for (const resource of imageResources) {
+      if (this.imageCache?.get(resource.href)) continue;
       const image = await this.session.readResource(artifact.artifactId, 0, resource.href);
       this.imageCache?.set(resource.href, image.bytes, imageSources);
     }
@@ -876,12 +877,14 @@ function artifactSourceKey(artifact: RitoArtifact): string {
 }
 
 function artifactRenderKey(artifact: RitoArtifact, images: ReaderImageByteCache | undefined): string {
+  // Rito already supplies SHA-256 of the encoded display commands. Hashing
+  // the full wire payload again on the JavaScript thread delays every turn.
   const digest = bytesToHex(artifact.displayList.semanticDigest);
   const imageKeys = artifact.resources
     .filter((resource) => resource.kind === 'image')
     .map((resource) => `${resource.href}:${byteHash(images?.get(resource.href))}`)
     .join('|');
-  return `${artifact.width}x${artifact.height}:${artifact.displayList.commandCount}:${digest}:${byteHash(artifact.displayList.wireBytes)}:${imageKeys}`;
+  return `${artifact.width}x${artifact.height}:${artifact.displayList.commandCount}:${digest}:${imageKeys}`;
 }
 
 function bytesToHex(bytes: Uint8Array): string {
@@ -890,14 +893,20 @@ function bytesToHex(bytes: Uint8Array): string {
   return result;
 }
 
+const imageByteHashes = new WeakMap<Uint8Array, string>();
+
 function byteHash(bytes: Uint8Array | undefined): string {
   if (!bytes) return 'none';
+  const cached = imageByteHashes.get(bytes);
+  if (cached) return cached;
   let hash = 2166136261;
   for (const byte of bytes) {
     hash ^= byte;
     hash = Math.imul(hash, 16777619);
   }
-  return (hash >>> 0).toString(16).padStart(8, '0');
+  const digest = (hash >>> 0).toString(16).padStart(8, '0');
+  imageByteHashes.set(bytes, digest);
+  return digest;
 }
 
 function boundaryArtifactKey(artifact: RitoArtifact): string {

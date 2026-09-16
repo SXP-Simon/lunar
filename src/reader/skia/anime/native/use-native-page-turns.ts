@@ -39,7 +39,7 @@ interface NativePageTurnsOptions {
 
 interface NativePageTurnsState {
   readonly enabled: boolean;
-  readonly hasPresentedTurn: boolean;
+  readonly presentedTurnId?: number;
 }
 
 export function useNativePageTurns({
@@ -174,7 +174,7 @@ export function useNativePageTurns({
     pageTurnEffect,
   });
 
-  const hasPresentedTurn = useNativePageTurnEvents({
+  const presentedTurnId = useNativePageTurnEvents({
     active,
     automaticActive,
     canvasRef,
@@ -187,7 +187,7 @@ export function useNativePageTurns({
 
   return {
     enabled: automaticActive,
-    hasPresentedTurn,
+    presentedTurnId,
   };
 }
 

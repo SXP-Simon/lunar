@@ -38,6 +38,7 @@ export function useAutomaticPageTurnNavigation({
   const nextStartAt = useRef(0);
   const direction = useRef<1 | -1 | undefined>(undefined);
   const pendingCount = useRef(0);
+  const availableLaneWaiters = useRef<(() => void)[]>([]);
   const turnsRef = useRef<readonly ReaderAutomaticTurn[]>([]);
   const turnSequence = useRef(0);
   const controllerRuntime = useRef(runtime);
@@ -49,6 +50,7 @@ export function useAutomaticPageTurnNavigation({
     if (nextTurns.length === turnsRef.current.length) return;
     turnsRef.current = nextTurns;
     setTurns(nextTurns);
+    availableLaneWaiters.current.shift()?.();
     if (nextTurns.length === 0 && pendingCount.current === 0) {
       direction.current = undefined;
     }
@@ -56,9 +58,6 @@ export function useAutomaticPageTurnNavigation({
 
   const enqueue = useCallback((turnDirection: 1 | -1) => {
     const serializesTurns = pageTurnEffect.orchestration.serializesAutomaticTurns;
-    if (pendingCount.current + turnsRef.current.length >= AUTOMATIC_PAGE_TURN_MAX_LANES) {
-      return Promise.resolve(runtime.getSnapshot());
-    }
     if (serializesTurns) {
       if (direction.current !== undefined && direction.current !== turnDirection) {
         return Promise.resolve(runtime.getSnapshot());
@@ -74,6 +73,15 @@ export function useAutomaticPageTurnNavigation({
           if (generation.current !== requestGeneration) {
             resolve(runtime.getSnapshot());
             return;
+          }
+          while (turnsRef.current.length >= AUTOMATIC_PAGE_TURN_MAX_LANES) {
+            await new Promise<void>((laneAvailable) => {
+              availableLaneWaiters.current.push(laneAvailable);
+            });
+            if (generation.current !== requestGeneration) {
+              resolve(runtime.getSnapshot());
+              return;
+            }
           }
           if (serializesTurns) {
             const startDelay = Math.max(0, nextStartAt.current - Date.now());
@@ -127,6 +135,7 @@ export function useAutomaticPageTurnNavigation({
   const previous = useCallback(() => enqueue(-1), [enqueue]);
 
   useEffect(() => {
+    const laneWaiters = availableLaneWaiters.current;
     const runtimeChanged = controllerRuntime.current !== runtime;
     controllerRuntime.current = runtime;
     generation.current += 1;
@@ -134,6 +143,7 @@ export function useAutomaticPageTurnNavigation({
     nextStartAt.current = 0;
     direction.current = undefined;
     pendingCount.current = 0;
+    for (const wake of laneWaiters.splice(0)) wake();
     turnsRef.current = [];
     if (runtimeChanged) {
       void Promise.resolve().then(() => {
@@ -144,6 +154,7 @@ export function useAutomaticPageTurnNavigation({
     }
     return () => {
       generation.current += 1;
+      for (const wake of laneWaiters.splice(0)) wake();
     };
   }, [runtime]);
 
