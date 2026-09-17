@@ -73,7 +73,7 @@ export interface ReaderSurfaceProps {
   /** Duration in milliseconds for a page turn. */
   readonly animationDuration?: number;
   readonly spreadMode?: ReaderSpreadMode;
-  /** Optional finger-controlled turn. The target picture must be prepared first. */
+  /** Optional finger-controlled turn; its target picture can arrive during the drag. */
   readonly interactiveTurn?: ReaderInteractiveTurn;
   /** Automatic page turns retained until their visual transition completes. */
   readonly automaticTurns?: readonly ReaderAutomaticTurn[];
@@ -110,7 +110,9 @@ export function ReaderSurface({
 }: ReaderSurfaceProps) {
   const interactiveTurn = useMemo(() => preparedInteractiveTurn ? {
     ...preparedInteractiveTurn,
-    content: decorateReaderPageOverlays(preparedInteractiveTurn.content, resolvePageOverlays),
+    content: preparedInteractiveTurn.content
+      ? decorateReaderPageOverlays(preparedInteractiveTurn.content, resolvePageOverlays)
+      : undefined,
   } : undefined, [preparedInteractiveTurn, resolvePageOverlays]);
   const automaticTurns = useMemo(() => preparedAutomaticTurns.map((turn) => ({
     ...turn,
@@ -151,52 +153,6 @@ export function ReaderSurface({
       : undefined,
     [compiled, currentKey, currentOverlays, frame, snapshot],
   );
-  const {
-    transition: activeTransition,
-    visibleContent,
-    visualKind: pageTurnVisualKind,
-    coverMatrix,
-    incomingSlideMatrix,
-    outgoingSlideMatrix,
-    progress,
-    grabX,
-    grabY,
-  } =
-    useReaderPageTransition(
-      currentContent,
-      pageTurnEffect,
-      animationDuration,
-      interactiveTurn,
-      spreadMode,
-      automaticTurns[0],
-      automaticTurns.length,
-      automaticNavigationActive,
-      onAutomaticTurnComplete,
-    );
-  // The transition hook retains the source page until the animation tree has
-  // its start pose. Interactive turns supply their prepared target here.
-  const incomingContent = visibleContent ?? currentContent;
-  const incomingPicture = incomingContent?.picture.picture;
-  const incomingSnapshot = incomingContent?.snapshot ?? snapshot;
-  const incomingFrame = incomingContent?.frame ?? frame;
-  const incomingKey = incomingContent?.key ?? currentKey;
-
-  const automaticDirection = automaticTurns[0]?.direction ?? 1;
-  const automaticPaintTurns = useMemo(
-    () => automaticPageTurnPaintOrder(automaticTurns, automaticDirection).map((turn) => ({
-      ...turn,
-      from: activeTransition?.from.key === turn.from.key ? activeTransition.from : turn.from,
-    })),
-    [activeTransition, automaticDirection, automaticTurns],
-  );
-  const automaticBackgroundContent = automaticPaintTurns.length === 0
-    ? undefined
-    : automaticDirection > 0
-      ? automaticPaintTurns.at(-1)?.to
-      : automaticPaintTurns[0]?.from;
-  const automaticPageTurnsVisible = pageTurnVisualKind === 'curl'
-    && automaticTurns.length > 0;
-
   const paperColor = snapshot.phase === 'ready'
     ? runtime.getBackgroundColor()
     : initialBackgroundColor;
@@ -209,7 +165,7 @@ export function ReaderSurface({
   const nativePixelHeight = Math.max(1, Math.round(viewport.height * nativeTextureScale));
   const createNativePagePicture = useCallback((content: ReaderPageContent) => {
     const pageScale = Math.max(0.001, scale);
-    const title = content.snapshot.chapterTitle;
+    const title = content.snapshot.chapterTitle ?? chapterTitle;
     const pagePicture = composePageCurlPicture({
       base: content.picture.picture,
       color: overlayColor,
@@ -250,6 +206,7 @@ export function ReaderSurface({
     nativePixelHeight,
     nativePixelWidth,
     nativeTextureScale,
+    chapterTitle,
     offsetX,
     offsetY,
     overlayBottom,
@@ -271,7 +228,7 @@ export function ReaderSurface({
         onAutomaticTurnComplete !== undefined
         || pageTurnSurfaceBinding !== undefined
       ),
-    turns: automaticPaintTurns,
+    turns: automaticTurns,
     pixelWidth: nativePixelWidth,
     pixelHeight: nativePixelHeight,
     paperColor: nativePaperColor,
@@ -282,11 +239,53 @@ export function ReaderSurface({
     fixedChromeBottom: overlayBottom + 24,
     currentContent,
     interactiveTurn,
-    interactiveSource: interactiveTurn?.nativeGesture
-      ? currentContent
-      : activeTransition?.from,
+    interactiveSource: currentContent,
     surfaceBinding: pageTurnSurfaceBinding,
   });
+  const {
+    transition: activeTransition,
+    visibleContent,
+    visualKind: pageTurnVisualKind,
+    coverMatrix,
+    incomingSlideMatrix,
+    outgoingSlideMatrix,
+    progress,
+    grabX,
+    grabY,
+  } = useReaderPageTransition(
+    currentContent,
+    pageTurnEffect,
+    animationDuration,
+    interactiveTurn,
+    spreadMode,
+    automaticTurns[0],
+    automaticTurns.length,
+    automaticNavigationActive,
+    onAutomaticTurnComplete,
+    nativeAutomaticPageTurnState.enabled,
+  );
+  const incomingContent = interactiveTurn && !interactiveTurn.content
+    ? undefined
+    : visibleContent ?? currentContent;
+  const incomingPicture = incomingContent?.picture.picture;
+  const incomingSnapshot = incomingContent?.snapshot ?? snapshot;
+  const incomingFrame = incomingContent?.frame ?? frame;
+  const incomingKey = incomingContent?.key ?? currentKey;
+  const automaticDirection = automaticTurns[0]?.direction ?? 1;
+  const automaticPaintTurns = useMemo(
+    () => automaticPageTurnPaintOrder(automaticTurns, automaticDirection).map((turn) => ({
+      ...turn,
+      from: activeTransition?.from.key === turn.from.key ? activeTransition.from : turn.from,
+    })),
+    [activeTransition, automaticDirection, automaticTurns],
+  );
+  const automaticBackgroundContent = automaticPaintTurns.length === 0
+    ? undefined
+    : automaticDirection > 0
+      ? automaticPaintTurns.at(-1)?.to
+      : automaticPaintTurns[0]?.from;
+  const automaticPageTurnsVisible = pageTurnVisualKind === 'curl'
+    && automaticTurns.length > 0;
   const nativeAutomaticPageTurnsVisible = automaticTurns.length > 0
     && nativeAutomaticPageTurnState.enabled;
   const fallbackAutomaticPageTurnsVisible = automaticPageTurnsVisible
@@ -442,7 +441,7 @@ export function ReaderSurface({
     progressOverride?: string,
   ): ReactNode => {
     const pageScale = Math.max(0.001, scale);
-    const title = titleOverride ?? chromeSnapshot.chapterTitle;
+    const title = titleOverride ?? chromeSnapshot.chapterTitle ?? chapterTitle;
     const progress = progressOverride ?? progressLabelForSnapshot(chromeSnapshot);
     const titleFont = title ? runtime.getUiFont(14 / pageScale) : undefined;
     const progressFont = progress ? runtime.getUiFont(12 / pageScale) : undefined;

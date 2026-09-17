@@ -9,6 +9,7 @@ export interface ReaderDragState {
   readonly startX: number;
   direction: 1 | -1;
   directionLocked: boolean;
+  pendingPublished: boolean;
   startBookX: number;
   physicalProgress: number;
   renderProgress: number;

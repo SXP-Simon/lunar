@@ -34,6 +34,7 @@ export function useReaderPageTransition(
   automaticTurnCount = 0,
   suppressAutomaticTransition = false,
   onAutomaticTurnComplete?: (turnId: number) => void,
+  nativeAutomaticTurnDriven = false,
 ): ReaderPageTransitionValues {
   const [displayedContent, setDisplayedContent] = useState<ReaderPageContent>();
   const [interactiveCommit, setInteractiveCommit] = useState<ReaderPageIdentity>();
@@ -43,18 +44,20 @@ export function useReaderPageTransition(
   const animatedProgress = interactiveTurn?.progressValue ?? progress;
   const currentKey = current?.key;
   const interactiveContent = interactiveTurn?.content;
+  const interactiveDirection = interactiveTurn?.direction;
+  const hasInteractiveTurn = interactiveTurn !== undefined;
   const interactiveTargetSpread = interactiveContent?.snapshot.spreadIndex;
-  const interactiveTransition = useMemo<ReaderPageTransitionState | undefined>(() => interactiveContent && displayedContent
+  const interactiveTransition = useMemo<ReaderPageTransitionState | undefined>(() => hasInteractiveTurn && displayedContent
     ? {
         from: displayedContent,
-        toKey: interactiveContent.key,
-        direction: interactiveTurn?.direction
+        toKey: interactiveContent?.key ?? `pending:${interactiveDirection}:${displayedContent.key}`,
+        direction: interactiveDirection
           ?? ((interactiveTargetSpread ?? displayedContent.snapshot.spreadIndex) > displayedContent.snapshot.spreadIndex ? 1 : -1),
     }
-    : undefined, [displayedContent, interactiveContent, interactiveTargetSpread, interactiveTurn?.direction]);
+    : undefined, [displayedContent, hasInteractiveTurn, interactiveContent, interactiveTargetSpread, interactiveDirection]);
   const automaticTransition = useMemo(
     () => {
-      if (!automaticTurn || !pageTurnEffect.orchestration.usesPlanarAutomaticTransition) {
+      if (!automaticTurn || nativeAutomaticTurnDriven || !pageTurnEffect.orchestration.usesPlanarAutomaticTransition) {
         return undefined;
       }
       const next = automaticPageTurnTransition(automaticTurn);
@@ -62,11 +65,11 @@ export function useReaderPageTransition(
         ? { ...next, from: displayedContent }
         : next;
     },
-    [automaticTurn, displayedContent, pageTurnEffect],
+    [automaticTurn, displayedContent, nativeAutomaticTurnDriven, pageTurnEffect],
   );
   const activeTransition = interactiveTransition
     ?? automaticTransition
-    ?? (transition?.toKey === currentKey ? transition : undefined);
+    ?? (!nativeAutomaticTurnDriven && transition?.toKey === currentKey ? transition : undefined);
   const visibleContent = interactiveContent
     ?? (automaticTransition ? automaticTurn?.to : undefined)
     ?? (activeTransition ? current : displayedContent ?? current);
@@ -97,6 +100,7 @@ export function useReaderPageTransition(
   /* eslint-disable react-hooks/set-state-in-effect */
   useLayoutEffect(() => {
     if (interactiveTurn) {
+      if (!interactiveTurn.content) return;
       const targetIdentity: ReaderPageIdentity = {
         revisionId: interactiveTurn.content.snapshot.revisionId,
         spreadIndex: interactiveTurn.content.snapshot.spreadIndex,
@@ -191,6 +195,7 @@ export function useReaderPageTransition(
     displayedContent,
     interactiveCommit,
     interactiveTurn,
+    nativeAutomaticTurnDriven,
     suppressAutomaticTransition,
     transition,
   ]);

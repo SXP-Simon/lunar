@@ -54,7 +54,8 @@ export interface ReaderPageTransitionValues {
 }
 
 export interface ReaderInteractiveTurn {
-  readonly content: ReaderPageContent;
+  /** The source can start moving while the adjacent picture is being prepared. */
+  readonly content?: ReaderPageContent;
   readonly direction: 1 | -1;
   readonly progress: number;
   /** Shared value updated by the gesture without a React render. */

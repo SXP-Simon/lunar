@@ -184,113 +184,134 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
   async prepareAdjacent(direction: ReaderTurnDirection): Promise<ReaderPreparedTurn | undefined> {
     if (!this.publication || this.snapshot.phase !== 'ready') return undefined;
-    return this.enqueueForeground(async () => {
-      const publication = this.publication;
-      const sourceSnapshot = this.snapshot;
-      if (!publication || sourceSnapshot.phase !== 'ready') return undefined;
-      if (publication.canNavigate?.(direction) === false) return undefined;
-      const existing = this.preparedTurn;
-      if (
-        existing
-        && existing.revisionId === sourceSnapshot.revisionId
-        && existing.sourceSnapshotSpreadIndex === sourceSnapshot.spreadIndex
-        && existing.direction === direction
-      ) {
-        return existing;
-      }
-      if (existing) return undefined;
-      const preparedTurnId = ++this.preparedTurnId;
-      const operation = this.operation;
-      const delta = direction === 'next' ? 1 : -1;
-      let publicationTurn: ReaderPreparedAdjacent | undefined;
-      let targetSpreadIndex = sourceSnapshot.spreadIndex + delta;
-      let sourcePreparedSpreadIndex = sourceSnapshot.spreadIndex;
-      try {
-        if (publication.prepareAdjacent) {
-          publicationTurn = await publication.prepareAdjacent(sourceSnapshot.spreadIndex, direction);
-          if (!publicationTurn) return undefined;
-          if (!publication.commitPreparedAdjacent || !publication.cancelPreparedAdjacent) {
-            throw new Error('Prepared publication turns require commit and cancel operations.');
-          }
-          targetSpreadIndex = publicationTurn.targetSpreadIndex;
-          sourcePreparedSpreadIndex = publicationTurn.sourceSpreadIndex;
-        } else {
-          targetSpreadIndex = publication.getAdjacentSpreadIndex?.(
-            sourceSnapshot.spreadIndex,
-            direction,
-          ) ?? targetSpreadIndex;
-          sourcePreparedSpreadIndex = targetSpreadIndex - delta;
+    return this.enqueueForeground(() => this.prepareAdjacentWithinForeground(direction));
+  }
+
+  private async prepareAdjacentWithinForeground(
+    direction: ReaderTurnDirection,
+  ): Promise<ReaderPreparedTurn | undefined> {
+    const publication = this.publication;
+    const sourceSnapshot = this.snapshot;
+    if (!publication || sourceSnapshot.phase !== 'ready') return undefined;
+    if (publication.canNavigate?.(direction) === false) return undefined;
+    const existing = this.preparedTurn;
+    if (
+      existing
+      && existing.revisionId === sourceSnapshot.revisionId
+      && existing.sourceSnapshotSpreadIndex === sourceSnapshot.spreadIndex
+      && existing.direction === direction
+    ) {
+      return existing;
+    }
+    if (existing) return undefined;
+    const preparedTurnId = ++this.preparedTurnId;
+    const operation = this.operation;
+    const delta = direction === 'next' ? 1 : -1;
+    let publicationTurn: ReaderPreparedAdjacent | undefined;
+    let targetSpreadIndex = sourceSnapshot.spreadIndex + delta;
+    let sourcePreparedSpreadIndex = sourceSnapshot.spreadIndex;
+    try {
+      if (publication.prepareAdjacent) {
+        publicationTurn = await publication.prepareAdjacent(sourceSnapshot.spreadIndex, direction);
+        if (!publicationTurn) return undefined;
+        if (!publication.commitPreparedAdjacent || !publication.cancelPreparedAdjacent) {
+          throw new Error('Prepared publication turns require commit and cancel operations.');
         }
-        readerDiagnostic(
-          'turn.runtime.prepare.begin',
-          `prepared=${preparedTurnId} direction=${direction} source=${describeSnapshot(sourceSnapshot)} sourcePreparedSpread=${sourcePreparedSpreadIndex} targetSpread=${targetSpreadIndex} candidate=${publicationTurn?.id ?? 'legacy'}`,
-        );
-        await this.preparePicture(targetSpreadIndex, operation);
-        this.assertCurrent(operation);
-        if (
-          this.snapshot.revisionId !== sourceSnapshot.revisionId
-          || this.snapshot.spreadIndex !== sourceSnapshot.spreadIndex
-        ) {
-          if (publicationTurn) {
-            await publication.cancelPreparedAdjacent?.(
-              publicationTurn,
-              sourceSnapshot.spreadIndex,
-            );
-            await this.preparePicture(sourceSnapshot.spreadIndex, operation);
-          }
-          return undefined;
-        }
-        const targetRenderId = this.pictureRenderIds.get(
-          pictureSlotKey(sourceSnapshot.revisionId, targetSpreadIndex),
-        );
-        if (targetRenderId === undefined) {
-          if (publicationTurn) {
-            await publication.cancelPreparedAdjacent?.(publicationTurn, sourceSnapshot.spreadIndex);
-            await this.preparePicture(sourceSnapshot.spreadIndex, operation);
-          } else {
-            await this.restorePreparedSource(
-              sourcePreparedSpreadIndex,
-              sourceSnapshot.spreadIndex,
-              operation,
-            );
-          }
-          return undefined;
-        }
-        const preparedTurn: ReaderPreparedTurn = {
-          id: preparedTurnId,
-          revisionId: sourceSnapshot.revisionId,
+        targetSpreadIndex = publicationTurn.targetSpreadIndex;
+        sourcePreparedSpreadIndex = publicationTurn.sourceSpreadIndex;
+      } else {
+        targetSpreadIndex = publication.getAdjacentSpreadIndex?.(
+          sourceSnapshot.spreadIndex,
           direction,
-          sourceSnapshotSpreadIndex: sourceSnapshot.spreadIndex,
-          sourcePreparedSpreadIndex,
-          targetSpreadIndex,
-          targetRenderId,
-          publicationTurn,
-        };
-        this.preparedTurn = preparedTurn;
-        readerDiagnostic(
-          'turn.runtime.prepare.ready',
-          `prepared=${preparedTurnId} direction=${direction} target=${preparedTurn.revisionId}:${preparedTurn.targetSpreadIndex}:${preparedTurn.targetRenderId}`,
-        );
-        return preparedTurn;
-      } catch (error) {
-        readerDiagnostic(
-          'turn.runtime.prepare.error',
-          `prepared=${preparedTurnId} direction=${direction} targetSpread=${targetSpreadIndex} error=${describeError(error)}`,
-        );
+        ) ?? targetSpreadIndex;
+        sourcePreparedSpreadIndex = targetSpreadIndex - delta;
+      }
+      readerDiagnostic(
+        'turn.runtime.prepare.begin',
+        `prepared=${preparedTurnId} direction=${direction} source=${describeSnapshot(sourceSnapshot)} sourcePreparedSpread=${sourcePreparedSpreadIndex} targetSpread=${targetSpreadIndex} candidate=${publicationTurn?.id ?? 'legacy'}`,
+      );
+      await this.preparePicture(targetSpreadIndex, operation);
+      this.assertCurrent(operation);
+      if (
+        this.snapshot.revisionId !== sourceSnapshot.revisionId
+        || this.snapshot.spreadIndex !== sourceSnapshot.spreadIndex
+      ) {
         if (publicationTurn) {
           await publication.cancelPreparedAdjacent?.(
             publicationTurn,
             sourceSnapshot.spreadIndex,
-          ).catch(() => undefined);
-          await this.preparePicture(sourceSnapshot.spreadIndex, operation).catch(() => undefined);
+          );
+          await this.preparePicture(sourceSnapshot.spreadIndex, operation);
+        }
+        return undefined;
+      }
+      const targetRenderId = this.pictureRenderIds.get(
+        pictureSlotKey(sourceSnapshot.revisionId, targetSpreadIndex),
+      );
+      if (targetRenderId === undefined) {
+        if (publicationTurn) {
+          await publication.cancelPreparedAdjacent?.(publicationTurn, sourceSnapshot.spreadIndex);
+          await this.preparePicture(sourceSnapshot.spreadIndex, operation);
         } else {
           await this.restorePreparedSource(
             sourcePreparedSpreadIndex,
             sourceSnapshot.spreadIndex,
             operation,
-          ).catch(() => undefined);
+          );
         }
         return undefined;
+      }
+      const preparedTurn: ReaderPreparedTurn = {
+        id: preparedTurnId,
+        revisionId: sourceSnapshot.revisionId,
+        direction,
+        sourceSnapshotSpreadIndex: sourceSnapshot.spreadIndex,
+        sourcePreparedSpreadIndex,
+        targetSpreadIndex,
+        targetRenderId,
+        publicationTurn,
+      };
+      this.preparedTurn = preparedTurn;
+      readerDiagnostic(
+        'turn.runtime.prepare.ready',
+        `prepared=${preparedTurnId} direction=${direction} target=${preparedTurn.revisionId}:${preparedTurn.targetSpreadIndex}:${preparedTurn.targetRenderId}`,
+      );
+      return preparedTurn;
+    } catch (error) {
+      readerDiagnostic(
+        'turn.runtime.prepare.error',
+        `prepared=${preparedTurnId} direction=${direction} targetSpread=${targetSpreadIndex} error=${describeError(error)}`,
+      );
+      if (publicationTurn) {
+        await publication.cancelPreparedAdjacent?.(
+          publicationTurn,
+          sourceSnapshot.spreadIndex,
+        ).catch(() => undefined);
+        await this.preparePicture(sourceSnapshot.spreadIndex, operation).catch(() => undefined);
+      } else {
+        await this.restorePreparedSource(
+          sourcePreparedSpreadIndex,
+          sourceSnapshot.spreadIndex,
+          operation,
+        ).catch(() => undefined);
+      }
+      return undefined;
+    }
+  }
+
+  /** Compile neighboring Pictures without publishing or retaining a candidate. */
+  async warmAdjacentPictures(revisionId: number, spreadIndex: number): Promise<void> {
+    await this.enqueueForeground(async () => {
+      for (const direction of ['next', 'previous'] as const) {
+        if (
+          this.snapshot.phase !== 'ready'
+          || this.snapshot.revisionId !== revisionId
+          || this.snapshot.spreadIndex !== spreadIndex
+          || this.preparedTurn
+          || this.foregroundQueued > 1
+        ) return;
+        const prepared = await this.prepareAdjacentWithinForeground(direction);
+        if (prepared) await this.cancelPreparedTurnWithinForeground(prepared);
       }
     });
   }
@@ -327,43 +348,45 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   async cancelPreparedTurn(preparedTurn: ReaderPreparedTurn): Promise<void> {
-    await this.enqueueForeground(async () => {
-      if (this.preparedTurn?.id !== preparedTurn.id) {
-        readerDiagnostic(
-          'turn.runtime.cancel.stale',
-          `prepared=${preparedTurn.id} active=${this.preparedTurn?.id ?? 'none'} snapshot=${describeSnapshot(this.snapshot)}`,
-        );
-        return;
-      }
-      const operation = this.operation;
+    await this.enqueueForeground(() => this.cancelPreparedTurnWithinForeground(preparedTurn));
+  }
+
+  private async cancelPreparedTurnWithinForeground(preparedTurn: ReaderPreparedTurn): Promise<void> {
+    if (this.preparedTurn?.id !== preparedTurn.id) {
       readerDiagnostic(
-        'turn.runtime.cancel.begin',
-        `prepared=${preparedTurn.id} sourceSnapshotSpread=${preparedTurn.sourceSnapshotSpreadIndex} sourcePreparedSpread=${preparedTurn.sourcePreparedSpreadIndex}`,
+        'turn.runtime.cancel.stale',
+        `prepared=${preparedTurn.id} active=${this.preparedTurn?.id ?? 'none'} snapshot=${describeSnapshot(this.snapshot)}`,
       );
-      try {
-        if (preparedTurn.publicationTurn) {
-          const publication = this.publication;
-          if (!publication?.cancelPreparedAdjacent) throw new Error('Prepared publication cancellation is unavailable.');
-          await publication.cancelPreparedAdjacent(
-            preparedTurn.publicationTurn,
-            preparedTurn.sourceSnapshotSpreadIndex,
-          );
-          await this.preparePicture(preparedTurn.sourceSnapshotSpreadIndex, operation);
-        } else {
-          await this.restorePreparedSource(
-            preparedTurn.sourcePreparedSpreadIndex,
-            preparedTurn.sourceSnapshotSpreadIndex,
-            operation,
-          );
-        }
-        readerDiagnostic(
-          'turn.runtime.cancel.ready',
-          `prepared=${preparedTurn.id} snapshot=${describeSnapshot(this.snapshot)}`,
+      return;
+    }
+    const operation = this.operation;
+    readerDiagnostic(
+      'turn.runtime.cancel.begin',
+      `prepared=${preparedTurn.id} sourceSnapshotSpread=${preparedTurn.sourceSnapshotSpreadIndex} sourcePreparedSpread=${preparedTurn.sourcePreparedSpreadIndex}`,
+    );
+    try {
+      if (preparedTurn.publicationTurn) {
+        const publication = this.publication;
+        if (!publication?.cancelPreparedAdjacent) throw new Error('Prepared publication cancellation is unavailable.');
+        await publication.cancelPreparedAdjacent(
+          preparedTurn.publicationTurn,
+          preparedTurn.sourceSnapshotSpreadIndex,
         );
-      } finally {
-        if (this.preparedTurn?.id === preparedTurn.id) this.preparedTurn = undefined;
+        await this.preparePicture(preparedTurn.sourceSnapshotSpreadIndex, operation);
+      } else {
+        await this.restorePreparedSource(
+          preparedTurn.sourcePreparedSpreadIndex,
+          preparedTurn.sourceSnapshotSpreadIndex,
+          operation,
+        );
       }
-    });
+      readerDiagnostic(
+        'turn.runtime.cancel.ready',
+        `prepared=${preparedTurn.id} snapshot=${describeSnapshot(this.snapshot)}`,
+      );
+    } finally {
+      if (this.preparedTurn?.id === preparedTurn.id) this.preparedTurn = undefined;
+    }
   }
 
   async goToToc(href: string): Promise<ReaderSnapshot> {

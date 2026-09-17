@@ -87,6 +87,18 @@ export function useInteractivePageTurn({
   const isReady = snapshot.phase === 'ready';
   const uiSnapshotIdentity = describeSnapshotIdentity(snapshot);
 
+  useEffect(() => {
+    if (!isReady || interactiveTurn || automaticNavigationActive) return;
+    const revisionId = snapshot.revisionId;
+    const spreadIndex = snapshot.spreadIndex;
+    const timer = setTimeout(() => {
+      if (dragState.current || runtime.getSnapshot().revisionId !== revisionId
+        || runtime.getSnapshot().spreadIndex !== spreadIndex) return;
+      void runtime.warmAdjacentPictures(revisionId, spreadIndex).catch(() => undefined);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [automaticNavigationActive, interactiveTurn, isReady, runtime, snapshot.revisionId, snapshot.spreadIndex]);
+
   const prepareForAutomaticNavigation = useCallback(async () => {
     handoffGeneration.current += 1;
     const preparedTurn = dragState.current?.preparedTurn;
@@ -140,7 +152,7 @@ export function useInteractivePageTurn({
       [
         `turn=${committedHandoff?.turnId ?? activeTurnId.current ?? 'none'}`,
         `ui=${uiSnapshotIdentity}`,
-        `target=${interactiveTurn ? describeSnapshotIdentity(interactiveTurn.content.snapshot) : 'none'}`,
+        `target=${interactiveTurn?.content ? describeSnapshotIdentity(interactiveTurn.content.snapshot) : 'pending'}`,
         `settling=${String(interactiveTurn?.settling === true)}`,
         `handoff=${String(Boolean(committedHandoff))}`,
       ].join(' '),
@@ -164,6 +176,7 @@ export function useInteractivePageTurn({
       startX,
       direction: 1,
       directionLocked: false,
+      pendingPublished: false,
       startBookX: 1,
       physicalProgress: 0,
       renderProgress: 0,
@@ -309,6 +322,18 @@ export function useInteractivePageTurn({
     state.throwVelocity += (instantaneousThrowVelocity - state.throwVelocity) * 0.35;
     state.grabY = Math.min(viewport.height, Math.max(0, absoluteY - surfaceTop));
 
+    if (!state.pendingPublished && pageTurnEffect.visual.kind === 'slide') {
+      state.pendingPublished = true;
+      setInteractiveTurn({
+        direction,
+        progress: state.renderProgress,
+        progressValue: gestureProgress,
+        grabX: state.grabX,
+        grabY: state.grabY,
+        grabYValue: gestureGrabY,
+      });
+    }
+
     if (state.preparedTurn && !state.prepared) {
       showPreparedTurn(state, state.preparedTurn);
       return;
@@ -354,6 +379,8 @@ export function useInteractivePageTurn({
     }
   }, [
     isReady,
+    gestureGrabY,
+    gestureProgress,
     pageTurnEffect,
     runtime,
     showPreparedTurn,

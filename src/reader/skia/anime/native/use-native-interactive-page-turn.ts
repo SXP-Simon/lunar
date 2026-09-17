@@ -79,6 +79,7 @@ export function useNativeInteractivePageTurn({
       || !surfaceBinding
       || !nativeGesture
       || nativeGesture.driven
+      || !interactiveTurn?.content
       || !interactiveSource
       || pixelWidth <= 0
       || pixelHeight <= 0
