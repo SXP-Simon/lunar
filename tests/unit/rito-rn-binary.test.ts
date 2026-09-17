@@ -145,13 +145,26 @@ describe('Rito React Native binary protocol', () => {
 
   it('encodes fixed foreground and background handoff contracts', () => {
     expect(encodeRitoForegroundHandoff({ sessionId: 1n, candidateArtifactId: 3n }).byteLength).toBe(48);
-    expect(encodeRitoBackgroundRequest({ sessionId: 1n, expectedVisibleArtifactId: 2n, maxTopLevelNodesPerQuantum: 8 }).byteLength).toBe(40);
     expect(encodeRitoBackgroundHandoff({ sessionId: 1n, expectedVisibleArtifactId: 2n, candidateArtifactId: 3n }).byteLength).toBe(44);
 
     const foregroundAck = message('RITOFGA1').writeU64(4n).writeU32(0).writeU64(0n).writeU64(3n);
     expect(decodeRitoForegroundHandoffAck(finish(foregroundAck))).toEqual({ intentRequestId: 4n, replacedArtifactId: undefined, visibleArtifactId: 3n });
     const backgroundAck = message('RITOHOA1').writeU64(4n).writeU64(2n).writeU64(3n);
     expect(decodeRitoBackgroundHandoffAck(finish(backgroundAck))).toEqual({ intentRequestId: 4n, replacedArtifactId: 2n, visibleArtifactId: 3n });
+  });
+
+  it('preserves the Rito 2.0.0 background wire contract without a host work budget', () => {
+    const bytes = encodeRitoBackgroundRequest({ sessionId: 1n, expectedVisibleArtifactId: 2n });
+    expect(bytes.byteLength).toBe(40);
+    const reader = new RitoBinaryReader(bytes);
+    reader.expectHeader('RITOBGQ1');
+    expect(reader.readU32()).toBe(1);
+    expect(reader.readU64()).toBe(40n);
+    expect(reader.readU64()).toBe(1n);
+    expect(reader.readU64()).toBe(2n);
+    // The native decoder still reads this field and rejects zero.
+    expect(reader.readU32()).toBe(1);
+    reader.expectExhausted();
   });
 
   it('encodes and decodes search, text geometry, and footnote contracts', () => {
@@ -176,7 +189,13 @@ describe('Rito React Native binary protocol', () => {
         });
       });
     const decodedSearch = decodeRitoSearchResponse(finish(searchResponse));
-    expect(decodedSearch.scopeComplete).toBe(true);
+    expect(decodedSearch).toEqual({
+      artifactId: 2n,
+      query: '章',
+      truncated: false,
+      searchedPageCount: 4,
+      results: [expect.objectContaining({ pageIndex: 3, spreadIndex: 2 })],
+    });
     expect(decodedSearch.results[0]?.locator?.sourceRange).toEqual({
       start: { nodePath: [1, 2], textOffset: 3n },
       end: { nodePath: [1, 2], textOffset: 4n },

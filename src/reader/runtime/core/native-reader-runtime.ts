@@ -511,13 +511,13 @@ export class LunarReaderRuntime implements ReaderRuntime {
   async search(request: import('../../contracts').ReaderSearchRequest): Promise<import('../../contracts').ReaderSearchResponse> {
     const publication = this.publication;
     if (!publication?.search || this.snapshot.phase !== 'ready') {
-      return { query: request.query, truncated: false, searchedPageCount: 0, scopeComplete: false, results: [] };
+      return { query: request.query, truncated: false, searchedPageCount: 0, results: [] };
     }
     const revision = this.snapshot.revisionId;
     const response = await publication.search(request);
     return revision === this.snapshot.revisionId
       ? response
-      : { query: request.query, truncated: false, searchedPageCount: 0, scopeComplete: false, results: [] };
+      : { query: request.query, truncated: false, searchedPageCount: 0, results: [] };
   }
 
   getBackgroundColor(): string {
@@ -680,7 +680,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     let result: unknown;
     readerDiagnostic('runtime.bg.begin', `operation=${operation} snapshot=${describeSnapshot(this.snapshot)}`);
     try {
-      result = await backend.advanceBackground(64);
+      result = await backend.advanceBackground();
     } catch (error) {
       readerPerformanceEnd('reader.background.quantum', quantumStartedAt);
       readerDiagnostic('runtime.bg.error', `operation=${operation} error=${describeError(error)}`);

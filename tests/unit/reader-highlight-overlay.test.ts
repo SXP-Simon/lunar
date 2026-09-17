@@ -200,7 +200,6 @@ function runtimeWithSearchResults(results: readonly ReaderSearchResult[]): Reade
       query,
       truncated: false,
       searchedPageCount: 1,
-      scopeComplete: true,
       results: results.filter((result) => result.context === query),
     })),
     resolveTextRangeGeometry: vi.fn(async (request) => {

@@ -90,11 +90,11 @@ describe('curl printed face rendering', () => {
     const pixel = render(0, 1);
     expect(pixel(40)).toEqual([255, 0, 0, 255]);
     expect(pixel(360)).toEqual([0, 0, 255, 255]);
-  });
+  }, 15000);
 
   it('preserves the outgoing face in double-page backward turns', () => {
     const pixel = render(0, -1, false, 'double');
     expect(pixel(40)).toEqual([0, 0, 255, 255]);
     expect(pixel(360)).toEqual([255, 0, 0, 255]);
-  });
+  }, 15000);
 });

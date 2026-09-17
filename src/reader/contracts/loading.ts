@@ -191,8 +191,8 @@ export interface ReaderSearchResult {
 export interface ReaderSearchResponse {
   readonly query: string;
   readonly truncated: boolean;
+  /** Pages searched in the current artifact's revision: one chapter or the whole book. */
   readonly searchedPageCount: number;
-  readonly scopeComplete: boolean;
   readonly results: readonly ReaderSearchResult[];
 }
 

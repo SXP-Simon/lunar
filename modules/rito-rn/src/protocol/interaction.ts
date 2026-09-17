@@ -6,7 +6,7 @@ import { readRitoLocator } from './locator';
 export interface RitoTextPosition { readonly blockIndex: number; readonly lineIndex: number; readonly runIndex: number; readonly charIndex: number }
 export interface RitoSearchRequest { readonly sessionId: bigint; readonly artifactId: bigint; readonly query: string; readonly caseSensitive?: boolean; readonly wholeWord?: boolean; readonly limit?: number }
 export interface RitoSearchResult { readonly pageIndex: number; readonly spreadIndex: number; readonly start: RitoTextPosition; readonly end: RitoTextPosition; readonly context: string; readonly locator?: RitoLocator }
-export interface RitoSearchResponse { readonly artifactId: bigint; readonly query: string; readonly truncated: boolean; readonly searchedPageCount: number; readonly scopeComplete: boolean; readonly results: readonly RitoSearchResult[] }
+export interface RitoSearchResponse { readonly artifactId: bigint; readonly query: string; readonly truncated: boolean; readonly searchedPageCount: number; readonly results: readonly RitoSearchResult[] }
 export interface RitoTextRangeRequest { readonly sessionId: bigint; readonly artifactId: bigint; readonly pageIndex: number; readonly start: RitoTextPosition; readonly end: RitoTextPosition }
 export interface RitoTextRect { readonly bounds: RitoRect; readonly blockIndex: number; readonly lineIndex: number; readonly runIndex: number; readonly startCharIndex: number; readonly endCharIndex: number }
 export interface RitoTextRangeGeometry { readonly artifactId: bigint; readonly pageIndex: number; readonly rects: readonly RitoTextRect[] }
@@ -28,7 +28,7 @@ export function encodeRitoTextRangeRequest(request: RitoTextRangeRequest): Uint8
 
 export function decodeRitoSearchResponse(data: Uint8Array): RitoSearchResponse {
   const reader = open(data, 'RITOSRS1');
-  const result = { artifactId: reader.readExternalId('search artifact id'), query: reader.readUtf8(), truncated: reader.readBoolean('search truncated'), searchedPageCount: reader.readU32(), scopeComplete: true, results: Array.from({ length: reader.readCount('search results') }, () => reader.readRecord('search result', readSearchResult)) };
+  const result = { artifactId: reader.readExternalId('search artifact id'), query: reader.readUtf8(), truncated: reader.readBoolean('search truncated'), searchedPageCount: reader.readU32(), results: Array.from({ length: reader.readCount('search results') }, () => reader.readRecord('search result', readSearchResult)) };
   reader.expectExhausted(); return result;
 }
 

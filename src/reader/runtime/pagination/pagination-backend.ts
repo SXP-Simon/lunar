@@ -40,5 +40,5 @@ export interface ReaderPaginationBackend {
 }
 
 export interface ReaderBackgroundPaginationBackend extends ReaderPaginationBackend {
-  advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<unknown>;
+  advanceBackground(): Promise<unknown>;
 }

@@ -76,7 +76,7 @@ describe('RitoReaderSession neighbor navigation', () => {
       fromArtifactId: 1n,
       direction: 'next',
     });
-    await expect(session.advanceBackground({ sessionId: 1n, expectedVisibleArtifactId: 1n, maxTopLevelNodesPerQuantum: 8 })).rejects.toMatchObject({ status: 8 });
+    await expect(session.advanceBackground({ sessionId: 1n, expectedVisibleArtifactId: 1n })).rejects.toMatchObject({ status: 8 });
     await session.adoptForeground({ sessionId: 1n, expectedVisibleArtifactId: 1n, candidateArtifactId: candidate.artifactId });
     expect(session.currentVisibleArtifactId).toBe(2n);
   });

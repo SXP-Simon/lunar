@@ -91,6 +91,38 @@ async function setup(options: { completed?: boolean; runtime?: boolean; spreadMo
 }
 
 describe('saved reader location navigation', () => {
+  it('publishes whole-book page numbers after indexing without a host work budget', async () => {
+    vi.useFakeTimers();
+    const { runtime, backend, session } = await setup({ runtime: true });
+    const advance = vi.spyOn(backend, 'advanceBackground');
+    session.advanceBackground.mockResolvedValueOnce({ state: 'indexing', movesVisibleContent: false,
+      intentRequestId: 1n, replacesArtifactId: 1n });
+    try {
+      expect(runtime.getSnapshot().totalSpreads).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(32);
+      expect(runtime.getSnapshot()).toMatchObject({ phase: 'ready', paginationComplete: false });
+      expect(runtime.getSnapshot().totalSpreads).toBeUndefined();
+      expect(session.adoptBackground).not.toHaveBeenCalled();
+      expect(session.advanceBackground).toHaveBeenNthCalledWith(1, {
+        sessionId: 1n, expectedVisibleArtifactId: 1n,
+      });
+
+      await vi.advanceTimersByTimeAsync(32);
+      expect(runtime.getSnapshot()).toMatchObject({ phase: 'ready', totalSpreads: 100, bookSpreadIndex: 42 });
+      expect(session.adoptBackground).toHaveBeenCalledTimes(1);
+      session.advanceBackground.mockResolvedValueOnce({ state: 'complete', movesVisibleContent: false,
+        intentRequestId: 1n, replacesArtifactId: 2n });
+
+      await vi.advanceTimersByTimeAsync(32);
+      expect(session.advanceBackground).toHaveBeenNthCalledWith(3, {
+        sessionId: 1n, expectedVisibleArtifactId: 2n,
+      });
+      expect(runtime.getSnapshot().paginationComplete).toBe(true);
+      await vi.advanceTimersByTimeAsync(96);
+      expect(advance.mock.calls).toEqual([[], [], []]);
+    } finally { await runtime.close(); }
+  });
+
   it('reloads source bytes when a layout revision opens a new native session', async () => {
     const { runtime, loadData, layout } = await setup({ completed: true, runtime: true });
     try {

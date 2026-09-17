@@ -40,7 +40,7 @@ const RETAINED_BOUNDARY_KEEP_ALIVE_CAP = 1;
 const RETAINED_SLOT_RADIUS = 4;
 
 /**
- * Rito 1.0 pagination backend. It keeps the native artifact as the source of
+ * Rito 2.0.0 pagination backend. It keeps the native artifact as the source of
  * truth and materializes only the resources referenced by the active artifact.
  * The initial EPUB spine href is resolved from the package document because
  * Rito's request contract intentionally requires an explicit locator.
@@ -87,9 +87,9 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
     return this.publication.getFrame(spreadIndex);
   }
 
-  async advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<unknown> {
+  async advanceBackground(): Promise<unknown> {
     if (!this.publication) throw new Error('Rito native publication is not open.');
-    return this.publication.advanceBackground(maxTopLevelNodesPerQuantum);
+    return this.publication.advanceBackground();
   }
 
   async cancel(operationId: number, revisionId: number): Promise<void> {
@@ -637,7 +637,7 @@ class RitoNativePublication implements LoadedReaderPublication {
 
   async search(request: import('../../contracts').ReaderSearchRequest): Promise<import('../../contracts').ReaderSearchResponse> {
     const artifact = this.currentArtifact;
-    if (!artifact) return { query: request.query, truncated: false, searchedPageCount: 0, scopeComplete: false, results: [] };
+    if (!artifact) return { query: request.query, truncated: false, searchedPageCount: 0, results: [] };
     const response = await this.session.search({
       sessionId: artifact.sessionId,
       artifactId: artifact.artifactId,
@@ -650,7 +650,6 @@ class RitoNativePublication implements LoadedReaderPublication {
       query: response.query,
       truncated: response.truncated,
       searchedPageCount: response.searchedPageCount,
-      scopeComplete: response.scopeComplete,
       results: response.results.map((result) => ({
         pageIndex: result.pageIndex,
         spreadIndex: result.spreadIndex,
@@ -679,7 +678,7 @@ class RitoNativePublication implements LoadedReaderPublication {
     return this.visibleIndex;
   }
 
-  async advanceBackground(maxTopLevelNodesPerQuantum: number): Promise<import('../../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance> {
+  async advanceBackground(): Promise<import('../../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance> {
     const backgroundStartedAt = readerPerformanceStart('reader.backend.background');
     let result!: import('../../../../modules/rito-rn/src/protocol/artifact-types').RitoBackgroundAdvance;
     const run = this.operationQueue.enqueue(async () => {
@@ -687,8 +686,8 @@ class RitoNativePublication implements LoadedReaderPublication {
       if (!visibleId) throw new Error('Rito background pagination requires a visible artifact.');
       const current = this.session.getArtifact(visibleId);
       if (!current) throw new Error('Rito visible artifact is unavailable.');
-      readerDiagnostic('bg.begin', `visibleIndex=${this.visibleIndex} artifact=${describeArtifact(current)} quantum=${maxTopLevelNodesPerQuantum}`);
-      const advance = await this.session.advanceBackground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId, maxTopLevelNodesPerQuantum });
+      readerDiagnostic('bg.begin', `visibleIndex=${this.visibleIndex} artifact=${describeArtifact(current)}`);
+      const advance = await this.session.advanceBackground({ sessionId: current.sessionId, expectedVisibleArtifactId: current.artifactId });
       result = advance;
       readerDiagnostic('bg.result', `state=${advance.state} moves=${String(advance.movesVisibleContent)} replaces=${advance.replacesArtifactId.toString()} candidate=${describeArtifact(advance.artifact)}`);
       const candidate = advance.artifact;

@@ -27,6 +27,8 @@ ReaderRuntime
 
 ## 当前接口
 
+后台推进使用 `session.advanceBackground({ sessionId, expectedVisibleArtifactId })`。Rito 2.0.0 在脚注索引完成后，通过单次调用完成全书排版，因此宿主接口省略工作量参数。原生 `RITOBGQ1` 仍要求 40 字节消息，编码器为其中遗留的 `u32` 字段提供固定正值 `1`，仅用于满足原生校验。搜索响应遵循第 5 版协议，通过 `searchedPageCount` 表达当前工件所属修订的搜索页数。
+
 `src/index.ts` 导出以下内容：
 
 | 分类 | 能力 |

@@ -75,7 +75,6 @@ export interface RitoForegroundHandoff {
 export interface RitoBackgroundRequest {
   readonly sessionId: bigint;
   readonly expectedVisibleArtifactId: bigint;
-  readonly maxTopLevelNodesPerQuantum: number;
 }
 
 export interface RitoBackgroundHandoff {
@@ -91,8 +90,11 @@ export function encodeRitoForegroundHandoff(request: RitoForegroundHandoff): Uin
 }
 
 export function encodeRitoBackgroundRequest(request: RitoBackgroundRequest): Uint8Array {
+  // Rito 2.0.0 retains a non-zero u32 work-budget field in its 40-byte
+  // RITOBGQ1 message, but only validates it: publication layout runs in
+  // one call. Keep this wire requirement out of the host scheduling API.
   return finishFixedMessage(new RitoBinaryWriter().writeAscii('RITOBGQ1').writeU32(1).writeU64(0n)
-    .writeU64(request.sessionId).writeU64(request.expectedVisibleArtifactId).writeU32(request.maxTopLevelNodesPerQuantum), 40);
+    .writeU64(request.sessionId).writeU64(request.expectedVisibleArtifactId).writeU32(1), 40);
 }
 
 export function encodeRitoBackgroundHandoff(request: RitoBackgroundHandoff): Uint8Array {
