@@ -20,12 +20,11 @@
         - name: Build development APK
           script: bash scripts/build-android.sh development
           timeout: 2h
-        - name: Attach development APK and native symbols
+        - name: Attach development APK
           image: cnbcool/attachments:latest
           settings:
             attachments:
               - ./lunar-development.apk
-              - ./lunar-development-symbols.zip
             ttl: 7
 
 "v*":
