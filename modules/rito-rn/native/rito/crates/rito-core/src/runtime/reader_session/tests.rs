@@ -1934,3 +1934,90 @@ fn a_render_ratio_change_repaints_without_a_new_revision() {
         "a rejected ratio leaves the current one"
     );
 }
+
+#[test]
+fn fragment_hit_sources_match_search_ranges() {
+    assert_fragment_hit_sources(171, crate::runtime::tests::fixture::fixture_epub());
+}
+
+#[test]
+fn fragment_hit_sources_preserve_utf16_offsets_across_wraps_and_duplicate_text() {
+    let chapter = r#"<html xmlns="http://www.w3.org/1999/xhtml"><body><p>你好😀世界。你好😀世界。 Alpha   beta gamma delta epsilon zeta eta theta iota kappa lambda mu.</p><p>你好😀世界。 <em>Alpha beta</em> gamma.</p></body></html>"#;
+    assert_fragment_hit_sources(
+        172,
+        crate::runtime::tests::fixture::fixture_epub_with_chapter_and_stylesheet(
+            chapter.as_bytes(),
+            "p { margin: 0; }",
+        ),
+    );
+}
+
+/// Every text hit carries the durable source point a host stores and
+/// re-projects later, and that point must agree with the range search
+/// reports for the same run — offsets included, across soft wraps and
+/// duplicated text.
+fn assert_fragment_hit_sources(session_id: u64, publication: Vec<u8>) {
+    let mut session = open_test_session(session_id, publication).expect("reader session opens");
+    let artifact = session
+        .request_artifact(request(session_id, 1, ""))
+        .expect("artifact resolves");
+    // The wire is what every host reads; a point the encoder drops is a
+    // point no host ever sees.
+    let encoded = encode_reader_artifact(&artifact).expect("artifact encodes");
+    let decoded = decode_reader_artifact(&encoded).expect("artifact decodes");
+    assert_eq!(decoded.pages, artifact.pages, "hits survive the artifact wire");
+
+    let mut checked = 0;
+    for page in &decoded.pages {
+        let text_hits = page.hits.iter().filter(|hit| !hit.text.is_empty());
+        for (hit, position) in text_hits.zip(&page.text_runs) {
+            let query = hit.text.trim_end();
+            if query.is_empty() {
+                continue;
+            }
+            let point = hit
+                .source_point
+                .as_ref()
+                .unwrap_or_else(|| panic!("text hit carries its source point: {:?}", hit.text));
+            let response = session
+                .search(ReaderSearchRequest {
+                    session_id,
+                    artifact_id: artifact.artifact_id,
+                    query: query.to_owned(),
+                    case_sensitive: true,
+                    whole_word: false,
+                    limit: 256,
+                })
+                .expect("text run search resolves");
+            let result = response
+                .results
+                .iter()
+                .find(|result| {
+                    result.page_index == page.page_index
+                        && result.start.block_index == position.block_index
+                        && result.start.line_index == position.line_index
+                        && result.start.run_index == position.run_index
+                        && result.start.char_index == 0
+                })
+                .expect("search identifies the same text run");
+            let range = result
+                .locator
+                .as_ref()
+                .and_then(|locator| locator.source_range.as_ref())
+                .unwrap_or_else(|| {
+                    panic!(
+                        "search returns a durable range for {:?}: {result:?}",
+                        hit.text
+                    )
+                });
+            assert_eq!(point, &range.start);
+            assert_eq!(point.node_path, range.end.node_path);
+            assert_eq!(
+                point.text_offset + query.encode_utf16().count() as u64,
+                range.end.text_offset,
+            );
+            checked += 1;
+        }
+    }
+    assert!(checked > 0, "the fixture must publish text hits");
+}
