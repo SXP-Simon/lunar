@@ -1,4 +1,7 @@
-import type { ReaderPageTurnEffect } from '../../core/page-turn-effect';
+import type {
+  ReaderPageTurnEffect,
+  ReaderPageTurnReleaseContext,
+} from '../../core/page-turn-effect';
 import { clampUnit } from '../../core/page-turn-math';
 import { NATIVE_CURL_MOTION_CONFIG } from './native-motion';
 import {
@@ -24,13 +27,44 @@ export const PAGE_TURN_REVERSE_DURATION_MS = 854;
 export const PAGE_TURN_REVERT_DURATION_MS = 720;
 
 const GESTURE_FORWARD_COMMIT_THRESHOLD = 0.8;
-const GESTURE_BACKWARD_COMMIT_THRESHOLD = 0.15;
+// The forward threshold is measured in book units of the physical page, which
+// a spread makes half of the interaction width: a slow drag commits once the
+// sheet has carried 0.8 * (1 - SLOW_COMMIT_EDGE_X) of its own width, about the
+// half screen a spread hand already travels. A single page is the whole
+// interaction width, so that same threshold asked for a full screen of travel,
+// while the incoming reveal — scored in turn progress — committed after 0.11.
+//
+// Both single-page thresholds are rebalanced onto the spread's travel: the
+// forward commit lands on 0.49 interaction widths and the reveal on 0.36, and
+// a release with throw speed shortens the two by the same amount.
+const SINGLE_FORWARD_COMMIT_THRESHOLD = 0.4;
+const SINGLE_BACKWARD_COMMIT_THRESHOLD = 0.5;
 const GESTURE_FORWARD_MINIMUM_SPEED_SCALE = 1;
 const GESTURE_BACKWARD_MINIMUM_SPEED_SCALE = 0.8;
 const GESTURE_MAXIMUM_SPEED_SCALE = 5;
 const GESTURE_VELOCITY_GAIN = 0.2;
 const GESTURE_IDLE_DECAY_SECONDS = 0.1;
 const PAGE_TURN_PROPAGATION_SPEED_SCALE = 1.15;
+
+/**
+ * Commit score a release has to reach. The gesture effect and the native pager
+ * policy must agree on this, because a single-page drag is decided by whichever
+ * of the two owns it.
+ *
+ * Declared above the effect on purpose: the worklets plugin reads a worklet's
+ * captured bindings the moment the effect literal is evaluated, so a worklet
+ * helper declared below it would be captured while still uninitialized.
+ */
+function curlGestureCommitThreshold(
+  direction: 1 | -1,
+  spreadMode: ReaderPageTurnReleaseContext['spreadMode'],
+): number {
+  'worklet';
+  if (spreadMode !== 'single') return GESTURE_FORWARD_COMMIT_THRESHOLD;
+  return direction === -1
+    ? SINGLE_BACKWARD_COMMIT_THRESHOLD
+    : SINGLE_FORWARD_COMMIT_THRESHOLD;
+}
 
 export const curlPageTurnEffect: ReaderPageTurnEffect = {
   style: 'page',
@@ -98,11 +132,7 @@ export const curlPageTurnEffect: ReaderPageTurnEffect = {
         throwAcceleration,
       );
       return (incomingPage || startBookX >= 0.25)
-        && score >= (
-          incomingPage
-            ? GESTURE_BACKWARD_COMMIT_THRESHOLD
-            : GESTURE_FORWARD_COMMIT_THRESHOLD
-        );
+        && score >= curlGestureCommitThreshold(direction, spreadMode);
     },
   },
   native: {
@@ -116,12 +146,9 @@ export const curlPageTurnEffect: ReaderPageTurnEffect = {
       },
       getReleaseTuning: (direction, spreadMode) => {
         'worklet';
-        const incomingPage = spreadMode === 'single' && direction === -1;
         return {
           pageWeight: 1,
-          commitThreshold: incomingPage
-            ? GESTURE_BACKWARD_COMMIT_THRESHOLD
-            : GESTURE_FORWARD_COMMIT_THRESHOLD,
+          commitThreshold: curlGestureCommitThreshold(direction, spreadMode),
           slowCommitEdgeX: SLOW_COMMIT_EDGE_X,
           minimumSpeedScale: direction === -1
             ? GESTURE_BACKWARD_MINIMUM_SPEED_SCALE

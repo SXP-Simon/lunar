@@ -14,6 +14,8 @@ import {
 import { readerInteractivePageTurnIdentity } from '../native/page-turn';
 import {
   planarTurnProgressForTranslation,
+  throwAccelerationForRelease,
+  trackThrowVelocity,
 } from '../gesture/page-turn-gesture';
 import {
   describePreparedTarget,
@@ -311,15 +313,18 @@ export function useInteractivePageTurn({
       direction,
       spreadMode,
     });
-    const instantaneousThrowVelocity = Math.max(
-      0,
-      (direction === 1 ? -velocityX : velocityX) / Math.max(1, viewport.width),
+    state.throwAcceleration = throwAccelerationForRelease(
+      state.throwVelocity,
+      velocityX,
+      direction,
+      viewport.width,
     );
-    state.throwAcceleration = Math.max(
-      0,
-      (instantaneousThrowVelocity - state.throwVelocity) * 60,
+    state.throwVelocity = trackThrowVelocity(
+      state.throwVelocity,
+      velocityX,
+      direction,
+      viewport.width,
     );
-    state.throwVelocity += (instantaneousThrowVelocity - state.throwVelocity) * 0.35;
     state.grabY = Math.min(viewport.height, Math.max(0, absoluteY - surfaceTop));
 
     if (!state.pendingPublished && pageTurnEffect.visual.kind === 'slide') {

@@ -95,7 +95,7 @@ describe('reader page turn effect timing', () => {
     });
     expect(curlPageTurnEffect.native?.gesture.getReleaseTuning(1, 'single'))
       .toMatchObject({
-        commitThreshold: 0.8,
+        commitThreshold: 0.4,
         minimumSpeedScale: 1,
         maximumSpeedScale: 5,
         velocityGain: 0.2,
@@ -103,9 +103,12 @@ describe('reader page turn effect timing', () => {
       });
     expect(curlPageTurnEffect.native?.gesture.getReleaseTuning(-1, 'single'))
       .toMatchObject({
-        commitThreshold: 0.15,
+        commitThreshold: 0.5,
         minimumSpeedScale: 0.8,
       });
+    // A spread keeps the Persimmon tunings; only a single page rebalances them.
+    expect(curlPageTurnEffect.native?.gesture.getReleaseTuning(1, 'double'))
+      .toMatchObject({ commitThreshold: 0.8 });
     expect(slidePageTurnEffect.native).toMatchObject({
       visualKind: 'slide',
       planarMotion: {

@@ -12,7 +12,10 @@ import {
   updateNativePagerGestureOnUI,
 } from '../native/pager-compositor';
 import {
+  directedThrowVelocity,
   planarTurnProgressForTranslation,
+  throwAccelerationForRelease,
+  trackThrowVelocity,
 } from './page-turn-gesture';
 
 export interface PageTurnGestureValues {
@@ -26,6 +29,7 @@ export interface PageTurnGestureValues {
   readonly pressedEdgeX: SharedValue<number>;
   readonly heldRollTilt: SharedValue<number>;
   readonly token: SharedValue<number>;
+  readonly dragThrowVelocity: SharedValue<number>;
   readonly jsSampleIndex: SharedValue<number>;
   readonly nativeActive: SharedValue<boolean>;
   readonly nativePagerId: SharedValue<number>;
@@ -58,6 +62,7 @@ export function usePageTurnGestureValues(): PageTurnGestureValues {
   const pressedEdgeX = useSharedValue(1);
   const heldRollTilt = useSharedValue(0);
   const token = useSharedValue(0);
+  const dragThrowVelocity = useSharedValue(0);
   const jsSampleIndex = useSharedValue(0);
   const nativeActive = useSharedValue(false);
   const nativePagerId = useSharedValue(-1);
@@ -75,6 +80,7 @@ export function usePageTurnGestureValues(): PageTurnGestureValues {
     pressedEdgeX,
     heldRollTilt,
     token,
+    dragThrowVelocity,
     jsSampleIndex,
     nativeActive,
     nativePagerId,
@@ -83,6 +89,7 @@ export function usePageTurnGestureValues(): PageTurnGestureValues {
   }), [
     direction,
     directionLocked,
+    dragThrowVelocity,
     grabY,
     heldRollTilt,
     nativeActive,
@@ -124,6 +131,7 @@ export function usePageTurnPanGesture({
   const {
     direction,
     directionLocked,
+    dragThrowVelocity,
     grabY,
     heldRollTilt,
     nativeActive,
@@ -163,6 +171,7 @@ export function usePageTurnPanGesture({
         nativeActive.value = false;
         nativeStockedToken.value = 0;
         token.value += 1;
+        dragThrowVelocity.value = 0;
         jsSampleIndex.value = 0;
         scheduleOnRN(beginDrag, event.x - event.translationX, event.y - event.translationY, token.value);
         // Recognition already includes horizontal travel. Start preparing its
@@ -193,6 +202,12 @@ export function usePageTurnPanGesture({
           );
           heldRollTilt.value = geometry.heldRollTilt;
           pressedEdgeX.value = geometry.pressedEdgeX;
+          dragThrowVelocity.value = trackThrowVelocity(
+            dragThrowVelocity.value,
+            event.velocityX,
+            initialDirection,
+            viewportWidth,
+          );
           jsSampleIndex.value = 1;
           scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
         }
@@ -264,6 +279,12 @@ export function usePageTurnPanGesture({
         // needs periodic samples for preparation and release prediction.
         jsSampleIndex.value += 1;
         if (jsSampleIndex.value === 1 || jsSampleIndex.value % 2 === 0) {
+          dragThrowVelocity.value = trackThrowVelocity(
+            dragThrowVelocity.value,
+            event.velocityX,
+            activeDirection,
+            viewportWidth,
+          );
           scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
         }
       })
@@ -304,16 +325,24 @@ export function usePageTurnPanGesture({
             fingerX,
             turnProgress: progress.value,
           });
-          const throwVelocity = Math.max(
-            0,
-            (activeDirection === 1 ? -event.velocityX : event.velocityX)
-              / Math.max(1, viewportWidth),
+          const throwVelocity = directedThrowVelocity(
+            event.velocityX,
+            activeDirection,
+            viewportWidth,
+          );
+          // The native pager decides a single-page release, so it has to be
+          // handed the same throw sample the JavaScript decision reads.
+          const throwAcceleration = throwAccelerationForRelease(
+            dragThrowVelocity.value,
+            event.velocityX,
+            activeDirection,
+            viewportWidth,
           );
           nativeReleased = endNativePagerGestureOnUI(nativePagerId.value, {
             fingerX,
             pageWidth: viewportWidth,
             throwVelocity,
-            throwAcceleration: 0,
+            throwAcceleration,
             pageWeight: releaseTuning?.pageWeight ?? 1,
             commitThreshold: releaseTuning?.commitThreshold ?? 0.5,
             slowCommitEdgeX: releaseTuning?.slowCommitEdgeX ?? 0,
@@ -345,6 +374,7 @@ export function usePageTurnPanGesture({
       beginDrag,
       direction,
       directionLocked,
+      dragThrowVelocity,
       endDrag,
       grabY,
       heldRollTilt,

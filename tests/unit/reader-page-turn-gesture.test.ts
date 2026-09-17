@@ -122,26 +122,53 @@ describe('reader page turn gesture effects', () => {
       throwVelocity: 1,
       throwAcceleration: 0,
     })).toBe(true);
-    expect(curlPageTurnEffect.gesture.shouldCommit({
-      progress: 0.5,
+  });
+
+  it('asks a single page for the same commit travel in both directions', () => {
+    // A slow forward drag carries the sheet 0.49 screen widths before the
+    // commit — the travel a spread already asked of one physical page — while
+    // the incoming reveal asks for 0.36 instead of a 0.11 sliver.
+    const slowForward = (fingerX: number) => curlPageTurnEffect.gesture.shouldCommit({
+      progress: (1 - fingerX) / 2,
       towardTargetVelocity: 0,
       direction: 1,
       spreadMode: 'single',
       startBookX: 1,
-      fingerX: 0.14,
+      fingerX,
       throwVelocity: 0,
       throwAcceleration: 0,
-    })).toBe(false);
-    expect(curlPageTurnEffect.gesture.shouldCommit({
-      progress: 0.2,
+    });
+    const slowReveal = (revealedTravel: number) => curlPageTurnEffect.gesture.shouldCommit({
+      progress: revealedTravel / 0.72,
       towardTargetVelocity: 0,
       direction: -1,
       spreadMode: 'single',
       startBookX: 0.2,
-      fingerX: 0.8,
+      fingerX: 1 - revealedTravel,
       throwVelocity: 0,
       throwAcceleration: 0,
-    })).toBe(true);
+    });
+
+    expect(slowForward(0.567)).toBe(false);
+    expect(slowForward(0.5)).toBe(true);
+    expect(slowReveal(0.11)).toBe(false);
+    expect(slowReveal(0.36)).toBe(true);
+  });
+
+  it('keeps the Persimmon commit travel for a spread', () => {
+    const slowForward = (fingerX: number) => curlPageTurnEffect.gesture.shouldCommit({
+      progress: 0.5,
+      towardTargetVelocity: 0,
+      direction: 1,
+      spreadMode: 'double',
+      startBookX: 1,
+      fingerX,
+      throwVelocity: 0,
+      throwAcceleration: 0,
+    });
+
+    expect(slowForward(0.14)).toBe(false);
+    expect(slowForward(0.02)).toBe(true);
   });
 
   it('keeps each release projection duration independently testable', () => {
