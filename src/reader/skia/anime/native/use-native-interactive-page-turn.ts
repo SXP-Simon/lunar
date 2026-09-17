@@ -110,12 +110,12 @@ export function useNativeInteractivePageTurn({
         fromPageKey: interactiveSource.key,
         toPageKey: interactiveTurn.content.key,
         frontPageKey: forward ? interactiveSource.key : interactiveTurn.content.key,
-        backPageKey: forward ? undefined : interactiveSource.key,
         backgroundLeftPageKey: forward
           ? interactiveTurn.content.key
           : interactiveSource.key,
         frontPicture: forward ? sourcePicture : targetPicture,
-        backPicture: forward ? undefined : sourcePicture,
+        // Single-page sheets have a blank back in both directions. The
+        // source of a backward turn belongs only to the background below.
         backgroundLeftPicture: forward ? targetPicture : sourcePicture,
         pixelWidth,
         pixelHeight,

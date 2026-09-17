@@ -44,13 +44,32 @@ const PROFILE_RUNS = 4;
 const QUADRATURE_OFFSET = 0.5 / Math.sqrt(3);
 const CAMERA_DISTANCE = 4;
 const MAX_PERSPECTIVE_SCALE = 1.34;
-const CURL_BACK_FACE_OPACITY = 0.62;
 const DEVICE_TEXTURE_SCALE = Math.min(3, Math.max(1, PixelRatio.get()));
 
-const PAGE_CURL_SHADER = createPageCurlShader(false);
 const PAGE_CURL_TWO_SIDED_SHADER = createPageCurlShader(true);
+const oneSidedPageCurlShaders = new Map<string, ReturnType<typeof createPageCurlShader>>();
 
-function createPageCurlShader(twoSided: boolean) {
+function shaderPaperRgb(color: string): string {
+  const match = /^#([0-9a-f]{6})$/i.exec(color);
+  if (!match) return 'half3(1.0, 1.0, 1.0)';
+  const hex = match[1]!;
+  const channel = (index: number) => (
+    Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16) / 255
+  ).toFixed(6);
+  return `half3(${channel(0)}, ${channel(1)}, ${channel(2)})`;
+}
+
+function getOneSidedPageCurlShader(paperColor: string) {
+  const key = paperColor.toLowerCase();
+  let shader = oneSidedPageCurlShaders.get(key);
+  if (!shader) {
+    shader = createPageCurlShader(false, shaderPaperRgb(paperColor));
+    oneSidedPageCurlShaders.set(key, shader);
+  }
+  return shader;
+}
+
+function createPageCurlShader(twoSided: boolean, paperRgb = 'half3(1.0, 1.0, 1.0)') {
   return Skia.RuntimeEffect.Make(`
 uniform shader frontTexture;
 ${twoSided ? 'uniform shader backTexture;' : ''}
@@ -108,13 +127,13 @@ float4 sampleRun(float bookX, float4 run) {
   float depth = mix(before.y, after.y, correctedProgress);
   float normalZ = abs(mix(before.w, after.w, correctedProgress));
   bool screenFront = deltaX > 0.0;
-  bool sourceFront = (screenFront ? 1.0 : -1.0) * perspective.w > 0.0;
+  bool textureFront = (screenFront ? 1.0 : -1.0) * perspective.w > 0.0;
   float shade = (1.0 - normalZ) * 0.16;
   return float4(
     material,
     1.0 - min(0.2, shade),
     depth,
-    ${twoSided ? 'screenFront' : 'sourceFront'} ? 1.0 : -1.0
+    ${twoSided ? 'screenFront' : 'textureFront'} ? 1.0 : -1.0
   );
 }
 
@@ -133,12 +152,10 @@ half4 main(float2 position) {
     ? frontTexture.eval(source)
     : backTexture.eval(source);
   return half4(paper.rgb * visible.y, paper.a);` : `
-  half4 paper = frontTexture.eval(source);
   if (visible.w < 0.0) {
-    half4 stock = frontTexture.eval(float2(0.02, 0.02));
-    half3 back = mix(stock.rgb, paper.rgb, 0.18) * visible.y;
-    return half4(back, max(stock.a, paper.a) * ${CURL_BACK_FACE_OPACITY});
+    return half4(${paperRgb} * visible.y, 1.0);
   }
+  half4 paper = frontTexture.eval(source);
   return half4(paper.rgb * visible.y, paper.a);`}
 }
 `);
@@ -165,6 +182,7 @@ interface PageCurlMeshProps {
   readonly heldRollTiltValue?: SharedValue<number>;
   readonly texture: PageCurlTexture;
   readonly backTexture?: PageCurlTexture;
+  readonly paperColor?: string;
   readonly phase?: 'full' | 'incoming-landing';
   readonly spreadMode?: 'single' | 'double';
   readonly gestureDriven?: boolean;
@@ -232,7 +250,9 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
   const image = texture.image;
   const backImage = props.backTexture?.image;
   const twoSided = props.backTexture !== undefined;
-  const shader = twoSided ? PAGE_CURL_TWO_SIDED_SHADER : PAGE_CURL_SHADER;
+  const shader = twoSided
+    ? PAGE_CURL_TWO_SIDED_SHADER
+    : getOneSidedPageCurlShader(props.paperColor ?? '#FFFFFF');
   const textureReady = texture.ready && (!props.backTexture || props.backTexture.ready);
   const incomingLanding = props.phase === 'incoming-landing';
 
@@ -553,7 +573,10 @@ function createCurlUniforms(
   return {
     pageSize: [safeWidth, safeHeight],
     geometry: [spineX, safeWidth, PROFILE_POINTS - 1, PROFILE_RUNS],
-    perspective: [0.5, CAMERA_DISTANCE, MAX_PERSPECTIVE_SCALE, direction],
+    // Incoming single pages carry the destination's printed front. Their
+    // motion is mirrored, but their printed face is still screen-front.
+    // Outgoing sheets retain the source-facing convention in double mode.
+    perspective: [0.5, CAMERA_DISTANCE, MAX_PERSPECTIVE_SCALE, incomingLanding ? 1 : direction],
     profile: projected,
     runs,
   };

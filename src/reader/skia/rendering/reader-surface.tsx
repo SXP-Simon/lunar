@@ -355,13 +355,6 @@ export function ReaderSurface({
     : undefined;
   const pageCurlWidth = pageCurlSource?.frame.width ?? activeTransition?.from.frame.width ?? 0;
   const pageCurlHeight = pageCurlSource?.frame.height ?? activeTransition?.from.frame.height ?? 0;
-  const pageCurlBackSource = pageTurnVisualKind === 'curl'
-    && spreadMode === 'single'
-    && !automaticNavigationActive
-    ? isSinglePreviousPageTurn
-      ? activeTransition?.from
-      : currentContent
-    : undefined;
   const pageCurlProgressText = pageCurlSource
     ? progressLabelForSnapshot(pageCurlSource.snapshot)
     : undefined;
@@ -416,12 +409,6 @@ export function ReaderSurface({
     pageCurlSource?.frame.height ?? 0,
     pageCurlSource?.key,
     pageCurlTexturePicture !== undefined,
-  );
-  const pageCurlBackTexture = usePageCurlTexture(
-    pageCurlBackSource?.picture.picture,
-    pageCurlBackSource?.frame.width ?? 0,
-    pageCurlBackSource?.frame.height ?? 0,
-    pageCurlBackSource ? `${pageCurlBackSource.key}:curl-back` : undefined,
   );
 
   useEffect(() => {
@@ -548,7 +535,6 @@ export function ReaderSurface({
               )}
               {activeTransition && !nativeInteractiveGestureDriven && (
                 <PageCurlMesh
-                  backTexture={isSinglePreviousPageTurn ? pageCurlBackTexture : undefined}
                   key={pageCurlSource?.key ?? activeTransition.from.key}
                   direction={activeTransition.direction}
                   grabX={isSinglePreviousPageTurn ? pageCurlWidth * 0.6 : grabX}
@@ -558,6 +544,7 @@ export function ReaderSurface({
                   heldRollTiltValue={isSinglePreviousPageTurn ? undefined : interactiveTurn?.heldRollTiltValue}
                   height={pageCurlHeight}
                   initialProgress={interactiveTurn?.progress}
+                  paperColor={paperColor}
                   phase={isSinglePreviousPageTurn ? 'incoming-landing' : 'full'}
                   spreadMode={spreadMode}
                   gestureDriven={Boolean(interactiveTurn)}
@@ -682,7 +669,6 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
   const { direction, id: turnId } = turn;
   const incomingLanding = spreadMode === 'single' && direction < 0;
   const source = incomingLanding ? turn.to : turn.from;
-  const backSource = incomingLanding ? turn.from : undefined;
   const progressText = progressLabelForSnapshot(source.snapshot);
   const texturePicture = useMemo(() => {
     const pageScale = Math.max(0.001, scale);
@@ -726,14 +712,8 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
     `${source.key}:automatic:${turnId}`,
     texturePicture !== undefined,
   );
-  const backTexture = usePageCurlTexture(
-    backSource?.picture.picture,
-    backSource?.frame.width ?? 0,
-    backSource?.frame.height ?? 0,
-    backSource ? `${backSource.key}:automatic-back:${turnId}` : undefined,
-  );
   const progress = useSharedValue(0);
-  const texturesReady = texture.ready && (!backSource || backTexture.ready);
+  const texturesReady = texture.ready;
 
   useEffect(() => {
     if (!texturesReady) return;
@@ -767,12 +747,12 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
 
   return (
     <PageCurlMesh
-      backTexture={backSource ? backTexture : undefined}
       direction={direction}
       grabX={incomingLanding ? source.frame.width * 0.6 : direction > 0 ? 0 : source.frame.width}
       grabY={source.frame.height / 2}
       height={source.frame.height}
       phase={incomingLanding ? 'incoming-landing' : 'full'}
+      paperColor={runtime.getBackgroundColor()}
       picture={source.picture}
       progress={progress}
       spreadMode={spreadMode}
