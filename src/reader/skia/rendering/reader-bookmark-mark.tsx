@@ -1,8 +1,7 @@
-import { Canvas, Group, Path, Skia, processTransform3d, type SkCanvas } from '@shopify/react-native-skia';
+import { Group, Path, Skia, Text as SkiaText, processTransform3d, type SkCanvas, type SkFont } from '@shopify/react-native-skia';
 import { useDerivedValue, type SharedValue } from 'react-native-reanimated';
-import type { StyleProp, ViewStyle } from 'react-native';
 import type { ReaderRenderFrame } from '../../contracts';
-import { readerBookmarkPlacement, readerBookmarkPullHeight, ReaderBookmarkWidth } from './reader-bookmark-geometry';
+import { readerBookmarkPlacement, readerBookmarkPullHeight, readerBookmarkPullPhase, ReaderBookmarkWidth } from './reader-bookmark-geometry';
 
 const BookmarkPath = 'M0 0 H32 V100 L16 88 L0 100 Z';
 
@@ -26,15 +25,25 @@ export function ReaderBookmarkMark({
 }
 
 export function ReaderBookmarkPullMark({
-  distance, pullBookmarked, baselineHeight, rightEdge, color, outlineColor, style,
+  distance, pullBookmarked, baselineHeight, rightEdge, threshold, color, outlineColor,
+  hintColor, readyColor, font, labels,
 }: {
   readonly distance: SharedValue<number>;
   readonly pullBookmarked: SharedValue<boolean>;
   readonly baselineHeight: number;
   readonly rightEdge: number;
+  readonly threshold: number;
   readonly color: string;
   readonly outlineColor: string;
-  readonly style?: StyleProp<ViewStyle>;
+  readonly hintColor: string;
+  readonly readyColor: string;
+  readonly font?: SkFont;
+  readonly labels: Readonly<{
+    addPulling: string;
+    addReady: string;
+    removePulling: string;
+    removeReady: string;
+  }>;
 }) {
   const matrix = useDerivedValue(() => processTransform3d([
     { translateX: rightEdge - ReaderBookmarkWidth },
@@ -52,19 +61,56 @@ export function ReaderBookmarkPullMark({
   const outlineOpacity = useDerivedValue(() =>
     distance.value > 0 && pullBookmarked.value ? 1 : 0,
   [distance, pullBookmarked]);
+  const addPullingOpacity = useDerivedValue(() =>
+    readerBookmarkPullPhase(distance.value, threshold) === 'pulling' && !pullBookmarked.value ? 1 : 0,
+  [distance, pullBookmarked, threshold]);
+  const addReadyOpacity = useDerivedValue(() =>
+    readerBookmarkPullPhase(distance.value, threshold) === 'ready' && !pullBookmarked.value ? 1 : 0,
+  [distance, pullBookmarked, threshold]);
+  const removePullingOpacity = useDerivedValue(() =>
+    readerBookmarkPullPhase(distance.value, threshold) === 'pulling' && pullBookmarked.value ? 1 : 0,
+  [distance, pullBookmarked, threshold]);
+  const removeReadyOpacity = useDerivedValue(() =>
+    readerBookmarkPullPhase(distance.value, threshold) === 'ready' && pullBookmarked.value ? 1 : 0,
+  [distance, pullBookmarked, threshold]);
+  const hintY = useDerivedValue(() => Math.max(16, distance.value - 18), [distance]);
+  const hintClip = useDerivedValue(() => ({
+    x: 0, y: 0, width: rightEdge, height: Math.max(0, distance.value),
+  }), [distance, rightEdge]);
+  const hintRight = rightEdge - ReaderBookmarkWidth - 16;
   return (
-    <Canvas pointerEvents="none" style={style}>
+    <>
       <Group clip={visibleArea}>
         <Group matrix={matrix}>
           <Group opacity={filledOpacity}>
             <Path path={BookmarkPath} color={color} />
           </Group>
-          <Group opacity={outlineOpacity}>
-            <Path path={BookmarkPath} color={outlineColor} style="stroke" strokeWidth={2} />
-          </Group>
         </Group>
       </Group>
-    </Canvas>
+      <Group matrix={matrix} opacity={outlineOpacity}>
+        <Path path={BookmarkPath} color={outlineColor} style="stroke" strokeWidth={2} />
+      </Group>
+      {font && (
+        <Group clip={hintClip}>
+          <Group opacity={addPullingOpacity}>
+            <SkiaText text={labels.addPulling} font={font} color={hintColor}
+              x={hintRight - font.getTextWidth(labels.addPulling)} y={hintY} />
+          </Group>
+          <Group opacity={addReadyOpacity}>
+            <SkiaText text={labels.addReady} font={font} color={readyColor}
+              x={hintRight - font.getTextWidth(labels.addReady)} y={hintY} />
+          </Group>
+          <Group opacity={removePullingOpacity}>
+            <SkiaText text={labels.removePulling} font={font} color={hintColor}
+              x={hintRight - font.getTextWidth(labels.removePulling)} y={hintY} />
+          </Group>
+          <Group opacity={removeReadyOpacity}>
+            <SkiaText text={labels.removeReady} font={font} color={readyColor}
+              x={hintRight - font.getTextWidth(labels.removeReady)} y={hintY} />
+          </Group>
+        </Group>
+      )}
+    </>
   );
 }
 

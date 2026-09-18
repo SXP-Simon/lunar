@@ -7,6 +7,7 @@ import {
   Rect as SkiaRect,
   Skia,
   Text as SkiaText,
+  processTransform3d,
   type SkFont,
   type SkPicture,
   useCanvasSize,
@@ -50,7 +51,8 @@ import {
   type ReaderOverlayRect,
   type ReaderPageOverlayResolver,
 } from './reader-overlays';
-import { ReaderBookmarkMark, renderReaderBookmarkMark } from './reader-bookmark-mark';
+import { ReaderBookmarkMark, ReaderBookmarkPullMark, renderReaderBookmarkMark } from './reader-bookmark-mark';
+import { readerBookmarkPlacement, ReaderBookmarkWidth } from './reader-bookmark-geometry';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
 
 export type { ReaderSurfaceTransform } from './surface-transform';
@@ -73,6 +75,18 @@ export interface ReaderSurfaceProps {
   readonly resolvePageBookmark?: (snapshot: ReaderSnapshot, frame: ReaderPageContent['frame']) => boolean;
   readonly bookmarkColor?: string;
   readonly bookmarkPullDistance?: SharedValue<number>;
+  readonly bookmarkPullBookmarked?: SharedValue<boolean>;
+  readonly bookmarkPullThreshold?: number;
+  readonly bookmarkPullLabels?: Readonly<{
+    addPulling: string;
+    addReady: string;
+    removePulling: string;
+    removeReady: string;
+  }>;
+  readonly bookmarkOutlineColor?: string;
+  readonly bookmarkHintColor?: string;
+  readonly bookmarkReadyColor?: string;
+  readonly pullBackgroundColor?: string;
   readonly allowNativePageTurns?: boolean;
   readonly onTransformChange?: (transform: ReaderSurfaceTransform) => void;
   /** Defaults to `slide`, which keeps the page content legible throughout the turn. */
@@ -108,6 +122,13 @@ export const ReaderSurface = memo(function ReaderSurface({
   resolvePageBookmark,
   bookmarkColor = '#E5594B',
   bookmarkPullDistance,
+  bookmarkPullBookmarked,
+  bookmarkPullThreshold = 96,
+  bookmarkPullLabels,
+  bookmarkOutlineColor = '#FFFFFF',
+  bookmarkHintColor = '#A3A3A3',
+  bookmarkReadyColor = '#FFFFFF',
+  pullBackgroundColor,
   allowNativePageTurns = true,
   onTransformChange,
   animationStyle = 'slide',
@@ -123,9 +144,16 @@ export const ReaderSurface = memo(function ReaderSurface({
   overlayColor = '#777777',
   overlayInsets = DefaultOverlayInsets,
 }: ReaderSurfaceProps) {
+  const restingPull = useSharedValue(0);
+  const restingBookmark = useSharedValue(false);
+  const pull = bookmarkPullDistance ?? restingPull;
+  const pullBookmarked = bookmarkPullBookmarked ?? restingBookmark;
+  const pullMatrix = useDerivedValue(() => processTransform3d([
+    { translateY: pull.value },
+  ]), [pull]);
   const bookmarkPageOpacity = useDerivedValue(() =>
-    bookmarkPullDistance?.value && bookmarkPullDistance.value > 0 ? 0 : 1,
-  [bookmarkPullDistance]);
+    pull.value > 0 ? 0 : 1,
+  [pull]);
   const decoratePage = useCallback((content: ReaderPageContent): ReaderPageContent => ({
     ...decorateReaderPageOverlays(content, resolvePageOverlays),
     bookmarked: resolvePageBookmark?.(content.snapshot, content.frame) ?? false,
@@ -176,6 +204,10 @@ export const ReaderSurface = memo(function ReaderSurface({
       : undefined,
     [compiled, currentKey, currentOverlays, frame, resolvePageBookmark, snapshot],
   );
+  const pullPlacement = currentContent
+    ? readerBookmarkPlacement(currentContent.frame, scale, offsetX, offsetY, overlayTop)
+    : undefined;
+  const bookmarkHintFont = bookmarkPullLabels ? runtime.getUiFont(16) : undefined;
   const paperColor = snapshot.phase === 'ready'
     ? runtime.getBackgroundColor()
     : initialBackgroundColor;
@@ -514,9 +546,11 @@ export const ReaderSurface = memo(function ReaderSurface({
       pointerEvents="none"
       ref={ref}
       style={style}>
-      <Fill color={paperColor} />
-      {canRenderFrame && (
-        <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
+      <Fill color={pullBackgroundColor ?? paperColor} />
+      <Group matrix={pullMatrix}>
+        <SkiaRect x={0} y={0} width={viewport.width} height={viewport.height} color={paperColor} />
+        {canRenderFrame && (
+          <Group transform={[{ translateX: offsetX }, { translateY: offsetY }, { scale }]}>
           {nativeAutomaticPageTurnsVisible && nativeAutomaticBaseContent ? (
             <Group>
               {renderPage(nativeAutomaticBaseContent)}
@@ -652,7 +686,15 @@ export const ReaderSurface = memo(function ReaderSurface({
               {incomingFrame && renderChrome(incomingSnapshot, incomingFrame, chapterTitle, interactiveTurn ? undefined : progressLabel)}
             </>
           )}
-        </Group>
+          </Group>
+        )}
+      </Group>
+      {pullPlacement && bookmarkPullLabels && (
+        <ReaderBookmarkPullMark distance={pull} pullBookmarked={pullBookmarked}
+          baselineHeight={pullPlacement.height} rightEdge={pullPlacement.x + ReaderBookmarkWidth}
+          threshold={bookmarkPullThreshold} color={bookmarkColor}
+          outlineColor={bookmarkOutlineColor} hintColor={bookmarkHintColor}
+          readyColor={bookmarkReadyColor} font={bookmarkHintFont} labels={bookmarkPullLabels} />
       )}
     </Canvas>
   );

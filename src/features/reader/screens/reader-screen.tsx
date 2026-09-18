@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useCSSVariable, useResolveClassNames, useUniwind } from 'uniwind';
-import Animated from 'react-native-reanimated';
 import {
   SafeAreaListener,
   useSafeAreaInsets,
@@ -40,20 +39,17 @@ import {
   type ReaderViewport,
 } from '@/reader';
 import {
-  ReaderBookmarkPullMark,
-  ReaderBookmarkWidth,
   ReaderSurface,
   ReaderSelectionOverlay,
-  readerBookmarkPlacement,
   useReaderPageTurn,
   type ReaderSurfaceTransform,
 } from '@/reader/native';
 import { useReaderStore } from '@/stores';
 import { ProgressDrawer } from '../components/bottom-tabs/progress-drawer';
 import { MarksDrawer } from '../components/bottom-tabs/marks-drawer';
-import { ReaderBookmarkIndicator } from '../components/reader-bookmark-indicator';
 import { useReaderBookmarks } from '../hooks/use-reader-bookmarks';
 import { useBookmarkPull } from '../hooks/use-bookmark-pull';
+import { BookmarkPullThreshold } from '../domain/bookmark-pull';
 import { hasBookmarkOnRenderedPage, isBookmarkOnPage, type ReaderBookmark } from '../domain/reader-bookmark';
 import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
 import { TypographyDrawer } from '../components/bottom-tabs/typography-drawer';
@@ -115,6 +111,13 @@ export default function ReaderScreen() {
     bookmarkId?: string;
   } | undefined>(undefined);
   const bookmarkUpdating = useRef(false);
+  const [bookmarkVisualOverride, setBookmarkVisualOverride] = useState<{
+    bookId?: string;
+    revisionId: number;
+    spreadIndex: number;
+    renderId?: number;
+    bookmarked: boolean;
+  }>();
   const [footnote, setFootnote] = useState<ReaderFootnote>();
   const [isFootnoteOpen, setIsFootnoteOpen] = useState(false);
   const [selectionState, setSelection] = useState<OwnedReaderTextSelection>();
@@ -145,8 +148,22 @@ export default function ReaderScreen() {
   const { bookmarks, addBookmark, removeBookmark, isLoaded: bookmarksLoaded, error: bookmarksError } = useReaderBookmarks(bookId ?? '');
   const bookmarkColor = useCSSVariable('--color-reader-bookmark') as string;
   const bookmarkOutlineColor = useCSSVariable('--color-foreground') as string;
-  const resolvePageBookmark = useCallback((pageSnapshot: ReaderSnapshot, pageFrame: ReaderRenderFrame) =>
-    hasBookmarkOnRenderedPage(bookmarks, pageSnapshot, pageFrame), [bookmarks]);
+  const bookmarkHintColor = useCSSVariable('--color-muted') as string;
+  const pullBackgroundColor = useCSSVariable('--color-default') as string;
+  const bookmarkPullLabels = useMemo(() => ({
+    addPulling: t('reader.pullToBookmark'),
+    addReady: t('reader.releaseToBookmark'),
+    removePulling: t('reader.pullToRemoveBookmark'),
+    removeReady: t('reader.releaseToRemoveBookmark'),
+  }), [t]);
+  const resolvePageBookmark = useCallback((pageSnapshot: ReaderSnapshot, pageFrame: ReaderRenderFrame) => {
+    if (bookmarkVisualOverride
+      && bookmarkVisualOverride.bookId === pageSnapshot.bookId
+      && bookmarkVisualOverride.revisionId === pageSnapshot.revisionId
+      && bookmarkVisualOverride.spreadIndex === pageSnapshot.spreadIndex
+      && bookmarkVisualOverride.renderId === pageSnapshot.renderId) return bookmarkVisualOverride.bookmarked;
+    return hasBookmarkOnRenderedPage(bookmarks, pageSnapshot, pageFrame);
+  }, [bookmarkVisualOverride, bookmarks]);
   const resolvePageHighlights = useMemo(() => createReaderHighlightOverlayResolver(highlights, highlightColors),
     [highlights, highlightColors]);
   const {
@@ -179,11 +196,6 @@ export default function ReaderScreen() {
   const currentHitEntries = isReady
     ? session.runtime.getCurrentHitMap()?.entries ?? EmptyReaderHitEntries
     : EmptyReaderHitEntries;
-  const currentFrame = isReady ? session.runtime.getCurrentFrame(session.snapshot.spreadIndex) : undefined;
-  const bookmarkPlacement = currentFrame && surfaceTransform
-    ? readerBookmarkPlacement(currentFrame, surfaceTransform.scale,
-      surfaceTransform.offsetX, surfaceTransform.offsetY, reservedInsets.top)
-    : undefined;
   const selection = selectionState?.revisionId === session.snapshot.revisionId
     && selectionState.spreadIndex === session.snapshot.spreadIndex
     && selectionState.renderId === session.snapshot.renderId
@@ -239,6 +251,13 @@ export default function ReaderScreen() {
       || latest.spreadIndex !== origin.snapshot.spreadIndex
       || latest.renderId !== origin.snapshot.renderId) return;
     bookmarkUpdating.current = true;
+    setBookmarkVisualOverride({
+      bookId: origin.snapshot.bookId,
+      revisionId: origin.snapshot.revisionId,
+      spreadIndex: origin.snapshot.spreadIndex,
+      renderId: origin.snapshot.renderId,
+      bookmarked: !origin.bookmarkId,
+    });
     try {
       if (origin.bookmarkId) {
         await removeBookmark(origin.bookmarkId);
@@ -247,7 +266,9 @@ export default function ReaderScreen() {
         await addBookmark(origin.input);
         toast.show({ variant: 'success', label: t('reader.bookmarkSaved') });
       }
+      setBookmarkVisualOverride(undefined);
     } catch {
+      setBookmarkVisualOverride(undefined);
       toast.show({ variant: 'danger', label: t(origin.bookmarkId ? 'reader.bookmarkRemoveFailed' : 'reader.bookmarkSaveFailed') });
     } finally { bookmarkUpdating.current = false; }
   }, [addBookmark, removeBookmark, session.runtime, t, toast]);
@@ -751,7 +772,7 @@ export default function ReaderScreen() {
       <View
         onLayout={handleLayout}
         className="absolute inset-0 overflow-hidden bg-default">
-        <Animated.View className="absolute inset-0" style={bookmarkPull.surfaceStyle}>
+        <>
           <ReaderSurface
             runtime={session.runtime}
             snapshot={session.snapshot}
@@ -771,6 +792,13 @@ export default function ReaderScreen() {
             resolvePageBookmark={resolvePageBookmark}
             bookmarkColor={bookmarkColor}
             bookmarkPullDistance={bookmarkPull.distance}
+            bookmarkPullBookmarked={bookmarkPull.pullBookmarked}
+            bookmarkPullThreshold={BookmarkPullThreshold}
+            bookmarkPullLabels={bookmarkPullLabels}
+            bookmarkOutlineColor={bookmarkOutlineColor}
+            bookmarkHintColor={bookmarkHintColor}
+            bookmarkReadyColor={bookmarkOutlineColor}
+            pullBackgroundColor={pullBackgroundColor}
             allowNativePageTurns={bookmarks.length === 0 || animationStyle !== 'slide'}
             onTransformChange={handleSurfaceTransform}
             style={absoluteFillStyle}
@@ -787,17 +815,7 @@ export default function ReaderScreen() {
               <Text className="text-sm text-muted">{statusText}</Text>
             </View>
           )}
-        </Animated.View>
-        {bookmarkPlacement && (
-          <ReaderBookmarkPullMark distance={bookmarkPull.distance}
-            pullBookmarked={bookmarkPull.pullBookmarked}
-            baselineHeight={bookmarkPlacement.height}
-            rightEdge={bookmarkPlacement.x + ReaderBookmarkWidth}
-            color={bookmarkColor} outlineColor={bookmarkOutlineColor}
-            style={absoluteFillStyle} />
-        )}
-        <ReaderBookmarkIndicator distance={bookmarkPull.distance} pullBookmarked={bookmarkPull.pullBookmarked}
-          topInset={reservedInsets.top} />
+        </>
         <GestureDetector gesture={readingGesture}>
           <View collapsable={false} className="absolute inset-0">
             <Pressable

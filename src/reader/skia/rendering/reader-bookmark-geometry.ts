@@ -2,6 +2,11 @@ import type { ReaderRenderFrame } from '../../contracts';
 
 export const ReaderBookmarkWidth = 32;
 
+export function readerBookmarkPullPhase(distance: number, threshold: number): 'idle' | 'pulling' | 'ready' {
+  'worklet';
+  return distance <= 0 ? 'idle' : distance < threshold ? 'pulling' : 'ready';
+}
+
 export function readerBookmarkPullHeight(baselineHeight: number, distance: number): number {
   'worklet';
   return Math.max(baselineHeight, distance);

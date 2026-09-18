@@ -5,9 +5,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { DATABASE_MIGRATIONS } from '../../src/db/migrations';
 import { bookmarkLocationKey, hasBookmarkOnRenderedPage, isBookmarkOnPage, parseBookmarkLocator, type ReaderBookmark } from '../../src/features/reader/domain/reader-bookmark';
 import { SQLiteBookmarkRepository } from '../../src/features/reader/repositories/sqlite-bookmark-repository';
-import { bookmarkPullDistance, bookmarkPullPhase, shouldSavePulledBookmark } from '../../src/features/reader/domain/bookmark-pull';
+import { bookmarkPullDistance, shouldSavePulledBookmark } from '../../src/features/reader/domain/bookmark-pull';
 import { toRitoSavedLocator } from '../../src/reader/rito/saved-locator';
-import { readerBookmarkPlacement, readerBookmarkPullHeight } from '../../src/reader/skia/rendering/reader-bookmark-geometry';
+import { readerBookmarkPlacement, readerBookmarkPullHeight, readerBookmarkPullPhase } from '../../src/reader/skia/rendering/reader-bookmark-geometry';
 
 const databases: DatabaseSync[] = [];
 afterEach(() => { for (const db of databases.splice(0)) db.close(); });
@@ -85,10 +85,10 @@ describe('reader bookmark persistence', () => {
 
 describe('bookmark gestures and source locations', () => {
   it('shows the pull hint immediately and switches its arrow at the commit distance', () => {
-    expect(bookmarkPullPhase(0)).toBe('idle');
-    expect(bookmarkPullPhase(1)).toBe('pulling');
-    expect(bookmarkPullPhase(95)).toBe('pulling');
-    expect(bookmarkPullPhase(96)).toBe('ready');
+    expect(readerBookmarkPullPhase(0, 96)).toBe('idle');
+    expect(readerBookmarkPullPhase(1, 96)).toBe('pulling');
+    expect(readerBookmarkPullPhase(95, 96)).toBe('pulling');
+    expect(readerBookmarkPullPhase(96, 96)).toBe('ready');
   });
 
   it('extends the bookmark from the safe area to above the first text line', () => {

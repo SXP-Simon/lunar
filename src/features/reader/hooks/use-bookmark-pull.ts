@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
-import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { bookmarkPullDistance, shouldSavePulledBookmark } from '../domain/bookmark-pull';
 
@@ -38,6 +38,5 @@ export function useBookmarkPull({ enabled, bookmarked, onStart, onCommit }: {
       distance.value = withTiming(0, { duration: 220 });
     }), [bookmarked, distance, enabled, onCommit, onStart, pullBookmarked]);
   /* eslint-enable react-hooks/immutability */
-  const surfaceStyle = useAnimatedStyle(() => ({ transform: [{ translateY: distance.value }] }));
-  return { gesture, distance, pullBookmarked, surfaceStyle };
+  return { gesture, distance, pullBookmarked };
 }
