@@ -60,6 +60,12 @@ describe('reader text selection', () => {
     });
   });
 
+  it('reuses a selection when movement stays within the same character', () => {
+    const initial = createReaderWordSelectionAtPoint(entries, 70, 25)!;
+    expect(updateReaderTextSelectionAtPoint(entries, initial, 70, 25)).toBe(initial);
+    expect(updateReaderTextSelectionBoundaryAtPoint(entries, initial, 'end', 90, 25)).toBe(initial);
+  });
+
   it('moves either saved boundary and restores the selection from a source range', () => {
     const initial = createReaderTextSelection(entries, 0, 1);
     const moved = initial

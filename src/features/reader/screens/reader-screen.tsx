@@ -43,6 +43,7 @@ import {
   ReaderBookmarkPullMark,
   ReaderBookmarkWidth,
   ReaderSurface,
+  ReaderSelectionOverlay,
   readerBookmarkPlacement,
   useReaderPageTurn,
   type ReaderSurfaceTransform,
@@ -119,6 +120,8 @@ export default function ReaderScreen() {
   const [selectionState, setSelection] = useState<OwnedReaderTextSelection>();
   const [isHighlighting, setIsHighlighting] = useState(false);
   const selectionRef = useRef<ReaderTextSelection | undefined>(undefined);
+  const pendingSelectionPoint = useRef<{ x: number; y: number } | undefined>(undefined);
+  const selectionFrame = useRef<number | undefined>(undefined);
   const isHighlightingRef = useRef(false);
   const [surfaceTransform, setSurfaceTransform] = useState<ReaderSurfaceTransform>();
   const footnoteRequestRef = useRef(0);
@@ -381,7 +384,7 @@ export default function ReaderScreen() {
       point.x,
       point.y,
     );
-    if (!nextSelection) return;
+    if (!nextSelection || nextSelection === currentSelection) return;
     selectionRef.current = nextSelection;
     setSelection({
       ...nextSelection,
@@ -390,6 +393,24 @@ export default function ReaderScreen() {
       renderId: session.snapshot.renderId,
     });
   }, [displayPoint, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+
+  const flushSelectionUpdate = useCallback(() => {
+    if (selectionFrame.current !== undefined) cancelAnimationFrame(selectionFrame.current);
+    selectionFrame.current = undefined;
+    const point = pendingSelectionPoint.current;
+    pendingSelectionPoint.current = undefined;
+    if (point) updateSelection(point.x, point.y);
+  }, [updateSelection]);
+
+  const queueSelectionUpdate = useCallback((x: number, y: number) => {
+    pendingSelectionPoint.current = { x, y };
+    if (selectionFrame.current !== undefined) return;
+    selectionFrame.current = requestAnimationFrame(flushSelectionUpdate);
+  }, [flushSelectionUpdate]);
+
+  useEffect(() => () => {
+    if (selectionFrame.current !== undefined) cancelAnimationFrame(selectionFrame.current);
+  }, []);
 
   const updateSelectionBoundary = useCallback((
     boundary: 'start' | 'end',
@@ -407,7 +428,7 @@ export default function ReaderScreen() {
       point.x,
       point.y,
     );
-    if (!nextSelection) return;
+    if (!nextSelection || nextSelection === currentSelection) return;
     selectionRef.current = nextSelection;
     setSelection({
       ...nextSelection,
@@ -451,11 +472,13 @@ export default function ReaderScreen() {
     .cancelsTouchesInView(true)
     .runOnJS(true)
     .onStart((event) => beginSelection(event.x, event.y))
-    .onUpdate((event) => updateSelection(event.x, event.y))
-    .onEnd(() => {
+    .onUpdate((event) => queueSelectionUpdate(event.x, event.y))
+    .onEnd((event) => {
+      pendingSelectionPoint.current = { x: event.x, y: event.y };
+      flushSelectionUpdate();
       void refineSelectionGeometry();
     }),
-  [beginSelection, isReady, isSettling, refineSelectionGeometry, updateSelection]);
+  [beginSelection, flushSelectionUpdate, isReady, isSettling, queueSelectionUpdate, refineSelectionGeometry]);
   /* eslint-enable react-hooks/refs */
   const readingGesture = useMemo(
     () => Gesture.Exclusive(selectionGesture, Gesture.Race(bookmarkPull.gesture, pageTurnGesture)),
@@ -639,14 +662,6 @@ export default function ReaderScreen() {
     }
   }, [activeHighlight, clearSelection, removeHighlights, t, toast]);
 
-  const selectionOverlays = useMemo(() =>
-    activeHighlight ? [] : (selection?.bounds.map((bounds) => ({
-        revisionId: session.snapshot.revisionId,
-        bounds,
-        color: selectionFillColor,
-        radius: 2,
-      })) ?? []),
-  [activeHighlight, selection?.bounds, selectionFillColor, session.snapshot.revisionId]);
   const selectionViewportRects = useMemo(() => {
     if (!selection || !surfaceTransform) return [];
     return selection.bounds.map((bounds) => {
@@ -752,7 +767,6 @@ export default function ReaderScreen() {
             progressLabel={`${progressText}${progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}`}
             overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}
             overlayInsets={contentInsets}
-            overlays={selectionOverlays}
             resolvePageOverlays={resolvePageHighlights}
             resolvePageBookmark={resolvePageBookmark}
             bookmarkColor={bookmarkColor}
@@ -761,6 +775,9 @@ export default function ReaderScreen() {
             onTransformChange={handleSurfaceTransform}
             style={absoluteFillStyle}
           />
+          {!activeHighlight && (
+            <ReaderSelectionOverlay rects={selectionViewportRects} color={selectionFillColor} style={absoluteFillStyle} />
+          )}
           {!isReady && !session.errorMessage && (
             <View
               pointerEvents="none"

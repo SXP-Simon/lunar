@@ -36,6 +36,7 @@ export {
   type UseReaderPageTurnOptions,
 } from './skia/anime/controller/use-reader-page-turn';
 export { createReaderSurfaceTransform } from './skia/rendering/surface-transform';
+export { ReaderSelectionOverlay } from './skia/rendering/reader-selection-overlay';
 export type { ReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export { ReaderBookmarkPullMark } from './skia/rendering/reader-bookmark-mark';
 export { readerBookmarkPlacement, ReaderBookmarkWidth } from './skia/rendering/reader-bookmark-geometry';

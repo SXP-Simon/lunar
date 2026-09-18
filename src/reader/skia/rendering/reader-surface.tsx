@@ -94,12 +94,16 @@ export interface ReaderSurfaceProps {
   readonly overlayInsets?: Readonly<{ top: number; right: number; bottom: number; left: number }>;
 }
 
-export function ReaderSurface({
+const EmptyOverlays: readonly ReaderOverlayRect[] = [];
+const EmptyAutomaticTurns: readonly ReaderAutomaticTurn[] = [];
+const DefaultOverlayInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+
+export const ReaderSurface = memo(function ReaderSurface({
   runtime,
   snapshot,
   style,
   initialBackgroundColor = '#000000',
-  overlays = [],
+  overlays = EmptyOverlays,
   resolvePageOverlays,
   resolvePageBookmark,
   bookmarkColor = '#E5594B',
@@ -110,14 +114,14 @@ export function ReaderSurface({
   animationDuration = 360,
   spreadMode = 'double',
   interactiveTurn: preparedInteractiveTurn,
-  automaticTurns: preparedAutomaticTurns = [],
+  automaticTurns: preparedAutomaticTurns = EmptyAutomaticTurns,
   automaticNavigationActive = false,
   onAutomaticTurnComplete,
   pageTurnSurfaceBinding,
   chapterTitle,
   progressLabel,
   overlayColor = '#777777',
-  overlayInsets = { top: 0, right: 0, bottom: 0, left: 0 },
+  overlayInsets = DefaultOverlayInsets,
 }: ReaderSurfaceProps) {
   const bookmarkPageOpacity = useDerivedValue(() =>
     bookmarkPullDistance?.value && bookmarkPullDistance.value > 0 ? 0 : 1,
@@ -652,7 +656,7 @@ export function ReaderSurface({
       )}
     </Canvas>
   );
-}
+});
 
 function ReaderPagePicture({ content }: { readonly content: ReaderPageContent }) {
   return (

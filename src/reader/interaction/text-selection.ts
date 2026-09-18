@@ -168,6 +168,10 @@ export function updateReaderTextSelectionAtPoint(
     charIndex: charIndexAtPoint(entries[entryIndex], x, y),
   };
   const beforeOrigin = compareEndpoints(focus, selection.origin.start) < 0;
+  const start = beforeOrigin ? focus : selection.origin.start;
+  const end = beforeOrigin ? selection.origin.end : maxEndpoint(selection.origin.end, focus);
+  if (compareEndpoints(start, selection.range.start) === 0
+    && compareEndpoints(end, selection.range.end) === 0) return selection;
   return createSelection(entries, selection.origin, focus, beforeOrigin);
 }
 
@@ -185,6 +189,8 @@ export function updateReaderTextSelectionBoundaryAtPoint(
     entryIndex,
     charIndex: charIndexAtPoint(entries[entryIndex], x, y),
   };
+  const previous = selection.range[boundary];
+  if (endpoint.entryIndex === previous.entryIndex && endpoint.charIndex === previous.charIndex) return selection;
   const start = boundary === 'start' ? endpoint : selection.range.start;
   const end = boundary === 'end' ? endpoint : selection.range.end;
   if (compareEndpoints(start, end) >= 0) return selection;
