@@ -1,29 +1,40 @@
-import { SymbolView } from 'expo-symbols';
 import { Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
-import { useCSSVariable } from 'uniwind';
 import { useTranslation } from '@/i18n';
 import { BookmarkPullThreshold } from '../domain/bookmark-pull';
 
-export function ReaderBookmarkIndicator({ distance, topInset, bookmarked }: {
+export function ReaderBookmarkIndicator({ distance, pullBookmarked, topInset }: {
   readonly distance: SharedValue<number>;
+  readonly pullBookmarked: SharedValue<boolean>;
   readonly topInset: number;
-  readonly bookmarked: boolean;
 }) {
   const { t } = useTranslation();
-  const foreground = useCSSVariable('--color-foreground') as string;
-  const muted = useCSSVariable('--color-muted') as string;
-  const pullingStyle = useAnimatedStyle(() => ({ opacity: distance.value > 0 && distance.value < BookmarkPullThreshold ? 1 : 0 }));
-  const readyStyle = useAnimatedStyle(() => ({ opacity: distance.value >= BookmarkPullThreshold ? 1 : 0 }));
+  const addPullingStyle = useAnimatedStyle(() => ({
+    opacity: distance.value >= topInset + 56 && distance.value < BookmarkPullThreshold && !pullBookmarked.value ? 1 : 0,
+  }), [topInset]);
+  const removePullingStyle = useAnimatedStyle(() => ({
+    opacity: distance.value >= topInset + 56 && distance.value < BookmarkPullThreshold && pullBookmarked.value ? 1 : 0,
+  }), [topInset]);
+  const addReadyStyle = useAnimatedStyle(() => ({
+    opacity: distance.value >= Math.max(topInset + 56, BookmarkPullThreshold) && !pullBookmarked.value ? 1 : 0,
+  }), [topInset]);
+  const removeReadyStyle = useAnimatedStyle(() => ({
+    opacity: distance.value >= Math.max(topInset + 56, BookmarkPullThreshold) && pullBookmarked.value ? 1 : 0,
+  }), [topInset]);
+
   return (
-    <View pointerEvents="none" className="absolute left-0 right-0 top-0" style={{ paddingTop: topInset + 8 }}>
-      <Animated.View className="absolute right-5 flex-row items-center gap-2" style={[{ top: topInset + 8 }, pullingStyle]}>
-        <Text className="text-sm text-muted">{t(bookmarked ? 'reader.bookmarkExists' : 'reader.pullToBookmark')}</Text>
-        <SymbolView name={{ ios: 'bookmark', android: 'bookmark_border', web: 'bookmark_border' }} size={30} tintColor={muted} />
+    <View pointerEvents="none" className="absolute inset-x-0 top-0 z-10 h-0">
+      <Animated.View className="absolute right-16" style={[{ top: topInset + 24 }, addPullingStyle]}>
+        <Text className="text-base text-foreground">{t('reader.pullToBookmark')}</Text>
       </Animated.View>
-      <Animated.View className="absolute right-5 flex-row items-center gap-2" style={[{ top: topInset + 8 }, readyStyle]}>
-        <Text className="text-sm text-foreground">{t(bookmarked ? 'reader.bookmarkExists' : 'reader.releaseToBookmark')}</Text>
-        <SymbolView name={{ ios: 'bookmark.fill', android: 'bookmark', web: 'bookmark' }} size={30} tintColor={foreground} />
+      <Animated.View className="absolute right-16" style={[{ top: topInset + 24 }, removePullingStyle]}>
+        <Text className="text-base text-foreground">{t('reader.pullToRemoveBookmark')}</Text>
+      </Animated.View>
+      <Animated.View className="absolute right-16" style={[{ top: topInset + 24 }, addReadyStyle]}>
+        <Text className="text-base text-foreground">{t('reader.releaseToBookmark')}</Text>
+      </Animated.View>
+      <Animated.View className="absolute right-16" style={[{ top: topInset + 24 }, removeReadyStyle]}>
+        <Text className="text-base text-foreground">{t('reader.releaseToRemoveBookmark')}</Text>
       </Animated.View>
     </View>
   );

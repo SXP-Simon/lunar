@@ -1,11 +1,13 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import type { SQLiteDatabase } from 'expo-sqlite';
+import type { ReaderRenderFrame, ReaderSnapshot } from '../../src/reader';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DATABASE_MIGRATIONS } from '../../src/db/migrations';
-import { bookmarkLocationKey, isBookmarkOnPage, parseBookmarkLocator, type ReaderBookmark } from '../../src/features/reader/domain/reader-bookmark';
+import { bookmarkLocationKey, hasBookmarkOnRenderedPage, isBookmarkOnPage, parseBookmarkLocator, type ReaderBookmark } from '../../src/features/reader/domain/reader-bookmark';
 import { SQLiteBookmarkRepository } from '../../src/features/reader/repositories/sqlite-bookmark-repository';
 import { bookmarkPullDistance, shouldSavePulledBookmark } from '../../src/features/reader/domain/bookmark-pull';
 import { toRitoSavedLocator } from '../../src/reader/rito/saved-locator';
+import { readerBookmarkPlacement, readerBookmarkPullHeight } from '../../src/reader/skia/rendering/reader-bookmark-geometry';
 
 const databases: DatabaseSync[] = [];
 afterEach(() => { for (const db of databases.splice(0)) db.close(); });
@@ -82,6 +84,15 @@ describe('reader bookmark persistence', () => {
 });
 
 describe('bookmark gestures and source locations', () => {
+  it('extends the bookmark from the safe area to above the first text line', () => {
+    const frame = { width: 560, hits: [{ bounds: { x: 40, y: 140, width: 200, height: 25 } }] } as ReaderRenderFrame;
+    const placement = readerBookmarkPlacement(frame, 1, 0, 0, 40);
+    expect(placement.x).toBe(528);
+    expect(placement.height).toBe(132);
+    expect(readerBookmarkPullHeight(placement.height, 90)).toBe(132);
+    expect(readerBookmarkPullHeight(placement.height, 160)).toBe(160);
+  });
+
   it('saves only when a successful release remains over the threshold', () => {
     expect(shouldSavePulledBookmark(159, true)).toBe(false);
     expect(shouldSavePulledBookmark(160, true)).toBe(true);
@@ -99,6 +110,18 @@ describe('bookmark gestures and source locations', () => {
     expect(isBookmarkOnPage(bookmark, locator, entries)).toBe(true);
     expect(isBookmarkOnPage(bookmark, { ...locator, manifestHref: 'other.xhtml' }, entries)).toBe(false);
     expect(isBookmarkOnPage(bookmark, locator, [{ ...entries[0], text: '0123' }])).toBe(false);
+  });
+
+  it('places the bookmark on its own page when neighboring pages turn', () => {
+    const point = { nodePath: [1, 2], textOffset: 3 };
+    const snapshot = { position: { locator: bookmark.locator } } as ReaderSnapshot;
+    const markedFrame = { hits: [{ pageIndex: 30, bounds: { x: 0, y: 0, width: 100, height: 20 },
+      text: '0123456789', sourcePoint: point }] } as ReaderRenderFrame;
+    const nextFrame = { hits: [{ ...markedFrame.hits![0], text: 'next page',
+      sourcePoint: { nodePath: [1, 2], textOffset: 20 } }] } as ReaderRenderFrame;
+    expect(hasBookmarkOnRenderedPage([bookmark], snapshot, markedFrame)).toBe(true);
+    expect(hasBookmarkOnRenderedPage([bookmark], snapshot, nextFrame)).toBe(false);
+    expect(hasBookmarkOnRenderedPage([], snapshot, markedFrame)).toBe(false);
   });
 
   it('uses UTF-16 source coordinates for bookmarks and highlight jumps', () => {

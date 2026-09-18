@@ -19,6 +19,7 @@
   --color-navigation-active: hsl(211 100% 50%);
   --color-reader-controls: hsl(0 0% 94.902%);
   --color-reader-selection: hsl(176 56% 55%);
+  --color-reader-bookmark: hsl(6 78% 59%);
   --color-reader-selection-fill: hsl(176 56% 55% / 0.38);
   --color-reader-highlight-fill: hsl(48 96% 62% / 0.48);
   --color-reader-highlight-pink: hsl(350 80% 72% / 0.48);

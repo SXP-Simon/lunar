@@ -1,4 +1,4 @@
-import type { ReaderHitEntry, ReaderLocator, ReaderSourcePoint } from '@/reader';
+import type { ReaderHitEntry, ReaderLocator, ReaderRenderFrame, ReaderSnapshot, ReaderSourcePoint } from '@/reader';
 
 export interface ReaderBookmark {
   readonly id: string;
@@ -17,12 +17,32 @@ export function bookmarkLocationKey(locator: ReaderLocator): string {
 
 export function isBookmarkOnPage(bookmark: ReaderBookmark, locator: ReaderLocator, entries: readonly ReaderHitEntry[]): boolean {
   if ((bookmark.locator.manifestHref ?? bookmark.locator.spineIdref) !== (locator.manifestHref ?? locator.spineIdref)) return false;
-  if (bookmarkLocationKey(bookmark.locator) === bookmarkLocationKey(locator)) return true;
   const point = bookmark.locator.sourcePoint ?? bookmark.locator.sourceRange?.start;
-  return Boolean(point && entries.some((entry) => entry.sourcePoint
+  if (point && entries.length > 0) return entries.some((entry) => entry.sourcePoint
     && sameNode(point, entry.sourcePoint)
     && point.textOffset >= entry.sourcePoint.textOffset
-    && point.textOffset < entry.sourcePoint.textOffset + entry.text.length));
+    && point.textOffset < entry.sourcePoint.textOffset + entry.text.length);
+  return bookmarkLocationKey(bookmark.locator) === bookmarkLocationKey(locator);
+}
+
+export function hasBookmarkOnRenderedPage(
+  bookmarks: readonly ReaderBookmark[],
+  snapshot: ReaderSnapshot,
+  frame: ReaderRenderFrame,
+): boolean {
+  const locator = snapshot.position?.locator;
+  if (!locator) return false;
+  const frameHref = frame.manifestHref ?? locator.manifestHref ?? locator.spineIdref;
+  return bookmarks.some((bookmark) => {
+    if ((bookmark.locator.manifestHref ?? bookmark.locator.spineIdref) !== frameHref) return false;
+    const point = bookmark.locator.sourcePoint ?? bookmark.locator.sourceRange?.start;
+    if (point) return Boolean(frame.hits?.some((entry) => entry.sourcePoint
+      && sameNode(point, entry.sourcePoint)
+      && point.textOffset >= entry.sourcePoint.textOffset
+      && point.textOffset < entry.sourcePoint.textOffset + entry.text.length));
+    return Boolean(snapshot.position && frame.pageIndices.includes(snapshot.position.pageIndex)
+      && bookmarkLocationKey(bookmark.locator) === bookmarkLocationKey(locator));
+  });
 }
 
 function sameNode(a: ReaderSourcePoint, b: ReaderSourcePoint) {

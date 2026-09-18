@@ -4,12 +4,14 @@ import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reani
 import { scheduleOnRN } from 'react-native-worklets';
 import { bookmarkPullDistance, shouldSavePulledBookmark } from '../domain/bookmark-pull';
 
-export function useBookmarkPull({ enabled, onStart, onCommit }: {
+export function useBookmarkPull({ enabled, bookmarked, onStart, onCommit }: {
   readonly enabled: boolean;
+  readonly bookmarked: boolean;
   readonly onStart: () => void;
   readonly onCommit: () => void;
 }) {
   const distance = useSharedValue(0);
+  const pullBookmarked = useSharedValue(bookmarked);
   /* eslint-disable react-hooks/immutability */
   const gesture = useMemo(() => Gesture.Pan()
     .enabled(enabled)
@@ -20,6 +22,7 @@ export function useBookmarkPull({ enabled, onStart, onCommit }: {
     .cancelsTouchesInView(true)
     .onStart(() => {
       'worklet';
+      pullBookmarked.value = bookmarked;
       scheduleOnRN(onStart);
     })
     .onUpdate((event) => {
@@ -33,8 +36,8 @@ export function useBookmarkPull({ enabled, onStart, onCommit }: {
     .onFinalize(() => {
       'worklet';
       distance.value = withTiming(0, { duration: 220 });
-    }), [distance, enabled, onCommit, onStart]);
+    }), [bookmarked, distance, enabled, onCommit, onStart, pullBookmarked]);
   /* eslint-enable react-hooks/immutability */
   const surfaceStyle = useAnimatedStyle(() => ({ transform: [{ translateY: distance.value }] }));
-  return { gesture, distance, surfaceStyle };
+  return { gesture, distance, pullBookmarked, surfaceStyle };
 }

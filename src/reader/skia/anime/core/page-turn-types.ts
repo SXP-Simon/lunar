@@ -33,6 +33,7 @@ export interface ReaderPageContent {
   readonly picture: CompiledReaderPicture;
   readonly frame: ReaderRenderFrame;
   readonly overlays?: readonly ReaderPageOverlay[];
+  readonly bookmarked?: boolean;
 }
 
 export interface ReaderPageTransitionState {
