@@ -40,20 +40,28 @@ export function ReaderBookmarkPullMark({
     { translateX: rightEdge - ReaderBookmarkWidth },
     { scaleY: readerBookmarkPullHeight(baselineHeight, distance.value) / 100 },
   ]), [baselineHeight, distance, rightEdge]);
+  const visibleArea = useDerivedValue(() => ({
+    x: rightEdge - ReaderBookmarkWidth,
+    y: 0,
+    width: ReaderBookmarkWidth,
+    height: Math.max(0, distance.value),
+  }), [distance, rightEdge]);
   const filledOpacity = useDerivedValue(() =>
-    distance.value > 0 && !pullBookmarked.value && distance.value >= 96 ? 1 : 0,
+    distance.value > 0 && !pullBookmarked.value ? 1 : 0,
   [distance, pullBookmarked]);
   const outlineOpacity = useDerivedValue(() =>
     distance.value > 0 && pullBookmarked.value ? 1 : 0,
   [distance, pullBookmarked]);
   return (
     <Canvas pointerEvents="none" style={style}>
-      <Group matrix={matrix}>
-        <Group opacity={filledOpacity}>
-          <Path path={BookmarkPath} color={color} />
-        </Group>
-        <Group opacity={outlineOpacity}>
-          <Path path={BookmarkPath} color={outlineColor} style="stroke" strokeWidth={2} />
+      <Group clip={visibleArea}>
+        <Group matrix={matrix}>
+          <Group opacity={filledOpacity}>
+            <Path path={BookmarkPath} color={color} />
+          </Group>
+          <Group opacity={outlineOpacity}>
+            <Path path={BookmarkPath} color={outlineColor} style="stroke" strokeWidth={2} />
+          </Group>
         </Group>
       </Group>
     </Canvas>

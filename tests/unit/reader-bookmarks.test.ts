@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { DATABASE_MIGRATIONS } from '../../src/db/migrations';
 import { bookmarkLocationKey, hasBookmarkOnRenderedPage, isBookmarkOnPage, parseBookmarkLocator, type ReaderBookmark } from '../../src/features/reader/domain/reader-bookmark';
 import { SQLiteBookmarkRepository } from '../../src/features/reader/repositories/sqlite-bookmark-repository';
-import { bookmarkPullDistance, shouldSavePulledBookmark } from '../../src/features/reader/domain/bookmark-pull';
+import { bookmarkPullDistance, bookmarkPullPhase, shouldSavePulledBookmark } from '../../src/features/reader/domain/bookmark-pull';
 import { toRitoSavedLocator } from '../../src/reader/rito/saved-locator';
 import { readerBookmarkPlacement, readerBookmarkPullHeight } from '../../src/reader/skia/rendering/reader-bookmark-geometry';
 
@@ -84,6 +84,13 @@ describe('reader bookmark persistence', () => {
 });
 
 describe('bookmark gestures and source locations', () => {
+  it('shows the pull hint immediately and switches its arrow at the commit distance', () => {
+    expect(bookmarkPullPhase(0)).toBe('idle');
+    expect(bookmarkPullPhase(1)).toBe('pulling');
+    expect(bookmarkPullPhase(95)).toBe('pulling');
+    expect(bookmarkPullPhase(96)).toBe('ready');
+  });
+
   it('extends the bookmark from the safe area to above the first text line', () => {
     const frame = { width: 560, hits: [{ bounds: { x: 40, y: 140, width: 200, height: 25 } }] } as ReaderRenderFrame;
     const placement = readerBookmarkPlacement(frame, 1, 0, 0, 40);
