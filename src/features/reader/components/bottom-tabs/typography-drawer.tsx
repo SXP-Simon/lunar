@@ -2,13 +2,18 @@ import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
 import { Slider } from 'heroui-native/slider';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { ReaderTypography } from '@/reader';
+import {
+  type ReaderFontRef,
+  type ReaderFontRole,
+  type ReaderTypography,
+} from '@/reader';
 import type { ReaderPageAnimationStyle } from '@/reader/native';
 import { useTranslation } from '@/i18n';
-import { useReaderStore } from '@/stores';
+import { type ImportedReaderFont, useFontStore, useReaderStore } from '@/stores';
+import { FontPickerSheet } from '../font-picker-sheet';
 import { getReaderBottomTabBarInset } from './constants';
 
 interface TypographyDrawerProps {
@@ -42,7 +47,14 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
   const updateTypography = useReaderStore((state) => state.updateTypography);
   const animationStyle = useReaderStore((state) => state.animationStyle);
   const setAnimationStyle = useReaderStore((state) => state.setAnimationStyle);
+  const fonts = useFontStore((state) => state.fonts);
   const [draft, setDraft] = useState<ReaderTypography>(typography);
+  // The role outlives the open flag so the list does not swap to another role's
+  // sources while the sheet is still sliding away.
+  const [pickerRole, setPickerRole] = useState<ReaderFontRole>('body');
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const bodyFontLabel = describeReaderFont(typography.fonts.body, fonts, t);
+  const chromeFontLabel = describeReaderFont(typography.fonts.chrome, fonts, t);
   const animationOptions: readonly {
     readonly style: ReaderPageAnimationStyle;
     readonly label: string;
@@ -60,8 +72,23 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
     updateTypography({ [key]: value } as Partial<ReaderTypography>);
   };
 
+  // The picker is a sheet of its own, so closing the drawer has to take it down
+  // with it rather than leaving it stranded over the book.
+  const handleOpenChange = (value: boolean) => {
+    if (!value) {
+      setIsPickerOpen(false);
+    }
+    onOpenChange(value);
+  };
+
+  const openPicker = (role: ReaderFontRole) => {
+    setPickerRole(role);
+    setIsPickerOpen(true);
+  };
+
   return (
-    <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+    <>
+      <BottomSheet isOpen={isOpen} onOpenChange={handleOpenChange}>
       <BottomSheet.Portal
         disableFullWindowOverlay
         unstable_accessibilityContainerViewIsModal>
@@ -74,12 +101,29 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
           detached
           enableDynamicSizing={false}
           enableOverDrag={false}
-          snapPoints={['42%']}>
-          <View className="gap-5 px-5 pb-5 pt-3">
+          snapPoints={['58%']}>
+          {/* The sheet keeps a fixed height while the rows below it grow with the
+              platform's text scale, so the body scrolls rather than clipping. */}
+          <ScrollView
+            className="flex-1"
+            contentContainerClassName="gap-5 px-5 pb-5 pt-3"
+            showsVerticalScrollIndicator={false}>
             <View className="gap-1">
               <BottomSheet.Title className="text-xl text-foreground">
                 {t('reader.typography')}
               </BottomSheet.Title>
+            </View>
+            <View className="flex-row gap-4">
+              <FontRow
+                label={t('reader.bodyFont')}
+                onPress={() => openPicker('body')}
+                value={bodyFontLabel}
+              />
+              <FontRow
+                label={t('reader.uiFont')}
+                onPress={() => openPicker('chrome')}
+                value={chromeFontLabel}
+              />
             </View>
             <View className="gap-2">
               <View className="flex-row gap-2">
@@ -135,10 +179,57 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
                 value={draft.lineHeight}
               />
             </View>
-          </View>
+          </ScrollView>
         </BottomSheet.Content>
       </BottomSheet.Portal>
     </BottomSheet>
+      <FontPickerSheet
+        isOpen={isPickerOpen}
+        onOpenChange={setIsPickerOpen}
+        role={pickerRole}
+      />
+    </>
+  );
+}
+
+/**
+ * The stored family for a role, preferring the catalog's name for the file —
+ * a persisted name can outlive a rename of the file it points at, and the
+ * catalog is what the reader will actually load.
+ */
+function describeReaderFont(
+  ref: ReaderFontRef,
+  fonts: readonly ImportedReaderFont[],
+  t: ReturnType<typeof useTranslation>['t'],
+): string {
+  switch (ref.source) {
+    case 'system':
+      return ref.family;
+    case 'imported':
+      return fonts.find((font) => font.id === ref.importedFontId)?.family ?? ref.family;
+    default:
+      return t('reader.builtinFont');
+  }
+}
+
+interface FontRowProps {
+  readonly label: string;
+  readonly value: string;
+  readonly onPress: () => void;
+}
+
+function FontRow({ label, value, onPress }: FontRowProps) {
+  return (
+    <Button
+      accessibilityLabel={label}
+      className="h-14 min-w-0 flex-1 flex-row items-center gap-3 rounded-2xl bg-surface-secondary px-4"
+      onPress={onPress}
+      variant="ghost">
+      <Text className="text-sm text-muted">{label}</Text>
+      <Button.Label className="min-w-0 flex-1 text-right text-sm" numberOfLines={1}>
+        {value}
+      </Button.Label>
+    </Button>
   );
 }
 

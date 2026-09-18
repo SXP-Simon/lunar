@@ -13,7 +13,7 @@ import {
   useCanvasSize,
 } from '@shopify/react-native-skia';
 import { PixelRatio, processColor, type StyleProp, type ViewStyle } from 'react-native';
-import { memo, useCallback, useEffect, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import {
   cancelAnimation,
@@ -207,7 +207,21 @@ export const ReaderSurface = memo(function ReaderSurface({
   const pullPlacement = currentContent
     ? readerBookmarkPlacement(currentContent.frame, scale, offsetX, offsetY, overlayTop)
     : undefined;
+  // The runtime swaps the chrome face behind `getUiFont` without any prop
+  // changing, and this component is memoized, so a subscription is the only way
+  // the change reaches it. Once re-rendered, the fonts below are new objects and
+  // every memo holding one of them rebuilds.
+  const subscribeChromeFont = useCallback(
+    (listener: () => void) => runtime.subscribeChromeFont(listener),
+    [runtime],
+  );
+  useSyncExternalStore(subscribeChromeFont, () => runtime.getChromeFontEpoch());
   const bookmarkHintFont = bookmarkPullLabels ? runtime.getUiFont(16) : undefined;
+  // Resolved in the render body rather than inside each memo, so that the
+  // memos can depend on the font itself instead of on a change counter.
+  const chromePageScale = Math.max(0.001, scale);
+  const chromeTitleFont = runtime.getUiFont(14 / chromePageScale);
+  const chromeProgressFont = runtime.getUiFont(12 / chromePageScale);
   const paperColor = snapshot.phase === 'ready'
     ? runtime.getBackgroundColor()
     : initialBackgroundColor;
@@ -239,9 +253,9 @@ export const ReaderSurface = memo(function ReaderSurface({
       bookmarkColor,
       pageScale,
       progress: progressLabelForSnapshot(content.snapshot),
-      progressFont: runtime.getUiFont(12 / pageScale),
+      progressFont: chromeProgressFont,
       title,
-      titleFont: title ? runtime.getUiFont(14 / pageScale) : undefined,
+      titleFont: title ? chromeTitleFont : undefined,
       viewportHeight: viewport.height,
       viewportWidth: viewport.width,
       width: content.frame.width,
@@ -266,6 +280,8 @@ export const ReaderSurface = memo(function ReaderSurface({
     nativeTextureScale,
     bookmarkColor,
     chapterTitle,
+    chromeProgressFont,
+    chromeTitleFont,
     offsetX,
     offsetY,
     overlayBottom,
@@ -274,7 +290,6 @@ export const ReaderSurface = memo(function ReaderSurface({
     overlayRight,
     overlayTop,
     paperColor,
-    runtime,
     scale,
     viewport.height,
     viewport.width,
@@ -422,8 +437,8 @@ export const ReaderSurface = memo(function ReaderSurface({
     const source = pageCurlSource;
     const pageScale = Math.max(0.001, scale);
     const title = source.snapshot.chapterTitle;
-    const titleFont = title ? runtime.getUiFont(14 / pageScale) : undefined;
-    const progressFont = runtime.getUiFont(12 / pageScale);
+    const titleFont = title ? chromeTitleFont : undefined;
+    const progressFont = chromeProgressFont;
     if ((!title || !titleFont) && !progressFont) return undefined;
     return composePageCurlPicture({
       base: source.picture.picture,
@@ -459,9 +474,10 @@ export const ReaderSurface = memo(function ReaderSurface({
     overlayRight,
     overlayTop,
     bookmarkColor,
+    chromeProgressFont,
+    chromeTitleFont,
     pageCurlProgressText,
     pageCurlSource,
-    runtime,
     scale,
     viewport.height,
     viewport.width,
@@ -493,8 +509,8 @@ export const ReaderSurface = memo(function ReaderSurface({
     const pageScale = Math.max(0.001, scale);
     const title = titleOverride ?? chromeSnapshot.chapterTitle ?? chapterTitle;
     const progress = progressOverride ?? progressLabelForSnapshot(chromeSnapshot);
-    const titleFont = title ? runtime.getUiFont(14 / pageScale) : undefined;
-    const progressFont = progress ? runtime.getUiFont(12 / pageScale) : undefined;
+    const titleFont = title ? chromeTitleFont : undefined;
+    const progressFont = progress ? chromeProgressFont : undefined;
     const chapterX = (overlayInsets.left + 18 - offsetX) / pageScale;
     const chapterY = (overlayInsets.top + 16 - offsetY) / pageScale;
     const progressWidth = progressFont && progress ? progressFont.getTextWidth(progress) : 0;
@@ -570,6 +586,8 @@ export const ReaderSurface = memo(function ReaderSurface({
                 <AutomaticPageCurlLayer
                   key={turn.id}
                   animationDuration={animationDuration}
+                  chromeProgressFont={chromeProgressFont}
+                  chromeTitleFont={chromeTitleFont}
                   offsetX={offsetX}
                   offsetY={offsetY}
                   onComplete={onAutomaticTurnComplete}
@@ -723,6 +741,9 @@ function ReaderPagePicture({ content }: { readonly content: ReaderPageContent })
 interface AutomaticPageCurlLayerProps {
   readonly animationDuration: number;
   readonly bookmarkColor: string;
+  /** Chrome fonts resolved by the owner; see the note in `ReaderSurface`. */
+  readonly chromeTitleFont?: SkFont;
+  readonly chromeProgressFont?: SkFont;
   readonly offsetX: number;
   readonly offsetY: number;
   readonly onComplete?: (turnId: number) => void;
@@ -740,6 +761,8 @@ interface AutomaticPageCurlLayerProps {
 const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
   animationDuration,
   bookmarkColor,
+  chromeTitleFont,
+  chromeProgressFont,
   offsetX,
   offsetY,
   onComplete,
@@ -760,8 +783,8 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
   const texturePicture = useMemo(() => {
     const pageScale = Math.max(0.001, scale);
     const title = source.snapshot.chapterTitle;
-    const titleFont = title ? runtime.getUiFont(14 / pageScale) : undefined;
-    const progressFont = runtime.getUiFont(12 / pageScale);
+    const titleFont = title ? chromeTitleFont : undefined;
+    const progressFont = chromeProgressFont;
     if ((!title || !titleFont) && !progressFont) return undefined;
     return composePageCurlPicture({
       base: source.picture.picture,
@@ -785,12 +808,13 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
     });
   }, [
     bookmarkColor,
+    chromeProgressFont,
+    chromeTitleFont,
     offsetX,
     offsetY,
     overlayColor,
     overlayInsets,
     progressText,
-    runtime,
     scale,
     source,
     viewportHeight,

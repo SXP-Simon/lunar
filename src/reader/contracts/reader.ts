@@ -1,5 +1,6 @@
 import type {
   ReaderContentInsets,
+  ReaderFontFaces,
   ReaderTheme,
   ReaderTypography,
   ReaderViewport,
@@ -69,6 +70,8 @@ export interface ReaderOpenRequest {
   readonly viewport: ReaderViewport;
   readonly contentInsets?: ReaderContentInsets;
   readonly typography: ReaderTypography;
+  /** Resolved faces; absent means every role falls back to the bundled font. */
+  readonly fontFaces?: ReaderFontFaces;
   readonly theme: ReaderTheme;
   readonly restorePosition?: ReaderPosition;
 }
@@ -77,6 +80,7 @@ export interface ReaderLayoutRequest {
   readonly viewport: ReaderViewport;
   readonly contentInsets?: ReaderContentInsets;
   readonly typography: ReaderTypography;
+  readonly fontFaces?: ReaderFontFaces;
   readonly theme: ReaderTheme;
 }
 

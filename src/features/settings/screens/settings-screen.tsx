@@ -8,6 +8,7 @@ import { type LanguagePreference, useTranslation } from '@/i18n';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useApplicationSettingsStore } from '@/stores';
 import { LanguageSelectionSheet } from '../components/language-selection-sheet';
+import { ReadingFontsSection } from '../components/reading-fonts-section';
 import { SettingRow } from '../components/setting-row';
 import { SettingSection } from '../components/setting-section';
 
@@ -88,6 +89,9 @@ export function SettingsScreen() {
                   onSelectedChange={setResumeReadingOnLaunch}
                 />
               </SettingSection>
+            </View>
+            <View className="mt-8">
+              <ReadingFontsSection />
             </View>
           </View>
         </ScrollView>

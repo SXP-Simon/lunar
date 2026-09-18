@@ -8,7 +8,10 @@ import { LunarReaderRuntime } from '../../src/reader/runtime/core/native-reader-
 
 const { openSession } = vi.hoisted(() => ({ openSession: vi.fn() }));
 vi.mock('../../modules/rito-rn/src/session', () => ({ RitoReaderSession: { open: openSession } }));
-vi.mock('../../src/reader/rito/pinned-font', () => ({ loadBundledLunarFontBytes: async () => new Uint8Array() }));
+vi.mock('../../src/reader/rito/pinned-font', () => ({
+  loadBundledLunarFontBytes: async () => new Uint8Array(),
+  createLunarRitoPinnedFonts: async () => ({ faces: [], registrations: [], bodyAlias: '' }),
+}));
 vi.mock('../../src/reader/skia/fonts/font-registry', () => ({
   LunarSkiaFontRegistry: class { loadBuiltinFont() {} },
 }));
@@ -74,7 +77,7 @@ async function setup(options: { completed?: boolean; runtime?: boolean; spreadMo
     visible = source;
     return { session, artifact: source };
   });
-  const backend = new RitoNativePaginationBackend({ initialHref: 'first.xhtml', pinnedFonts: [] });
+  const backend = new RitoNativePaginationBackend({ initialHref: 'first.xhtml' });
   const layout = { typography: { ...DEFAULT_READER_TYPOGRAPHY, spreadMode: options.spreadMode ?? 'single' }, theme: 'light' as const, viewport: { width: 400, height: 800, pixelRatio: 1 } };
   const request = { ...layout, bookId: 'book', fileUri: 'book.epub' };
   const loadData = vi.fn(async () => new ArrayBuffer(0));
@@ -85,7 +88,7 @@ async function setup(options: { completed?: boolean; runtime?: boolean; spreadMo
     const { publication } = await open.mock.results[0].value;
     return { backend, publication, session, destination, runtime, loadData, layout };
   }
-  const { publication } = await backend.open({ request, layout,
+  const { publication } = await backend.open({ request, layout, pinnedFonts: [],
     data: new ArrayBuffer(0), revisionId: 1, operationId: 1, signal: new AbortController().signal });
   return { backend, publication, session, destination, runtime, loadData, layout };
 }

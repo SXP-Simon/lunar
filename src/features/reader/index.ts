@@ -10,3 +10,9 @@ export {
   createReaderHighlight,
   listReaderHighlights,
 } from './services/highlight-service';
+export {
+  importReaderFont,
+  removeReaderFont,
+  type ReaderFontImportFailure,
+  type ReaderFontImportResult,
+} from './services/reader-font-service';

@@ -13,10 +13,15 @@ import {
   LunarReaderRuntime,
   RitoNativePaginationBackend,
 } from '@/reader/native';
-import { createLunarRitoPinnedFonts } from '@/reader/rito/pinned-font';
-import { useReaderStore } from '@/stores';
+import { useFontStore, useReaderStore } from '@/stores';
 import { i18n } from '@/i18n';
 import { readReaderBook } from '../infrastructure/expo-reader-book-loader';
+import { readStoredFontBytes } from '../infrastructure/expo-reader-font-storage';
+import {
+  repairDanglingReaderFonts,
+  resolveReaderFontFace,
+  resolveReaderFontFaces,
+} from '../domain/reader-font-face';
 import type { ReaderReadingState } from '../domain/reader-reading-state';
 import { findReaderReadingState, saveReaderReadingState } from '../services/reading-state-service';
 
@@ -29,6 +34,7 @@ export interface ReaderSessionOptions {
 
 export function useReaderSession({ bookId, viewport, contentInsets, theme }: ReaderSessionOptions) {
   const typography = useReaderStore((state) => state.typography);
+  const fonts = useFontStore((state) => state.fonts);
   const runtime = useMemo(
     () =>
       createReaderRuntime(),
@@ -141,28 +147,71 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
     }
     layoutKey.current = nextLayoutKey;
 
-    const layout = {
-      viewport,
-      contentInsets,
-      typography,
-      theme,
-    };
-    if (activeBookId.current === currentBook.id && runtime.getSnapshot().phase === 'ready') {
-      void runtime.updateLayout(layout).catch(() => undefined);
-      return;
-    }
+    // Resolving takes a file read per imported face, so the layout request is
+    // only issued once the faces are in hand — opening without them would fall
+    // back to the bundled font and then match this same layout key, leaving the
+    // selection permanently unapplied.
+    let cancelled = false;
+    void resolveReaderFontFaces(typography, fonts, readStoredFontBytes)
+      .catch(() => undefined)
+      .then((fontFaces) => {
+        if (cancelled) {
+          return;
+        }
+        const layout = {
+          viewport,
+          contentInsets,
+          typography,
+          theme,
+          fontFaces,
+        };
+        if (activeBookId.current === currentBook.id && runtime.getSnapshot().phase === 'ready') {
+          void runtime.updateLayout(layout).catch(() => undefined);
+          return;
+        }
 
-    activeBookId.current = currentBook.id;
-    void runtime
-      .open({
-        bookId: currentBook.id,
-        fileUri: currentBook.fileUri,
-        ...layout,
-        restorePosition: readingState.state?.position,
-      })
-      .then((result) => setOpenResult({ bookId: currentBook.id, result }))
-      .catch(() => undefined);
-  }, [bookId, contentInsets, currentBook, readingState, runtime, theme, typography, viewport]);
+        activeBookId.current = currentBook.id;
+        void runtime
+          .open({
+            bookId: currentBook.id,
+            fileUri: currentBook.fileUri,
+            ...layout,
+            restorePosition: readingState.state?.position,
+          })
+          .then((result) => setOpenResult({ bookId: currentBook.id, result }))
+          .catch(() => undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bookId, contentInsets, currentBook, fonts, readingState, runtime, theme, typography, viewport]);
+
+  // Repoints any choice whose font is no longer in the catalog. Deleting a font
+  // already repairs the references, so this only catches state that predates the
+  // file going missing.
+  useEffect(() => {
+    const repaired = repairDanglingReaderFonts(typography, fonts);
+    if (repaired) {
+      useReaderStore.getState().setTypography(repaired);
+    }
+  }, [fonts, typography]);
+
+  // Chrome is drawn by this app rather than laid out by Rito, so it travels on
+  // its own channel: this must never reach `updateLayout`, which re-reads the
+  // book and re-paginates every chapter.
+  useEffect(() => {
+    let cancelled = false;
+    void resolveReaderFontFace(typography.fonts.chrome, fonts, readStoredFontBytes)
+      .catch(() => undefined)
+      .then((face) => {
+        if (!cancelled) {
+          runtime.setChromeFontFace(face);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fonts, runtime, typography]);
 
   useEffect(() => {
     persistSnapshot(snapshot);
@@ -191,8 +240,6 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
 function createReaderRuntime(): LunarReaderRuntime {
   return new LunarReaderRuntime(
     (request) => readReaderBook(request.fileUri),
-    new RitoNativePaginationBackend({
-      pinnedFonts: () => createLunarRitoPinnedFonts(),
-    }),
+    new RitoNativePaginationBackend(),
   );
 }

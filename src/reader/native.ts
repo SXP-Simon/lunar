@@ -40,3 +40,5 @@ export { ReaderSelectionOverlay } from './skia/rendering/reader-selection-overla
 export type { ReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export { resolveReaderRangeOverlays, resolveReaderSearchOverlays } from './skia/rendering/reader-overlays';
 export type { ReaderOverlayRect } from './skia/rendering/reader-overlays';
+export { listSystemReaderFontFamilies } from './skia/fonts/system-fonts';
+export { probeReaderFontFile, type ReaderFontFileProbe } from './skia/fonts/font-file-probe';

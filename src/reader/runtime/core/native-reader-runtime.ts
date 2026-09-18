@@ -1,6 +1,7 @@
 import type { SkFont } from '@shopify/react-native-skia';
 
 import type {
+  ReaderFontFace,
   ReaderLayoutRequest,
   ReaderLocator,
   ReaderOpenRequest,
@@ -11,7 +12,7 @@ import type {
   ReaderRenderFrame,
   ReaderSnapshot,
 } from '../../contracts';
-import { loadBundledLunarFontBytes } from '../../rito/pinned-font';
+import { createLunarRitoPinnedFonts } from '../../rito/pinned-font';
 import { LunarSkiaFontRegistry } from '../../skia/fonts/font-registry';
 import { SkiaImageCache } from '../../skia/images/image-decoder';
 import {
@@ -19,10 +20,12 @@ import {
   type CompiledReaderPicture,
 } from '../../skia/rendering/picture-compiler';
 import { LunarSkiaTextMeasurer } from '../../skia/text/text-measurer';
+import { LUNAR_READER_FONT_FAMILY } from '../../typography';
 import { FrameCache } from '../cache/frame-cache';
 import { ReaderImageByteCache } from '../cache/reader-image-cache';
 import type { ReaderRuntime, ReaderSnapshotListener } from './reader-runtime';
 import type { ReaderBackgroundPaginationBackend, ReaderPaginationBackend } from '../pagination/pagination-backend';
+import type { RitoNativePaginationOpenOptions } from '../pagination/rito-native-pagination-backend';
 import { readerDiagnostic, readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from './performance';
 
 export type ReaderBookDataLoader = (request: ReaderOpenRequest) => Promise<ArrayBuffer>;
@@ -76,6 +79,11 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private readonly pictureCompiler = new SkiaPictureCompiler();
   private publication?: ReaderPublicationView;
   private fontRegistry?: LunarSkiaFontRegistry;
+  /** Face Skia-owned chrome text paints with, kept across sessions. */
+  private chromeFontFace?: ReaderFontFace;
+  private chromeFontFamily: string = LUNAR_READER_FONT_FAMILY;
+  private chromeFontEpoch = 0;
+  private readonly chromeFontListeners = new Set<() => void>();
   private textMeasurer?: LunarSkiaTextMeasurer;
   private imageCache?: SkiaImageCache;
   private readonly imageByteCache = new ReaderImageByteCache();
@@ -473,13 +481,77 @@ export class LunarReaderRuntime implements ReaderRuntime {
     if (!fontRegistry || !Number.isFinite(sizePx) || sizePx <= 0) return undefined;
     try {
       return fontRegistry.resolveFont({
-        family: '',
+        family: this.chromeFontFamily,
         sizePx,
         style: 'normal',
         weight,
       });
     } catch {
       return undefined;
+    }
+  }
+
+  /**
+   * Swaps the face Skia-owned chrome text paints with.
+   *
+   * Chrome is drawn by this app rather than laid out by Rito, so the change
+   * never reaches pagination and deliberately bypasses `updateLayout`, which
+   * would re-read the whole book and re-paginate every chapter. Callers redraw
+   * when {@link getChromeFontEpoch} changes; the surface resolves its font
+   * during render, so a re-render is all that is needed.
+   */
+  setChromeFontFace(face: ReaderFontFace | undefined): number {
+    const family = face?.family ?? LUNAR_READER_FONT_FAMILY;
+    const source = face?.source ?? 'builtin';
+    if (family === this.chromeFontFamily && source === (this.chromeFontFace?.source ?? 'builtin')) {
+      return this.chromeFontEpoch;
+    }
+    this.chromeFontEpoch += 1;
+    // A session that has not opened yet has no registry to register into; the
+    // face is picked up by `loadCurrentRequest` when one is created.
+    this.applyChromeFontFace(this.fontRegistry, face);
+    for (const listener of this.chromeFontListeners) {
+      listener();
+    }
+    return this.chromeFontEpoch;
+  }
+
+  getChromeFontEpoch(): number {
+    return this.chromeFontEpoch;
+  }
+
+  subscribeChromeFont(listener: () => void): () => void {
+    this.chromeFontListeners.add(listener);
+    return () => {
+      this.chromeFontListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Installs a chrome face on the live registry, degrading to the bundled face
+   * when it cannot be resolved. Chrome is painted by this app, so a face it
+   * cannot draw only costs the reader a font choice — never the session.
+   */
+  private applyChromeFontFace(
+    fontRegistry: LunarSkiaFontRegistry | undefined,
+    face: ReaderFontFace | undefined,
+  ): void {
+    this.chromeFontFace = face;
+    this.chromeFontFamily = face?.family ?? LUNAR_READER_FONT_FAMILY;
+    // The bundled face is registered under its stable reader name already, and
+    // the registry would have no bytes to register it from anyway.
+    if (!face || face.source === 'builtin' || !fontRegistry) {
+      return;
+    }
+    try {
+      fontRegistry.registerFontFace(face);
+    } catch (error) {
+      this.chromeFontFace = undefined;
+      this.chromeFontFamily = LUNAR_READER_FONT_FAMILY;
+      readerDiagnostic(
+        'chrome.font.reject',
+        `family=${face.family} reason=${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -546,13 +618,27 @@ export class LunarReaderRuntime implements ReaderRuntime {
     phase: 'paginating' | 'reflowing',
   ): Promise<ReaderOpenResult> {
     const fontRegistry = new LunarSkiaFontRegistry();
-    fontRegistry.loadBuiltinFont(await loadBundledLunarFontBytes());
+    const pinnedFonts = await createLunarRitoPinnedFonts({ body: request.fontFaces?.body });
+    // Skia has to know the pinned faces under the same aliases Rito paints them
+    // with, before any chapter is measured — a face it cannot resolve falls back
+    // to the bundled one, and body text would silently render in a font that had
+    // no part in deciding the line breaks.
+    for (const registration of pinnedFonts.registrations) {
+      if (registration.bundled) {
+        fontRegistry.loadBuiltinFont(registration.face.bytes, registration.alias);
+        continue;
+      }
+      fontRegistry.registerFontFace(registration.face, registration.alias);
+    }
+    // Falls back to the face already in force so that a chrome font chosen
+    // mid-session survives the reflow that a body font change triggers.
+    this.applyChromeFontFace(fontRegistry, request.fontFaces?.chrome ?? this.chromeFontFace);
     const textMeasurer = new LunarSkiaTextMeasurer(fontRegistry);
     this.fontRegistry = fontRegistry;
     this.textMeasurer = textMeasurer;
     this.emit({ ...this.snapshot, phase });
 
-    const backendResult = await this.paginationBackend.open({
+    const openOptions: RitoNativePaginationOpenOptions = {
       data,
       layout: request,
       request,
@@ -562,7 +648,9 @@ export class LunarReaderRuntime implements ReaderRuntime {
       fontRegistry,
       textMeasurer,
       imageCache: this.imageByteCache,
-    });
+      pinnedFonts: pinnedFonts.faces,
+    };
+    const backendResult = await this.paginationBackend.open(openOptions);
     const publication = backendResult.publication;
     this.assertCurrent(operation);
     this.publication = publication;
@@ -916,6 +1004,12 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.preparedTurn = undefined;
     this.paginationComplete = false;
     this.backgroundScheduled = false;
+    // Cached SkPictures may still reference these typefaces until the two
+    // deferred frames drain, and a registry now holds decoded copies of the
+    // imported face — tens of megabytes for a CJK font — so it has to be
+    // released through the same deferral rather than dropped on the floor.
+    const fontRegistry = this.fontRegistry;
+    if (fontRegistry) this.deferSkiaCleanup(() => fontRegistry.dispose());
     this.fontRegistry = undefined;
     await this.paginationBackend.close().catch(() => undefined);
     this.imageByteCache.clear();

@@ -25,7 +25,20 @@ type SettingActionRowProps = SettingRowBaseProps & {
   onPress: () => void;
 };
 
-export type SettingRowProps = SettingSwitchRowProps | SettingActionRowProps;
+/**
+ * A row that acts on the item it names rather than leading anywhere, so it
+ * carries no chevron — the trailing affordance would promise a screen that does
+ * not exist.
+ */
+type SettingDestructiveRowProps = SettingRowBaseProps & {
+  variant: 'destructive';
+  onPress: () => void;
+};
+
+export type SettingRowProps =
+  | SettingSwitchRowProps
+  | SettingActionRowProps
+  | SettingDestructiveRowProps;
 
 export function SettingRow(props: SettingRowProps) {
   if (props.variant === 'switch') {
@@ -72,9 +85,10 @@ export function SettingRow(props: SettingRowProps) {
     accessibilityLabel = title,
     accessibilityHint,
     isDisabled,
-    value,
     onPress,
   } = props;
+  const isDestructive = props.variant === 'destructive';
+  const value = props.variant === 'action' ? props.value : undefined;
 
   return (
     <ListGroup.Item
@@ -86,7 +100,8 @@ export function SettingRow(props: SettingRowProps) {
       disabled={isDisabled}
       onPress={onPress}>
       <ListGroup.ItemContent>
-        <ListGroup.ItemTitle className="text-base font-medium text-foreground">
+        <ListGroup.ItemTitle
+          className={`text-base font-medium ${isDestructive ? 'text-danger' : 'text-foreground'}`}>
           {title}
         </ListGroup.ItemTitle>
         {description ? (
@@ -96,7 +111,9 @@ export function SettingRow(props: SettingRowProps) {
         ) : null}
       </ListGroup.ItemContent>
       {value ? <Text className="ml-4 text-sm text-muted">{value}</Text> : null}
-      <ListGroup.ItemSuffix className="ml-2" iconProps={{ size: 18 }} />
+      {isDestructive ? null : (
+        <ListGroup.ItemSuffix className="ml-2" iconProps={{ size: 18 }} />
+      )}
     </ListGroup.Item>
   );
 }

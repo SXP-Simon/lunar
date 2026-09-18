@@ -1,4 +1,5 @@
 import type {
+  ReaderFontFace,
   ReaderLayoutRequest,
   ReaderLocator,
   ReaderFootnote,
@@ -28,5 +29,19 @@ export interface ReaderRuntime {
   readFootnote(key: string, spreadIndex?: number): Promise<ReaderFootnote | undefined>;
   search(request: ReaderSearchRequest): Promise<ReaderSearchResponse>;
   resolveTextRangeGeometry(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]>;
+  /**
+   * Swaps the face Skia-owned chrome text paints with. Not part of pagination:
+   * a chrome font change must never reflow the book. Pass `undefined` to return
+   * to the bundled face.
+   */
+  setChromeFontFace(face: ReaderFontFace | undefined): number;
+  /**
+   * Changes whenever the chrome face does. Consumers subscribe rather than
+   * taking a prop: chrome resolves its font during render, and a caller that
+   * changed only the font has no other value to hand down that would defeat an
+   * enclosing `memo`.
+   */
+  getChromeFontEpoch(): number;
+  subscribeChromeFont(listener: () => void): () => void;
   close(): Promise<void>;
 }

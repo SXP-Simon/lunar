@@ -3,6 +3,7 @@ import type {
   ReaderPreparedAdjacent, ReaderRenderFrame, ReaderLocator,
 } from '../../contracts';
 import { toReaderDisplayList } from '../../rito';
+import { LUNAR_READER_FONT_FAMILY } from '../../typography';
 import { discoverReaderInitialSpineHref } from '../../rito/epub-inspector';
 import { toRitoSavedLocator } from '../../rito/saved-locator';
 import type { RitoNativePinnedFontFace, RitoArtifact, RitoLayoutRequest, RitoNativeReaderModule } from '../../rito/rito-native';
@@ -15,8 +16,17 @@ import { ReaderImageByteCache } from '../cache/reader-image-cache';
 
 export interface RitoNativePaginationBackendOptions {
   readonly initialHref?: string;
-  readonly pinnedFonts: readonly RitoNativePinnedFontFace[] | ((data: Uint8Array) => Promise<readonly RitoNativePinnedFontFace[]>);
   readonly native?: RitoNativeReaderModule;
+}
+
+/**
+ * The Rito open additionally carries the pinned faces, because the runtime has
+ * to resolve them itself: every pinned face is painted under a Rito alias, and
+ * Skia only agrees with layout if it registered the same bytes under the same
+ * alias before the chapter is measured.
+ */
+export interface RitoNativePaginationOpenOptions extends ReaderPaginationBackendOpenOptions {
+  readonly pinnedFonts: readonly RitoNativePinnedFontFace[];
 }
 
 interface PublicationSlot {
@@ -53,19 +63,16 @@ export class RitoNativePaginationBackend implements ReaderBackgroundPaginationBa
   private operationId?: number;
   private revisionId?: number;
 
-  constructor(private readonly config: RitoNativePaginationBackendOptions) {}
+  constructor(private readonly config: RitoNativePaginationBackendOptions = {}) {}
 
-  async open(options: ReaderPaginationBackendOpenOptions): Promise<ReaderPaginationBackendResult> {
+  async open(options: RitoNativePaginationOpenOptions): Promise<ReaderPaginationBackendResult> {
     const openStartedAt = readerPerformanceStart('reader.backend.open');
     await this.close();
     const initialHref = this.config.initialHref ?? discoverReaderInitialSpineHref(new Uint8Array(options.data));
     readerPerformanceMark('reader.backend.initialHref', initialHref);
-    const pinnedFonts = typeof this.config.pinnedFonts === 'function'
-      ? await this.config.pinnedFonts(new Uint8Array(options.data))
-      : this.config.pinnedFonts;
     const request = createArtifactRequest(options.request, options.layout, options.revisionId, options.operationId, initialHref);
     const { RitoReaderSession } = await import('../../../../modules/rito-rn/src/session');
-    const opened = await RitoReaderSession.open(new Uint8Array(options.data), request, pinnedFonts, { native: this.config.native });
+    const opened = await RitoReaderSession.open(new Uint8Array(options.data), request, options.pinnedFonts, { native: this.config.native });
     readerPerformanceMark('reader.backend.firstArtifact', `artifactId=${opened.artifact.artifactId.toString()}`);
     const publicationMetadata = await opened.session.readPublication();
     const imageCache = options.imageCache ?? new ReaderImageByteCache();
@@ -1041,7 +1048,14 @@ function createArtifactRequest(request: ReaderOpenRequest, layout: ReaderLayoutR
   const typography = request.typography;
   const margins = resolveLayoutMargins(layout);
   const locator = request.restorePosition?.locator;
-  const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, ...margins, spreadMode: typography.spreadMode, firstPageAlone: typography.spreadMode === 'double', spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: typography.fontFamily, renderRatio: layout.viewport.pixelRatio };
+  // The override is deliberately a name Rito never registers: it exists to stop
+  // the book's own `@font-face` families from leading the cascade, not to pick a
+  // face. Rito rewrites every painted stack to its pinned aliases and drops any
+  // named family it did not itself register, so the pinned policy is what
+  // actually selects the body face. Passing the chosen family here would be a
+  // no-op at best, and at worst an EPUB `@font-face` of the same name would
+  // survive the rewrite and shadow the reader's choice.
+  const value: RitoLayoutRequest = { viewportWidth: layout.viewport.width, viewportHeight: layout.viewport.height, ...margins, spreadMode: typography.spreadMode, firstPageAlone: typography.spreadMode === 'double', spreadGap: 0, rootFontSize: typography.fontSize, lineHeightOverride: typography.lineHeight, fontFamilyOverride: LUNAR_READER_FONT_FAMILY, renderRatio: layout.viewport.pixelRatio };
   return {
     sessionId: BigInt(Math.max(1, revisionId)),
     requestId: BigInt(Math.max(1, operationId)),
@@ -1083,7 +1097,7 @@ function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../../co
     spreadGap: 0,
     rootFontSize: typography.fontSize,
     lineHeight: typography.lineHeight,
-    fontFamily: typography.fontFamily,
+    fontFamily: typography.fonts.body.family,
     palette,
   };
 }

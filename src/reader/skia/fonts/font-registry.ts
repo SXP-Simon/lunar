@@ -4,24 +4,45 @@ import {
   Skia,
   type FontStyle,
   type SkFont,
+  type SkFontMgr,
   type SkTypeface,
   type SkTypefaceFontProvider,
 } from '@shopify/react-native-skia';
 
 import type {
+  ReaderFontFace,
   ReaderFontRegistry,
   ReaderFontShorthand,
 } from '../../contracts';
 import { LUNAR_READER_FONT_FAMILY } from '../../typography';
+import { createSystemFontMgr, hasSystemReaderFontFamily } from './system-fonts';
 
 export interface SkiaFontRegistry extends ReaderFontRegistry {
   readonly readerFontProvider: SkTypefaceFontProvider;
-  loadBuiltinFont(bytes: Uint8Array): void;
+  /**
+   * Registers the bundled face under its stable reader name, and under
+   * `alias` when the pinned policy names it by an alias too.
+   */
+  loadBuiltinFont(bytes: Uint8Array, alias?: string): void;
+  /**
+   * Registers a resolved face so paragraphs and chrome text can paint with it.
+   * `alias` is the name a paginated body paints the face under — Rito rewrites
+   * every painted family stack to its pinned aliases, so a body face is only
+   * reachable through this alias, never through `face.family`. Chrome text is
+   * drawn by this app instead, and resolves `face.family` directly.
+   */
+  registerFontFace(face: ReaderFontFace, alias?: string): void;
   getFontFamilies(family: string): readonly string[];
   getParagraphProvider(family: string): SkTypefaceFontProvider;
   resolveFont(font: ReaderFontShorthand): SkFont;
   dispose(): void;
 }
+
+const SYSTEM_FONT_STYLE: FontStyle = {
+  weight: 400,
+  width: FontWidth.Normal,
+  slant: FontSlant.Upright,
+};
 
 export class LunarSkiaFontRegistry implements SkiaFontRegistry {
   readonly readerFontProvider = Skia.TypefaceFontProvider.Make();
@@ -31,26 +52,22 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
   private readonly registrations = new Map<string, Promise<void>>();
   private readonly registeredLengths = new Map<string, number>();
   private readonly registeredFamilies = new Set<string>();
+  private readonly systemFamilies = new Set<string>();
+  private systemFontMgr?: SkFontMgr;
   private builtinLoaded = false;
   private disposed = false;
 
-  loadBuiltinFont(bytes: Uint8Array): void {
+  loadBuiltinFont(bytes: Uint8Array, alias?: string): void {
     this.assertActive();
     if (this.builtinLoaded) {
       return;
     }
-    const data = Skia.Data.fromBytes(bytes);
-    try {
-      const typeface = Skia.Typeface.MakeFreeTypeFaceFromData(data);
-      if (!typeface) {
-        throw new Error('Skia could not decode the bundled Lunar reader font.');
-      }
-      this.readerFontProvider.registerFont(typeface, LUNAR_READER_FONT_FAMILY);
-      this.typefaces.push(typeface);
-      this.builtinLoaded = true;
-    } finally {
-      data.dispose();
-    }
+    this.registerBytes(
+      [LUNAR_READER_FONT_FAMILY, alias],
+      bytes,
+      'the bundled Lunar reader font',
+    );
+    this.builtinLoaded = true;
   }
 
   async loadFont(resource: Parameters<ReaderFontRegistry['loadFont']>[0]): Promise<void> {
@@ -80,6 +97,23 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
       this.registrations.delete(key);
       throw error;
     }
+  }
+
+  registerFontFace(face: ReaderFontFace, alias?: string): void {
+    this.assertActive();
+    // A blank name is accepted by the provider and then never matches, so it
+    // would surface as text quietly painted in the bundled face.
+    if (!face.family.trim()) {
+      throw new Error('Reader font registration requires a family.');
+    }
+    if (face.source === 'system') {
+      this.registerSystemFamily(face.family);
+      return;
+    }
+    if (!face.bytes || face.bytes.byteLength === 0) {
+      throw new Error(`Reader font ${face.family} requires bytes.`);
+    }
+    this.registerBytes([face.family, alias], face.bytes, `reader font ${face.family}`);
   }
 
   getFontFamilies(family: string): readonly string[] {
@@ -127,10 +161,13 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     this.registrations.clear();
     this.registeredLengths.clear();
     this.registeredFamilies.clear();
+    this.systemFamilies.clear();
     for (const typeface of this.typefaces) {
       typeface.dispose();
     }
     this.typefaces.length = 0;
+    this.systemFontMgr?.dispose();
+    this.systemFontMgr = undefined;
     this.readerFontProvider.dispose();
   }
 
@@ -146,28 +183,82 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     }
   }
 
+  /**
+   * Decodes a font file once and registers the resulting face under every name
+   * the kernel may request it by. One body face needs two: Rito rewrites every
+   * painted stack to the pinned aliases, so the alias is the only name a
+   * paginated paragraph can reach it through, while chrome text and the
+   * provider's fallback tail ask for the plain family.
+   */
+  private registerBytes(
+    names: readonly (string | undefined)[],
+    bytes: Uint8Array,
+    label: string,
+  ): void {
+    const targets = [...new Set(names.filter((name): name is string => Boolean(name)))];
+    if (targets.length === 0) {
+      throw new Error(`Skia cannot register ${label} without a family name.`);
+    }
+    // The same face legitimately arrives twice — chrome reusing the body face,
+    // or a re-registration after a reload — and every name being known means it
+    // is already live: decoding again would only duplicate the typeface and the
+    // memory behind it, which for an imported CJK face is tens of megabytes.
+    if (targets.every((name) => this.registeredFamilies.has(name))) {
+      return;
+    }
+    if (bytes.byteLength === 0) {
+      throw new Error(`Skia could not decode ${label}: the file is empty.`);
+    }
+    const data = Skia.Data.fromBytes(bytes);
+    let typeface: SkTypeface | undefined;
+    try {
+      typeface = Skia.Typeface.MakeFreeTypeFaceFromData(data) ?? undefined;
+      if (!typeface) {
+        throw new Error(`Skia could not decode ${label}.`);
+      }
+      this.assertActive();
+      for (const name of targets) {
+        this.readerFontProvider.registerFont(typeface, name);
+        this.registeredFamilies.add(name);
+      }
+      this.typefaces.push(typeface);
+      typeface = undefined;
+    } finally {
+      typeface?.dispose();
+      data.dispose();
+    }
+  }
+
+  /**
+   * Adopts a platform face into the paragraph provider. The family must exist
+   * in the platform's enumeration: `matchFamilyStyle` yields an unusable face
+   * for an unknown name, and every call on that face would abort the process.
+   */
+  private registerSystemFamily(family: string): void {
+    if (this.systemFamilies.has(family) || this.registeredFamilies.has(family)) {
+      return;
+    }
+    if (!hasSystemReaderFontFamily(family)) {
+      throw new Error(`The system font family ${family} is unavailable.`);
+    }
+    this.systemFontMgr ??= createSystemFontMgr();
+    if (!this.systemFontMgr) {
+      throw new Error('The platform font manager is unavailable.');
+    }
+    const typeface = this.systemFontMgr.matchFamilyStyle(family, SYSTEM_FONT_STYLE);
+    this.assertActive();
+    this.readerFontProvider.registerFont(typeface, family);
+    this.typefaces.push(typeface);
+    this.systemFamilies.add(family);
+  }
+
   private async registerFont(
     key: string,
     resource: Parameters<ReaderFontRegistry['loadFont']>[0],
   ): Promise<void> {
     this.assertActive();
-    const data = Skia.Data.fromBytes(resource.bytes);
-    let typeface: SkTypeface | undefined;
-    try {
-      typeface = Skia.Typeface.MakeFreeTypeFaceFromData(data) ?? undefined;
-      if (!typeface) {
-        throw new Error(`Skia could not decode reader font ${resource.src}.`);
-      }
-      this.assertActive();
-      this.readerFontProvider.registerFont(typeface, resource.family);
-      this.typefaces.push(typeface);
-      typeface = undefined;
-      this.registeredLengths.set(key, resource.bytes.byteLength);
-      this.registeredFamilies.add(resource.family);
-    } finally {
-      typeface?.dispose();
-      data.dispose();
-    }
+    this.registerBytes([resource.family], resource.bytes, `reader font ${resource.src}`);
+    this.registeredLengths.set(key, resource.bytes.byteLength);
   }
 }
 

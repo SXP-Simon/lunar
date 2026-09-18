@@ -64,6 +64,19 @@ export const useReaderStore = create<ReaderStoreState>()(
       name: 'settings.reader',
       storage: createJSONStorage(() => mmkvStateStorage),
       partialize: ({ typography, animationStyle }) => ({ typography, animationStyle }),
+      // A build before role-based fonts persisted a flat `fontFamily`, and the
+      // hydrated value is handed straight to the reader. Normalizing here rather
+      // than on first write keeps `typography.fonts` total for every consumer.
+      merge: (persisted, current) => {
+        const preferences = (persisted ?? {}) as Partial<PersistedReaderPreferences>;
+        return {
+          ...current,
+          ...preferences,
+          typography: normalizeReaderTypography(
+            preferences.typography ?? current.typography,
+          ),
+        };
+      },
     },
   ),
 );
