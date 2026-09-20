@@ -1,10 +1,12 @@
 import { Skia, type SkPicture } from '@shopify/react-native-skia';
 
 import type { ReaderDisplayList } from '../../contracts';
-import { ReaderParagraphCache } from '../text/paragraph-cache';
+import { isReaderPerformanceEnabled } from '../../runtime/core/performance';
+import { ReaderParagraphCache, type ReaderParagraphMetrics } from '../text/paragraph-cache';
 import { renderResolvedPrimitives, type ReaderPrimitiveRenderOptions } from './primitive-renderer';
 
 export interface CompiledReaderPicture {
+  readonly textMetrics?: Readonly<ReaderParagraphMetrics>;
   readonly picture: SkPicture;
   readonly width: number;
   readonly height: number;
@@ -42,12 +44,14 @@ export class SkiaPictureCompiler implements PictureCompiler {
     const width = displayList.width * options.pixelRatio;
     const height = displayList.height * options.pixelRatio;
     const recorder = Skia.PictureRecorder();
+    const paragraphMetrics = isReaderPerformanceEnabled() ? { hits: 0, misses: 0, evictions: 0, shapeMs: 0 } : undefined;
     try {
       const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, width, height));
       renderResolvedPrimitives(canvas, displayList.resolvedPrimitives, {
-        ...options, paragraphCache: this.paragraphCache,
+        ...options, paragraphCache: this.paragraphCache, paragraphMetrics,
       });
       return {
+        textMetrics: paragraphMetrics,
         picture: recorder.finishRecordingAsPicture(),
         width,
         height,

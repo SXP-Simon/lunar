@@ -38,6 +38,7 @@ export function renderResolvedPrimitiveText(
       if (!text) continue;
       const key = JSON.stringify([styleKey, text]);
       const { paragraph, baseline } = paragraphs.getOrCreate(key, () => {
+        const startedAt = options.paragraphMetrics ? performance.now() : undefined;
         const created = options.paragraphs.createParagraph(text, paint, {
           color: ink,
           alpha,
@@ -51,8 +52,12 @@ export function renderResolvedPrimitiveText(
         } catch (error) {
           created.dispose();
           throw error;
+        } finally {
+          if (startedAt !== undefined && options.paragraphMetrics) {
+            options.paragraphMetrics.shapeMs += performance.now() - startedAt;
+          }
         }
-      });
+      }, options.paragraphMetrics);
       paragraph.paint(canvas, current.x, current.y - baseline);
     }
   } finally {

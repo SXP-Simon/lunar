@@ -6,6 +6,7 @@ import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import type { ReaderInteractiveTurn, ReaderPageContent } from '../core/page-turn-types';
 import { nativeInteractivePageTurnStockId } from './page-turn';
 import type { ReaderPageTurnSurfaceBinding } from './page-turn-binding';
+import { readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from '../../../runtime/core/performance';
 import {
   configureNativePagerInput,
   setNativePagerAnchor,
@@ -101,9 +102,16 @@ export function useNativeInteractivePageTurn({
     let sourcePicture: SkPicture | undefined;
     let targetPicture: SkPicture | undefined;
     let accepted = false;
+    const recordStartedAt = readerPerformanceStart();
+    let submitStartedAt: number | undefined;
+    let submittedAtMs: number | undefined;
     try {
       sourcePicture = createPicture(interactiveSource);
       targetPicture = createPicture(interactiveTurn.content);
+      readerPerformanceEnd('reader.native.record', recordStartedAt, { workId: interactiveTurn.performanceId,
+        pixelWidth, pixelHeight, prepared: nativeGesture.preparedTurnId });
+      submitStartedAt = readerPerformanceStart();
+      submittedAtMs = submitStartedAt === undefined ? undefined : Date.now();
       const forward = interactiveTurn.direction > 0;
       accepted = stockNativePagerPicture(canvas, {
         id: stockId,
@@ -138,6 +146,8 @@ export function useNativeInteractivePageTurn({
     } catch {
       accepted = false;
     } finally {
+      readerPerformanceEnd('reader.native.stock', submitStartedAt, { workId: interactiveTurn.performanceId, accepted });
+      readerPerformanceMark('reader.native.submit', { workId: interactiveTurn.performanceId, nativeId: stockId, accepted, submittedAtMs });
       sourcePicture?.dispose();
       targetPicture?.dispose();
     }

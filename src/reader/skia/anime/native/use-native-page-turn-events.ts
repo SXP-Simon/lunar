@@ -2,7 +2,8 @@ import type { CanvasRef } from '@shopify/react-native-skia';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 
 import type { ReaderAutomaticTurn, ReaderInteractiveTurn } from '../core/page-turn-types';
-import { readerAutomaticPageTurnId } from './page-turn';
+import { readerAutomaticPageTurnId, readerInteractivePageTurnIdentity } from './page-turn';
+import { readerPerformanceActivity, readerPerformanceMark, readerPerformanceStart } from '../../../runtime/core/performance';
 import type { ReaderPageTurnSurfaceBinding } from './page-turn-binding';
 import { takeNativePagerEvents } from './pager-compositor';
 
@@ -59,12 +60,20 @@ export function useNativePageTurnEvents({
   }, [active]);
 
   useEffect(() => {
-    if (!active || (!automaticActive && !interactiveTurn)) return;
+    if (!active || (!(automaticActive && turns.length > 0) && !interactiveTurn)) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const drainEvents = () => {
-      for (const event of takeNativePagerEvents(canvas)) {
+      const startedAt = readerPerformanceStart();
+      const events = takeNativePagerEvents(canvas);
+      if (startedAt !== undefined) readerPerformanceActivity('native.poll', performance.now() - startedAt, { events: events.length });
+      for (const event of events) {
         const turnId = readerAutomaticPageTurnId(event.id);
+        const gesture = readerInteractivePageTurnIdentity(event.id);
+        const workId = turnId !== undefined ? turns.find((turn) => turn.id === turnId)?.performanceId
+          : gesture?.gestureToken === interactiveTurn?.nativeGesture?.token ? interactiveTurn?.performanceId : undefined;
+        readerPerformanceMark('reader.native.event', { workId, nativeId: event.id, event: event.event,
+          nativeAtMs: event.eventAtMs, deliveryDelayMs: Math.max(0, Date.now() - event.eventAtMs) });
         if (turnId === undefined || !submittedTurnIds.current.has(turnId)) {
           surfaceBindingRef.current?.onNativeEvent(event);
           continue;
@@ -86,7 +95,7 @@ export function useNativePageTurnEvents({
       clearInterval(timer);
       drainEvents();
     };
-  }, [active, automaticActive, canvasRef, interactiveTurn, submittedTurnIds, turns.length]);
+  }, [active, automaticActive, canvasRef, interactiveTurn, submittedTurnIds, turns]);
 
   return presentedTurnId;
 }

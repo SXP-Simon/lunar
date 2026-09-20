@@ -6,7 +6,7 @@ import type {
   LunarReaderRuntime,
   ReaderPreparedTurn,
 } from '../../../runtime/core/native-reader-runtime';
-import { readerDiagnostic } from '../../../runtime/core/performance';
+import { readerDiagnostic, readerPerformanceId, readerPerformanceMark } from '../../../runtime/core/performance';
 import {
   acknowledgeNativePagerPresentationById,
   type NativePagerEventRecord,
@@ -123,9 +123,10 @@ export function useInteractivePageTurn({
 
     readerDiagnostic(
       'turn.handoff.snapshot-ready',
-      `turn=${committedHandoff.turnId} ui=${uiSnapshotIdentity} generation=${committedHandoff.generation}`,
+      () => (`turn=${committedHandoff.turnId} ui=${uiSnapshotIdentity} generation=${committedHandoff.generation}`),
     );
     let cancelled = false;
+    readerPerformanceMark('reader.handoff.snapshot', { workId: committedHandoff.performanceId, page: uiSnapshotIdentity });
     void waitForPageHandoffFrames().then(() => {
       if (cancelled || handoffGeneration.current !== committedHandoff.generation) return;
       if (committedHandoff.nativeTurnId) {
@@ -136,9 +137,11 @@ export function useInteractivePageTurn({
       }
       readerDiagnostic(
         'turn.handoff.clear',
-        `turn=${committedHandoff.turnId} ui=${uiSnapshotIdentity} generation=${committedHandoff.generation}`,
+        () => (`turn=${committedHandoff.turnId} ui=${uiSnapshotIdentity} generation=${committedHandoff.generation}`),
       );
       activeTurnId.current = undefined;
+      readerPerformanceMark('reader.turn.complete', { workId: committedHandoff.performanceId,
+        turnId: committedHandoff.turnId, mode: 'gesture' });
       setCommittedHandoff(undefined);
       setInteractiveTurn(undefined);
     });
@@ -151,13 +154,13 @@ export function useInteractivePageTurn({
     if (!interactiveTurn && !committedHandoff) return;
     readerDiagnostic(
       'turn.ui.snapshot',
-      [
+      () => ([
         `turn=${committedHandoff?.turnId ?? activeTurnId.current ?? 'none'}`,
         `ui=${uiSnapshotIdentity}`,
         `target=${interactiveTurn?.content ? describeSnapshotIdentity(interactiveTurn.content.snapshot) : 'pending'}`,
         `settling=${String(interactiveTurn?.settling === true)}`,
         `handoff=${String(Boolean(committedHandoff))}`,
-      ].join(' '),
+      ].join(' ')),
     );
   }, [committedHandoff, interactiveTurn, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex, uiSnapshotIdentity]);
 
@@ -171,6 +174,7 @@ export function useInteractivePageTurn({
     activeTurnId.current = turnId;
     handoffGeneration.current += 1;
     dragState.current = {
+      performanceId: readerPerformanceId('gesture'),
       id: turnId,
       nativeGestureToken: nativeToken,
       revisionId: snapshot.revisionId,
@@ -192,11 +196,13 @@ export function useInteractivePageTurn({
       preparing: false,
       prepared: false,
     };
+    readerPerformanceMark('reader.gesture.begin', { workId: dragState.current.performanceId, turnId,
+      token: nativeToken, effect: pageTurnEffect.visual.kind });
     readerDiagnostic(
       'turn.gesture.begin',
-      `turn=${turnId} source=${describeSnapshotIdentity(snapshot)} x=${formatTraceNumber(startX)} y=${formatTraceNumber(startY)}`,
+      () => (`turn=${turnId} source=${describeSnapshotIdentity(snapshot)} x=${formatTraceNumber(startX)} y=${formatTraceNumber(startY)}`),
     );
-  }, [automaticNavigationActive, interactiveTurn?.settling, isReady, snapshot, viewport]);
+  }, [automaticNavigationActive, interactiveTurn?.settling, isReady, pageTurnEffect.visual.kind, snapshot, viewport]);
 
   const showPreparedTurn = useCallback((
     state: ReaderDragState,
@@ -205,7 +211,7 @@ export function useInteractivePageTurn({
     if (runtime.getSnapshot().revisionId !== preparedTurn.revisionId) {
       readerDiagnostic(
         'turn.target.reject',
-        `turn=${state.id} prepared=${preparedTurn.id} reason=revision runtime=${describeSnapshotIdentity(runtime.getSnapshot())} expectedRevision=${preparedTurn.revisionId}`,
+        () => (`turn=${state.id} prepared=${preparedTurn.id} reason=revision runtime=${describeSnapshotIdentity(runtime.getSnapshot())} expectedRevision=${preparedTurn.revisionId}`),
       );
       return false;
     }
@@ -221,7 +227,7 @@ export function useInteractivePageTurn({
         state.targetUnavailableLogged = true;
         readerDiagnostic(
           'turn.target.unavailable',
-          `turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)} picture=${String(Boolean(targetPicture))} frame=${String(Boolean(targetFrame))}`,
+          () => (`turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)} picture=${String(Boolean(targetPicture))} frame=${String(Boolean(targetFrame))}`),
         );
       }
       return false;
@@ -230,9 +236,10 @@ export function useInteractivePageTurn({
     state.prepared = true;
     readerDiagnostic(
       'turn.target.mount',
-      `turn=${state.id} prepared=${preparedTurn.id} sourceSpread=${preparedTurn.sourceSnapshotSpreadIndex} target=${describePreparedTarget(preparedTurn)} progress=${formatTraceNumber(state.renderProgress)}`,
+      () => (`turn=${state.id} prepared=${preparedTurn.id} sourceSpread=${preparedTurn.sourceSnapshotSpreadIndex} target=${describePreparedTarget(preparedTurn)} progress=${formatTraceNumber(state.renderProgress)}`),
     );
     setInteractiveTurn({
+      performanceId: state.performanceId,
       content: {
         key: `${preparedTurn.revisionId}:${preparedTurn.targetSpreadIndex}:${preparedTurn.targetRenderId}:drag`,
         snapshot: {
@@ -284,7 +291,7 @@ export function useInteractivePageTurn({
       state.directionLocked = true;
       readerDiagnostic(
         'turn.gesture.direction',
-        `turn=${state.id} direction=${state.direction > 0 ? 'next' : 'previous'} translationX=${formatTraceNumber(translationX)}`,
+        () => (`turn=${state.id} direction=${state.direction > 0 ? 'next' : 'previous'} translationX=${formatTraceNumber(translationX)}`),
       );
     }
 
@@ -330,6 +337,7 @@ export function useInteractivePageTurn({
     if (!state.pendingPublished && pageTurnEffect.visual.kind === 'slide') {
       state.pendingPublished = true;
       setInteractiveTurn({
+        performanceId: state.performanceId,
         direction,
         progress: state.renderProgress,
         progressValue: gestureProgress,
@@ -349,9 +357,9 @@ export function useInteractivePageTurn({
       const turnDirection = direction > 0 ? 'next' : 'previous';
       readerDiagnostic(
         'turn.prepare.begin',
-        `turn=${state.id} direction=${turnDirection} sourceRevision=${state.revisionId} sourceSpread=${state.startSpread}`,
+        () => (`turn=${state.id} direction=${turnDirection} sourceRevision=${state.revisionId} sourceSpread=${state.startSpread}`),
       );
-      const preparation = runtime.prepareAdjacent(turnDirection);
+      const preparation = runtime.prepareAdjacent(turnDirection, state.performanceId);
       state.preparation = preparation;
       void preparation.then((preparedTurn) => {
         const current = dragState.current;
@@ -364,18 +372,20 @@ export function useInteractivePageTurn({
         ) {
           readerDiagnostic(
             'turn.prepare.stale',
-            `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} activeTurn=${current?.id ?? 'none'} runtime=${describeSnapshotIdentity(runtime.getSnapshot())}`,
+            () => (`turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} activeTurn=${current?.id ?? 'none'} runtime=${describeSnapshotIdentity(runtime.getSnapshot())}`),
           );
           if (preparedTurn) void runtime.cancelPreparedTurn(preparedTurn);
           return;
         }
         current.preparation = undefined;
         if (preparedTurn) current.preparedTurn = preparedTurn;
+        readerPerformanceMark('reader.turn.ready', { workId: state.performanceId, turnId: state.id,
+          prepared: preparedTurn?.id, targetRenderId: preparedTurn?.targetRenderId, ready: Boolean(preparedTurn) });
         readerDiagnostic(
           preparedTurn ? 'turn.prepare.ready' : 'turn.prepare.empty',
-          preparedTurn
+          () => (preparedTurn
             ? `turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)}`
-            : `turn=${state.id} direction=${turnDirection} runtime=${describeSnapshotIdentity(runtime.getSnapshot())}`,
+            : `turn=${state.id} direction=${turnDirection} runtime=${describeSnapshotIdentity(runtime.getSnapshot())}`),
         );
         if (!preparedTurn || !showPreparedTurn(current, preparedTurn)) {
           current.preparing = false;
@@ -439,7 +449,7 @@ export function useInteractivePageTurn({
     }
     readerDiagnostic(
       'turn.native.event',
-      `turn=${identity.gestureToken} prepared=${identity.preparedTurnId} event=${event.event} native=${event.id}`,
+      () => (`turn=${identity.gestureToken} prepared=${identity.preparedTurnId} event=${event.event} native=${event.id}`),
     );
     if (event.event === 'consumed' && !handoff.commit) {
       setInteractiveTurn((turn) => turn?.nativeGesture?.token === identity.gestureToken
@@ -501,6 +511,7 @@ export function useInteractivePageTurn({
         return;
       }
       setCommittedHandoff({
+        performanceId: preparedTurn.performanceId,
         turnId: handoff.turnId,
         generation: handoff.generation,
         revisionId: preparedTurn.revisionId,

@@ -9,7 +9,7 @@ import type {
 } from '../../contracts';
 import type { SkiaImageAsset } from '../images/image-decoder';
 import type { SkiaParagraphFactory } from '../text/paragraph-factory';
-import { ReaderParagraphCache } from '../text/paragraph-cache';
+import { ReaderParagraphCache, type ReaderParagraphMetrics } from '../text/paragraph-cache';
 import {
   isBookOwnedPageGround, isOpaqueColor,
   makeResolvedPrimitivePaint, resolvedPrimitiveColor,
@@ -22,6 +22,7 @@ export interface ReaderPrimitiveRenderOptions {
   readonly images: { resolveImage(source: string): SkiaImageAsset | undefined };
   readonly paragraphs: SkiaParagraphFactory;
   readonly paragraphCache?: ReaderParagraphCache;
+  readonly paragraphMetrics?: ReaderParagraphMetrics;
   readonly colorOverride?: SkiaColorOverride;
 }
 

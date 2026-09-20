@@ -18,6 +18,7 @@ import {
 import { useNativeAutomaticPageTurnSubmission } from './use-native-automatic-page-turns';
 import { useNativeInteractivePageTurn } from './use-native-interactive-page-turn';
 import { useNativePageTurnEvents } from './use-native-page-turn-events';
+import { readerPerformanceActivity, readerPerformanceStart } from '../../../runtime/core/performance';
 
 interface NativePageTurnsOptions {
   readonly canvasRef: RefObject<CanvasRef | null>;
@@ -80,6 +81,8 @@ export function useNativePageTurns({
     let frame = 0;
     const probe = () => {
       if (cancelled) return;
+      const startedAt = readerPerformanceStart();
+      if (startedAt !== undefined) readerPerformanceActivity('native.ready-probe');
       const canvas = canvasRef.current;
       if (
         canvas

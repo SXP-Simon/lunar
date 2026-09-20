@@ -20,6 +20,7 @@ import {
 import { runOnUI, scheduleOnRN } from 'react-native-worklets';
 
 import type { CompiledReaderPicture } from '../../../rendering/picture-compiler';
+import { isReaderPerformanceEnabled, readerPerformanceActivity, readerPerformanceMark } from '../../../../runtime/core/performance';
 import {
   createAutomaticCurlProfile,
   createGestureCurlProfile,
@@ -190,6 +191,13 @@ interface PageCurlMeshProps {
   readonly settleTo?: 0 | 1;
 }
 
+interface CaptureTiming {
+  readonly queueMs: number;
+  readonly rasterMs: number;
+  readonly startedAtMs: number;
+  readonly completedAtMs: number;
+}
+
 function capturePictureTexture(
   texture: SharedValue<SkImage | null>,
   backingSurface: SharedValue<SkSurface | null>,
@@ -200,9 +208,13 @@ function capturePictureTexture(
   captureId: number,
   textureIdentity: string,
   disposePictureAfterCapture: boolean,
-  onReady: (captureId: number, textureIdentity: string) => void,
+  onReady: (captureId: number, textureIdentity: string, ready: boolean, timing?: CaptureTiming) => void,
+  queuedAtMs?: number,
 ): void {
   "worklet";
+  const startedAt = queuedAtMs === undefined ? undefined : performance.now();
+  const startedAtMs = queuedAtMs === undefined ? 0 : Date.now();
+  let ready = false;
   try {
     const surface = Skia.Surface.MakeOffscreen(
       Math.max(1, Math.round(width * textureScale)),
@@ -226,11 +238,18 @@ function capturePictureTexture(
     backingSurface.value = surface;
     previousTexture?.dispose();
     previousSurface?.dispose();
-    scheduleOnRN(onReady, captureId, textureIdentity);
+    ready = true;
   } finally {
     // Generated chrome pictures belong to this queued UI task. Releasing them
     // here prevents RN cleanup from racing canvas.drawPicture above.
     if (disposePictureAfterCapture) picture.dispose();
+    // Reuse the readiness callback; never cross runtimes once per animation frame.
+    scheduleOnRN(onReady, captureId, textureIdentity, ready, startedAt === undefined ? undefined : {
+      queueMs: Math.max(0, startedAtMs - queuedAtMs!),
+      rasterMs: Math.max(0, performance.now() - startedAt),
+      startedAtMs,
+      completedAtMs: Date.now(),
+    });
   }
 }
 
@@ -353,8 +372,16 @@ export function usePageCurlTexture(
   const markTextureReady = useCallback((
     completedCaptureId: number,
     completedIdentity: string,
+    ready: boolean,
+    timing?: CaptureTiming,
   ) => {
-    if (captureId.current === completedCaptureId) setReadyIdentity(completedIdentity);
+    if (timing) {
+      readerPerformanceMark('reader.texture.capture', { page: completedIdentity,
+        captureId: completedCaptureId, ready, ...timing,
+        callbackDelayMs: Math.max(0, Date.now() - timing.completedAtMs) });
+      readerPerformanceActivity('texture.capture', timing.rasterMs);
+    }
+    if (ready && captureId.current === completedCaptureId) setReadyIdentity(completedIdentity);
   }, []);
   const textureReady = Boolean(
     picture
@@ -380,6 +407,7 @@ export function usePageCurlTexture(
       textureIdentity,
       disposePictureAfterCapture,
       markTextureReady,
+      isReaderPerformanceEnabled() ? Date.now() : undefined,
     );
   }, [backingSurface, disposePictureAfterCapture, height, image, markTextureReady, picture, textureIdentity, width]);
 

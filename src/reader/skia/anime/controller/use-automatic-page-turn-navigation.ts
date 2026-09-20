@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ReaderSnapshot } from '../../../contracts';
 import type { LunarReaderRuntime } from '../../../runtime/core/native-reader-runtime';
+import { readerPerformanceAsync, readerPerformanceEnd, readerPerformanceId, readerPerformanceMark, readerPerformanceStart } from '../../../runtime/core/performance';
 import {
   AUTOMATIC_PAGE_TURN_MAX_LANES,
   AUTOMATIC_PAGE_TURN_START_INTERVAL_MS,
@@ -48,6 +49,8 @@ export function useAutomaticPageTurnNavigation({
   const complete = useCallback((turnId: number) => {
     const nextTurns = turnsRef.current.filter((turn) => turn.id !== turnId);
     if (nextTurns.length === turnsRef.current.length) return;
+    const completed = turnsRef.current.find((turn) => turn.id === turnId);
+    readerPerformanceMark('reader.turn.complete', { workId: completed?.performanceId, turnId, mode: 'automatic' });
     turnsRef.current = nextTurns;
     setTurns(nextTurns);
     availableLaneWaiters.current.shift()?.();
@@ -57,6 +60,8 @@ export function useAutomaticPageTurnNavigation({
   }, []);
 
   const enqueue = useCallback((turnDirection: 1 | -1) => {
+    const performanceId = readerPerformanceId('automatic');
+    const queuedAt = readerPerformanceStart();
     const serializesTurns = pageTurnEffect.orchestration.serializesAutomaticTurns;
     if (serializesTurns) {
       if (direction.current !== undefined && direction.current !== turnDirection) {
@@ -91,10 +96,11 @@ export function useAutomaticPageTurnNavigation({
               return;
             }
           }
-          await beforeNavigate();
+          readerPerformanceEnd('reader.controller.queue', queuedAt, { workId: performanceId });
+          await readerPerformanceAsync('reader.controller.prepare', beforeNavigate, { workId: performanceId });
           const before = runtime.getSnapshot();
           const from = readerPageContentForSnapshot(runtime, before);
-          const result = turnDirection > 0 ? await runtime.next() : await runtime.previous();
+          const result = turnDirection > 0 ? await runtime.next(performanceId) : await runtime.previous(performanceId);
           if (
             generation.current === requestGeneration
             && from
@@ -103,6 +109,7 @@ export function useAutomaticPageTurnNavigation({
             const to = readerPageContentForSnapshot(runtime, result);
             if (to) {
               const turn: ReaderAutomaticTurn = {
+                performanceId,
                 id: ++turnSequence.current,
                 from,
                 to,
@@ -110,6 +117,8 @@ export function useAutomaticPageTurnNavigation({
               };
               const nextTurns = appendAutomaticPageTurn(turnsRef.current, turn);
               turnsRef.current = nextTurns;
+              readerPerformanceMark('reader.turn.ready', { workId: performanceId, turnId: turn.id,
+                direction: turnDirection, page: to.key, effect: pageTurnEffect.visual.kind });
               setTurns(nextTurns);
               if (serializesTurns) {
                 nextStartAt.current = Date.now() + AUTOMATIC_PAGE_TURN_START_INTERVAL_MS;

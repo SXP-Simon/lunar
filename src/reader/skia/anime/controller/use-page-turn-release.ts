@@ -2,7 +2,7 @@ import { useCallback, type Dispatch, type RefObject, type SetStateAction } from 
 
 import type { ReaderSpreadMode, ReaderViewport } from '../../../contracts';
 import type { LunarReaderRuntime } from '../../../runtime/core/native-reader-runtime';
-import { readerDiagnostic } from '../../../runtime/core/performance';
+import { readerDiagnostic, readerPerformanceMark } from '../../../runtime/core/performance';
 import {
   describePreparedTarget,
   describeSnapshotIdentity,
@@ -61,6 +61,8 @@ export function usePageTurnRelease({
     releaseTranslationX = 0,
     nativeReleased = false,
   ) => {
+    readerPerformanceMark('reader.gesture.release', { workId: state.performanceId,
+      turnId: state.id, prepared: state.prepared, nativeReleased });
     if (dragStateRef.current === state) dragStateRef.current = undefined;
     if (
       !nativeReleased
@@ -69,7 +71,7 @@ export function usePageTurnRelease({
       nativeGestureHandoffRef.current.delete(state.nativeGestureToken);
     }
     if (!state.directionLocked) {
-      readerDiagnostic('turn.gesture.end', `turn=${state.id} decision=none reason=direction-unlocked`);
+      readerDiagnostic('turn.gesture.end', () => (`turn=${state.id} decision=none reason=direction-unlocked`));
       activeTurnIdRef.current = undefined;
       setInteractiveTurn(undefined);
       return;
@@ -121,7 +123,7 @@ export function usePageTurnRelease({
     });
     readerDiagnostic(
       'turn.release',
-      [
+      () => ([
         `turn=${state.id}`,
         `direction=${state.direction > 0 ? 'next' : 'previous'}`,
         `decision=${commit ? 'commit' : 'cancel'}`,
@@ -130,7 +132,7 @@ export function usePageTurnRelease({
         `velocity=${formatTraceNumber(towardTargetVelocity)}`,
         `prepared=${String(state.prepared)}`,
         `preparedId=${state.preparedTurn?.id ?? 'none'}`,
-      ].join(' '),
+      ].join(' ')),
     );
     if (nativeReleased && state.preparedTurn && state.prepared) {
       const existingHandoff = nativeGestureHandoffRef.current.get(state.nativeGestureToken);
@@ -166,7 +168,7 @@ export function usePageTurnRelease({
       } : turn);
       readerDiagnostic(
         'turn.native.release',
-        `turn=${state.id} prepared=${state.preparedTurn.id} expected=${commit ? 'commit' : 'cancel'} generation=${generation}`,
+        () => (`turn=${state.id} prepared=${state.preparedTurn?.id} expected=${commit ? 'commit' : 'cancel'} generation=${generation}`),
       );
       return;
     }
@@ -175,7 +177,7 @@ export function usePageTurnRelease({
         if (state.preparedTurn) void runtime.cancelPreparedTurn(state.preparedTurn);
         readerDiagnostic(
           'turn.cancel.clear',
-          `turn=${state.id} mode=without-mounted-target prepared=${state.preparedTurn?.id ?? 'none'}`,
+          () => (`turn=${state.id} mode=without-mounted-target prepared=${state.preparedTurn?.id ?? 'none'}`),
         );
         activeTurnIdRef.current = undefined;
         setInteractiveTurn(undefined);
@@ -199,11 +201,16 @@ export function usePageTurnRelease({
       const preparedTurn = state.preparedTurn;
       let notifyVisualSettle: () => void = () => undefined;
       const visualSettle = new Promise<void>((resolve) => {
-        notifyVisualSettle = resolve;
+        notifyVisualSettle = () => {
+          readerPerformanceMark('reader.animation.settled', { workId: state.performanceId, cancelled: true });
+          resolve();
+        };
       });
+      readerPerformanceMark('reader.animation.release', { workId: state.performanceId,
+        plannedDurationMs: settleDuration, cancelled: true });
       readerDiagnostic(
         'turn.cancel.begin',
-        `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} durationMs=${settleDuration}`,
+        () => (`turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} durationMs=${settleDuration}`),
       );
       setInteractiveTurn((turn) => turn ? {
         ...turn,
@@ -228,7 +235,7 @@ export function usePageTurnRelease({
         .then(() => {
           readerDiagnostic(
             'turn.cancel.visual-ready',
-            `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} generation=${generation}`,
+            () => (`turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} generation=${generation}`),
           );
           return preparedTurn
             ? runtime.cancelPreparedTurn(preparedTurn)
@@ -240,9 +247,10 @@ export function usePageTurnRelease({
           if (handoffGenerationRef.current !== generation) return;
           readerDiagnostic(
             'turn.cancel.clear',
-            `turn=${state.id} runtime=${describeSnapshotIdentity(runtime.getSnapshot())} generation=${generation}`,
+            () => (`turn=${state.id} runtime=${describeSnapshotIdentity(runtime.getSnapshot())} generation=${generation}`),
           );
           activeTurnIdRef.current = undefined;
+          readerPerformanceMark('reader.turn.complete', { workId: state.performanceId, cancelled: true, mode: 'gesture' });
           setInteractiveTurn(undefined);
         });
       return;
@@ -252,17 +260,17 @@ export function usePageTurnRelease({
     if (!state.prepared || !preparedTurn) {
       readerDiagnostic(
         'turn.commit.fallback',
-        `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} mounted=${String(state.prepared)} direction=${state.direction > 0 ? 'next' : 'previous'}`,
+        () => (`turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} mounted=${String(state.prepared)} direction=${state.direction > 0 ? 'next' : 'previous'}`),
       );
       setInteractiveTurn(undefined);
       void (preparedTurn
         ? runtime.commitPreparedTurn(preparedTurn)
         : state.direction > 0
-          ? runtime.next()
-          : runtime.previous()).then((result) => {
+          ? runtime.next(state.performanceId)
+          : runtime.previous(state.performanceId)).then((result) => {
             readerDiagnostic(
               'turn.commit.fallback-ready',
-              `turn=${state.id} result=${describeSnapshotIdentity(result)}`,
+              () => (`turn=${state.id} result=${describeSnapshotIdentity(result)}`),
             );
             activeTurnIdRef.current = undefined;
           });
@@ -287,8 +295,13 @@ export function usePageTurnRelease({
     const generation = ++handoffGenerationRef.current;
     let notifyVisualSettle: () => void = () => undefined;
     const visualSettle = new Promise<void>((resolve) => {
-      notifyVisualSettle = resolve;
+      notifyVisualSettle = () => {
+        readerPerformanceMark('reader.animation.settled', { workId: state.performanceId, turnId: state.id });
+        resolve();
+      };
     });
+    readerPerformanceMark('reader.animation.release', { workId: state.performanceId, turnId: state.id,
+      plannedDurationMs: settleDuration });
     setInteractiveTurn((turn) => turn ? {
       ...turn,
       progress: state.renderProgress,
@@ -305,7 +318,7 @@ export function usePageTurnRelease({
     } : turn);
     readerDiagnostic(
       'turn.commit.begin',
-      `turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)} durationMs=${settleDuration} generation=${generation}`,
+      () => (`turn=${state.id} prepared=${preparedTurn.id} target=${describePreparedTarget(preparedTurn)} durationMs=${settleDuration} generation=${generation}`),
     );
     void Promise.allSettled([
       navigate,
@@ -323,7 +336,7 @@ export function usePageTurnRelease({
       ) {
         readerDiagnostic(
           'turn.commit.mismatch',
-          `turn=${state.id} prepared=${preparedTurn.id} expected=${describePreparedTarget(preparedTurn)} runtime=${describeSnapshotIdentity(currentSnapshot)}`,
+          () => (`turn=${state.id} prepared=${preparedTurn.id} expected=${describePreparedTarget(preparedTurn)} runtime=${describeSnapshotIdentity(currentSnapshot)}`),
         );
         activeTurnIdRef.current = undefined;
         setInteractiveTurn(undefined);
@@ -331,9 +344,10 @@ export function usePageTurnRelease({
       }
       readerDiagnostic(
         'turn.commit.runtime-ready',
-        `turn=${state.id} prepared=${preparedTurn.id} runtime=${describeSnapshotIdentity(currentSnapshot)} generation=${generation}`,
+        () => (`turn=${state.id} prepared=${preparedTurn.id} runtime=${describeSnapshotIdentity(currentSnapshot)} generation=${generation}`),
       );
       setCommittedHandoff({
+        performanceId: state.performanceId,
         turnId: state.id,
         generation,
         revisionId: preparedTurn.revisionId,
@@ -365,10 +379,11 @@ export function usePageTurnRelease({
     const state = dragStateRef.current;
     if (!state) return;
     if (state.preparation && !state.preparedTurn) {
+      readerPerformanceMark('reader.gesture.wait-prepare', { workId: state.performanceId });
       const preparation = state.preparation;
       readerDiagnostic(
         'turn.release.wait-prepare',
-        `turn=${state.id} translationX=${formatTraceNumber(releaseTranslationX)} velocityX=${formatTraceNumber(releaseVelocity)}`,
+        () => (`turn=${state.id} translationX=${formatTraceNumber(releaseTranslationX)} velocityX=${formatTraceNumber(releaseVelocity)}`),
       );
       void preparation.then(() => {
         if (dragStateRef.current === state) {

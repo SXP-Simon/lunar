@@ -12,6 +12,8 @@ import {
 import {
   LunarReaderRuntime,
   RitoNativePaginationBackend,
+  readerPerformanceActivity,
+  readerPerformanceStart,
 } from '@/reader/native';
 import { useFontStore, useReaderStore } from '@/stores';
 import { i18n } from '@/i18n';
@@ -81,8 +83,16 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
       theme,
       updatedAt: Date.now(),
     };
+    const queuedAt = readerPerformanceStart();
     saveQueue.current = saveQueue.current
-      .then(() => saveReaderReadingState(state))
+      .then(async () => {
+        if (queuedAt !== undefined) readerPerformanceActivity('reading-state.queue', performance.now() - queuedAt);
+        const startedAt = readerPerformanceStart();
+        try { await saveReaderReadingState(state); }
+        finally {
+          if (startedAt !== undefined) readerPerformanceActivity('reading-state.save', performance.now() - startedAt);
+        }
+      })
       .catch(() => undefined);
   }, [currentBook, saveQueue, theme, typography]);
 

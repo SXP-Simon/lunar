@@ -6,6 +6,7 @@ import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import type { ReaderAutomaticTurn, ReaderPageContent } from '../core/page-turn-types';
 import { nativeAutomaticPageTurnFaces, nativeAutomaticPageTurnId } from './page-turn';
 import { enqueueNativePagerPictureTurn } from './pager-compositor';
+import { readerPerformanceEnd, readerPerformanceMark, readerPerformanceStart } from '../../../runtime/core/performance';
 
 interface NativeAutomaticPageTurnsOptions {
   readonly active: boolean;
@@ -43,9 +44,16 @@ export function useNativeAutomaticPageTurnSubmission({
       let frontPicture: SkPicture | undefined;
       let backgroundPicture: SkPicture | undefined;
       let accepted = false;
+      const recordStartedAt = readerPerformanceStart();
+      let submitStartedAt: number | undefined;
+      let submittedAtMs: number | undefined;
       try {
         frontPicture = createPicture(faces.front);
         backgroundPicture = createPicture(faces.background);
+        readerPerformanceEnd('reader.native.record', recordStartedAt, { workId: turn.performanceId,
+          pixelWidth, pixelHeight, turnId: turn.id });
+        submitStartedAt = readerPerformanceStart();
+        submittedAtMs = submitStartedAt === undefined ? undefined : Date.now();
         accepted = enqueueNativePagerPictureTurn(canvas, {
           id: nativeAutomaticPageTurnId(turn.id),
           frontPicture,
@@ -66,6 +74,9 @@ export function useNativeAutomaticPageTurnSubmission({
       } catch {
         accepted = false;
       } finally {
+        readerPerformanceEnd('reader.native.enqueue', submitStartedAt, { workId: turn.performanceId, accepted });
+        readerPerformanceMark('reader.native.submit', { workId: turn.performanceId,
+          nativeId: nativeAutomaticPageTurnId(turn.id), accepted, submittedAtMs });
         frontPicture?.dispose();
         backgroundPicture?.dispose();
       }

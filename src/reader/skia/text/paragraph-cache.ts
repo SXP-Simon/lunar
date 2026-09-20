@@ -5,6 +5,13 @@ export interface CachedReaderParagraph {
   readonly baseline: number;
 }
 
+export interface ReaderParagraphMetrics {
+  hits: number;
+  misses: number;
+  evictions: number;
+  shapeMs: number;
+}
+
 /** Bounded, session-owned shaped text, shared by neighboring page recordings. */
 export class ReaderParagraphCache {
   private readonly entries = new Map<string, CachedReaderParagraph>();
@@ -20,13 +27,15 @@ export class ReaderParagraphCache {
     }
   }
 
-  getOrCreate(key: string, create: () => CachedReaderParagraph): CachedReaderParagraph {
+  getOrCreate(key: string, create: () => CachedReaderParagraph, metrics?: ReaderParagraphMetrics): CachedReaderParagraph {
     const cached = this.entries.get(key);
     if (cached) {
+      if (metrics) metrics.hits += 1;
       this.entries.delete(key);
       this.entries.set(key, cached);
       return cached;
     }
+    if (metrics) metrics.misses += 1;
     const entry = create();
     this.entries.set(key, entry);
     this.keyLength += key.length;
@@ -39,6 +48,7 @@ export class ReaderParagraphCache {
       this.entries.delete(oldestKey);
       this.keyLength -= oldestKey.length;
       oldest.paragraph.dispose();
+      if (metrics) metrics.evictions += 1;
     }
     return entry;
   }

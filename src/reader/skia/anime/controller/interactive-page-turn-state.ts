@@ -2,6 +2,7 @@ import type { ReaderSnapshot } from '../../../contracts';
 import type { ReaderPreparedTurn } from '../../../runtime/core/native-reader-runtime';
 
 export interface ReaderDragState {
+  readonly performanceId?: string;
   readonly id: number;
   readonly nativeGestureToken: number;
   readonly revisionId: number;
@@ -28,6 +29,7 @@ export interface ReaderDragState {
 }
 
 export interface ReaderCommittedHandoff {
+  readonly performanceId?: string;
   readonly turnId: number;
   readonly generation: number;
   readonly revisionId: number;

@@ -9,6 +9,7 @@ export {
   type RitoNativePaginationBackendOptions,
 } from './runtime/pagination/rito-native-pagination-backend';
 export type { ReaderPaginationBackend } from './runtime/pagination/pagination-backend';
+export { readerPerformanceActivity, readerPerformanceStart } from './runtime/core/performance';
 export {
   PAGE_TURN_DURATION_MS,
   READER_PAGE_ANIMATION_STYLES,

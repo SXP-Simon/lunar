@@ -55,6 +55,7 @@ export interface ReaderPageTransitionValues {
 }
 
 export interface ReaderInteractiveTurn {
+  readonly performanceId?: string;
   /** The source can start moving while the adjacent picture is being prepared. */
   readonly content?: ReaderPageContent;
   readonly direction: 1 | -1;
@@ -91,6 +92,7 @@ export interface ReaderNativeGestureState {
 }
 
 export interface ReaderAutomaticTurn {
+  readonly performanceId?: string;
   readonly id: number;
   readonly from: ReaderPageContent;
   readonly to: ReaderPageContent;

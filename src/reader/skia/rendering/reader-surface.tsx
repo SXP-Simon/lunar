@@ -27,7 +27,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { i18n } from '@/i18n';
 import type { ReaderSnapshot, ReaderSpreadMode } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
-import { readerDiagnostic, readerPerformanceMark } from '../../runtime/core/performance';
+import { readerPerformanceActivity, startReaderPerformanceMonitor } from '../../runtime/core/performance';
 import {
   PageCurlMesh,
   automaticPageTurnPaintOrder,
@@ -144,6 +144,12 @@ export const ReaderSurface = memo(function ReaderSurface({
   overlayColor = '#777777',
   overlayInsets = DefaultOverlayInsets,
 }: ReaderSurfaceProps) {
+  useEffect(() => startReaderPerformanceMonitor(), []);
+  useEffect(() => {
+    readerPerformanceActivity('surface.commit', 0, { revision: snapshot.revisionId,
+      spread: snapshot.spreadIndex, renderId: snapshot.renderId, effect: animationStyle,
+      interactive: Boolean(preparedInteractiveTurn), automatic: preparedAutomaticTurns.length });
+  });
   const restingPull = useSharedValue(0);
   const restingBookmark = useSharedValue(false);
   const pull = bookmarkPullDistance ?? restingPull;
@@ -341,10 +347,8 @@ export const ReaderSurface = memo(function ReaderSurface({
   const incomingContent = interactiveTurn && !interactiveTurn.content
     ? undefined
     : visibleContent ?? currentContent;
-  const incomingPicture = incomingContent?.picture.picture;
   const incomingSnapshot = incomingContent?.snapshot ?? snapshot;
   const incomingFrame = incomingContent?.frame ?? frame;
-  const incomingKey = incomingContent?.key ?? currentKey;
   const automaticDirection = automaticTurns[0]?.direction ?? 1;
   const automaticPaintTurns = useMemo(
     () => automaticPageTurnPaintOrder(automaticTurns, automaticDirection).map((turn) => ({
@@ -364,7 +368,6 @@ export const ReaderSurface = memo(function ReaderSurface({
     && nativeAutomaticPageTurnState.enabled;
   const fallbackAutomaticPageTurnsVisible = automaticPageTurnsVisible
     && !nativeAutomaticPageTurnState.enabled;
-  const transitionActive = activeTransition !== undefined;
   const nativeInteractiveGestureDriven = interactiveTurn?.nativeGesture?.driven === true;
   const nativeInteractiveBaseContent = nativeInteractivePageTurnBaseContent(
     activeTransition?.from,
@@ -376,41 +379,6 @@ export const ReaderSurface = memo(function ReaderSurface({
     currentContent,
     nativeAutomaticPageTurnState.presentedTurnId,
   );
-
-  useEffect(() => {
-    readerDiagnostic(
-      'turn.surface.state',
-      [
-        `snapshot=${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 'none'}`,
-        `current=${currentKey ?? 'none'}`,
-        `incoming=${incomingKey ?? 'none'}`,
-        `from=${activeTransition?.from.key ?? 'none'}`,
-        `to=${activeTransition?.toKey ?? 'none'}`,
-        `slideForeground=${pageTurnVisualKind === 'slide' ? (activeTransition?.from.key ?? currentKey ?? 'none') : 'none'}`,
-        `mode=${transitionActive ? pageTurnVisualKind : 'static'}`,
-        `interactive=${String(Boolean(interactiveTurn))}`,
-        `automatic=${automaticTurns.length}`,
-        `automaticTurn=${automaticTurns[0]?.id ?? 'none'}`,
-        `settling=${String(interactiveTurn?.settling === true)}`,
-        `picture=${String(Boolean(incomingPicture))}`,
-        `frame=${String(Boolean(incomingFrame))}`,
-      ].join(' '),
-    );
-  }, [
-    activeTransition?.from.key,
-    activeTransition?.toKey,
-    automaticTurns,
-    currentKey,
-    incomingFrame,
-    incomingKey,
-    incomingPicture,
-    interactiveTurn,
-    pageTurnVisualKind,
-    snapshot.renderId,
-    snapshot.revisionId,
-    snapshot.spreadIndex,
-    transitionActive,
-  ]);
 
   // The moving sheet owns its chrome. Recording it into the same source
   // picture prevents a footer or chapter title from travelling on a separate
@@ -563,9 +531,6 @@ export const ReaderSurface = memo(function ReaderSurface({
       )}
     </>
   );
-  if (canRenderFrame) {
-    readerPerformanceMark('reader.canvas.render', `spread=${snapshot.spreadIndex}`);
-  }
 
   return (
     <Canvas
