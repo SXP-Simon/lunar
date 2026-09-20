@@ -149,6 +149,7 @@ export const zhCN = {
     bodyFont: '正文字体',
     uiFont: '界面字体',
     chooseFont: '选择字体',
+    backToTypography: '返回阅读设置',
     builtinFont: '霞鹭文楷',
     fontSourceBuiltin: '内置',
     fontSourceImported: '已导入',

@@ -151,6 +151,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     bodyFont: 'Body font',
     uiFont: 'Reader chrome font',
     chooseFont: 'Choose font',
+    backToTypography: 'Back to reading settings',
     builtinFont: 'WenKai (bundled)',
     fontSourceBuiltin: 'Bundled',
     fontSourceImported: 'Imported',

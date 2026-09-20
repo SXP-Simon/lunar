@@ -1,18 +1,21 @@
+import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import { SymbolView } from 'expo-symbols';
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
+import { useBottomSheetAwareHandlers, useThemeColor } from 'heroui-native/hooks';
 import { SearchField } from 'heroui-native/search-field';
 import { useMemo, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { withUniwind } from 'uniwind';
 
 import { useTranslation } from '@/i18n';
 import { LUNAR_READER_BUILTIN_FONT_REF, type ReaderFontRef, type ReaderFontRole } from '@/reader';
 import { listSystemReaderFontFamilies } from '@/reader/native';
 import { type ImportedReaderFont, useFontStore, useReaderStore } from '@/stores';
 
-interface FontPickerSheetProps {
-  readonly isOpen: boolean;
+interface FontPickerContentProps {
   readonly role: ReaderFontRole;
-  readonly onOpenChange: (isOpen: boolean) => void;
+  readonly onBack: () => void;
 }
 
 type FontPickerItem =
@@ -34,8 +37,7 @@ type FontPickerItem =
 /** The selectable half of the list; a section is built from these alone. */
 type FontOption = Extract<FontPickerItem, { kind: 'option' }>;
 
-const BODY_SNAP_POINTS = ['55%'];
-const CHROME_SNAP_POINTS = ['80%'];
+const FontList = withUniwind(BottomSheetFlatList<FontPickerItem>);
 
 /**
  * Picks the font for one reader role.
@@ -45,8 +47,11 @@ const CHROME_SNAP_POINTS = ['80%'];
  * offered there. Chrome is drawn by this app and can use anything the platform
  * font manager resolves.
  */
-export function FontPickerSheet({ isOpen, role, onOpenChange }: FontPickerSheetProps) {
+export function FontPickerContent({ role, onBack }: FontPickerContentProps) {
   const { t } = useTranslation();
+  const foreground = useThemeColor('foreground');
+  const accentForeground = useThemeColor('accent-foreground');
+  const keyboardHandlers = useBottomSheetAwareHandlers();
   const typography = useReaderStore((state) => state.typography);
   const updateTypography = useReaderStore((state) => state.updateTypography);
   const fonts = useFontStore((state) => state.fonts);
@@ -56,7 +61,7 @@ export function FontPickerSheet({ isOpen, role, onOpenChange }: FontPickerSheetP
   const items = useMemo<readonly FontPickerItem[]>(() => {
     // Enumerating the platform's families crosses the JSI boundary once per
     // family, so it only happens for a role that can actually offer them.
-    const systemFamilies = allowsSystem && isOpen ? listSystemReaderFontFamilies() : [];
+    const systemFamilies = allowsSystem ? listSystemReaderFontFamilies() : [];
     const trimmedQuery = query.trim().toLocaleLowerCase();
     const sections: readonly {
       readonly id: string;
@@ -100,88 +105,89 @@ export function FontPickerSheet({ isOpen, role, onOpenChange }: FontPickerSheetP
       }
     }
     return resolved;
-  }, [allowsSystem, fonts, isOpen, query, t]);
+  }, [allowsSystem, fonts, query, t]);
 
   const selected = typography.fonts[role];
-  const handleOpenChange = (nextIsOpen: boolean) => {
-    if (!nextIsOpen) {
-      // The sheet stays mounted between openings, so a stale filter would come
-      // back as a list that looks empty for no visible reason.
-      setQuery('');
-    }
-    onOpenChange(nextIsOpen);
-  };
-
   return (
-    <BottomSheet isOpen={isOpen} onOpenChange={handleOpenChange}>
-      <BottomSheet.Portal
-        disableFullWindowOverlay
-        unstable_accessibilityContainerViewIsModal>
-        <BottomSheet.Overlay variant="blur" blurViewProps={{ intensity: 28 }} />
-        <BottomSheet.Content
-          backgroundClassName="rounded-t-3xl bg-surface"
-          contentContainerClassName="h-full"
-          contentContainerProps={{ style: { flex: 1, padding: 0 } }}
-          enableDynamicSizing={false}
-          enableOverDrag={false}
-          snapPoints={allowsSystem ? CHROME_SNAP_POINTS : BODY_SNAP_POINTS}>
-          <View className="flex-1 gap-3 px-6 pb-8 pt-3">
-            <BottomSheet.Title className="text-xl text-foreground">
-              {t('reader.chooseFont')}
-            </BottomSheet.Title>
-            {allowsSystem ? (
-              <SearchField value={query} onChange={setQuery}>
-                <SearchField.Group>
-                  <SearchField.SearchIcon />
-                  <SearchField.Input placeholder={t('reader.searchFonts')} />
-                  <SearchField.ClearButton />
-                </SearchField.Group>
-              </SearchField>
-            ) : null}
-            <FlatList
-              className="flex-1"
-              contentContainerClassName="gap-2 pb-4"
-              data={items}
-              keyExtractor={(item) => item.key}
-              keyboardShouldPersistTaps="handled"
-              ListEmptyComponent={
-                <Text className="py-8 text-center text-sm text-muted">
-                  {t('reader.noMatchingFonts')}
-                </Text>
-              }
-              renderItem={({ item }) => {
-                if (item.kind === 'header') {
-                  return (
-                    <Text className="px-1 pt-2 text-sm font-medium text-muted">{item.title}</Text>
-                  );
-                }
-                if (item.kind === 'note') {
-                  return <Text className="px-1 text-sm text-muted">{item.text}</Text>;
-                }
-                const isSelected = isSameFontRef(selected, item.ref);
-                return (
-                  <Button
-                    accessibilityState={{ selected: isSelected }}
-                    className="justify-start rounded-2xl"
-                    onPress={() => {
-                      updateTypography({ fonts: { ...typography.fonts, [role]: item.ref } });
-                      handleOpenChange(false);
-                    }}
-                    variant={isSelected ? 'primary' : 'secondary'}>
-                    <Button.Label
-                      numberOfLines={1}
-                      style={item.previewFamily ? { fontFamily: item.previewFamily } : undefined}>
-                      {item.title}
-                    </Button.Label>
-                  </Button>
-                );
+    <View className="flex-1 gap-3 px-5 pb-5 pt-3">
+      <View className="flex-row items-center gap-2">
+        <Button
+          isIconOnly
+          accessibilityLabel={t('reader.backToTypography')}
+          className="size-12 rounded-full"
+          onPress={onBack}
+          variant="ghost">
+          <SymbolView
+            name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
+            size={22}
+            tintColor={foreground}
+          />
+        </Button>
+        <BottomSheet.Title className="min-w-0 flex-1 text-xl text-foreground">
+          {t(role === 'body' ? 'reader.bodyFont' : 'reader.uiFont')}
+        </BottomSheet.Title>
+      </View>
+      {allowsSystem ? (
+        <SearchField value={query} onChange={setQuery}>
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input {...keyboardHandlers} placeholder={t('reader.searchFonts')} />
+            <SearchField.ClearButton />
+          </SearchField.Group>
+        </SearchField>
+      ) : null}
+      <FontList
+        className="flex-1"
+        contentContainerClassName="gap-2 pb-4"
+        data={items}
+        extraData={selected}
+        keyExtractor={(item) => item.key}
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
+          <Text className="py-8 text-center text-sm text-muted">
+            {t('reader.noMatchingFonts')}
+          </Text>
+        }
+        renderItem={({ item }) => {
+          if (item.kind === 'header') {
+            return (
+              <Text className="px-1 pt-2 text-sm font-medium text-muted">{item.title}</Text>
+            );
+          }
+          if (item.kind === 'note') {
+            return <Text className="px-1 text-sm text-muted">{item.text}</Text>;
+          }
+          const isSelected = isSameFontRef(selected, item.ref);
+          return (
+            <Button
+              accessibilityRole="radio"
+              accessibilityLabel={item.title}
+              accessibilityState={{ checked: isSelected }}
+              className="h-auto min-h-12 justify-start rounded-2xl py-3"
+              onPress={() => {
+                updateTypography({ fonts: { ...typography.fonts, [role]: item.ref } });
+                onBack();
               }}
-              showsVerticalScrollIndicator={false}
-            />
-          </View>
-        </BottomSheet.Content>
-      </BottomSheet.Portal>
-    </BottomSheet>
+              variant={isSelected ? 'primary' : 'secondary'}>
+              <Button.Label
+                className="min-w-0 flex-1"
+                numberOfLines={1}
+                style={item.previewFamily ? { fontFamily: item.previewFamily } : undefined}>
+                {item.title}
+              </Button.Label>
+              {isSelected ? (
+                <SymbolView
+                  name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                  size={20}
+                  tintColor={accentForeground}
+                />
+              ) : null}
+            </Button>
+          );
+        }}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 }
 

@@ -1,9 +1,13 @@
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { SymbolView } from 'expo-symbols';
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
+import { useThemeColor } from 'heroui-native/hooks';
 import { Slider } from 'heroui-native/slider';
-import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { BackHandler, Keyboard, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { withUniwind } from 'uniwind';
 
 import {
   type ReaderFontRef,
@@ -13,7 +17,7 @@ import {
 import type { ReaderPageAnimationStyle } from '@/reader/native';
 import { useTranslation } from '@/i18n';
 import { type ImportedReaderFont, useFontStore, useReaderStore } from '@/stores';
-import { FontPickerSheet } from '../font-picker-sheet';
+import { FontPickerContent } from '../font-picker-content';
 import { getReaderBottomTabBarInset } from './constants';
 
 interface TypographyDrawerProps {
@@ -22,6 +26,9 @@ interface TypographyDrawerProps {
 }
 
 type TypographyKey = 'fontSize' | 'marginHorizontal' | 'lineHeight';
+
+const SettingsScrollView = withUniwind(BottomSheetScrollView);
+const HANDLE_HEIGHT = 24;
 
 interface TypographySliderProps {
   readonly accessibilityLabel: string;
@@ -42,6 +49,7 @@ interface CompactTypographySliderProps extends TypographySliderProps {
 export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const typography = useReaderStore((state) => state.typography);
   const updateTypography = useReaderStore((state) => state.updateTypography);
@@ -49,10 +57,23 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
   const setAnimationStyle = useReaderStore((state) => state.setAnimationStyle);
   const fonts = useFontStore((state) => state.fonts);
   const [draft, setDraft] = useState<ReaderTypography>(typography);
-  // The role outlives the open flag so the list does not swap to another role's
-  // sources while the sheet is still sliding away.
-  const [pickerRole, setPickerRole] = useState<ReaderFontRole>('body');
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerRole, setPickerRole] = useState<ReaderFontRole | null>(null);
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  const [settingsHeight, setSettingsHeight] = useState(400);
+  // Start each opening at the settings page, including when the tab bar closed
+  // the drawer externally. Keep the outgoing page intact during dismissal.
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) {
+      setPickerRole(null);
+      setDraft(typography);
+    }
+  }
+  const availableHeight = Math.max(1, height - insets.top - bottomInset - 16);
+  const sheetHeight = Math.min(
+    pickerRole ? Math.max(settingsHeight + HANDLE_HEIGHT, height * 0.65) : settingsHeight + HANDLE_HEIGHT,
+    availableHeight,
+  );
   const bodyFontLabel = describeReaderFont(typography.fonts.body, fonts, t);
   const chromeFontLabel = describeReaderFont(typography.fonts.chrome, fonts, t);
   const animationOptions: readonly {
@@ -72,23 +93,36 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
     updateTypography({ [key]: value } as Partial<ReaderTypography>);
   };
 
-  // The picker is a sheet of its own, so closing the drawer has to take it down
-  // with it rather than leaving it stranded over the book.
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      Keyboard.dismiss();
+      if (pickerRole) {
+        setPickerRole(null);
+      } else {
+        onOpenChange(false);
+      }
+      return true;
+    });
+    return () => subscription.remove();
+  }, [isOpen, onOpenChange, pickerRole]);
+
   const handleOpenChange = (value: boolean) => {
     if (!value) {
-      setIsPickerOpen(false);
+      Keyboard.dismiss();
     }
     onOpenChange(value);
   };
 
-  const openPicker = (role: ReaderFontRole) => {
-    setPickerRole(role);
-    setIsPickerOpen(true);
+  const returnToSettings = () => {
+    Keyboard.dismiss();
+    setPickerRole(null);
   };
 
   return (
-    <>
-      <BottomSheet isOpen={isOpen} onOpenChange={handleOpenChange}>
+    <BottomSheet isOpen={isOpen} onOpenChange={handleOpenChange}>
       <BottomSheet.Portal
         disableFullWindowOverlay
         unstable_accessibilityContainerViewIsModal>
@@ -96,99 +130,99 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
         <BottomSheet.Content
           backgroundClassName="rounded-t-3xl"
           bottomInset={bottomInset}
-          contentContainerClassName="h-full"
-          contentContainerProps={{ style: { flex: 1, padding: 0 } }}
+          contentContainerClassName="h-full flex-1 p-0"
           detached
           enableDynamicSizing={false}
           enableOverDrag={false}
-          snapPoints={['58%']}>
-          {/* The sheet keeps a fixed height while the rows below it grow with the
-              platform's text scale, so the body scrolls rather than clipping. */}
-          <ScrollView
-            className="flex-1"
-            contentContainerClassName="gap-5 px-5 pb-5 pt-3"
-            showsVerticalScrollIndicator={false}>
-            <View className="gap-1">
-              <BottomSheet.Title className="text-xl text-foreground">
-                {t('reader.typography')}
-              </BottomSheet.Title>
-            </View>
-            <View className="flex-row gap-4">
-              <FontRow
-                label={t('reader.bodyFont')}
-                onPress={() => openPicker('body')}
-                value={bodyFontLabel}
-              />
-              <FontRow
-                label={t('reader.uiFont')}
-                onPress={() => openPicker('chrome')}
-                value={chromeFontLabel}
-              />
-            </View>
-            <View className="gap-2">
-              <View className="flex-row gap-2">
-                {animationOptions.map((option) => {
-                  const selected = animationStyle === option.style;
-                  return (
-                    <Button
-                      key={option.style}
-                      accessibilityLabel={t('reader.transition', { style: option.label })}
-                      accessibilityState={{ selected }}
-                      className="min-w-0 flex-1 rounded-xl px-2"
-                      onPress={() => setAnimationStyle(option.style)}
-                      size="sm"
-                      variant={selected ? 'primary' : 'ghost'}>
-                      <Button.Label numberOfLines={1}>{option.label}</Button.Label>
-                    </Button>
-                  );
-                })}
+          keyboardBehavior="interactive"
+          keyboardBlurBehavior="restore"
+          enableBlurKeyboardOnGesture
+          snapPoints={[sheetHeight]}>
+          {pickerRole ? (
+            <FontPickerContent key={pickerRole} role={pickerRole} onBack={returnToSettings} />
+          ) : (
+            <SettingsScrollView
+              className="flex-1"
+              contentContainerClassName="gap-5 px-5 pb-5 pt-3"
+              onContentSizeChange={(_width, contentHeight) => setSettingsHeight(Math.ceil(contentHeight))}
+              showsVerticalScrollIndicator={false}>
+              <View className="gap-1">
+                <BottomSheet.Title className="text-xl text-foreground">
+                  {t('reader.typography')}
+                </BottomSheet.Title>
               </View>
-            </View>
-            <TypographySlider
-              accessibilityLabel={t('reader.adjustFontSize')}
-              maxValue={32}
-              minValue={12}
-              onChange={(value) => updateDraft('fontSize', value)}
-              onChangeEnd={(value) => commit('fontSize', value)}
-              step={1}
-              value={draft.fontSize}
-            />
-            <View className="flex-row gap-4">
-              <CompactTypographySlider
-                accessibilityLabel={t('reader.adjustMargins')}
-                endLabel={t('reader.large')}
-                label={t('reader.margin')}
-                maxValue={56}
-                minValue={8}
-                onChange={(value) => updateDraft('marginHorizontal', value)}
-                onChangeEnd={(value) => commit('marginHorizontal', value)}
-                startLabel={t('reader.small')}
-                step={4}
-                value={draft.marginHorizontal}
+              <View className="gap-2">
+                <View className="flex-row gap-2">
+                  {animationOptions.map((option) => {
+                    const selected = animationStyle === option.style;
+                    return (
+                      <Button
+                        key={option.style}
+                        accessibilityLabel={t('reader.transition', { style: option.label })}
+                        accessibilityState={{ selected }}
+                        className="min-w-0 flex-1 rounded-xl px-2"
+                        onPress={() => setAnimationStyle(option.style)}
+                        size="sm"
+                        variant={selected ? 'primary' : 'ghost'}>
+                        <Button.Label numberOfLines={1}>{option.label}</Button.Label>
+                      </Button>
+                    );
+                  })}
+                </View>
+              </View>
+              <TypographySlider
+                accessibilityLabel={t('reader.adjustFontSize')}
+                maxValue={32}
+                minValue={12}
+                onChange={(value) => updateDraft('fontSize', value)}
+                onChangeEnd={(value) => commit('fontSize', value)}
+                step={1}
+                value={draft.fontSize}
               />
-              <CompactTypographySlider
-                accessibilityLabel={t('reader.adjustLineHeight')}
-                endLabel={t('reader.loose')}
-                label={t('reader.lineHeight')}
-                maxValue={2.4}
-                minValue={1.1}
-                onChange={(value) => updateDraft('lineHeight', value)}
-                onChangeEnd={(value) => commit('lineHeight', value)}
-                startLabel={t('reader.tight')}
-                step={0.05}
-                value={draft.lineHeight}
-              />
-            </View>
-          </ScrollView>
+              <View className="flex-row gap-4">
+                <CompactTypographySlider
+                  accessibilityLabel={t('reader.adjustMargins')}
+                  endLabel={t('reader.large')}
+                  label={t('reader.margin')}
+                  maxValue={56}
+                  minValue={8}
+                  onChange={(value) => updateDraft('marginHorizontal', value)}
+                  onChangeEnd={(value) => commit('marginHorizontal', value)}
+                  startLabel={t('reader.small')}
+                  step={4}
+                  value={draft.marginHorizontal}
+                />
+                <CompactTypographySlider
+                  accessibilityLabel={t('reader.adjustLineHeight')}
+                  endLabel={t('reader.loose')}
+                  label={t('reader.lineHeight')}
+                  maxValue={2.4}
+                  minValue={1.1}
+                  onChange={(value) => updateDraft('lineHeight', value)}
+                  onChangeEnd={(value) => commit('lineHeight', value)}
+                  startLabel={t('reader.tight')}
+                  step={0.05}
+                  value={draft.lineHeight}
+                />
+              </View>
+              <View className="overflow-hidden rounded-2xl bg-surface-secondary">
+                <FontRow
+                  label={t('reader.bodyFont')}
+                  onPress={() => setPickerRole('body')}
+                  value={bodyFontLabel}
+                />
+                <View className="mx-4 h-px bg-border" />
+                <FontRow
+                  label={t('reader.uiFont')}
+                  onPress={() => setPickerRole('chrome')}
+                  value={chromeFontLabel}
+                />
+              </View>
+            </SettingsScrollView>
+          )}
         </BottomSheet.Content>
       </BottomSheet.Portal>
     </BottomSheet>
-      <FontPickerSheet
-        isOpen={isPickerOpen}
-        onOpenChange={setIsPickerOpen}
-        role={pickerRole}
-      />
-    </>
   );
 }
 
@@ -219,16 +253,22 @@ interface FontRowProps {
 }
 
 function FontRow({ label, value, onPress }: FontRowProps) {
+  const mutedColor = useThemeColor('muted');
   return (
     <Button
-      accessibilityLabel={label}
-      className="h-14 min-w-0 flex-1 flex-row items-center gap-3 rounded-2xl bg-surface-secondary px-4"
+      accessibilityLabel={`${label}: ${value}`}
+      className="h-auto min-h-14 flex-row items-center gap-3 rounded-none px-4 py-3"
       onPress={onPress}
       variant="ghost">
       <Text className="text-sm text-muted">{label}</Text>
       <Button.Label className="min-w-0 flex-1 text-right text-sm" numberOfLines={1}>
         {value}
       </Button.Label>
+      <SymbolView
+        name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
+        size={18}
+        tintColor={mutedColor}
+      />
     </Button>
   );
 }
