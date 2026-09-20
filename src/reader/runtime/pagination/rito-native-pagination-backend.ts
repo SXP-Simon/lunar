@@ -148,6 +148,9 @@ class RitoNativePublication implements LoadedReaderPublication {
   private readonly tocLabelsByHref: ReadonlyMap<string, string>;
   private readonly spine: RitoPublication['spine'];
   private readonly operationQueue = new ReaderOperationQueue();
+  // Registration is session-scoped. Check before readResource: otherwise each
+  // page transfers the same (potentially multi-megabyte) font over JSI again.
+  private readonly loadedFonts = new Set<string>();
 
   private readonly spreadMode: 'single' | 'double';
   private readonly layoutValue: LoadedReaderPublication['layout'];
@@ -171,8 +174,12 @@ class RitoNativePublication implements LoadedReaderPublication {
     if (existing?.frame && !replace && existing.frame.sourceKey === sourceKey) return;
     for (const font of artifact.fonts) {
       if (!this.fonts) break;
+      const key = JSON.stringify([font.href, font.family, font.weight, font.style,
+        font.shapeFingerprint, String(font.byteLength)]);
+      if (this.loadedFonts.has(key)) continue;
       const resource = await this.session.readResource(artifact.artifactId, 1, font.href);
       await this.fonts.loadFont({ family: font.family, src: font.href, bytes: resource.bytes, weight: String(font.weight), style: font.style, fingerprint: font.shapeFingerprint, byteLength: Number(font.byteLength) });
+      this.loadedFonts.add(key);
     }
     const imageResources = artifact.resources.filter((resource) => resource.kind === 'image');
     const imageSources = imageResources.map((resource) => resource.href);
@@ -758,6 +765,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       }
     }
     this.slots.clear();
+    this.loadedFonts.clear();
     this.retainedBoundaryArtifacts.clear();
     this.retainedBoundaryKeepAlive.length = 0;
     this.lastTurnSourceId = undefined;

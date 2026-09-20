@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ReaderLocator } from '../../src/reader/contracts';
+import type { ReaderFontRegistry, ReaderLocator } from '../../src/reader/contracts';
 import type { RitoArtifact, RitoBackgroundAdvance } from '../../modules/rito-rn/src/protocol/artifact-types';
 import type { RitoArtifactRequest } from '../../modules/rito-rn/src/protocol/requests';
 import { DEFAULT_READER_TYPOGRAPHY } from '../../src/reader/typography/defaults';
@@ -22,7 +22,7 @@ vi.mock('../../src/reader/skia/images/image-decoder', () => ({
   SkiaImageCache: class { async acquire() { return { release() {} }; } clear() {} },
 }));
 vi.mock('../../src/reader/skia/rendering/picture-compiler', () => ({
-  SkiaPictureCompiler: class { compile() { return {}; } dispose() {} },
+  SkiaPictureCompiler: class { compile() { return {}; } dispose() {} clearCache() {} },
 }));
 
 afterEach(() => { vi.useRealTimers(); });
@@ -42,10 +42,11 @@ function artifact(id: bigint, href: string): RitoArtifact {
 const target: ReaderLocator = { spineIdref: 'second', manifestHref: 'second.xhtml', chapterProgress: 0.5,
   sourcePoint: { nodePath: [1], textOffset: 12 } };
 
-async function setup(options: { completed?: boolean; runtime?: boolean; spreadMode?: 'single' | 'double' } = {}) {
+async function setup(options: { completed?: boolean; runtime?: boolean; spreadMode?: 'single' | 'double'; fonts?: RitoArtifact['fonts']; fontRegistry?: ReaderFontRegistry } = {}) {
   const source = { ...artifact(1n, 'first.xhtml'),
+    fonts: options.fonts ?? [],
     ...(options.completed ? { bookPageIndex: 0, bookPageCount: 100 } : {}) };
-  const destination = artifact(2n, 'second.xhtml');
+  const destination = { ...artifact(2n, 'second.xhtml'), fonts: options.fonts ?? [] };
   const artifacts = new Map([[1n, source], [2n, destination]]);
   let visible = source;
   let nextId = 2n;
@@ -53,6 +54,7 @@ async function setup(options: { completed?: boolean; runtime?: boolean; spreadMo
     get currentVisibleArtifact() { return visible; },
     get currentVisibleArtifactId() { return visible.artifactId; },
     nextRequestId: 2n,
+    readResource: vi.fn(async () => ({ bytes: new Uint8Array([1, 2, 3]) })),
     readPublication: async () => ({ metadata: { title: 'Book', language: 'en', identifier: 'book' }, toc: [],
       spine: [{ idref: 'first', href: 'first.xhtml' }, { idref: 'second', href: 'second.xhtml' }] }),
     getArtifact: (id: bigint) => artifacts.get(id),
@@ -88,12 +90,67 @@ async function setup(options: { completed?: boolean; runtime?: boolean; spreadMo
     const { publication } = await open.mock.results[0].value;
     return { backend, publication, session, destination, runtime, loadData, layout };
   }
-  const { publication } = await backend.open({ request, layout, pinnedFonts: [],
+  const { publication } = await backend.open({ request, layout, pinnedFonts: [], fontRegistry: options.fontRegistry,
     data: new ArrayBuffer(0), revisionId: 1, operationId: 1, signal: new AbortController().signal });
   return { backend, publication, session, destination, runtime, loadData, layout };
 }
 
 describe('saved reader location navigation', () => {
+  it('holds background pagination through overlapping animations and resumes once', async () => {
+    vi.useFakeTimers();
+    const { runtime, session } = await setup({ runtime: true });
+    const releaseFirst = runtime.suspendBackgroundPagination();
+    const releaseSecond = runtime.suspendBackgroundPagination();
+    try {
+      await vi.advanceTimersByTimeAsync(100);
+      expect(session.advanceBackground).not.toHaveBeenCalled();
+      releaseFirst();
+      releaseFirst();
+      await vi.advanceTimersByTimeAsync(100);
+      expect(session.advanceBackground).not.toHaveBeenCalled();
+      session.advanceBackground.mockResolvedValueOnce({ state: 'complete', movesVisibleContent: false,
+        intentRequestId: 1n, replacesArtifactId: 1n });
+      releaseSecond();
+      await vi.advanceTimersByTimeAsync(32);
+      expect(session.advanceBackground).toHaveBeenCalledTimes(1);
+      releaseSecond();
+      await vi.advanceTimersByTimeAsync(100);
+      expect(session.advanceBackground).toHaveBeenCalledTimes(1);
+    } finally { releaseFirst(); releaseSecond(); await runtime.close(); }
+  });
+
+  it('reads a font once across navigation and metadata refreshes, and reloads changed content', async () => {
+    const font = { family: 'Body', href: 'body.ttf', weight: 400, style: 'normal',
+      shapeFingerprint: 'first', byteLength: 3n };
+    const loadFont = vi.fn(async () => undefined);
+    const { backend, publication, session, destination } = await setup({ fonts: [font], fontRegistry: { loadFont } });
+    try {
+      await backend.advanceBackground();
+      await publication.resolveLocator!(target);
+      await publication.resolveLocator!(target);
+      expect(session.readResource).toHaveBeenCalledTimes(1);
+      expect(loadFont).toHaveBeenCalledTimes(1);
+      destination.fonts = [{ ...font, shapeFingerprint: 'changed' }];
+      await publication.resolveLocator!(target);
+      expect(session.readResource).toHaveBeenCalledTimes(2);
+      expect(loadFont).toHaveBeenLastCalledWith(expect.objectContaining({ fingerprint: 'changed' }));
+    } finally { await backend.close(); }
+  });
+
+  it('retries a font registration that failed on a candidate page', async () => {
+    const loadFont = vi.fn(async () => undefined);
+    const { backend, publication, session, destination } = await setup({ fontRegistry: { loadFont } });
+    destination.fonts = [{ family: 'Body', href: 'body.ttf', weight: 400, style: 'normal',
+      shapeFingerprint: 'first', byteLength: 3n }];
+    loadFont.mockRejectedValueOnce(new Error('font unavailable'));
+    try {
+      await expect(publication.resolveLocator!(target)).rejects.toThrow('font unavailable');
+      await publication.resolveLocator!(target);
+      expect(session.readResource).toHaveBeenCalledTimes(2);
+      expect(loadFont).toHaveBeenCalledTimes(2);
+    } finally { await backend.close(); }
+  });
+
   it('publishes whole-book page numbers after indexing without a host work budget', async () => {
     vi.useFakeTimers();
     const { runtime, backend, session } = await setup({ runtime: true });

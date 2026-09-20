@@ -75,6 +75,11 @@ export function useReaderPageTurn({
     prepareInteractiveTurnRef.current = interactive.prepareForAutomaticNavigation;
   }, [interactive.prepareForAutomaticNavigation]);
 
+  const pageTurnActive = automatic.active || interactive.interactiveTurn !== undefined;
+  useEffect(() => {
+    if (pageTurnActive) return runtime.suspendBackgroundPagination();
+  }, [pageTurnActive, runtime]);
+
   return {
     gesture: interactive.gesture,
     interactiveTurn: interactive.interactiveTurn,

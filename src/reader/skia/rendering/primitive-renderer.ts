@@ -1,6 +1,6 @@
 import {
   BlurStyle, ClipOp, FillType, PaintStyle, Skia, StrokeCap,
-  type SkCanvas, type SkParagraph, type SkPath,
+  type SkCanvas, type SkPath,
 } from '@shopify/react-native-skia';
 
 import type {
@@ -9,6 +9,7 @@ import type {
 } from '../../contracts';
 import type { SkiaImageAsset } from '../images/image-decoder';
 import type { SkiaParagraphFactory } from '../text/paragraph-factory';
+import { ReaderParagraphCache } from '../text/paragraph-cache';
 import {
   isBookOwnedPageGround, isOpaqueColor,
   makeResolvedPrimitivePaint, resolvedPrimitiveColor,
@@ -20,6 +21,7 @@ export interface ReaderPrimitiveRenderOptions {
   readonly pixelRatio: number;
   readonly images: { resolveImage(source: string): SkiaImageAsset | undefined };
   readonly paragraphs: SkiaParagraphFactory;
+  readonly paragraphCache?: ReaderParagraphCache;
   readonly colorOverride?: SkiaColorOverride;
 }
 
@@ -34,7 +36,7 @@ export function renderResolvedPrimitives(
   const alphaStack = [alpha];
   const blockGrounds: { rect: ReaderResolvedRect; color: ReaderColor }[] = [];
   const groundStackSizes: number[] = [];
-  const paragraphs = new Map<string, SkParagraph>();
+  const paragraphs = options.paragraphCache ?? new ReaderParagraphCache();
   canvas.save();
   try {
     // Rito resolves geometry in device pixels; the Picture uses the compiler's scale.
@@ -133,7 +135,7 @@ export function renderResolvedPrimitives(
   } finally {
     while (alphaStack.length > 1) { canvas.restore(); alphaStack.pop(); }
     canvas.restore();
-    for (const paragraph of paragraphs.values()) paragraph.dispose();
+    if (!options.paragraphCache) paragraphs.clear();
   }
 }
 

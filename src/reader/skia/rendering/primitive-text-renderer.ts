@@ -1,7 +1,8 @@
-import type { SkCanvas, SkParagraph } from '@shopify/react-native-skia';
+import type { SkCanvas } from '@shopify/react-native-skia';
 
 import type { ReaderColor, ReaderResolvedRect, ReaderResolvedTextPrimitive } from '../../contracts';
 import { SINGLE_LINE_LAYOUT_WIDTH } from '../text/paragraph-factory';
+import type { ReaderParagraphCache } from '../text/paragraph-cache';
 import type { ReaderPrimitiveRenderOptions } from './primitive-renderer';
 import { effectiveTextColor, resolvedPrimitiveColor } from './reader-colors';
 
@@ -14,7 +15,7 @@ export function renderResolvedPrimitiveText(
   ratio: number,
   options: ReaderPrimitiveRenderOptions,
   alpha: number,
-  paragraphs: Map<string, SkParagraph>,
+  paragraphs: ReaderParagraphCache,
   pageGround?: ReaderColor,
   blockGrounds: readonly { rect: ReaderResolvedRect; color: ReaderColor }[] = [],
 ): void {
@@ -36,18 +37,22 @@ export function renderResolvedPrimitiveText(
       const text = decoder.decode(bytes.subarray(current.byte, next?.byte ?? bytes.length));
       if (!text) continue;
       const key = JSON.stringify([styleKey, text]);
-      let paragraph = paragraphs.get(key);
-      if (!paragraph) {
-        paragraph = options.paragraphs.createParagraph(text, paint, {
+      const { paragraph, baseline } = paragraphs.getOrCreate(key, () => {
+        const created = options.paragraphs.createParagraph(text, paint, {
           color: ink,
           alpha,
           textShadow: paint.textShadow,
           lineHeightPx: command.lineHeightPx,
         });
-        paragraph.layout(SINGLE_LINE_LAYOUT_WIDTH);
-        paragraphs.set(key, paragraph);
-      }
-      const baseline = paragraph.getLineMetrics()[0]?.baseline ?? command.paint.font.sizePx * 0.8;
+        try {
+          created.layout(SINGLE_LINE_LAYOUT_WIDTH);
+          return { paragraph: created,
+            baseline: created.getLineMetrics()[0]?.baseline ?? command.paint.font.sizePx * 0.8 };
+        } catch (error) {
+          created.dispose();
+          throw error;
+        }
+      });
       paragraph.paint(canvas, current.x, current.y - baseline);
     }
   } finally {

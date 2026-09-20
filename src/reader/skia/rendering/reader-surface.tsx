@@ -432,38 +432,47 @@ export const ReaderSurface = memo(function ReaderSurface({
   const pageCurlProgressText = pageCurlSource
     ? progressLabelForSnapshot(pageCurlSource.snapshot)
     : undefined;
+  const pageCurlBase = pageCurlSource?.picture.picture;
+  const pageCurlFrame = pageCurlSource?.frame;
+  const pageCurlTitle = pageCurlSource?.snapshot.chapterTitle;
+  const pageCurlBookmarked = pageCurlSource?.bookmarked;
+  // Gesture preparation/settling creates new content wrappers and overlay
+  // arrays. Equal paint data must keep the same Picture and GPU texture.
+  const pageCurlOverlayKey = JSON.stringify(pageCurlSource?.overlays ?? EmptyOverlays);
+  const pageCurlOverlays = useMemo<readonly ReaderOverlayRect[]>(
+    () => JSON.parse(pageCurlOverlayKey), [pageCurlOverlayKey],
+  );
   const pageCurlTexturePicture = useMemo(() => {
-    if (!pageCurlSource || !pageCurlProgressText) return undefined;
-    const source = pageCurlSource;
+    if (!pageCurlBase || !pageCurlFrame || !pageCurlProgressText) return undefined;
     const pageScale = Math.max(0.001, scale);
-    const title = source.snapshot.chapterTitle;
+    const title = pageCurlTitle;
     const titleFont = title ? chromeTitleFont : undefined;
     const progressFont = chromeProgressFont;
     if ((!title || !titleFont) && !progressFont) return undefined;
     return composePageCurlPicture({
-      base: source.picture.picture,
-      frame: source.frame,
+      base: pageCurlBase,
+      frame: pageCurlFrame,
       color: overlayColor,
-      height: source.frame.height,
+      height: pageCurlFrame.height,
       offsetX,
       offsetY,
       pageScale,
       progress: pageCurlProgressText,
-      bookmarked: source.bookmarked,
+      bookmarked: pageCurlBookmarked,
       bookmarkColor,
       progressFont,
       title,
       titleFont,
       viewportHeight: viewport.height,
       viewportWidth: viewport.width,
-      width: source.frame.width,
+      width: pageCurlFrame.width,
       overlayInsets: {
         top: overlayTop,
         right: overlayRight,
         bottom: overlayBottom,
         left: overlayLeft,
       },
-      overlays: source.overlays,
+      overlays: pageCurlOverlays,
     });
   }, [
     offsetX,
@@ -477,7 +486,11 @@ export const ReaderSurface = memo(function ReaderSurface({
     chromeProgressFont,
     chromeTitleFont,
     pageCurlProgressText,
-    pageCurlSource,
+    pageCurlBase,
+    pageCurlFrame,
+    pageCurlTitle,
+    pageCurlBookmarked,
+    pageCurlOverlays,
     scale,
     viewport.height,
     viewport.width,

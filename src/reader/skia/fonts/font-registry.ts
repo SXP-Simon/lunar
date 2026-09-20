@@ -19,6 +19,7 @@ import { createSystemFontMgr, disposeSystemFontMgr, hasSystemReaderFontFamily } 
 
 export interface SkiaFontRegistry extends ReaderFontRegistry {
   readonly readerFontProvider: SkTypefaceFontProvider;
+  readonly generation: number;
   /**
    * Registers the bundled face under its stable reader name, and under
    * `alias` when the pinned policy names it by an alias too.
@@ -46,6 +47,9 @@ const SYSTEM_FONT_STYLE: FontStyle = {
 
 export class LunarSkiaFontRegistry implements SkiaFontRegistry {
   readonly readerFontProvider = Skia.TypefaceFontProvider.Make();
+  private fontGeneration = 0;
+
+  get generation(): number { return this.fontGeneration; }
 
   private readonly typefaces: SkTypeface[] = [];
   private readonly fonts = new Map<string, SkFont>();
@@ -222,6 +226,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
         this.registeredFamilies.add(name);
       }
       this.typefaces.push(typeface);
+      this.fontGeneration += 1;
       typeface = undefined;
     } finally {
       typeface?.dispose();
@@ -251,6 +256,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     this.typefaces.push(typeface);
     this.systemFamilies.add(family);
     this.registeredFamilies.add(family);
+    this.fontGeneration += 1;
   }
 
   private async registerFont(

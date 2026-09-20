@@ -94,6 +94,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private abortController?: AbortController;
   private paginationComplete = false;
   private backgroundScheduled = false;
+  private readonly backgroundSuspensions = new Set<symbol>();
   private foregroundQueued = 0;
   private renderId = 0;
   private preparedTurnId = 0;
@@ -112,6 +113,15 @@ export class LunarReaderRuntime implements ReaderRuntime {
 
   getSnapshot(): ReaderSnapshot {
     return this.snapshot;
+  }
+
+  /** Navigation may finish before the retained page animation is presented. */
+  suspendBackgroundPagination(): () => void {
+    const token = Symbol();
+    this.backgroundSuspensions.add(token);
+    return () => {
+      if (this.backgroundSuspensions.delete(token)) this.scheduleBackground(this.operation);
+    };
   }
 
   subscribe(listener: ReaderSnapshotListener): () => void {
@@ -760,7 +770,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const backend = this.paginationBackend as Partial<ReaderBackgroundPaginationBackend>;
     if (typeof backend.advanceBackground !== 'function') return;
     if (operation !== this.operation || this.abortController?.signal.aborted) return;
-    if (this.foregroundQueued > 0) {
+    if (this.foregroundQueued > 0 || this.preparedTurn || this.backgroundSuspensions.size > 0) {
       readerDiagnostic('runtime.bg.pause', `operation=${operation} foregroundQueued=${this.foregroundQueued}`);
       return;
     }
@@ -798,7 +808,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
   }
 
   private scheduleBackground(operation: number): void {
-    if (!this.publication || this.snapshot.phase !== 'ready' || this.backgroundScheduled || this.paginationComplete || this.foregroundQueued > 0 || this.preparedTurn || operation !== this.operation || this.abortController?.signal.aborted) {
+    if (!this.publication || this.snapshot.phase !== 'ready' || this.backgroundScheduled || this.paginationComplete || this.foregroundQueued > 0 || this.preparedTurn || this.backgroundSuspensions.size > 0 || operation !== this.operation || this.abortController?.signal.aborted) {
       return;
     }
     this.backgroundScheduled = true;
@@ -998,6 +1008,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
     const imageCache = this.imageCache;
     if (imageCache) this.deferSkiaCleanup(() => imageCache.clear());
     this.imageCache = undefined;
+    this.pictureCompiler.clearCache();
     this.textMeasurer?.dispose();
     this.textMeasurer = undefined;
     this.publication = undefined;
