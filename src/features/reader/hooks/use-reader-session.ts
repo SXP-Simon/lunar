@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { findLibraryBookById, type LibraryBookRecord } from '@/features/library';
 import {
@@ -50,8 +50,11 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
     state?: ReaderReadingState;
   }>();
   const [bookError, setBookError] = useState<{ bookId: string; message: string }>();
+  const [layoutError, setLayoutError] = useState<{ bookId: string; message: string }>();
   const activeBookId = useRef<string | undefined>(undefined);
   const layoutKey = useRef<string | undefined>(undefined);
+  const layoutQueue = useRef(Promise.resolve());
+  const sessionMounted = useRef(false);
   const saveQueue = useRef(Promise.resolve());
   const subscribe = useCallback(
     (listener: () => void) => runtime.subscribe(listener),
@@ -142,19 +145,18 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
       theme,
       createReaderTypographyKey(typography),
     ].join(':');
-    if (layoutKey.current === nextLayoutKey) {
-      return;
-    }
-    layoutKey.current = nextLayoutKey;
-
-    // Resolving takes a file read per imported face, so the layout request is
-    // only issued once the faces are in hand — opening without them would fall
-    // back to the bundled font and then match this same layout key, leaving the
-    // selection permanently unapplied.
+    // Opening/reflowing releases native resources. Serialize those operations
+    // so a newer font choice cannot dispose a session that is still opening.
+    // Compare against the completed layout inside the queue: a user can switch
+    // A -> B -> A while B is in flight, even though A is still the stored key.
     let cancelled = false;
-    void resolveReaderFontFaces(typography, fonts, readStoredFontBytes)
-      .catch(() => undefined)
-      .then((fontFaces) => {
+    layoutQueue.current = layoutQueue.current
+      .then(async () => {
+        if (cancelled || layoutKey.current === nextLayoutKey) {
+          return;
+        }
+        const fontFaces = await resolveReaderFontFaces(typography, fonts, readStoredFontBytes)
+          .catch(() => undefined);
         if (cancelled) {
           return;
         }
@@ -165,21 +167,35 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
           theme,
           fontFaces,
         };
-        if (activeBookId.current === currentBook.id && runtime.getSnapshot().phase === 'ready') {
-          void runtime.updateLayout(layout).catch(() => undefined);
-          return;
-        }
-
-        activeBookId.current = currentBook.id;
-        void runtime
-          .open({
+        // Record a key only after success. Cancelling font resolution must not
+        // make an unapplied layout look complete to the next effect.
+        layoutKey.current = undefined;
+        if (activeBookId.current === currentBook.id) {
+          await runtime.updateLayout(layout);
+        } else {
+          const result = await runtime.open({
             bookId: currentBook.id,
             fileUri: currentBook.fileUri,
             ...layout,
             restorePosition: readingState.state?.position,
-          })
-          .then((result) => setOpenResult({ bookId: currentBook.id, result }))
-          .catch(() => undefined);
+          });
+          activeBookId.current = currentBook.id;
+          if (sessionMounted.current) {
+            setOpenResult({ bookId: currentBook.id, result });
+          }
+        }
+        layoutKey.current = nextLayoutKey;
+        if (sessionMounted.current) {
+          setLayoutError(undefined);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled && sessionMounted.current) {
+          setLayoutError({
+            bookId: currentBook.id,
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
       });
     return () => {
       cancelled = true;
@@ -217,13 +233,26 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
     persistSnapshot(snapshot);
   }, [persistSnapshot, snapshot]);
 
-  useEffect(
-    () => () => {
-      persistSnapshot(runtime.getSnapshot());
-      void runtime.close();
-    },
-    [persistSnapshot, runtime],
-  );
+  // Saving on exit reads the latest preferences without making preference
+  // changes tear down the runtime. Only the runtime's lifetime owns close().
+  const persistOnExit = useEffectEvent(() => {
+    persistSnapshot(runtime.getSnapshot());
+  });
+
+  useEffect(() => {
+    sessionMounted.current = true;
+    return () => {
+      sessionMounted.current = false;
+      persistOnExit();
+      layoutQueue.current = layoutQueue.current
+        .then(async () => {
+          await runtime.close();
+          activeBookId.current = undefined;
+          layoutKey.current = undefined;
+        })
+        .catch(() => undefined);
+    };
+  }, [runtime]);
 
   return {
     runtime,
@@ -233,6 +262,7 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
     toc: currentOpenResult?.toc ?? [],
     errorMessage:
       (bookError?.bookId === bookId ? bookError.message : undefined) ??
+      (layoutError?.bookId === bookId ? layoutError.message : undefined) ??
       snapshot.errorMessage,
   };
 }
