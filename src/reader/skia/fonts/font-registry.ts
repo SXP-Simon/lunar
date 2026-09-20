@@ -15,7 +15,7 @@ import type {
   ReaderFontShorthand,
 } from '../../contracts';
 import { LUNAR_READER_FONT_FAMILY } from '../../typography';
-import { createSystemFontMgr, hasSystemReaderFontFamily } from './system-fonts';
+import { createSystemFontMgr, disposeSystemFontMgr, hasSystemReaderFontFamily } from './system-fonts';
 
 export interface SkiaFontRegistry extends ReaderFontRegistry {
   readonly readerFontProvider: SkTypefaceFontProvider;
@@ -166,7 +166,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
       typeface.dispose();
     }
     this.typefaces.length = 0;
-    this.systemFontMgr?.dispose();
+    disposeSystemFontMgr(this.systemFontMgr);
     this.systemFontMgr = undefined;
     this.readerFontProvider.dispose();
   }
@@ -250,6 +250,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     this.readerFontProvider.registerFont(typeface, family);
     this.typefaces.push(typeface);
     this.systemFamilies.add(family);
+    this.registeredFamilies.add(family);
   }
 
   private async registerFont(

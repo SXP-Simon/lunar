@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { LunarSkiaFontRegistry } from '../../src/reader/skia/fonts/font-registry';
+import { LUNAR_READER_FONT_FAMILY } from '../../src/reader/typography';
+
+vi.mock('react-native', () => ({ Platform: { OS: 'android' } }));
+
 const state = vi.hoisted(() => ({
   dataDisposed: 0,
   decoded: [] as Uint8Array[],
@@ -15,7 +20,7 @@ const state = vi.hoisted(() => ({
         state.disposedTypefaces += 1;
       },
     }),
-  } as { dispose(): void; matchFamilyStyle(family: string): unknown },
+  } as { dispose?(): void; matchFamilyStyle(family: string): unknown },
 }));
 
 vi.mock('@shopify/react-native-skia', () => ({
@@ -62,13 +67,11 @@ vi.mock('@shopify/react-native-skia', () => ({
   },
 }));
 
-vi.mock('../../src/reader/skia/fonts/system-fonts', () => ({
+vi.mock('../../src/reader/skia/fonts/system-fonts', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../src/reader/skia/fonts/system-fonts')>(),
   createSystemFontMgr: () => state.systemMgr,
   hasSystemReaderFontFamily: (family: string) => family === 'Noto Sans',
 }));
-
-import { LunarSkiaFontRegistry } from '../../src/reader/skia/fonts/font-registry';
-import { LUNAR_READER_FONT_FAMILY } from '../../src/reader/typography';
 
 const BUNDLED = new Uint8Array([1, 2, 3]);
 const IMPORTED = new Uint8Array([4, 5, 6]);
@@ -81,6 +84,11 @@ beforeEach(() => {
   state.matchedFamilies = [];
   state.providerDisposed = 0;
   state.registered = [];
+  Object.defineProperty(state.systemMgr, 'dispose', {
+    configurable: true,
+    writable: true,
+    value: vi.fn(),
+  });
 });
 
 describe('Skia reader font registry', () => {
@@ -139,6 +147,31 @@ describe('Skia reader font registry', () => {
     expect(state.decoded).toEqual([]);
   });
 
+  it('uses the selected system family for chrome text', () => {
+    const registry = new LunarSkiaFontRegistry();
+    registry.loadBuiltinFont(BUNDLED);
+    registry.registerFontFace({ family: 'Noto Sans', source: 'system' });
+
+    expect(registry.getFontFamilies('Noto Sans')).toEqual(['Noto Sans', LUNAR_READER_FONT_FAMILY]);
+    registry.resolveFont({ family: 'Noto Sans', sizePx: 14, weight: 400, style: 'normal' });
+    expect(state.matchedFamilies).toEqual(['Noto Sans']);
+  });
+
+  it('finishes session cleanup when the native system manager has no dispose method', () => {
+    const readDispose = vi.fn(() => { throw new TypeError('undefined is not a function'); });
+    Object.defineProperty(state.systemMgr, 'dispose', { configurable: true, get: readDispose });
+    const registry = new LunarSkiaFontRegistry();
+    registry.loadBuiltinFont(BUNDLED);
+    registry.registerFontFace({ family: 'Noto Sans', source: 'system' });
+
+    expect(() => registry.dispose()).not.toThrow();
+    registry.dispose();
+    expect(state.disposedTypefaces).toBe(2);
+    expect(state.providerDisposed).toBe(1);
+    expect(readDispose).not.toHaveBeenCalled();
+    expect(() => registry.loadBuiltinFont(BUNDLED)).toThrow(/disposed/);
+  });
+
   // `matchFamilyStyle` hands back a face that aborts the process on first use
   // when the family is unknown, so the enumeration has to gate it.
   it('refuses a system family the platform does not enumerate', () => {
@@ -185,6 +218,7 @@ describe('Skia reader font registry', () => {
     expect(state.disposedFonts).toBe(1);
     expect(state.providerDisposed).toBe(1);
     expect(state.dataDisposed).toBe(2);
+    expect(state.systemMgr.dispose).not.toHaveBeenCalled();
     expect(() => registry.loadBuiltinFont(BUNDLED)).toThrow(/disposed/);
   });
 });

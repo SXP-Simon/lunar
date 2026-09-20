@@ -1,4 +1,5 @@
 import { Skia, type SkFontMgr } from '@shopify/react-native-skia';
+import { Platform } from 'react-native';
 
 let cachedFamilies: readonly string[] | undefined;
 let cachedFamilySet: ReadonlySet<string> = new Set();
@@ -26,7 +27,7 @@ export function listSystemReaderFontFamilies(): readonly string[] {
     } catch {
       // A platform without an enumerable font manager simply offers none.
     } finally {
-      fontMgr.dispose();
+      disposeSystemFontMgr(fontMgr);
     }
   }
   cachedFamilies = [...families].sort((left, right) => left.localeCompare(right));
@@ -45,5 +46,15 @@ export function createSystemFontMgr(): SkFontMgr | undefined {
     return Skia.FontMgr.System();
   } catch {
     return undefined;
+  }
+}
+
+/** Releases web managers; native Skia 2.6.2 managers are owned by the host GC. */
+export function disposeSystemFontMgr(fontMgr: SkFontMgr | undefined): void {
+  // Never probe native FontMgr.dispose, even with optional chaining: it is not
+  // exported, and JsiHostObject::get runs eval for missing properties. Reading
+  // it can throw before JS gets a value to check. Web implements dispose.
+  if (Platform.OS === 'web' && fontMgr) {
+    fontMgr.dispose();
   }
 }
