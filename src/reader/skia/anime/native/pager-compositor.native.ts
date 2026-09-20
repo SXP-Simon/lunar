@@ -178,7 +178,7 @@ export function nativePagerCompositorAvailable(): boolean {
     return false;
   }
   nativePagerAvailability =
-    protocolVersion >= 12 &&
+    protocolVersion >= 13 &&
     typeof nativePagerRnApi.ready === "function" &&
     typeof nativePagerRnApi.enqueue === "function" &&
     typeof nativePagerRnApi.enqueuePicture === "function" &&

@@ -65,6 +65,7 @@ export const slidePageTurnEffect: ReaderPageTurnEffect = {
     },
   },
   native: {
+    separateChrome: true,
     visualKind: 'slide',
     motion: NATIVE_SLIDE_MOTION_CONFIG,
     planarMotion: NATIVE_SLIDE_PLANAR_MOTION,

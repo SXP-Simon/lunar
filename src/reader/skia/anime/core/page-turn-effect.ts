@@ -164,6 +164,8 @@ export interface ReaderPageTurnEffect {
     readonly usesPlanarAutomaticTransition: boolean;
   };
   readonly native?: {
+    /** Single-page body and decorations move independently of fixed chrome. */
+    readonly separateChrome?: boolean;
     readonly visualKind: ReaderNativePageTurnVisualKind;
     readonly gesture: ReaderNativePageTurnGesturePolicy;
     readonly motion: ReaderNativePageTurnMotionConfig;

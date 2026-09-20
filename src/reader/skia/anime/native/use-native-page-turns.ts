@@ -28,6 +28,7 @@ interface NativePageTurnsOptions {
   readonly pixelHeight: number;
   readonly paperColor: number;
   readonly createPicture: (content: ReaderPageContent) => SkPicture;
+  readonly createChromePicture?: (content: ReaderPageContent) => SkPicture;
   readonly onComplete?: (turnId: number) => void;
   readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly fixedChromeTop: number;
@@ -51,6 +52,7 @@ export function useNativePageTurns({
   pixelHeight,
   paperColor,
   createPicture,
+  createChromePicture,
   onComplete,
   pageTurnEffect,
   fixedChromeTop,
@@ -151,6 +153,7 @@ export function useNativePageTurns({
     active,
     canvasRef,
     createPicture,
+    createChromePicture,
     currentContent,
     interactiveSource,
     interactiveTurn,
@@ -168,6 +171,7 @@ export function useNativePageTurns({
     active: automaticActive,
     canvasRef,
     createPicture,
+    createChromePicture,
     paperColor,
     pixelHeight,
     pixelWidth,

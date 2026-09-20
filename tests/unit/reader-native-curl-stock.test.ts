@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { stockNativePagerPicture } from '../../src/reader/skia/anime/native/pager-compositor';
 import { useNativeInteractivePageTurn } from '../../src/reader/skia/anime/native/use-native-interactive-page-turn';
 import { curlPageTurnEffect } from '../../src/reader/skia/anime/effects/curl/strategy';
+import { nativePageTextureKey } from '../../src/reader/skia/anime/native/page-texture-key';
 
-vi.mock('react', () => ({ useEffect: (effect: () => void) => effect() }));
+vi.mock('react', () => ({ useEffect: (effect: () => void) => effect(), useRef: (current: unknown) => ({ current }) }));
 vi.mock('../../src/reader/skia/anime/native/pager-compositor', () => ({
   configureNativePagerInput: vi.fn(() => true),
   setNativePagerAnchor: vi.fn(() => true),
@@ -44,7 +45,7 @@ describe('single-page native curl stock', () => {
     expect(stockNativePagerPicture).toHaveBeenCalledOnce();
     const command = vi.mocked(stockNativePagerPicture).mock.calls[0]![1];
     expect(command.spread).toBe(false);
-    expect(command.frontPageKey).toBe(direction > 0 ? source.key : target.key);
+    expect(command.frontPageKey).toBe(nativePageTextureKey((direction > 0 ? source : target) as never));
     expect(command.frontPicture).toBe(direction > 0 ? sourcePicture : targetPicture);
     expect(command.backgroundLeftPicture).toBe(direction > 0 ? targetPicture : sourcePicture);
     expect(command.backPageKey).toBeUndefined();

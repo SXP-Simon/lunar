@@ -799,7 +799,6 @@ export default function ReaderScreen() {
             bookmarkHintColor={bookmarkHintColor}
             bookmarkReadyColor={bookmarkOutlineColor}
             pullBackgroundColor={pullBackgroundColor}
-            allowNativePageTurns={bookmarks.length === 0 || animationStyle !== 'slide'}
             onTransformChange={handleSurfaceTransform}
             style={absoluteFillStyle}
           />

@@ -1,15 +1,12 @@
 import {
   Canvas,
-  ClipOp,
   Fill,
   Group,
   Picture,
   Rect as SkiaRect,
-  Skia,
   Text as SkiaText,
   processTransform3d,
   type SkFont,
-  type SkPicture,
   useCanvasSize,
 } from '@shopify/react-native-skia';
 import { PixelRatio, processColor, type StyleProp, type ViewStyle } from 'react-native';
@@ -47,11 +44,11 @@ import {
 import {
   decorateReaderPageOverlays,
   mergeReaderOverlayRects,
-  renderSkiaOverlays,
   type ReaderOverlayRect,
   type ReaderPageOverlayResolver,
 } from './reader-overlays';
-import { ReaderBookmarkMark, ReaderBookmarkPullMark, renderReaderBookmarkMark } from './reader-bookmark-mark';
+import { ReaderBookmarkMark, ReaderBookmarkPullMark } from './reader-bookmark-mark';
+import { composePageCurlPicture, recordNativeViewportPicture } from './page-picture';
 import { readerBookmarkPlacement, ReaderBookmarkWidth } from './reader-bookmark-geometry';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
 
@@ -87,7 +84,6 @@ export interface ReaderSurfaceProps {
   readonly bookmarkHintColor?: string;
   readonly bookmarkReadyColor?: string;
   readonly pullBackgroundColor?: string;
-  readonly allowNativePageTurns?: boolean;
   readonly onTransformChange?: (transform: ReaderSurfaceTransform) => void;
   /** Defaults to `slide`, which keeps the page content legible throughout the turn. */
   readonly animationStyle?: ReaderPageAnimationStyle;
@@ -129,7 +125,6 @@ export const ReaderSurface = memo(function ReaderSurface({
   bookmarkHintColor = '#A3A3A3',
   bookmarkReadyColor = '#FFFFFF',
   pullBackgroundColor,
-  allowNativePageTurns = true,
   onTransformChange,
   animationStyle = 'slide',
   animationDuration = 360,
@@ -235,13 +230,21 @@ export const ReaderSurface = memo(function ReaderSurface({
   const nativePaperColor = typeof processedPaperColor === 'number'
     ? processedPaperColor >>> 0
     : 0xffffffff;
-  const nativeTextureScale = Math.min(3, Math.max(1, PixelRatio.get()));
+  const separateNativeChrome = pageTurnEffect.native?.separateChrome === true;
+  // A split slide owns four textures. Leave headroom below the compositor's
+  // 72 MiB stock budget so tall/high-density screens can prepare every layer.
+  const nativeTextureScale = Math.min(3, Math.max(1, PixelRatio.get()), Math.sqrt(
+    (64 * 1024 * 1024) / ((separateNativeChrome ? 4 : 2) * 4
+      * Math.max(1, viewport.width) * Math.max(1, viewport.height)),
+  ));
   const nativePixelWidth = Math.max(1, Math.round(viewport.width * nativeTextureScale));
   const nativePixelHeight = Math.max(1, Math.round(viewport.height * nativeTextureScale));
-  const createNativePagePicture = useCallback((content: ReaderPageContent) => {
+  const createNativePagePicture = useCallback((content: ReaderPageContent,
+    layer: 'all' | 'page' | 'chrome' = separateNativeChrome ? 'page' : 'all') => {
     const pageScale = Math.max(0.001, scale);
     const title = content.snapshot.chapterTitle ?? chapterTitle;
     const pagePicture = composePageCurlPicture({
+      layer,
       base: content.picture.picture,
       frame: content.frame,
       color: overlayColor,
@@ -269,7 +272,7 @@ export const ReaderSurface = memo(function ReaderSurface({
     try {
       return recordNativeViewportPicture({
         pagePicture,
-        paperColor,
+        paperColor: layer === 'chrome' ? 'transparent' : paperColor,
         pageScale,
         offsetX,
         offsetY,
@@ -296,13 +299,16 @@ export const ReaderSurface = memo(function ReaderSurface({
     overlayRight,
     overlayTop,
     paperColor,
+    separateNativeChrome,
     scale,
     viewport.height,
     viewport.width,
   ]);
+  const createNativeChromePicture = useCallback((content: ReaderPageContent) =>
+    createNativePagePicture(content, 'chrome'), [createNativePagePicture]);
   const nativeAutomaticPageTurnState = useNativePageTurns({
     canvasRef: ref,
-    enabled: allowNativePageTurns && pageTurnEffect.native !== undefined
+    enabled: pageTurnEffect.native !== undefined
       && spreadMode === 'single'
       && (
         onAutomaticTurnComplete !== undefined
@@ -313,6 +319,7 @@ export const ReaderSurface = memo(function ReaderSurface({
     pixelHeight: nativePixelHeight,
     paperColor: nativePaperColor,
     createPicture: createNativePagePicture,
+    createChromePicture: separateNativeChrome ? createNativeChromePicture : undefined,
     onComplete: onAutomaticTurnComplete,
     pageTurnEffect,
     fixedChromeTop: overlayTop + 24,
@@ -864,108 +871,4 @@ function progressLabelForSnapshot(snapshot: ReaderSnapshot): string {
   if (totalSpreads === undefined) return progressText;
   const progressPercentage = Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
   return `${progressText} · ${progressPercentage}%`;
-}
-
-interface PageCurlPictureOptions {
-  readonly base: SkPicture;
-  readonly frame: ReaderPageContent['frame'];
-  readonly bookmarked?: boolean;
-  readonly bookmarkColor: string;
-  readonly color: string;
-  readonly height: number;
-  readonly offsetX: number;
-  readonly offsetY: number;
-  readonly overlayInsets: Readonly<{ top: number; right: number; bottom: number; left: number }>;
-  readonly overlays?: readonly ReaderOverlayRect[];
-  readonly pageScale: number;
-  readonly progress: string;
-  readonly progressFont?: SkFont;
-  readonly title?: string;
-  readonly titleFont?: SkFont;
-  readonly viewportHeight: number;
-  readonly viewportWidth: number;
-  readonly width: number;
-}
-
-function composePageCurlPicture(options: PageCurlPictureOptions): SkPicture {
-  const recorder = Skia.PictureRecorder();
-  const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, options.width, options.height));
-  canvas.drawPicture(options.base);
-  renderSkiaOverlays(canvas, options.overlays ?? []);
-  const paint = Skia.Paint();
-  paint.setAntiAlias(true);
-  paint.setColor(Skia.Color(options.color));
-
-  const chapterX = (options.overlayInsets.left + 18 - options.offsetX) / options.pageScale;
-  const chapterY = (options.overlayInsets.top + 16 - options.offsetY) / options.pageScale;
-  const chapterClipWidth = Math.max(
-    0,
-    (options.viewportWidth - options.overlayInsets.right - 18 - options.offsetX) / options.pageScale - chapterX,
-  );
-  if (options.title && options.titleFont && chapterClipWidth > 0) {
-    canvas.save();
-    canvas.clipRect(
-      Skia.XYWHRect(
-        chapterX,
-        (options.overlayInsets.top - options.offsetY) / options.pageScale,
-        chapterClipWidth,
-        24 / options.pageScale,
-      ),
-      ClipOp.Intersect,
-      true,
-    );
-    canvas.drawText(options.title, chapterX, chapterY, paint, options.titleFont);
-    canvas.restore();
-  }
-
-  if (options.progress && options.progressFont && options.width > 0 && options.height > 0) {
-    const progressWidth = options.progressFont.getTextWidth(options.progress);
-    const progressX = Math.max(
-      chapterX,
-      (options.viewportWidth - options.overlayInsets.right - 18 - progressWidth * options.pageScale - options.offsetX) / options.pageScale,
-    );
-    const progressY = (
-      Math.max(
-        options.overlayInsets.top + 12,
-        options.viewportHeight - options.overlayInsets.bottom - 12,
-      ) - options.offsetY
-    ) / options.pageScale;
-    canvas.drawText(options.progress, progressX, progressY, paint, options.progressFont);
-  }
-  if (options.bookmarked) {
-    renderReaderBookmarkMark(canvas, options.frame, options.pageScale,
-      options.offsetX, options.offsetY, options.overlayInsets.top, options.bookmarkColor);
-  }
-  paint.dispose();
-  const picture = recorder.finishRecordingAsPicture();
-  recorder.dispose();
-  return picture;
-}
-
-interface NativeViewportPictureOptions {
-  readonly pagePicture: SkPicture;
-  readonly paperColor: string;
-  readonly pageScale: number;
-  readonly offsetX: number;
-  readonly offsetY: number;
-  readonly pixelWidth: number;
-  readonly pixelHeight: number;
-  readonly textureScale: number;
-}
-
-function recordNativeViewportPicture(options: NativeViewportPictureOptions): SkPicture {
-  const recorder = Skia.PictureRecorder();
-  try {
-    const canvas = recorder.beginRecording(
-      Skia.XYWHRect(0, 0, options.pixelWidth, options.pixelHeight),
-    );
-    canvas.clear(Skia.Color(options.paperColor));
-    canvas.scale(options.textureScale, options.textureScale);
-    canvas.translate(options.offsetX, options.offsetY);
-    canvas.scale(options.pageScale, options.pageScale);
-    canvas.drawPicture(options.pagePicture);
-    return recorder.finishRecordingAsPicture();
-  } finally {
-    recorder.dispose();
-  }
 }

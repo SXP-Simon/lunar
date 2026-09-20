@@ -1852,7 +1852,7 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..1a190f007c052e128bf4002daacc77c5
 +          "pagerProtocolVersion: Expected no arguments.");
 +      return jsi::Value::undefined();
 +    }
-+    return jsi::Value(12);
++    return jsi::Value(13);
 +  }
 +
 +  JSI_HOST_FUNCTION(pagerReady) {
@@ -1911,10 +1911,10 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..1a190f007c052e128bf4002daacc77c5
     * Constructor
 diff --git a/cpp/rnskia/RNSkPagerCompositor.h b/cpp/rnskia/RNSkPagerCompositor.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..e631b546f9f1ba46ea91812d93107110118da727
+index 0000000..1d532aa
 --- /dev/null
 +++ b/cpp/rnskia/RNSkPagerCompositor.h
-@@ -0,0 +1,3376 @@
+@@ -0,0 +1,3397 @@
 +#pragma once
 +
 +#include <algorithm>
@@ -2759,6 +2759,8 @@ index 0000000000000000000000000000000000000000..e631b546f9f1ba46ea91812d93107110
 +        renderTurn.lifecycleProgress = sample.lifecycleProgress;
 +        renderTurn.fixedChromeTop = turn.fixedChromeTop;
 +        renderTurn.fixedChromeBottom = turn.fixedChromeBottom;
++        renderTurn.useTargetChrome =
++            !turn.interactive || (turn.settling && turn.commitOnComplete);
 +        if (turn.visualKind == VisualKind::Curl) {
 +          buildRenderProfileLocked(
 +              turn, sample.shape, sample.lifecycleProgress,
@@ -3053,6 +3055,7 @@ index 0000000000000000000000000000000000000000..e631b546f9f1ba46ea91812d93107110
 +    float lifecycleProgress = 0;
 +    float fixedChromeTop = 0;
 +    float fixedChromeBottom = 0;
++    bool useTargetChrome = true;
 +  };
 +
 +  struct PresentationHandoff {
@@ -3065,6 +3068,7 @@ index 0000000000000000000000000000000000000000..e631b546f9f1ba46ea91812d93107110
 +    int direction = 1;
 +    bool spread = false;
 +    bool acknowledged = false;
++    VisualKind visualKind = VisualKind::Curl;
 +    SkColor paperColor = SK_ColorWHITE;
 +  };
 +  struct PreloadedImage {
@@ -4912,6 +4916,7 @@ index 0000000000000000000000000000000000000000..e631b546f9f1ba46ea91812d93107110
 +    handoff->spread = turn.spread;
 +    handoff->acknowledged = presentationAcknowledgedLocked(turn.id);
 +    handoff->paperColor = turn.paperColor;
++    handoff->visualKind = turn.visualKind;
 +    _presentationHandoff = std::move(handoff);
 +  }
 +
@@ -4944,6 +4949,10 @@ index 0000000000000000000000000000000000000000..e631b546f9f1ba46ea91812d93107110
 +                               ? handoff.backgroundLeftImage
 +                               : handoff.frontImage;
 +      drawBackgroundPage(canvas, 0, viewportWidth, viewportHeight, target);
++      if (handoff.visualKind == VisualKind::Slide) {
++        drawBackgroundPage(canvas, 0, viewportWidth, viewportHeight,
++                           handoff.backgroundRightImage);
++      }
 +      return;
 +    }
 +
@@ -5055,9 +5064,14 @@ index 0000000000000000000000000000000000000000..e631b546f9f1ba46ea91812d93107110
 +          std::clamp(turn.lifecycleProgress, 0.0f, 1.0f);
 +    }
 +
-+    const float bodyTop =
++    // Protocol 13 splits single-page planar recordings: front/left are
++    // complete moving pages (including bookmarks), back/right are transparent
++    // source/target chrome. Never cut a bookmark at the header boundary.
++    const bool separateChrome = firstTurn.backImage != nullptr &&
++                                firstTurn.backgroundRightImage != nullptr;
++    const float bodyTop = separateChrome ? 0.0f :
 +        std::clamp(firstTurn.fixedChromeTop, 0.0f, viewportHeight);
-+    const float bodyBottom = std::clamp(
++    const float bodyBottom = separateChrome ? viewportHeight : std::clamp(
 +        viewportHeight - firstTurn.fixedChromeBottom, bodyTop,
 +        viewportHeight);
 +    const auto drawStripPage = [&](size_t pageIndex,
@@ -5088,6 +5102,13 @@ index 0000000000000000000000000000000000000000..e631b546f9f1ba46ea91812d93107110
 +    }
 +
 +    const auto &chromeTurn = turns.back();
++    if (separateChrome) {
++      const auto &fixedChrome = chromeTurn.useTargetChrome
++                                   ? chromeTurn.backgroundRightImage
++                                   : chromeTurn.backImage;
++      drawBackgroundPage(canvas, 0, viewportWidth, viewportHeight, fixedChrome);
++      return;
++    }
 +    const auto &chrome = chromeTurn.direction > 0
 +                             ? chromeTurn.backgroundLeftImage
 +                             : chromeTurn.frontImage;

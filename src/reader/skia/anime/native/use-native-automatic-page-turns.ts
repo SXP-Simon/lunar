@@ -12,6 +12,7 @@ interface NativeAutomaticPageTurnsOptions {
   readonly active: boolean;
   readonly canvasRef: RefObject<CanvasRef | null>;
   readonly createPicture: (content: ReaderPageContent) => SkPicture;
+  readonly createChromePicture?: (content: ReaderPageContent) => SkPicture;
   readonly paperColor: number;
   readonly pixelHeight: number;
   readonly pixelWidth: number;
@@ -25,6 +26,7 @@ export function useNativeAutomaticPageTurnSubmission({
   active,
   canvasRef,
   createPicture,
+  createChromePicture,
   paperColor,
   pixelHeight,
   pixelWidth,
@@ -43,6 +45,8 @@ export function useNativeAutomaticPageTurnSubmission({
       const faces = nativeAutomaticPageTurnFaces(turn);
       let frontPicture: SkPicture | undefined;
       let backgroundPicture: SkPicture | undefined;
+      let sourceChrome: SkPicture | undefined;
+      let targetChrome: SkPicture | undefined;
       let accepted = false;
       const recordStartedAt = readerPerformanceStart();
       let submitStartedAt: number | undefined;
@@ -50,6 +54,8 @@ export function useNativeAutomaticPageTurnSubmission({
       try {
         frontPicture = createPicture(faces.front);
         backgroundPicture = createPicture(faces.background);
+        sourceChrome = createChromePicture?.(turn.from);
+        targetChrome = createChromePicture?.(turn.to);
         readerPerformanceEnd('reader.native.record', recordStartedAt, { workId: turn.performanceId,
           pixelWidth, pixelHeight, turnId: turn.id });
         submitStartedAt = readerPerformanceStart();
@@ -58,6 +64,10 @@ export function useNativeAutomaticPageTurnSubmission({
           id: nativeAutomaticPageTurnId(turn.id),
           frontPicture,
           backgroundLeftPicture: backgroundPicture,
+          // Protocol 13: single-page planar turns use these two otherwise
+          // unused faces for transparent source/target fixed chrome.
+          backPicture: sourceChrome,
+          backgroundRightPicture: targetChrome,
           pixelWidth,
           pixelHeight,
           direction: turn.direction,
@@ -79,6 +89,8 @@ export function useNativeAutomaticPageTurnSubmission({
           nativeId: nativeAutomaticPageTurnId(turn.id), accepted, submittedAtMs });
         frontPicture?.dispose();
         backgroundPicture?.dispose();
+        sourceChrome?.dispose();
+        targetChrome?.dispose();
       }
       if (!accepted) {
         onRejected();
@@ -90,6 +102,7 @@ export function useNativeAutomaticPageTurnSubmission({
     active,
     canvasRef,
     createPicture,
+    createChromePicture,
     onRejected,
     pageTurnEffect,
     paperColor,
