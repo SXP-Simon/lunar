@@ -23,7 +23,7 @@ import {
   type SafeAreaListenerProps,
 } from 'react-native-safe-area-context';
 
-import { IconTabBar } from '@/components/ui/icon-tab-bar';
+import { IconTabBar } from '../components/icon-tab-bar';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
 import {

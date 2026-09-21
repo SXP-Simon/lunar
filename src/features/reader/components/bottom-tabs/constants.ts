@@ -1,4 +1,4 @@
-import { IconTabBarHeight } from '@/components/ui/icon-tab-bar';
+import { IconTabBarHeight } from '../icon-tab-bar';
 
 export const ReaderBottomTabBarHeight = IconTabBarHeight;
 

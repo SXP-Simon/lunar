@@ -89,7 +89,7 @@ export function MarksDrawer(props: MarksDrawerProps) {
 
   return (
     <BottomSheet isOpen={props.isOpen} onOpenChange={props.onOpenChange}>
-      <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
+      <BottomSheet.Portal disableFullWindowOverlay unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
         <BottomSheet.Content backgroundClassName="rounded-t-3xl" bottomInset={bottomInset}
           contentContainerClassName="h-full flex-1 p-0!" detached enableDynamicSizing={false}
