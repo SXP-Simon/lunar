@@ -33,7 +33,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     resumeReadingOnLaunchDescription: 'Open the most recently read book when the app starts',
     resumeReadingOnLaunchHint: 'Choose whether to restore the most recent reading session on launch',
     readingFonts: 'Reading fonts',
-    readingFontsDescription: 'Import TTF or OTF fonts for body text and reader chrome',
+    readingFontsDescription: 'Import TTF or OTF fonts',
     importFont: 'Import font',
     importFontHint: 'Choose a font file to import',
     importingFont: 'Importing font',

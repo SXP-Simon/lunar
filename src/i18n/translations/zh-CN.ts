@@ -31,7 +31,7 @@ export const zhCN = {
     resumeReadingOnLaunchDescription: '启动应用后打开最近阅读的书籍',
     resumeReadingOnLaunchHint: '控制应用启动后是否恢复最近一次阅读',
     readingFonts: '阅读字体',
-    readingFontsDescription: '导入 TTF 或 OTF 字体，供正文与阅读界面选用',
+    readingFontsDescription: '导入 TTF 或 OTF 字体',
     importFont: '导入字体',
     importFontHint: '从文件中选择一个字体导入',
     importingFont: '正在导入字体',
