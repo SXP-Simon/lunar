@@ -14,8 +14,7 @@ import { SettingSection } from './setting-section';
 
 /**
  * Manages the imported font catalog: what the reader can offer, without the
- * reader being open. Selecting a font for a role stays in the reader's own
- * typography drawer, next to the text it changes.
+ * reader being open. The reading settings page also offers role-based selection.
  */
 export function ReadingFontsSection() {
   const { t } = useTranslation();
@@ -70,7 +69,7 @@ export function ReadingFontsSection() {
 
   return (
     <>
-      <SettingSection title={t('settings.readingFonts')}>
+      <SettingSection title={t('settings.fontManagement')}>
         <SettingRow
           variant="action"
           title={isImporting ? t('settings.importingFont') : t('settings.importFont')}

@@ -1,4 +1,5 @@
 export { default as ReaderScreen } from './screens/reader-screen';
+export { ReaderFontSelectionSheet } from './components/reader-font-selection-sheet';
 export type { ReaderReadingState } from './domain/reader-reading-state';
 export type { ReaderHighlight } from './domain/reader-highlight';
 export {

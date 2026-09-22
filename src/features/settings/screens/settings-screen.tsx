@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,25 +7,19 @@ import { type LanguagePreference, useTranslation } from '@/i18n';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { type ApplicationThemeMode, useApplicationSettingsStore } from '@/stores';
 import { LanguageSelectionSheet } from '../components/language-selection-sheet';
-import { ReadingFontsSection } from '../components/reading-fonts-section';
 import { SettingRow } from '../components/setting-row';
 import { SettingSection } from '../components/setting-section';
 import { ThemeSelectionSheet } from '../components/theme-selection-sheet';
 
 export function SettingsScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   useMarkInitialContentReady(true);
   const themeMode = useApplicationSettingsStore((state) => state.themeMode);
   const setThemeMode = useApplicationSettingsStore((state) => state.setThemeMode);
   const language = useApplicationSettingsStore((state) => state.language);
   const setLanguage = useApplicationSettingsStore((state) => state.setLanguage);
-  const resumeReadingOnLaunch = useApplicationSettingsStore(
-    (state) => state.resumeReadingOnLaunch,
-  );
-  const setResumeReadingOnLaunch = useApplicationSettingsStore(
-    (state) => state.setResumeReadingOnLaunch,
-  );
   const [isLanguageSelectionOpen, setIsLanguageSelectionOpen] = useState(false);
   const [isThemeSelectionOpen, setIsThemeSelectionOpen] = useState(false);
 
@@ -59,7 +53,6 @@ export function SettingsScreen() {
               <SettingRow
                 variant="action"
                 title={t('settings.theme')}
-                description={t('settings.themeDescription')}
                 value={themeLabel(themeMode, t)}
                 accessibilityHint={t('settings.themeHint')}
                 onPress={() => setIsThemeSelectionOpen(true)}
@@ -67,27 +60,16 @@ export function SettingsScreen() {
               <SettingRow
                 variant="action"
                 title={t('settings.language')}
-                description={t('settings.languageDescription')}
                 value={languageLabel(language, t)}
                 accessibilityHint={t('settings.languageHint')}
                 onPress={() => setIsLanguageSelectionOpen(true)}
               />
             </SettingSection>
             <View className="mt-8">
-              <SettingSection title={t('settings.reading')}>
-                <SettingRow
-                  variant="switch"
-                  title={t('settings.resumeReadingOnLaunch')}
-                  description={t('settings.resumeReadingOnLaunchDescription')}
-                  accessibilityLabel={t('settings.resumeReadingOnLaunch')}
-                  accessibilityHint={t('settings.resumeReadingOnLaunchHint')}
-                  isSelected={resumeReadingOnLaunch}
-                  onSelectedChange={setResumeReadingOnLaunch}
-                />
-              </SettingSection>
-            </View>
-            <View className="mt-8">
-              <ReadingFontsSection />
+              <SettingSection
+                title={t('settings.readingSettings')}
+                onPress={() => router.push('/settings/reading')}
+              />
             </View>
           </View>
         </ScrollView>
