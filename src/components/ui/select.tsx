@@ -4,26 +4,43 @@ import {
   type SelectItemProps as HeroSelectItemProps,
 } from 'heroui-native/select';
 import { Separator } from 'heroui-native/separator';
+import { View } from 'react-native';
+import { twMerge } from 'tailwind-merge';
 import { useCSSVariable } from 'uniwind';
 
 /** Selection context for lists embedded in an existing surface. */
 export const SelectRoot = Select;
 
+type SelectGroupPosition = 'single' | 'first' | 'middle' | 'last';
+
+const GROUP_CORNERS: Record<SelectGroupPosition, string> = {
+  single: 'rounded-2xl',
+  first: 'rounded-t-2xl',
+  middle: '',
+  last: 'rounded-b-2xl',
+};
+
 export type SelectItemProps = Omit<HeroSelectItemProps, 'children' | 'asChild'> & {
   readonly labelProps?: Pick<SelectItemLabelProps, 'style' | 'numberOfLines'>;
   readonly showSeparator?: boolean;
+  /** Adjacent virtualized rows form one continuous group surface. */
+  readonly groupPosition?: SelectGroupPosition;
 };
 
 export function SelectItem({
   labelProps,
   showSeparator = false,
+  groupPosition = 'single',
+  className,
   ...props
 }: SelectItemProps) {
   const activeColor = useCSSVariable('--color-navigation-active') as string;
 
   return (
-    <>
-      <Select.Item {...props}>
+    <View className={twMerge('overflow-hidden bg-surface-secondary', GROUP_CORNERS[groupPosition])}>
+      <Select.Item
+        {...props}
+        className={twMerge('min-h-14 px-4 py-4 active:bg-surface-tertiary', className)}>
         {({ isSelected }) => (
           <>
             <Select.ItemLabel
@@ -36,8 +53,8 @@ export function SelectItem({
           </>
         )}
       </Select.Item>
-      {showSeparator ? <Separator /> : null}
-    </>
+      {showSeparator ? <Separator className="mx-4 bg-surface-tertiary/60" /> : null}
+    </View>
   );
 }
 
@@ -90,6 +107,9 @@ export function SelectSheet<Value extends string>({
               label={option.label}
               value={option.value}
               showSeparator={index < options.length - 1}
+              groupPosition={options.length === 1
+                ? 'single'
+                : index === 0 ? 'first' : index === options.length - 1 ? 'last' : 'middle'}
             />
           ))}
         </Select.Content>

@@ -143,7 +143,12 @@ export function FontPickerContent({ role, onBack }: FontPickerContentProps) {
         <SearchField value={query} onChange={setQuery}>
           <SearchField.Group>
             <SearchField.SearchIcon />
-            <SearchField.Input {...keyboardHandlers} placeholder={t('reader.searchFonts')} />
+            <SearchField.Input
+              {...keyboardHandlers}
+              accessibilityLabel={t('reader.searchFonts')}
+              className="min-w-0 flex-1 rounded-2xl border border-field-border bg-surface-secondary focus:border-navigation-active"
+              placeholder={t('reader.searchFonts')}
+            />
             <SearchField.ClearButton />
           </SearchField.Group>
         </SearchField>
@@ -163,19 +168,32 @@ export function FontPickerContent({ role, onBack }: FontPickerContentProps) {
         renderItem={({ item, index }) => {
           if (item.kind === 'header') {
             return (
-              <Text className="px-2 pb-2 pt-4 text-sm font-medium text-muted">{item.title}</Text>
+              <Text
+                accessibilityRole="header"
+                className={index === 0
+                  ? 'px-4 pb-2 pt-2 text-sm font-medium text-muted'
+                  : 'px-4 pb-2 pt-6 text-sm font-medium text-muted'}>
+                {item.title}
+              </Text>
             );
           }
           if (item.kind === 'note') {
-            return <Text className="px-2 py-2 text-sm text-muted">{item.text}</Text>;
+            return (
+              <View className="rounded-2xl bg-surface-secondary px-4 py-4">
+                <Text className="text-sm leading-6 text-muted">{item.text}</Text>
+              </View>
+            );
           }
+          const isFirst = items[index - 1]?.kind !== 'option';
+          const isLast = items[index + 1]?.kind !== 'option';
           return (
             <SelectItem
               accessibilityLabel={item.title}
               closeOnPress={false}
               label={item.title}
               value={fontSelectionValue(item.ref)}
-              showSeparator={items[index + 1]?.kind === 'option'}
+              showSeparator={!isLast}
+              groupPosition={isFirst ? (isLast ? 'single' : 'first') : (isLast ? 'last' : 'middle')}
               labelProps={{
                 numberOfLines: 1,
                 style: item.previewFamily ? { fontFamily: item.previewFamily } : undefined,
