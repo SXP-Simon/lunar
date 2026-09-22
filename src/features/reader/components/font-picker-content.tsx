@@ -8,6 +8,7 @@ import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import { withUniwind } from 'uniwind';
 
+import { SelectItem, SelectRoot } from '@/components/ui/select';
 import { useTranslation } from '@/i18n';
 import { LUNAR_READER_BUILTIN_FONT_REF, type ReaderFontRef, type ReaderFontRole } from '@/reader';
 import { listSystemReaderFontFamilies } from '@/reader/native';
@@ -50,7 +51,6 @@ const FontList = withUniwind(BottomSheetFlatList<FontPickerItem>);
 export function FontPickerContent({ role, onBack }: FontPickerContentProps) {
   const { t } = useTranslation();
   const foreground = useThemeColor('foreground');
-  const accentForeground = useThemeColor('accent-foreground');
   const keyboardHandlers = useBottomSheetAwareHandlers();
   const typography = useReaderStore((state) => state.typography);
   const updateTypography = useReaderStore((state) => state.updateTypography);
@@ -109,7 +109,19 @@ export function FontPickerContent({ role, onBack }: FontPickerContentProps) {
 
   const selected = typography.fonts[role];
   return (
-    <View className="flex-1 gap-3 px-5 pb-5 pt-3">
+    <SelectRoot
+      className="flex-1 gap-3 px-5 pb-5 pt-3"
+      value={{ value: fontSelectionValue(selected), label: selected.family }}
+      onValueChange={(option) => {
+        const font = items.find(
+          (item): item is FontOption =>
+            item.kind === 'option' && fontSelectionValue(item.ref) === option?.value,
+        );
+        if (font) {
+          updateTypography({ fonts: { ...typography.fonts, [role]: font.ref } });
+          onBack();
+        }
+      }}>
       <View className="flex-row items-center gap-2">
         <Button
           isIconOnly
@@ -138,7 +150,7 @@ export function FontPickerContent({ role, onBack }: FontPickerContentProps) {
       ) : null}
       <FontList
         className="flex-1"
-        contentContainerClassName="gap-2 pb-4"
+        contentContainerClassName="pb-4"
         data={items}
         extraData={selected}
         keyExtractor={(item) => item.key}
@@ -148,46 +160,32 @@ export function FontPickerContent({ role, onBack }: FontPickerContentProps) {
             {t('reader.noMatchingFonts')}
           </Text>
         }
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           if (item.kind === 'header') {
             return (
-              <Text className="px-1 pt-2 text-sm font-medium text-muted">{item.title}</Text>
+              <Text className="px-2 pb-2 pt-4 text-sm font-medium text-muted">{item.title}</Text>
             );
           }
           if (item.kind === 'note') {
-            return <Text className="px-1 text-sm text-muted">{item.text}</Text>;
+            return <Text className="px-2 py-2 text-sm text-muted">{item.text}</Text>;
           }
-          const isSelected = isSameFontRef(selected, item.ref);
           return (
-            <Button
-              accessibilityRole="radio"
+            <SelectItem
               accessibilityLabel={item.title}
-              accessibilityState={{ checked: isSelected }}
-              className="h-auto min-h-12 justify-start rounded-2xl py-3"
-              onPress={() => {
-                updateTypography({ fonts: { ...typography.fonts, [role]: item.ref } });
-                onBack();
+              closeOnPress={false}
+              label={item.title}
+              value={fontSelectionValue(item.ref)}
+              showSeparator={items[index + 1]?.kind === 'option'}
+              labelProps={{
+                numberOfLines: 1,
+                style: item.previewFamily ? { fontFamily: item.previewFamily } : undefined,
               }}
-              variant={isSelected ? 'primary' : 'secondary'}>
-              <Button.Label
-                className="min-w-0 flex-1"
-                numberOfLines={1}
-                style={item.previewFamily ? { fontFamily: item.previewFamily } : undefined}>
-                {item.title}
-              </Button.Label>
-              {isSelected ? (
-                <SymbolView
-                  name={{ ios: 'checkmark', android: 'check', web: 'check' }}
-                  size={20}
-                  tintColor={accentForeground}
-                />
-              ) : null}
-            </Button>
+            />
           );
         }}
         showsVerticalScrollIndicator={false}
       />
-    </View>
+    </SelectRoot>
   );
 }
 
@@ -221,10 +219,6 @@ function systemOption(family: string): FontOption {
   };
 }
 
-function isSameFontRef(left: ReaderFontRef, right: ReaderFontRef): boolean {
-  return (
-    left.source === right.source
-    && left.family === right.family
-    && (left.importedFontId ?? '') === (right.importedFontId ?? '')
-  );
+function fontSelectionValue(ref: ReaderFontRef): string {
+  return JSON.stringify([ref.source, ref.family, ref.importedFontId ?? '']);
 }

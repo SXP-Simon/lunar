@@ -1,7 +1,4 @@
-import { BottomSheet } from 'heroui-native/bottom-sheet';
-import { Button } from 'heroui-native/button';
-import { View } from 'react-native';
-
+import { SelectSheet } from '@/components/ui/select';
 import { type LanguagePreference, useTranslation } from '@/i18n';
 
 type LanguageSelectionSheetProps = {
@@ -22,36 +19,14 @@ export function LanguageSelectionSheet({
   const { t } = useTranslation();
 
   return (
-    <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
-        <BottomSheet.Overlay variant="blur" blurViewProps={{ intensity: 28 }} />
-        <BottomSheet.Content
-          backgroundClassName="bg-surface"
-          contentContainerClassName="gap-2 px-6 pb-8">
-          <BottomSheet.Title className="text-xl text-foreground">
-            {t('settings.languageSelection')}
-          </BottomSheet.Title>
-          <View className="mt-4 gap-2">
-            {LANGUAGE_OPTIONS.map((option) => {
-              const isSelected = option === language;
-              return (
-                <Button
-                  key={option}
-                  accessibilityState={{ selected: isSelected }}
-                  className="justify-start rounded-2xl"
-                  onPress={() => {
-                    onLanguageChange(option);
-                    onOpenChange(false);
-                  }}
-                  variant={isSelected ? 'primary' : 'secondary'}>
-                  {languageLabel(option, t)}
-                </Button>
-              );
-            })}
-          </View>
-        </BottomSheet.Content>
-      </BottomSheet.Portal>
-    </BottomSheet>
+    <SelectSheet
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      onValueChange={onLanguageChange}
+      options={LANGUAGE_OPTIONS.map((option) => ({ value: option, label: languageLabel(option, t) }))}
+      title={t('settings.languageSelection')}
+      value={language}
+    />
   );
 }
 
