@@ -62,6 +62,7 @@ import {
 } from '../components/reader-selection-controls';
 import { useReaderHighlights } from '../hooks/use-reader-highlights';
 import { useReaderSession } from '../hooks/use-reader-session';
+import { useReaderVolumeKeys } from '../hooks/use-reader-volume-keys';
 import { containsHighlightRange } from '../domain/highlight-ranges';
 import type { ReaderHighlightColor } from '../domain/reader-highlight';
 import {
@@ -135,6 +136,7 @@ export default function ReaderScreen() {
   const animationStyle = useReaderStore((state) => state.animationStyle);
   const keepScreenAwake = useReaderStore((state) => state.keepScreenAwake);
   const showSystemStatusBar = useReaderStore((state) => state.showSystemStatusBar);
+  const volumeKeysTurnPages = useReaderStore((state) => state.volumeKeysTurnPages);
   const spreadMode = useReaderStore((state) => state.typography.spreadMode);
   const contentInsets = useMemo(() => ({
     top: reservedInsets.top + ReaderSurfaceTopSpacing,
@@ -205,6 +207,14 @@ export default function ReaderScreen() {
     && selectionState.renderId === session.snapshot.renderId
     ? selectionState
     : undefined;
+  const handleVolumeKeyPress = useCallback((direction: 'next' | 'previous') => {
+    void (direction === 'next' ? next() : previous());
+  }, [next, previous]);
+  useReaderVolumeKeys(
+    volumeKeysTurnPages && isReady && !isSettling && !automaticNavigationActive
+      && !selection && !isTocOpen && !isProgressOpen && !isTypographyOpen && !isMarksOpen && !isFootnoteOpen,
+    handleVolumeKeyPress,
+  );
   const chapterHref = session.snapshot.position?.locator?.manifestHref ?? '';
   const highlightRegions = useMemo(() => createReaderHighlightRegions(currentHitEntries, highlights, chapterHref),
     [chapterHref, currentHitEntries, highlights]);

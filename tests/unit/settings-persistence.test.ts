@@ -120,12 +120,15 @@ describe('settings persistence', () => {
     });
   });
 
-  it('stores reader typography and page-turn animation without session state', () => {
+  it('stores reader preferences without session state', () => {
     useReaderStore.getState().updateTypography({
       fontSize: 24,
       lineHeight: 1.8,
     });
     useReaderStore.getState().setAnimationStyle('page');
+    useReaderStore.getState().setKeepScreenAwake(true);
+    useReaderStore.getState().setShowSystemStatusBar(true);
+    useReaderStore.getState().setVolumeKeysTurnPages(true);
     useReaderStore.getState().setActiveBook('book-1');
 
     expect(readPersistedState(READER_SETTINGS_KEY)).toEqual({
@@ -135,6 +138,9 @@ describe('settings persistence', () => {
         lineHeight: 1.8,
       },
       animationStyle: 'page',
+      keepScreenAwake: true,
+      showSystemStatusBar: true,
+      volumeKeysTurnPages: true,
     });
   });
 });

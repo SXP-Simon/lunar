@@ -19,6 +19,7 @@ interface ReaderStoreState {
   readonly animationStyle: ReaderPageAnimationStyle;
   readonly keepScreenAwake: boolean;
   readonly showSystemStatusBar: boolean;
+  readonly volumeKeysTurnPages: boolean;
   setActiveBook(bookId: string): void;
   setSnapshot(snapshot: ReaderSnapshot): void;
   setTypography(typography: ReaderTypography): void;
@@ -26,13 +27,14 @@ interface ReaderStoreState {
   setAnimationStyle(style: ReaderPageAnimationStyle): void;
   setKeepScreenAwake(enabled: boolean): void;
   setShowSystemStatusBar(enabled: boolean): void;
+  setVolumeKeysTurnPages(enabled: boolean): void;
   resetTypography(): void;
   reset(): void;
 }
 
 type PersistedReaderPreferences = Pick<
   ReaderStoreState,
-  'typography' | 'animationStyle' | 'keepScreenAwake' | 'showSystemStatusBar'
+  'typography' | 'animationStyle' | 'keepScreenAwake' | 'showSystemStatusBar' | 'volumeKeysTurnPages'
 >;
 
 const INITIAL_READER_SNAPSHOT: ReaderSnapshot = {
@@ -51,6 +53,7 @@ export const useReaderStore = create<ReaderStoreState>()(
       animationStyle: DEFAULT_ANIMATION_STYLE,
       keepScreenAwake: false,
       showSystemStatusBar: false,
+      volumeKeysTurnPages: false,
       setActiveBook: (bookId) => set({ activeBookId: bookId }),
       setSnapshot: (snapshot) => set({ snapshot }),
       setTypography: (typography) => set({ typography: normalizeReaderTypography(typography) }),
@@ -60,6 +63,7 @@ export const useReaderStore = create<ReaderStoreState>()(
       setAnimationStyle: (animationStyle) => set({ animationStyle }),
       setKeepScreenAwake: (keepScreenAwake) => set({ keepScreenAwake }),
       setShowSystemStatusBar: (showSystemStatusBar) => set({ showSystemStatusBar }),
+      setVolumeKeysTurnPages: (volumeKeysTurnPages) => set({ volumeKeysTurnPages }),
       resetTypography: () => set({ typography: DEFAULT_READER_TYPOGRAPHY }),
       reset: () => set({
         activeBookId: undefined,
@@ -68,16 +72,18 @@ export const useReaderStore = create<ReaderStoreState>()(
         animationStyle: DEFAULT_ANIMATION_STYLE,
         keepScreenAwake: false,
         showSystemStatusBar: false,
+        volumeKeysTurnPages: false,
       }),
     }),
     {
       name: 'settings.reader',
       storage: createJSONStorage(() => mmkvStateStorage),
-      partialize: ({ typography, animationStyle, keepScreenAwake, showSystemStatusBar }) => ({
+      partialize: ({ typography, animationStyle, keepScreenAwake, showSystemStatusBar, volumeKeysTurnPages }) => ({
         typography,
         animationStyle,
         keepScreenAwake,
         showSystemStatusBar,
+        volumeKeysTurnPages,
       }),
       // A build before role-based fonts persisted a flat `fontFamily`, and the
       // hydrated value is handed straight to the reader. Normalizing here rather

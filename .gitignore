@@ -44,6 +44,7 @@ example
 /modules/rito-rn/.tmp-codegen
 /modules/rito-rn/.pure-cxx-test
 /modules/rito-rn/android/build/
+/modules/reader-volume-keys/android/build/
 /modules/rito-rn/android/.cxx/
 
 # Build artifacts and local signing credentials

@@ -33,6 +33,8 @@ export const en: TranslationSchema<typeof zhCN> = {
     keepScreenAwakeDescription: 'Prevent automatic screen lock while the reader is open',
     showSystemStatusBar: 'Show time and battery while reading',
     showSystemStatusBarDescription: 'Keep the system status bar visible at the top',
+    volumeKeysTurnPages: 'Turn pages with volume keys',
+    volumeKeysTurnPagesDescription: 'Volume up goes back; volume down goes forward',
     backToSettings: 'Back to settings',
     fontManagement: 'Font management',
     resumeReadingOnLaunch: 'Continue reading on launch',

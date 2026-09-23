@@ -29,6 +29,8 @@ export function ReadingSettingsScreen() {
   const setKeepScreenAwake = useReaderStore((state) => state.setKeepScreenAwake);
   const showSystemStatusBar = useReaderStore((state) => state.showSystemStatusBar);
   const setShowSystemStatusBar = useReaderStore((state) => state.setShowSystemStatusBar);
+  const volumeKeysTurnPages = useReaderStore((state) => state.volumeKeysTurnPages);
+  const setVolumeKeysTurnPages = useReaderStore((state) => state.setVolumeKeysTurnPages);
   const selectedFonts = useReaderStore((state) => state.typography.fonts);
   const fonts = useFontStore((state) => state.fonts);
   const [pickerRole, setPickerRole] = useState<ReaderFontRole>('body');
@@ -87,6 +89,13 @@ export function ReadingSettingsScreen() {
               description={t('settings.showSystemStatusBarDescription')}
               isSelected={showSystemStatusBar}
               onSelectedChange={setShowSystemStatusBar}
+            />
+            <SettingRow
+              variant="switch"
+              title={t('settings.volumeKeysTurnPages')}
+              description={t('settings.volumeKeysTurnPagesDescription')}
+              isSelected={volumeKeysTurnPages}
+              onSelectedChange={setVolumeKeysTurnPages}
             />
           </SettingSection>
           <SettingSection title={t('settings.readingFonts')}>

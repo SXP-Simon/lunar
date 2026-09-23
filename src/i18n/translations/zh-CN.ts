@@ -31,6 +31,8 @@ export const zhCN = {
     keepScreenAwakeDescription: '阅读页面打开期间，防止屏幕自动锁定',
     showSystemStatusBar: '阅读时显示时间和电量',
     showSystemStatusBarDescription: '阅读时保留顶部系统状态栏',
+    volumeKeysTurnPages: '使用音量键翻页',
+    volumeKeysTurnPagesDescription: '音量加键翻上一页，音量减键翻下一页',
     backToSettings: '返回设置',
     fontManagement: '字体管理',
     resumeReadingOnLaunch: '启动时继续阅读',
