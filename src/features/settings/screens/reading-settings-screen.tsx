@@ -25,6 +25,10 @@ export function ReadingSettingsScreen() {
   useMarkInitialContentReady(true);
   const resumeReadingOnLaunch = useApplicationSettingsStore((state) => state.resumeReadingOnLaunch);
   const setResumeReadingOnLaunch = useApplicationSettingsStore((state) => state.setResumeReadingOnLaunch);
+  const keepScreenAwake = useReaderStore((state) => state.keepScreenAwake);
+  const setKeepScreenAwake = useReaderStore((state) => state.setKeepScreenAwake);
+  const showSystemStatusBar = useReaderStore((state) => state.showSystemStatusBar);
+  const setShowSystemStatusBar = useReaderStore((state) => state.setShowSystemStatusBar);
   const selectedFonts = useReaderStore((state) => state.typography.fonts);
   const fonts = useFontStore((state) => state.fonts);
   const [pickerRole, setPickerRole] = useState<ReaderFontRole>('body');
@@ -69,6 +73,20 @@ export function ReadingSettingsScreen() {
               accessibilityHint={t('settings.resumeReadingOnLaunchHint')}
               isSelected={resumeReadingOnLaunch}
               onSelectedChange={setResumeReadingOnLaunch}
+            />
+            <SettingRow
+              variant="switch"
+              title={t('settings.keepScreenAwake')}
+              description={t('settings.keepScreenAwakeDescription')}
+              isSelected={keepScreenAwake}
+              onSelectedChange={setKeepScreenAwake}
+            />
+            <SettingRow
+              variant="switch"
+              title={t('settings.showSystemStatusBar')}
+              description={t('settings.showSystemStatusBarDescription')}
+              isSelected={showSystemStatusBar}
+              onSelectedChange={setShowSystemStatusBar}
             />
           </SettingSection>
           <SettingSection title={t('settings.readingFonts')}>

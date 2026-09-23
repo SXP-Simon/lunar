@@ -1,4 +1,5 @@
-import { type Href, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { type Href, useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
+import { useKeepAwake } from 'expo-keep-awake';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import * as Clipboard from 'expo-clipboard';
@@ -84,6 +85,7 @@ export default function ReaderScreen() {
   const { t } = useTranslation();
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
+  const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const { toast } = useToast();
   const [reservedInsets, setReservedInsets] = useState(insets);
@@ -131,6 +133,8 @@ export default function ReaderScreen() {
   const errorToastKey = useRef<string | undefined>(undefined);
   const readerTheme = theme === 'dark' ? 'dark' : 'light';
   const animationStyle = useReaderStore((state) => state.animationStyle);
+  const keepScreenAwake = useReaderStore((state) => state.keepScreenAwake);
+  const showSystemStatusBar = useReaderStore((state) => state.showSystemStatusBar);
   const spreadMode = useReaderStore((state) => state.typography.spreadMode);
   const contentInsets = useMemo(() => ({
     top: reservedInsets.top + ReaderSurfaceTopSpacing,
@@ -754,6 +758,7 @@ export default function ReaderScreen() {
 
   return (
     <View className="flex-1" style={{ backgroundColor: canvasBackground }}>
+      {isFocused && keepScreenAwake && <ReaderKeepAwake />}
       <SafeAreaListener
         onChange={handleSafeAreaChange}
         pointerEvents="none"
@@ -761,7 +766,7 @@ export default function ReaderScreen() {
       />
       <StatusBar
         animated
-        hidden={!readerChromeVisible}
+        hidden={!readerChromeVisible && !showSystemStatusBar}
         style={readerTheme === 'dark' ? 'light' : 'dark'}
       />
       <NavigationBar
@@ -960,6 +965,11 @@ export default function ReaderScreen() {
       />
     </View>
   );
+}
+
+function ReaderKeepAwake() {
+  useKeepAwake();
+  return null;
 }
 
 function isExternalHref(href: string): boolean {

@@ -17,18 +17,22 @@ interface ReaderStoreState {
   readonly typography: ReaderTypography;
   /** Shared page-turn animation used by every reader surface. */
   readonly animationStyle: ReaderPageAnimationStyle;
+  readonly keepScreenAwake: boolean;
+  readonly showSystemStatusBar: boolean;
   setActiveBook(bookId: string): void;
   setSnapshot(snapshot: ReaderSnapshot): void;
   setTypography(typography: ReaderTypography): void;
   updateTypography(patch: Partial<ReaderTypography>): void;
   setAnimationStyle(style: ReaderPageAnimationStyle): void;
+  setKeepScreenAwake(enabled: boolean): void;
+  setShowSystemStatusBar(enabled: boolean): void;
   resetTypography(): void;
   reset(): void;
 }
 
 type PersistedReaderPreferences = Pick<
   ReaderStoreState,
-  'typography' | 'animationStyle'
+  'typography' | 'animationStyle' | 'keepScreenAwake' | 'showSystemStatusBar'
 >;
 
 const INITIAL_READER_SNAPSHOT: ReaderSnapshot = {
@@ -45,6 +49,8 @@ export const useReaderStore = create<ReaderStoreState>()(
       snapshot: INITIAL_READER_SNAPSHOT,
       typography: DEFAULT_READER_TYPOGRAPHY,
       animationStyle: DEFAULT_ANIMATION_STYLE,
+      keepScreenAwake: false,
+      showSystemStatusBar: false,
       setActiveBook: (bookId) => set({ activeBookId: bookId }),
       setSnapshot: (snapshot) => set({ snapshot }),
       setTypography: (typography) => set({ typography: normalizeReaderTypography(typography) }),
@@ -52,18 +58,27 @@ export const useReaderStore = create<ReaderStoreState>()(
         typography: normalizeReaderTypography({ ...state.typography, ...patch }),
       })),
       setAnimationStyle: (animationStyle) => set({ animationStyle }),
+      setKeepScreenAwake: (keepScreenAwake) => set({ keepScreenAwake }),
+      setShowSystemStatusBar: (showSystemStatusBar) => set({ showSystemStatusBar }),
       resetTypography: () => set({ typography: DEFAULT_READER_TYPOGRAPHY }),
       reset: () => set({
         activeBookId: undefined,
         snapshot: INITIAL_READER_SNAPSHOT,
         typography: DEFAULT_READER_TYPOGRAPHY,
         animationStyle: DEFAULT_ANIMATION_STYLE,
+        keepScreenAwake: false,
+        showSystemStatusBar: false,
       }),
     }),
     {
       name: 'settings.reader',
       storage: createJSONStorage(() => mmkvStateStorage),
-      partialize: ({ typography, animationStyle }) => ({ typography, animationStyle }),
+      partialize: ({ typography, animationStyle, keepScreenAwake, showSystemStatusBar }) => ({
+        typography,
+        animationStyle,
+        keepScreenAwake,
+        showSystemStatusBar,
+      }),
       // A build before role-based fonts persisted a flat `fontFamily`, and the
       // hydrated value is handed straight to the reader. Normalizing here rather
       // than on first write keeps `typography.fonts` total for every consumer.
