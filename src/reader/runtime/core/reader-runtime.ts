@@ -26,6 +26,7 @@ export interface ReaderRuntime {
   next(): Promise<ReaderSnapshot>;
   previous(): Promise<ReaderSnapshot>;
   getCurrentHitMap(spreadIndex?: number): ReaderHitMap | undefined;
+  getCurrentImageBytes(source: string): Uint8Array | undefined;
   readFootnote(key: string, spreadIndex?: number): Promise<ReaderFootnote | undefined>;
   search(request: ReaderSearchRequest): Promise<ReaderSearchResponse>;
   resolveTextRangeGeometry(request: ReaderTextRangeGeometryRequest): Promise<readonly ReaderTextRangeRect[]>;

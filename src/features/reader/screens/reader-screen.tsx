@@ -25,6 +25,8 @@ import {
 } from 'react-native-safe-area-context';
 
 import { IconTabBar } from '../components/icon-tab-bar';
+import { ImageViewer } from '../components/image-viewer';
+import { createReaderImageFile, deleteReaderImageFile } from '../infrastructure/reader-image-file';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
 import {
@@ -123,6 +125,8 @@ export default function ReaderScreen() {
   }>();
   const [footnote, setFootnote] = useState<ReaderFootnote>();
   const [isFootnoteOpen, setIsFootnoteOpen] = useState(false);
+  const [imageViewer, setImageViewer] = useState<{ uri: string; description: string; revisionId: number; renderId?: number }>();
+  const pendingImageLinkPress = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [selectionState, setSelection] = useState<OwnedReaderTextSelection>();
   const [isHighlighting, setIsHighlighting] = useState(false);
   const selectionRef = useRef<ReaderTextSelection | undefined>(undefined);
@@ -212,7 +216,8 @@ export default function ReaderScreen() {
   }, [next, previous]);
   useReaderVolumeKeys(
     volumeKeysTurnPages && isReady && !isSettling && !automaticNavigationActive
-      && !selection && !isTocOpen && !isProgressOpen && !isTypographyOpen && !isMarksOpen && !isFootnoteOpen,
+      && !selection && !isTocOpen && !isProgressOpen && !isTypographyOpen && !isMarksOpen && !isFootnoteOpen
+      && !imageViewer,
     handleVolumeKeyPress,
   );
   const chapterHref = session.snapshot.position?.locator?.manifestHref ?? '';
@@ -323,6 +328,21 @@ export default function ReaderScreen() {
   useEffect(() => {
     if (bookmarksError) toast.show({ variant: 'danger', label: t('reader.bookmarkLoadFailed') });
   }, [bookmarksError, t, toast]);
+
+  useEffect(() => () => {
+    if (imageViewer) deleteReaderImageFile(imageViewer.uri);
+  }, [imageViewer]);
+
+  useEffect(() => () => {
+    if (pendingImageLinkPress.current) clearTimeout(pendingImageLinkPress.current);
+  }, []);
+
+  useEffect(() => {
+    if (imageViewer && (imageViewer.revisionId !== session.snapshot.revisionId
+      || imageViewer.renderId !== session.snapshot.renderId)) {
+      setImageViewer(undefined);
+    }
+  }, [imageViewer, session.snapshot.renderId, session.snapshot.revisionId]);
 
   useEffect(() => {
     if (!session.errorMessage) {
@@ -515,9 +535,47 @@ export default function ReaderScreen() {
     }),
   [beginSelection, flushSelectionUpdate, isReady, isSettling, queueSelectionUpdate, refineSelectionGeometry]);
   /* eslint-enable react-hooks/refs */
+  const handleReadingDoubleTap = useCallback((x: number, y: number) => {
+    if (!isReady || isSettling || automaticNavigationActive || selection) return;
+    const hitMap = session.runtime.getCurrentHitMap();
+    const point = displayPoint(x, y);
+    const hitIndex = hitMap ? findReaderHitIndex(hitMap.entries, point.x, point.y) : undefined;
+    const hit = hitIndex === undefined ? undefined : hitMap?.entries[hitIndex];
+    if (!hit?.imageSource) return;
+    if (pendingImageLinkPress.current) {
+      clearTimeout(pendingImageLinkPress.current);
+      pendingImageLinkPress.current = undefined;
+    }
+    const bytes = session.runtime.getCurrentImageBytes(hit.imageSource);
+    if (!bytes) {
+      toast.show({ variant: 'danger', label: t('reader.imageUnavailable') });
+      return;
+    }
+    try {
+      setImageViewer({
+        uri: createReaderImageFile(hit.imageSource, bytes),
+        description: hit.imageAlt || t('reader.imageViewer'),
+        revisionId: session.snapshot.revisionId,
+        renderId: session.snapshot.renderId,
+      });
+    } catch {
+      toast.show({ variant: 'danger', label: t('reader.imageUnavailable') });
+    }
+  }, [automaticNavigationActive, displayPoint, isReady, isSettling, selection, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, t, toast]);
+  const imageDoubleTapGesture = useMemo(() => Gesture.Tap()
+    .enabled(isReady && !isSettling && !automaticNavigationActive && !selection)
+    .numberOfTaps(2)
+    .maxDistance(24)
+    .runOnJS(true)
+    .onEnd((event, success) => {
+      if (success) handleReadingDoubleTap(event.x, event.y);
+    }), [automaticNavigationActive, handleReadingDoubleTap, isReady, isSettling, selection]);
   const readingGesture = useMemo(
-    () => Gesture.Exclusive(selectionGesture, Gesture.Race(bookmarkPull.gesture, pageTurnGesture)),
-    [bookmarkPull.gesture, pageTurnGesture, selectionGesture],
+    () => Gesture.Simultaneous(
+      imageDoubleTapGesture,
+      Gesture.Exclusive(selectionGesture, Gesture.Race(bookmarkPull.gesture, pageTurnGesture)),
+    ),
+    [bookmarkPull.gesture, imageDoubleTapGesture, pageTurnGesture, selectionGesture],
   );
 
   const openFootnote = useCallback(async (key: string, pending = false) => {
@@ -603,6 +661,16 @@ export default function ReaderScreen() {
       const hit = hitIndex === undefined ? undefined : hitMap?.entries[hitIndex];
       if (hit?.footnoteKey) {
         void openFootnote(hit.footnoteKey, hit.footnotePending);
+        return;
+      }
+      if (hit?.imageSource) {
+        if (hit.href) {
+          if (pendingImageLinkPress.current) clearTimeout(pendingImageLinkPress.current);
+          pendingImageLinkPress.current = setTimeout(() => {
+            pendingImageLinkPress.current = undefined;
+            void openHyperlink(hit.href!);
+          }, 300);
+        }
         return;
       }
       if (hit?.href) {
@@ -972,6 +1040,16 @@ export default function ReaderScreen() {
         footnote={footnote}
         isOpen={isFootnoteOpen}
         onOpenChange={handleFootnoteOpenChange}
+      />
+      <ImageViewer
+        uri={imageViewer?.uri}
+        description={imageViewer?.description ?? t('reader.imageViewer')}
+        closeLabel={t('reader.closeImageViewer')}
+        onClose={() => setImageViewer(undefined)}
+        onError={() => {
+          setImageViewer(undefined);
+          toast.show({ variant: 'danger', label: t('reader.imageUnavailable') });
+        }}
       />
     </View>
   );

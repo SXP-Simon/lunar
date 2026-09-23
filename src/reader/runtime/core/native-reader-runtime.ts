@@ -584,6 +584,14 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return frame?.hits ? { pageIndex: frame.pageIndices[0] ?? spreadIndex, entries: frame.hits } : undefined;
   }
 
+  getCurrentImageBytes(source: string): Uint8Array | undefined {
+    if (this.snapshot.phase !== 'ready') return undefined;
+    const frame = this.getCurrentFrame();
+    if (!frame?.imageSources.includes(source)) return undefined;
+    const bytes = this.imageByteCache.get(source);
+    return bytes?.slice();
+  }
+
   getCurrentSemantics(spreadIndex = this.snapshot.spreadIndex) {
     return this.getCurrentFrame(spreadIndex)?.semantics ?? [];
   }
