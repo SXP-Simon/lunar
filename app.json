@@ -33,6 +33,7 @@
       ],
       "expo-sqlite",
       "expo-image",
+      "expo-web-browser",
       [
         "expo-font",
         {
