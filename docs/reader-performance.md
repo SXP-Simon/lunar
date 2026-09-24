@@ -41,7 +41,7 @@ node scripts/reader-perf-report.mjs reader-perf.log
 | `paragraph-cache.ts`、`primitive-text-renderer.ts` | 编译记录的 `hits`、`misses`、`evictions`、`shapeMs` | 每次编译的文字缓存统计，以及 Paragraph 创建、布局和基线查询累计时间 |
 | `use-native-automatic-page-turns.ts`、`use-native-interactive-page-turn.ts` | `reader.native.record`、`reader.native.enqueue`、`reader.native.stock` | 原生页面录制与 JSI 命令提交 |
 | `use-native-page-turn-events.ts` | `reader.native.event` | 原生开始、释放、完成、取消事件；保留原生时间戳与 JS 收取延迟 |
-| `page-curl.tsx` | `reader.texture.capture` | 声明式卷页的 UI 任务等待、纹理生成和 RN 回调等待 |
+| `page-curl.tsx` | `reader.texture.capture` | 声明式卷页的栅格化任务等待、纹理生成和 RN 回调等待 |
 | `use-page-turn-release.ts`、`use-interactive-page-turn.ts` | `reader.animation.release`、`reader.animation.settled`、`reader.handoff.snapshot`、`reader.turn.complete` | 松手动画与目标页面交接 |
 
 `workId` 贯穿控制器、运行时、原生提交和交接事件。后台预热使用 `warm` 编号，与用户触发的 `automatic` 和 `gesture` 编号分开。分页适配器的细分计时保留工件编号，纹理计时保留画面编号；这些记录在报告的阶段汇总中呈现，通过时间戳辅助检查。
@@ -53,6 +53,10 @@ node scripts/reader-perf-report.mjs reader-perf.log
 `deliveryDelayMs` 包含事件轮询间隔与 JS 调度等待。纹理的 `rasterMs` 表示 UI Runtime 执行创建、绘制、flush 与 snapshot 的墙钟时间，GPU 异步执行仍需原生分析工具测量。
 
 ## 静态页面活动
+
+Android 备用卷页的页面栅格化使用独立 Worklet Runtime 与 CPU Surface，UI Runtime 负责接收完成的纹理。`reader.texture.capture` 的 `queueMs` 表示等待栅格化任务开始的时间，`rasterMs` 表示该任务中的绘制时间；后续首次 GPU 上传仍需结合设备呈现记录分析。取消或过期的任务完成后释放图片，避免覆盖当前页。
+
+原生翻页共用有数量与容量限制的页面录制缓存。单页平移的标题与页脚保留为透明 SkPicture，由合成器绘制，并随目标页保留至呈现确认；正文使用源页与目标页纹理。更新原生补丁后须重新构建客户端才能验证此行为。
 
 `reader.activity` 每两秒最多输出一个汇总。计时关闭时，采样定时器保持关闭。启用时，JS 延迟采样每 250 毫秒执行一次；它测量定时器调度延迟，与真实呈现帧数具有不同含义。
 

@@ -285,7 +285,11 @@ export function usePageTurnPanGesture({
             activeDirection,
             viewportWidth,
           );
-          scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
+          // Native now owns intermediate frames. The final sample below still
+          // updates RN release state, so in-flight samples can stay on UI.
+          if (!nativeActive.value) {
+            scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
+          }
         }
       })
       .onEnd((event) => {

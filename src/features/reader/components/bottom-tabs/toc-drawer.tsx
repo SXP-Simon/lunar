@@ -2,7 +2,7 @@ import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
 import { useToast } from 'heroui-native/toast';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCSSVariable } from 'uniwind';
@@ -25,7 +25,7 @@ interface FlatTocEntry extends ReaderTocEntry {
   readonly depth: number;
 }
 
-export function TocDrawer({ isOpen, onOpenChange, runtime, toc, snapshot }: TocDrawerProps) {
+function TocDrawerContent({ isOpen, onOpenChange, runtime, toc, snapshot }: TocDrawerProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const insets = useSafeAreaInsets();
@@ -124,3 +124,10 @@ function flattenToc(entries: readonly ReaderTocEntry[], depth = 0): FlatTocEntry
   }
   return flattened;
 }
+
+/** Keep the closing view mounted while settled-page updates stay outside it. */
+export const TocDrawer = memo(TocDrawerContent, (previous, next) =>
+  previous.isOpen === next.isOpen
+  && previous.runtime === next.runtime
+  && previous.onOpenChange === next.onOpenChange && previous.toc === next.toc
+  && (!next.isOpen || previous.snapshot === next.snapshot));

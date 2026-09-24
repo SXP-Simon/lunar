@@ -48,9 +48,10 @@ describe('native page recordings', () => {
     composePageCurlPicture(options);
     expect(state.calls).toEqual([['page', options.base], ['overlays'], ['text', 'Chapter'], ['text', '2 / 10'], ['bookmark']]);
   });
-  it('retains transparency when recording a fixed chrome viewport', () => {
-    recordNativeViewportPicture({ pagePicture: {} as never, paperColor: 'transparent',
+  it('records chrome without an erase operation so it can be replayed over page content', () => {
+    const chrome = {} as never;
+    recordNativeViewportPicture({ pagePicture: chrome, paperColor: 'transparent',
       pageScale: 1, offsetX: 0, offsetY: 0, pixelWidth: 800, pixelHeight: 1600, textureScale: 2 });
-    expect(state.calls[0]).toEqual(['clear', 'transparent']);
+    expect(state.calls).toEqual([['page', chrome]]);
   });
 });

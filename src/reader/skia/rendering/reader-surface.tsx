@@ -4,6 +4,7 @@ import {
   Group,
   Picture,
   Rect as SkiaRect,
+  RoundedRect,
   Text as SkiaText,
   processTransform3d,
   type SkFont,
@@ -22,7 +23,7 @@ import {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { i18n } from '@/i18n';
-import type { ReaderSnapshot, ReaderSpreadMode } from '../../contracts';
+import type { ReaderRect, ReaderSnapshot, ReaderSpreadMode } from '../../contracts';
 import type { LunarReaderRuntime } from '../../runtime/core/native-reader-runtime';
 import { readerPerformanceActivity, startReaderPerformanceMonitor } from '../../runtime/core/performance';
 import {
@@ -68,6 +69,9 @@ export interface ReaderSurfaceProps {
   /** Canvas color used before the runtime has produced its first page. */
   readonly initialBackgroundColor?: string;
   readonly overlays?: readonly ReaderOverlayRect[];
+  /** Transient selection in viewport coordinates; excluded from turn recordings. */
+  readonly selectionRects?: readonly ReaderRect[];
+  readonly selectionColor?: string;
   readonly resolvePageOverlays?: ReaderPageOverlayResolver;
   readonly resolvePageBookmark?: (snapshot: ReaderSnapshot, frame: ReaderPageContent['frame']) => boolean;
   readonly bookmarkColor?: string;
@@ -114,6 +118,8 @@ export const ReaderSurface = memo(function ReaderSurface({
   style,
   initialBackgroundColor = '#000000',
   overlays = EmptyOverlays,
+  selectionRects,
+  selectionColor,
   resolvePageOverlays,
   resolvePageBookmark,
   bookmarkColor = '#E5594B',
@@ -216,7 +222,7 @@ export const ReaderSurface = memo(function ReaderSurface({
     (listener: () => void) => runtime.subscribeChromeFont(listener),
     [runtime],
   );
-  useSyncExternalStore(subscribeChromeFont, () => runtime.getChromeFontEpoch());
+  const chromeFontEpoch = useSyncExternalStore(subscribeChromeFont, () => runtime.getChromeFontEpoch());
   const bookmarkHintFont = bookmarkPullLabels ? runtime.getUiFont(16) : undefined;
   // Resolved in the render body rather than inside each memo, so that the
   // memos can depend on the font itself instead of on a change counter.
@@ -231,14 +237,17 @@ export const ReaderSurface = memo(function ReaderSurface({
     ? processedPaperColor >>> 0
     : 0xffffffff;
   const separateNativeChrome = pageTurnEffect.native?.separateChrome === true;
-  // A split slide owns four textures. Leave headroom below the compositor's
-  // 72 MiB stock budget so tall/high-density screens can prepare every layer.
+  // Reserve room for the moving pair and retained handoff below the native
+  // 72 MiB budget, including older clients that rasterize split chrome.
   const nativeTextureScale = Math.min(3, Math.max(1, PixelRatio.get()), Math.sqrt(
     (64 * 1024 * 1024) / ((separateNativeChrome ? 4 : 2) * 4
       * Math.max(1, viewport.width) * Math.max(1, viewport.height)),
   ));
   const nativePixelWidth = Math.max(1, Math.round(viewport.width * nativeTextureScale));
   const nativePixelHeight = Math.max(1, Math.round(viewport.height * nativeTextureScale));
+  const nativePaintKey = JSON.stringify([snapshot.revisionId, chromeFontEpoch, nativePixelWidth,
+    nativePixelHeight, scale, offsetX, offsetY, overlayTop, overlayRight, overlayBottom, overlayLeft,
+    overlayColor, bookmarkColor, paperColor, separateNativeChrome]);
   const createNativePagePicture = useCallback((content: ReaderPageContent,
     layer: 'all' | 'page' | 'chrome' = separateNativeChrome ? 'page' : 'all') => {
     const pageScale = Math.max(0.001, scale);
@@ -307,6 +316,7 @@ export const ReaderSurface = memo(function ReaderSurface({
   const createNativeChromePicture = useCallback((content: ReaderPageContent) =>
     createNativePagePicture(content, 'chrome'), [createNativePagePicture]);
   const nativeAutomaticPageTurnState = useNativePageTurns({
+    paintKey: nativePaintKey,
     canvasRef: ref,
     enabled: pageTurnEffect.native !== undefined
       && spreadMode === 'single'
@@ -699,6 +709,10 @@ export const ReaderSurface = memo(function ReaderSurface({
           outlineColor={bookmarkOutlineColor} hintColor={bookmarkHintColor}
           readyColor={bookmarkReadyColor} font={bookmarkHintFont} labels={bookmarkPullLabels} />
       )}
+      {selectionColor && !interactiveTurn && automaticTurns.length === 0 && selectionRects?.map((rect, index) => (
+        <RoundedRect key={`selection:${index}`} x={rect.x} y={rect.y} width={rect.width}
+          height={rect.height} r={2} color={selectionColor} />
+      ))}
     </Canvas>
   );
 });

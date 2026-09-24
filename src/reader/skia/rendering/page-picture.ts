@@ -99,7 +99,9 @@ export function recordNativeViewportPicture(options: NativeViewportPictureOption
     const canvas = recorder.beginRecording(
       Skia.XYWHRect(0, 0, options.pixelWidth, options.pixelHeight),
     );
-    canvas.clear(Skia.Color(options.paperColor));
+    // Transparent chrome is replayed over the moving pages by the composer.
+    // A recorded clear would erase those pages when the picture is replayed.
+    if (options.paperColor !== 'transparent') canvas.clear(Skia.Color(options.paperColor));
     canvas.scale(options.textureScale, options.textureScale);
     canvas.translate(options.offsetX, options.offsetY);
     canvas.scale(options.pageScale, options.pageScale);

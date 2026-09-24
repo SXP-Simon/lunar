@@ -568,7 +568,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
       return;
     }
     try {
-      fontRegistry.registerFontFace(face);
+      fontRegistry.registerChromeFontFace(face);
     } catch (error) {
       this.chromeFontFace = undefined;
       this.chromeFontFamily = LUNAR_READER_FONT_FAMILY;

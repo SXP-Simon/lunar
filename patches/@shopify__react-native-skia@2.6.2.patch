@@ -2,7 +2,7 @@ diff --git a/android/README.md b/android/README.md
 deleted file mode 100644
 index ac2fbda377ad1213c02f090138f48054e5660547..0000000000000000000000000000000000000000
 diff --git a/android/cpp/rnskia-android/OpenGLWindowContext.cpp b/android/cpp/rnskia-android/OpenGLWindowContext.cpp
-index 3916c0d67a0c30637759fd260ac7f581e32f8ea3..3fb4b330066c56cc7dac30545ec0c2c64ecc1924 100644
+index 3916c0d67a0c30637759fd260ac7f581e32f8ea3..14693b92711ff205e5fd7639de855175324f235a 100644
 --- a/android/cpp/rnskia-android/OpenGLWindowContext.cpp
 +++ b/android/cpp/rnskia-android/OpenGLWindowContext.cpp
 @@ -15,8 +15,10 @@
@@ -29,7 +29,7 @@ index 3916c0d67a0c30637759fd260ac7f581e32f8ea3..3fb4b330066c56cc7dac30545ec0c2c6
    _glSurface->present();
  }
 diff --git a/android/cpp/rnskia-android/OpenGLWindowContext.h b/android/cpp/rnskia-android/OpenGLWindowContext.h
-index 14b228a32e5de513619f4c31f68e5fe5fec71ab7..3a14992000f42e88cd456f1144d75cca39ea1e4f 100644
+index 14b228a32e5de513619f4c31f68e5fe5fec71ab7..df6d10e8e6a65e7723bf5be6075f2eaf4146aa81 100644
 --- a/android/cpp/rnskia-android/OpenGLWindowContext.h
 +++ b/android/cpp/rnskia-android/OpenGLWindowContext.h
 @@ -43,6 +43,9 @@ public:
@@ -55,7 +55,7 @@ index 14b228a32e5de513619f4c31f68e5fe5fec71ab7..3a14992000f42e88cd456f1144d75cca
        _skSurface = nullptr;
      }
 diff --git a/android/cpp/rnskia-android/RNSkAndroidView.h b/android/cpp/rnskia-android/RNSkAndroidView.h
-index e0533bf5d93051f50d3292b42a2d05c41d6c4ce8..c0c53a4fec3f095210832d672fa3149d78625f0e 100644
+index e0533bf5d93051f50d3292b42a2d05c41d6c4ce8..119845ab8728401b3ace5ec422c1bd2651631f15 100644
 --- a/android/cpp/rnskia-android/RNSkAndroidView.h
 +++ b/android/cpp/rnskia-android/RNSkAndroidView.h
 @@ -38,7 +38,7 @@ public:
@@ -81,7 +81,7 @@ index e0533bf5d93051f50d3292b42a2d05c41d6c4ce8..c0c53a4fec3f095210832d672fa3149d
  
    float getPixelDensity() override {
 diff --git a/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.cpp b/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.cpp
-index e8e4c0314b7a11600827b5ccd4924c337fd59833..35188d57254faa9687802138894da7b3746922f8 100644
+index e8e4c0314b7a11600827b5ccd4924c337fd59833..bc0d6f5ad0922f5bfba842a397bdd3245a1b39f2 100644
 --- a/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.cpp
 +++ b/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.cpp
 @@ -1,9 +1,19 @@
@@ -363,7 +363,7 @@ index e8e4c0314b7a11600827b5ccd4924c337fd59833..35188d57254faa9687802138894da7b3
    } else {
      _surfaceHolder->resize(width, height);
 diff --git a/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.h b/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.h
-index ca5768de24b8c3600e92d2684c959e8ec24c4f61..8cbb3ac3d121d977300bec4f9ac0939457560c93 100644
+index ca5768de24b8c3600e92d2684c959e8ec24c4f61..81275c13e08f520469bea17478bf751c45e0f9d1 100644
 --- a/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.h
 +++ b/android/cpp/rnskia-android/RNSkOpenGLCanvasProvider.h
 @@ -1,8 +1,15 @@
@@ -421,7 +421,7 @@ index ca5768de24b8c3600e92d2684c959e8ec24c4f61..8cbb3ac3d121d977300bec4f9ac09394
  };
  } // namespace RNSkia
 diff --git a/android/src/main/java/com/shopify/reactnative/skia/PlatformContext.java b/android/src/main/java/com/shopify/reactnative/skia/PlatformContext.java
-index 724776a00be028a773cfbfb70ffb3c25a8e8840e..bd081f9b80feda7e3b4433e88db03d4cc25b31cc 100644
+index 724776a00be028a773cfbfb70ffb3c25a8e8840e..2a4224ef1bab9623f973b42d5c6f440702ccea77 100644
 --- a/android/src/main/java/com/shopify/reactnative/skia/PlatformContext.java
 +++ b/android/src/main/java/com/shopify/reactnative/skia/PlatformContext.java
 @@ -2,6 +2,7 @@ package com.shopify.reactnative.skia;
@@ -466,7 +466,7 @@ index 724776a00be028a773cfbfb70ffb3c25a8e8840e..bd081f9b80feda7e3b4433e88db03d4c
      }
  
 diff --git a/apple/MetalContext.h b/apple/MetalContext.h
-index 3fd4e908ca6baf5fd23c443edc2ac6b756eb28aa..dfd032aca15b9b288a56450b4c9f9fd6f34e3bd8 100644
+index 3fd4e908ca6baf5fd23c443edc2ac6b756eb28aa..2340b02069f146c1c8c737ebfb641438884d3915 100644
 --- a/apple/MetalContext.h
 +++ b/apple/MetalContext.h
 @@ -97,11 +97,12 @@ public:
@@ -485,7 +485,7 @@ index 3fd4e908ca6baf5fd23c443edc2ac6b756eb28aa..dfd032aca15b9b288a56450b4c9f9fd6
  
    GrDirectContext *getDirectContext() { return _directContext.get(); }
 diff --git a/apple/MetalWindowContext.h b/apple/MetalWindowContext.h
-index 867f6db89bad9e5c5c153c0d8bec768ac70eb3db..6f4b3c6310f3cd173764e21938834f22ec6b12bf 100644
+index 867f6db89bad9e5c5c153c0d8bec768ac70eb3db..724c7f6fdfdfe106442978b9d9133f7fa9f739bf 100644
 --- a/apple/MetalWindowContext.h
 +++ b/apple/MetalWindowContext.h
 @@ -10,7 +10,8 @@ class MetalWindowContext : public RNSkia::WindowContext {
@@ -499,7 +499,7 @@ index 867f6db89bad9e5c5c153c0d8bec768ac70eb3db..6f4b3c6310f3cd173764e21938834f22
  
    sk_sp<SkSurface> getSurface() override;
 diff --git a/apple/MetalWindowContext.mm b/apple/MetalWindowContext.mm
-index 4cbfafa69fd9c1d1e5f056b17ce8582b94b35325..335bfc9e4efdd599bf1faab780c5d7616f2cfc60 100644
+index 4cbfafa69fd9c1d1e5f056b17ce8582b94b35325..9f3d5da7c66deba0befc5c5aeabafe22bc762c03 100644
 --- a/apple/MetalWindowContext.mm
 +++ b/apple/MetalWindowContext.mm
 @@ -8,12 +8,17 @@ MetalWindowContext::MetalWindowContext(GrDirectContext *directContext,
@@ -532,7 +532,7 @@ index 4cbfafa69fd9c1d1e5f056b17ce8582b94b35325..335bfc9e4efdd599bf1faab780c5d761
  }
  
 diff --git a/apple/RNSkMetalCanvasProvider.h b/apple/RNSkMetalCanvasProvider.h
-index 205e7ad99d4bdfb89075f2fa28d6e4ad76285759..5761bcf04bed27e797579cf582489bd2cb0fdf26 100644
+index 205e7ad99d4bdfb89075f2fa28d6e4ad76285759..8f18acefeed81c2353a758447b9c634c8b237256 100644
 --- a/apple/RNSkMetalCanvasProvider.h
 +++ b/apple/RNSkMetalCanvasProvider.h
 @@ -6,6 +6,9 @@
@@ -587,7 +587,7 @@ index 205e7ad99d4bdfb89075f2fa28d6e4ad76285759..5761bcf04bed27e797579cf582489bd2
 +  std::atomic<bool> _useP3ColorSpace = {true};
  };
 diff --git a/apple/RNSkMetalCanvasProvider.mm b/apple/RNSkMetalCanvasProvider.mm
-index cc5007733e92caaf643c1b18c8be2cef52b477dd..cffdd211c8539508a7887ca264b1ca446b30f741 100644
+index cc5007733e92caaf643c1b18c8be2cef52b477dd..3a7b47a9c6fbdccba8cead8f234d856c830d3281 100644
 --- a/apple/RNSkMetalCanvasProvider.mm
 +++ b/apple/RNSkMetalCanvasProvider.mm
 @@ -19,8 +19,281 @@
@@ -1103,7 +1103,7 @@ index cc5007733e92caaf643c1b18c8be2cef52b477dd..cffdd211c8539508a7887ca264b1ca44
 +  }
  }
 diff --git a/cpp/api/JsiSkParagraph.h b/cpp/api/JsiSkParagraph.h
-index 319410930843c33a850755508d788cac71ee4be2..e8d7304fd3b518507c15cd211fcb26066d617abe 100644
+index 319410930843c33a850755508d788cac71ee4be2..9b76f4d8e0483d01a0722e002754a15e0946426d 100644
 --- a/cpp/api/JsiSkParagraph.h
 +++ b/cpp/api/JsiSkParagraph.h
 @@ -171,7 +171,14 @@ public:
@@ -1123,7 +1123,7 @@ index 319410930843c33a850755508d788cac71ee4be2..e8d7304fd3b518507c15cd211fcb2606
    std::string getObjectType() const override { return "JsiSkParagraph"; }
  
 diff --git a/cpp/api/JsiSkParagraphBuilder.h b/cpp/api/JsiSkParagraphBuilder.h
-index d7e0956b1ec15435a718f28c96ea8f55376d2f36..02bb7fa3f80cb3f928588316dbb5e1dc39f7c8a6 100644
+index d7e0956b1ec15435a718f28c96ea8f55376d2f36..dccded4753b787d1d03252fdcbf63ae26d264d68 100644
 --- a/cpp/api/JsiSkParagraphBuilder.h
 +++ b/cpp/api/JsiSkParagraphBuilder.h
 @@ -116,7 +116,11 @@ public:
@@ -1140,7 +1140,7 @@ index d7e0956b1ec15435a718f28c96ea8f55376d2f36..02bb7fa3f80cb3f928588316dbb5e1dc
    std::string getObjectType() const override { return "JsiSkParagraphBuilder"; }
  
 diff --git a/cpp/api/JsiSkPicture.h b/cpp/api/JsiSkPicture.h
-index b58d412a258b2a0430189a2bd1c1811f672d4cf8..ac7e722d3984f97eb07bed950f9a7d30e98cfa86 100644
+index b58d412a258b2a0430189a2bd1c1811f672d4cf8..3880acd861faee2d1e98b8bf88783136f54768a5 100644
 --- a/cpp/api/JsiSkPicture.h
 +++ b/cpp/api/JsiSkPicture.h
 @@ -1,5 +1,6 @@
@@ -1169,7 +1169,7 @@ index b58d412a258b2a0430189a2bd1c1811f672d4cf8..ac7e722d3984f97eb07bed950f9a7d30
  
    std::string getObjectType() const override { return "JsiSkPicture"; }
 diff --git a/cpp/api/JsiSkSurfaceFactory.h b/cpp/api/JsiSkSurfaceFactory.h
-index aad94429344434bd0b4c3a78e3bcff15fb0d27ce..aac698af2355567d4c2e904f29c5068a26ae165a 100644
+index aad94429344434bd0b4c3a78e3bcff15fb0d27ce..f796c0afcac504055f1f8946c9a9a8ed31e4ec3b 100644
 --- a/cpp/api/JsiSkSurfaceFactory.h
 +++ b/cpp/api/JsiSkSurfaceFactory.h
 @@ -1,10 +1,20 @@
@@ -1277,7 +1277,7 @@ index aad94429344434bd0b4c3a78e3bcff15fb0d27ce..aac698af2355567d4c2e904f29c5068a
    size_t getMemoryPressure() const override { return 2048; }
  
 diff --git a/cpp/rnskia/RNSkJsiViewApi.h b/cpp/rnskia/RNSkJsiViewApi.h
-index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..1a190f007c052e128bf4002daacc77c5e9c1786c 100644
+index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..daa5e000f8151394170bf5e2f84635e939dc31ed 100644
 --- a/cpp/rnskia/RNSkJsiViewApi.h
 +++ b/cpp/rnskia/RNSkJsiViewApi.h
 @@ -10,6 +10,7 @@
@@ -1911,10 +1911,10 @@ index 6a18a5b336612b03b5f903cbdb18517cbf45b8a1..1a190f007c052e128bf4002daacc77c5
     * Constructor
 diff --git a/cpp/rnskia/RNSkPagerCompositor.h b/cpp/rnskia/RNSkPagerCompositor.h
 new file mode 100644
-index 0000000..1d532aa
+index 0000000000000000000000000000000000000000..09c09d1af309f25979e36eac6e78eb9c1e3da9ff
 --- /dev/null
 +++ b/cpp/rnskia/RNSkPagerCompositor.h
-@@ -0,0 +1,3397 @@
+@@ -0,0 +1,3466 @@
 +#pragma once
 +
 +#include <algorithm>
@@ -2116,6 +2116,11 @@ index 0000000..1d532aa
 +      turn.backPicture = std::move(backPicture);
 +      turn.backgroundLeftPicture = std::move(backgroundLeftPicture);
 +      turn.backgroundRightPicture = std::move(backgroundRightPicture);
++      if (turn.visualKind == VisualKind::Slide && !spread &&
++          turn.backPicture != nullptr && turn.backgroundRightPicture != nullptr) {
++        turn.sourceChromePicture = std::move(turn.backPicture);
++        turn.targetChromePicture = std::move(turn.backgroundRightPicture);
++      }
 +      turn.ownsBackground =
 +          turn.backgroundLeftPicture != nullptr ||
 +          turn.backgroundRightPicture != nullptr;
@@ -2210,6 +2215,15 @@ index 0000000..1d532aa
 +    {
 +      std::lock_guard<std::mutex> lock(_mutex);
 +      const int normalizedDirection = direction < 0 ? -1 : 1;
++      sk_sp<SkPicture> sourceChromePicture;
++      sk_sp<SkPicture> targetChromePicture;
++      if (_visualKind == VisualKind::Slide && !spread &&
++          backPicture != nullptr && backgroundRightPicture != nullptr) {
++        sourceChromePicture = std::move(backPicture);
++        targetChromePicture = std::move(backgroundRightPicture);
++        backPageKey.clear();
++        backgroundRightPageKey.clear();
++      }
 +      const std::string frontTextureKey =
 +          pageTextureKey(contentRevision, frontPageKey);
 +      const std::string backTextureKey =
@@ -2294,7 +2308,8 @@ index 0000000..1d532aa
 +           std::clamp(rapidDurationMs, kMinimumDurationMs,
 +                      kMaximumDurationMs),
 +           std::clamp(launchIntervalMs, 1.0, 1000.0), paperColor,
-+           ++_stockUsageCounter});
++           ++_stockUsageCounter, std::move(sourceChromePicture),
++           std::move(targetChromePicture)});
 +      drainPendingDirectInputsLocked(steadyNowMs(), epochNowMs());
 +    }
 +    _requestRedraw();
@@ -2434,6 +2449,8 @@ index 0000000..1d532aa
 +      }
 +      turn.backgroundLeftImage = std::move(backgroundLeftImage);
 +      turn.backgroundRightImage = std::move(backgroundRightImage);
++      turn.sourceChromePicture = stock->sourceChromePicture;
++      turn.targetChromePicture = stock->targetChromePicture;
 +      turn.ownsBackground = true;
 +      turn.pixelWidth = stock->pixelWidth;
 +      turn.pixelHeight = stock->pixelHeight;
@@ -2766,6 +2783,10 @@ index 0000000..1d532aa
 +              turn, sample.shape, sample.lifecycleProgress,
 +              nowSteadyMs, renderTurn);
 +        }
++        renderTurn.sourceChromePicture = turn.sourceChromePicture;
++        renderTurn.targetChromePicture = turn.targetChromePicture;
++        renderTurn.pixelWidth = turn.pixelWidth;
++        renderTurn.pixelHeight = turn.pixelHeight;
 +        renderTurns.push_back(std::move(renderTurn));
 +        if (displayPresentation && !turn.interactive &&
 +            !turn.firstFramePresented && !turn.firstFrameQueued) {
@@ -3033,6 +3054,8 @@ index 0000000..1d532aa
 +    double settleDurationMs = kMinimumDurationMs;
 +    double previousProfileAtSteadyMs = 0;
 +    std::array<PhysicalPoint, kProfilePointCount> previousProfile = {};
++    sk_sp<SkPicture> sourceChromePicture;
++    sk_sp<SkPicture> targetChromePicture;
 +  };
 +
 +  struct RenderTurn {
@@ -3056,6 +3079,10 @@ index 0000000..1d532aa
 +    float fixedChromeTop = 0;
 +    float fixedChromeBottom = 0;
 +    bool useTargetChrome = true;
++    sk_sp<SkPicture> sourceChromePicture;
++    sk_sp<SkPicture> targetChromePicture;
++    int pixelWidth = 0;
++    int pixelHeight = 0;
 +  };
 +
 +  struct PresentationHandoff {
@@ -3070,6 +3097,10 @@ index 0000000..1d532aa
 +    bool acknowledged = false;
 +    VisualKind visualKind = VisualKind::Curl;
 +    SkColor paperColor = SK_ColorWHITE;
++    sk_sp<SkPicture> sourceChromePicture;
++    sk_sp<SkPicture> targetChromePicture;
++    int pixelWidth = 0;
++    int pixelHeight = 0;
 +  };
 +  struct PreloadedImage {
 +    uint32_t sourceId;
@@ -3113,6 +3144,8 @@ index 0000000..1d532aa
 +    double launchIntervalMs;
 +    SkColor paperColor;
 +    uint64_t lastUsed;
++    sk_sp<SkPicture> sourceChromePicture;
++    sk_sp<SkPicture> targetChromePicture;
 +  };
 +
 +  struct PendingDirectInput {
@@ -4446,6 +4479,8 @@ index 0000000..1d532aa
 +        preparedPageImageLocked(stock->backgroundLeftTextureKey);
 +    turn.backgroundRightImage =
 +        preparedPageImageLocked(stock->backgroundRightTextureKey);
++    turn.sourceChromePicture = stock->sourceChromePicture;
++    turn.targetChromePicture = stock->targetChromePicture;
 +    turn.ownsBackground = true;
 +    turn.pixelWidth = stock->pixelWidth;
 +    turn.pixelHeight = stock->pixelHeight;
@@ -4912,6 +4947,10 @@ index 0000000..1d532aa
 +    handoff->backImage = turn.backImage;
 +    handoff->backgroundLeftImage = turn.backgroundLeftImage;
 +    handoff->backgroundRightImage = turn.backgroundRightImage;
++    handoff->sourceChromePicture = turn.sourceChromePicture;
++    handoff->targetChromePicture = turn.targetChromePicture;
++    handoff->pixelWidth = turn.pixelWidth;
++    handoff->pixelHeight = turn.pixelHeight;
 +    handoff->direction = turn.direction;
 +    handoff->spread = turn.spread;
 +    handoff->acknowledged = presentationAcknowledgedLocked(turn.id);
@@ -4936,6 +4975,19 @@ index 0000000..1d532aa
 +        SkCanvas::kFast_SrcRectConstraint);
 +  }
 +
++  // Chrome contains only a few cached glyphs. Replaying it avoids allocating
++  // and uploading two viewport-sized transparent textures per planar turn.
++  static void drawChromePicture(SkCanvas *canvas, float viewportWidth,
++                                float viewportHeight,
++                                const sk_sp<SkPicture> &picture,
++                                int pixelWidth, int pixelHeight) {
++    if (picture == nullptr || pixelWidth <= 0 || pixelHeight <= 0) return;
++    canvas->save();
++    canvas->scale(viewportWidth / pixelWidth, viewportHeight / pixelHeight);
++    canvas->drawPicture(picture);
++    canvas->restore();
++  }
++
 +  static void drawPresentationHandoff(
 +      SkCanvas *canvas, float viewportWidth, float viewportHeight,
 +      const PresentationHandoff &handoff) {
@@ -4950,8 +5002,14 @@ index 0000000..1d532aa
 +                               : handoff.frontImage;
 +      drawBackgroundPage(canvas, 0, viewportWidth, viewportHeight, target);
 +      if (handoff.visualKind == VisualKind::Slide) {
-+        drawBackgroundPage(canvas, 0, viewportWidth, viewportHeight,
-+                           handoff.backgroundRightImage);
++        if (handoff.targetChromePicture != nullptr) {
++          drawChromePicture(canvas, viewportWidth, viewportHeight,
++                            handoff.targetChromePicture,
++                            handoff.pixelWidth, handoff.pixelHeight);
++        } else {
++          drawBackgroundPage(canvas, 0, viewportWidth, viewportHeight,
++                             handoff.backgroundRightImage);
++        }
 +      }
 +      return;
 +    }
@@ -5067,8 +5125,11 @@ index 0000000..1d532aa
 +    // Protocol 13 splits single-page planar recordings: front/left are
 +    // complete moving pages (including bookmarks), back/right are transparent
 +    // source/target chrome. Never cut a bookmark at the header boundary.
-+    const bool separateChrome = firstTurn.backImage != nullptr &&
-+                                firstTurn.backgroundRightImage != nullptr;
++    const bool separateChrome =
++        (firstTurn.sourceChromePicture != nullptr &&
++         firstTurn.targetChromePicture != nullptr) ||
++        (firstTurn.backImage != nullptr &&
++         firstTurn.backgroundRightImage != nullptr);
 +    const float bodyTop = separateChrome ? 0.0f :
 +        std::clamp(firstTurn.fixedChromeTop, 0.0f, viewportHeight);
 +    const float bodyBottom = separateChrome ? viewportHeight : std::clamp(
@@ -5103,6 +5164,14 @@ index 0000000..1d532aa
 +
 +    const auto &chromeTurn = turns.back();
 +    if (separateChrome) {
++      const auto &chromePicture = chromeTurn.useTargetChrome
++                                      ? chromeTurn.targetChromePicture
++                                      : chromeTurn.sourceChromePicture;
++      if (chromePicture != nullptr) {
++        drawChromePicture(canvas, viewportWidth, viewportHeight, chromePicture,
++                          chromeTurn.pixelWidth, chromeTurn.pixelHeight);
++        return;
++      }
 +      const auto &fixedChrome = chromeTurn.useTargetChrome
 +                                   ? chromeTurn.backgroundRightImage
 +                                   : chromeTurn.backImage;
@@ -5313,7 +5382,7 @@ index 0000000..1d532aa
 +
 +} // namespace RNSkia
 diff --git a/cpp/rnskia/RNSkPictureView.h b/cpp/rnskia/RNSkPictureView.h
-index 0059ea1c7ed47adb189095bc9f1110525668d11a..0c705027fddb08c22cd7cfbdeb8e763b24687b44 100644
+index 0059ea1c7ed47adb189095bc9f1110525668d11a..6264759b42b0c7ad7b8c0ad618018e1693a8439e 100644
 --- a/cpp/rnskia/RNSkPictureView.h
 +++ b/cpp/rnskia/RNSkPictureView.h
 @@ -11,6 +11,7 @@
@@ -5670,7 +5739,7 @@ index 0059ea1c7ed47adb189095bc9f1110525668d11a..0c705027fddb08c22cd7cfbdeb8e763b
  };
  } // namespace RNSkia
 diff --git a/cpp/rnskia/RNSkView.h b/cpp/rnskia/RNSkView.h
-index 5181c713c7415a48544b95fbb826c56a81bc0787..dd838f24812389adb711433fde29d9df2f4354fc 100644
+index 5181c713c7415a48544b95fbb826c56a81bc0787..f7efc11e31b0c86f042fe3604abbf15e98dcaf9a 100644
 --- a/cpp/rnskia/RNSkView.h
 +++ b/cpp/rnskia/RNSkView.h
 @@ -1,6 +1,8 @@

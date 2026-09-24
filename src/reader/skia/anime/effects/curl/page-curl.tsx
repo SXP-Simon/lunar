@@ -10,7 +10,7 @@ import {
   type Uniforms,
 } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PixelRatio } from 'react-native';
+import { PixelRatio, Platform } from 'react-native';
 import {
   useDerivedValue,
   useSharedValue,
@@ -20,6 +20,7 @@ import {
 import { runOnUI, scheduleOnRN } from 'react-native-worklets';
 
 import type { CompiledReaderPicture } from '../../../rendering/picture-compiler';
+import { installRasterTexture, rasterizePageOnWorker, type PageCaptureTiming } from './page-rasterizer';
 import { isReaderPerformanceEnabled, readerPerformanceActivity, readerPerformanceMark } from '../../../../runtime/core/performance';
 import {
   createAutomaticCurlProfile,
@@ -191,12 +192,7 @@ interface PageCurlMeshProps {
   readonly settleTo?: 0 | 1;
 }
 
-interface CaptureTiming {
-  readonly queueMs: number;
-  readonly rasterMs: number;
-  readonly startedAtMs: number;
-  readonly completedAtMs: number;
-}
+type CaptureTiming = PageCaptureTiming;
 
 function capturePictureTexture(
   texture: SharedValue<SkImage | null>,
@@ -263,6 +259,7 @@ function disposePictureTexture(
   backingSurface.value?.dispose();
   backingSurface.value = null;
 }
+
 
 export function PageCurlMesh(props: PageCurlMeshProps) {
   const { picture, texture, width, height } = props;
@@ -369,6 +366,7 @@ export function usePageCurlTexture(
   const textureIdentity = identity ?? `${width}:${height}`;
   const [readyIdentity, setReadyIdentity] = useState<string>();
   const captureId = useRef(0);
+  const captureGeneration = useSharedValue(0);
   const markTextureReady = useCallback((
     completedCaptureId: number,
     completedIdentity: string,
@@ -393,7 +391,20 @@ export function usePageCurlTexture(
   useEffect(() => {
     captureId.current += 1;
     const nextCaptureId = captureId.current;
+    captureGeneration.set(nextCaptureId);
     if (!picture || width <= 0 || height <= 0) return;
+    if (Platform.OS === 'android') {
+      // CPU raster work runs outside UI. Only the completed image swap uses UI.
+      const scale = Math.min(DEVICE_TEXTURE_SCALE, Math.sqrt(24 * 1024 * 1024 / (width * height * 4)));
+      void rasterizePageOnWorker(picture, width, height, scale, disposePictureAfterCapture,
+        isReaderPerformanceEnabled() ? Date.now() : undefined).then(({ image: captured, timing }) => {
+        runOnUI(installRasterTexture)(image, backingSurface, captureGeneration, nextCaptureId,
+          textureIdentity, captured, markTextureReady, timing);
+      }).catch(() => {
+        if (captureId.current === nextCaptureId) markTextureReady(nextCaptureId, textureIdentity, false);
+      });
+      return;
+    }
     // SkPicture and SkImage are native host objects. Keep the rasterisation on
     // the UI runtime and prepare the current page before a gesture starts.
     runOnUI(capturePictureTexture)(
@@ -409,12 +420,13 @@ export function usePageCurlTexture(
       markTextureReady,
       isReaderPerformanceEnabled() ? Date.now() : undefined,
     );
-  }, [backingSurface, disposePictureAfterCapture, height, image, markTextureReady, picture, textureIdentity, width]);
+  }, [backingSurface, captureGeneration, disposePictureAfterCapture, height, image, markTextureReady, picture, textureIdentity, width]);
 
   useEffect(() => () => {
     captureId.current += 1;
+    captureGeneration.set(captureId.current);
     runOnUI(disposePictureTexture)(image, backingSurface);
-  }, [backingSurface, image]);
+  }, [backingSurface, captureGeneration, image]);
 
   return { image, ready: textureReady };
 }

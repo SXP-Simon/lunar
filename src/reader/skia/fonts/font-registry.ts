@@ -33,6 +33,7 @@ export interface SkiaFontRegistry extends ReaderFontRegistry {
    * drawn by this app instead, and resolves `face.family` directly.
    */
   registerFontFace(face: ReaderFontFace, alias?: string): void;
+  registerChromeFontFace(face: ReaderFontFace): void;
   getFontFamilies(family: string): readonly string[];
   getParagraphProvider(family: string): SkTypefaceFontProvider;
   resolveFont(font: ReaderFontShorthand): SkFont;
@@ -104,6 +105,16 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
   }
 
   registerFontFace(face: ReaderFontFace, alias?: string): void {
+    this.registerFace(face, alias, true);
+  }
+
+  registerChromeFontFace(face: ReaderFontFace): void {
+    // Body paragraphs use pinned aliases; adding a chrome family leaves those
+    // aliases and their shaped glyphs intact.
+    this.registerFace(face, undefined, false);
+  }
+
+  private registerFace(face: ReaderFontFace, alias: string | undefined, affectsParagraphs: boolean): void {
     this.assertActive();
     // A blank name is accepted by the provider and then never matches, so it
     // would surface as text quietly painted in the bundled face.
@@ -111,13 +122,13 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
       throw new Error('Reader font registration requires a family.');
     }
     if (face.source === 'system') {
-      this.registerSystemFamily(face.family);
+      this.registerSystemFamily(face.family, affectsParagraphs);
       return;
     }
     if (!face.bytes || face.bytes.byteLength === 0) {
       throw new Error(`Reader font ${face.family} requires bytes.`);
     }
-    this.registerBytes([face.family, alias], face.bytes, `reader font ${face.family}`);
+    this.registerBytes([face.family, alias], face.bytes, `reader font ${face.family}`, affectsParagraphs);
   }
 
   getFontFamilies(family: string): readonly string[] {
@@ -198,6 +209,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     names: readonly (string | undefined)[],
     bytes: Uint8Array,
     label: string,
+    affectsParagraphs = true,
   ): void {
     const targets = [...new Set(names.filter((name): name is string => Boolean(name)))];
     if (targets.length === 0) {
@@ -226,7 +238,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
         this.registeredFamilies.add(name);
       }
       this.typefaces.push(typeface);
-      this.fontGeneration += 1;
+      if (affectsParagraphs) this.fontGeneration += 1;
       typeface = undefined;
     } finally {
       typeface?.dispose();
@@ -239,7 +251,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
    * in the platform's enumeration: `matchFamilyStyle` yields an unusable face
    * for an unknown name, and every call on that face would abort the process.
    */
-  private registerSystemFamily(family: string): void {
+  private registerSystemFamily(family: string, affectsParagraphs: boolean): void {
     if (this.systemFamilies.has(family) || this.registeredFamilies.has(family)) {
       return;
     }
@@ -256,7 +268,7 @@ export class LunarSkiaFontRegistry implements SkiaFontRegistry {
     this.typefaces.push(typeface);
     this.systemFamilies.add(family);
     this.registeredFamilies.add(family);
-    this.fontGeneration += 1;
+    if (affectsParagraphs) this.fontGeneration += 1;
   }
 
   private async registerFont(

@@ -43,7 +43,6 @@ import {
 } from '@/reader';
 import {
   ReaderSurface,
-  ReaderSelectionOverlay,
   useReaderPageTurn,
   type ReaderSurfaceTransform,
 } from '@/reader/native';
@@ -787,9 +786,9 @@ export default function ReaderScreen() {
       };
     });
   }, [selection, surfaceTransform]);
-  const interactiveHits = isReady && !selection
+  const interactiveHits = useMemo(() => isReady && !selection
     ? currentHitEntries.filter((entry) => entry.footnoteKey || entry.href)
-    : [];
+    : [], [currentHitEntries, isReady, selection]);
 
   const handleFootnoteOpenChange = useCallback((value: boolean) => {
     setIsFootnoteOpen(value);
@@ -882,6 +881,8 @@ export default function ReaderScreen() {
             overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}
             overlayInsets={contentInsets}
             resolvePageOverlays={resolvePageHighlights}
+            selectionRects={activeHighlight ? undefined : selectionViewportRects}
+            selectionColor={selectionFillColor}
             resolvePageBookmark={resolvePageBookmark}
             bookmarkColor={bookmarkColor}
             bookmarkPullDistance={bookmarkPull.distance}
@@ -895,9 +896,6 @@ export default function ReaderScreen() {
             onTransformChange={handleSurfaceTransform}
             style={absoluteFillStyle}
           />
-          {!activeHighlight && (
-            <ReaderSelectionOverlay rects={selectionViewportRects} color={selectionFillColor} style={absoluteFillStyle} />
-          )}
           {!isReady && !session.errorMessage && (
             <View
               pointerEvents="none"

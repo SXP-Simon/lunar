@@ -2,7 +2,7 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
 import { Slider } from 'heroui-native/slider';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,7 +19,7 @@ interface ProgressDrawerProps {
   readonly snapshot: ReaderSnapshot;
 }
 
-export function ProgressDrawer({
+function ProgressDrawerContent({
   isOpen,
   onOpenChange,
   runtime,
@@ -146,3 +146,10 @@ function ProgressAction({ accessibilityLabel, isDisabled, name, onPress }: Progr
 function toSliderValue(value: number | number[]): number {
   return Math.round(Array.isArray(value) ? (value[0] ?? 0) : value);
 }
+
+/** Keep the closing view mounted while settled-page updates stay outside it. */
+export const ProgressDrawer = memo(ProgressDrawerContent, (previous, next) =>
+  previous.isOpen === next.isOpen
+  && previous.runtime === next.runtime
+  && previous.onOpenChange === next.onOpenChange
+  && (!next.isOpen || previous.snapshot === next.snapshot));

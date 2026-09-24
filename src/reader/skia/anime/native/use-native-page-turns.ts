@@ -19,6 +19,7 @@ import { useNativeAutomaticPageTurnSubmission } from './use-native-automatic-pag
 import { useNativeInteractivePageTurn } from './use-native-interactive-page-turn';
 import { useNativePageTurnEvents } from './use-native-page-turn-events';
 import { readerPerformanceActivity, readerPerformanceStart } from '../../../runtime/core/performance';
+import { acquireNativePageRecording, NativePageRecordingCache } from './page-recording-cache';
 
 interface NativePageTurnsOptions {
   readonly canvasRef: RefObject<CanvasRef | null>;
@@ -29,6 +30,7 @@ interface NativePageTurnsOptions {
   readonly paperColor: number;
   readonly createPicture: (content: ReaderPageContent) => SkPicture;
   readonly createChromePicture?: (content: ReaderPageContent) => SkPicture;
+  readonly paintKey?: string;
   readonly onComplete?: (turnId: number) => void;
   readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly fixedChromeTop: number;
@@ -53,6 +55,7 @@ export function useNativePageTurns({
   paperColor,
   createPicture,
   createChromePicture,
+  paintKey,
   onComplete,
   pageTurnEffect,
   fixedChromeTop,
@@ -62,6 +65,8 @@ export function useNativePageTurns({
   interactiveTurn,
   surfaceBinding,
 }: NativePageTurnsOptions): NativePageTurnsState {
+  const recordings = useMemo(() => new NativePageRecordingCache(), []);
+  useEffect(() => () => recordings.clear(), [recordings, paintKey]);
   const supported = useMemo(
     () => enabled && nativePagerCompositorAvailable(),
     [enabled],
@@ -76,6 +81,21 @@ export function useNativePageTurns({
   const submittedGestureStockIds = useRef(new Set<string>());
   const anchorKey = useRef<string | undefined>(undefined);
   const rejectAutomaticSubmission = useCallback(() => setConfiguredNativeKey(undefined), []);
+
+  // Record the settled page while idle so a gesture reuses its source picture.
+  useEffect(() => {
+    if (!active || !currentContent || interactiveTurn || turns.length > 0) return;
+    const timer = setTimeout(() => {
+      try {
+        acquireNativePageRecording(recordings, createPicture, currentContent, 'page', paintKey,
+          pixelWidth, pixelHeight).release();
+        if (createChromePicture) acquireNativePageRecording(recordings, createChromePicture,
+          currentContent, 'chrome', paintKey, pixelWidth, pixelHeight).release();
+      } catch { /* The normal submission can retry if idle recording fails. */ }
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [active, createChromePicture, createPicture, currentContent, interactiveTurn, paintKey,
+    pixelHeight, pixelWidth, recordings, turns.length]);
 
   useEffect(() => {
     if (!supported || configuredNativeKey === nativeConfigKey || turns.length > 0) return;
@@ -150,6 +170,8 @@ export function useNativePageTurns({
   }, [active, canvasRef, surfaceBinding]);
 
   useNativeInteractivePageTurn({
+    recordings,
+    paintKey,
     active,
     canvasRef,
     createPicture,
@@ -168,6 +190,8 @@ export function useNativePageTurns({
   });
 
   useNativeAutomaticPageTurnSubmission({
+    recordings,
+    paintKey,
     active: automaticActive,
     canvasRef,
     createPicture,

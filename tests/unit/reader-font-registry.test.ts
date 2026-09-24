@@ -92,6 +92,19 @@ beforeEach(() => {
 });
 
 describe('Skia reader font registry', () => {
+  it('preserves body paragraph generation when chrome fonts are added', () => {
+    const registry = new LunarSkiaFontRegistry();
+    registry.loadBuiltinFont(BUNDLED, '__RitoPinned_builtin');
+    const generation = registry.generation;
+    registry.registerChromeFontFace({ family: 'Noto Sans', source: 'system' });
+    registry.registerChromeFontFace({ family: 'Imported', source: 'imported', bytes: IMPORTED });
+    expect(registry.generation).toBe(generation);
+    registry.resolveFont({ family: 'Noto Sans', sizePx: 14, weight: 400, style: 'normal' });
+    expect(state.matchedFamilies).toEqual(['Noto Sans']);
+    registry.registerFontFace({ family: 'Imported', source: 'imported', bytes: IMPORTED }, '__RitoPinned_imported');
+    expect(registry.generation).toBeGreaterThan(generation);
+    registry.dispose();
+  });
   it('registers the bundled face under both of the names it is asked for', () => {
     const registry = new LunarSkiaFontRegistry();
     registry.loadBuiltinFont(BUNDLED, '__RitoPinned_abc');

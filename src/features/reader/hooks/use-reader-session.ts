@@ -36,6 +36,7 @@ export interface ReaderSessionOptions {
 
 export function useReaderSession({ bookId, viewport, contentInsets, theme }: ReaderSessionOptions) {
   const typography = useReaderStore((state) => state.typography);
+  const chromeFont = typography.fonts.chrome;
   const fonts = useFontStore((state) => state.fonts);
   const runtime = useMemo(
     () =>
@@ -227,7 +228,7 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
   // book and re-paginates every chapter.
   useEffect(() => {
     let cancelled = false;
-    void resolveReaderFontFace(typography.fonts.chrome, fonts, readStoredFontBytes)
+    void resolveReaderFontFace(chromeFont, fonts, readStoredFontBytes)
       .catch(() => undefined)
       .then((face) => {
         if (!cancelled) {
@@ -237,7 +238,7 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
     return () => {
       cancelled = true;
     };
-  }, [fonts, runtime, typography]);
+  }, [chromeFont, fonts, runtime]);
 
   useEffect(() => {
     persistSnapshot(snapshot);
