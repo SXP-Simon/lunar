@@ -11,14 +11,26 @@ export function ReaderSelectionLayer({ binding, color, handleColor, outlineColor
 }) {
   const { rects, startHandle, endHandle, dragging, visible } = binding;
   const path = useDerivedValue(() => {
-    const result = Skia.Path.Make();
-    for (const rect of rects.value) result.addRRect(Skia.RRectXY(Skia.XYWHRect(rect.x, rect.y, rect.width, rect.height), 2, 2));
-    return result;
+    const builder = Skia.PathBuilder.Make();
+    try {
+      for (const rect of rects.value) {
+        builder.addRRect(Skia.RRectXY(Skia.XYWHRect(rect.x, rect.y, rect.width, rect.height), 2, 2));
+      }
+      return builder.build();
+    } finally {
+      builder.dispose();
+    }
   });
   const stems = useDerivedValue(() => {
-    const result = Skia.Path.Make();
-    for (const point of [startHandle.value, endHandle.value]) result.addRect(Skia.XYWHRect(point.x - 1, point.y - 8, 2, 12));
-    return result;
+    const builder = Skia.PathBuilder.Make();
+    try {
+      for (const point of [startHandle.value, endHandle.value]) {
+        builder.addRect(Skia.XYWHRect(point.x - 1, point.y - 8, 2, 12));
+      }
+      return builder.build();
+    } finally {
+      builder.dispose();
+    }
   });
   const opacity = useDerivedValue(() => visible.value ? 1 : 0);
   const fillOpacity = useDerivedValue(() => showFill || dragging.value ? 1 : 0, [showFill]);
