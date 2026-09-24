@@ -63,6 +63,7 @@ import {
 } from '../components/reader-selection-controls';
 import { useReaderHighlights } from '../hooks/use-reader-highlights';
 import { useReaderSession } from '../hooks/use-reader-session';
+import { useReadingTime } from '../hooks/use-reading-time';
 import { useReaderVolumeKeys } from '../hooks/use-reader-volume-keys';
 import { containsHighlightRange } from '../domain/highlight-ranges';
 import type { ReaderHighlightColor } from '../domain/reader-highlight';
@@ -200,6 +201,7 @@ export default function ReaderScreen() {
     surfaceTop: 0,
   });
   const isReady = session.snapshot.phase === 'ready' && (highlightsLoaded || Boolean(highlightsError));
+  const readingTime = useReadingTime(bookId ?? '', isFocused, isReady && session.snapshot.bookId === bookId);
   const isReaderFrameReady = isReady
     && session.runtime.getCurrentPicture(
       session.snapshot.revisionId,
@@ -335,6 +337,10 @@ export default function ReaderScreen() {
   useEffect(() => {
     if (bookmarksError) toast.show({ variant: 'danger', label: t('reader.bookmarkLoadFailed') });
   }, [bookmarksError, t, toast]);
+
+  useEffect(() => {
+    if (readingTime.error) toast.show({ variant: 'danger', label: t('reader.readingTimeSaveFailed') });
+  }, [readingTime.error, t, toast]);
 
   useEffect(() => () => {
     if (activeImageViewer) deleteReaderImageFile(activeImageViewer.uri);
@@ -1035,6 +1041,7 @@ export default function ReaderScreen() {
         onNavigated={clearSelection}
       />
       <ProgressDrawer
+        bookId={bookId ?? ''}
         isOpen={isProgressOpen}
         onOpenChange={setIsProgressOpen}
         runtime={session.runtime}

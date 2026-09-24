@@ -2,17 +2,20 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
 import { Slider } from 'heroui-native/slider';
-import { memo, useState } from 'react';
-import { View } from 'react-native';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ReaderSnapshot } from '@/reader';
 import type { LunarReaderRuntime } from '@/reader/native';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from '@/i18n';
+import { readingDateKey, summarizeReadingTime, type ReadingSession } from '../../domain/reading-time';
+import { listReadingSessions } from '../../services/reading-time-service';
 import { getReaderBottomTabBarInset } from './constants';
 
 interface ProgressDrawerProps {
+  readonly bookId: string;
   readonly isOpen: boolean;
   readonly onOpenChange: (value: boolean) => void;
   readonly runtime: LunarReaderRuntime;
@@ -20,6 +23,7 @@ interface ProgressDrawerProps {
 }
 
 function ProgressDrawerContent({
+  bookId,
   isOpen,
   onOpenChange,
   runtime,
@@ -34,6 +38,29 @@ function ProgressDrawerContent({
   const sliderValue = currentPage ?? 0;
   const sliderMax = Math.max(0, (total ?? 1) - 1);
   const [draftPage, setDraftPage] = useState<number>();
+  const [readingSessions, setReadingSessions] = useState<readonly ReadingSession[]>([]);
+  const [readingTimeError, setReadingTimeError] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!isOpen || !bookId) return;
+    let active = true;
+    const refresh = () => {
+      void listReadingSessions(bookId).then((sessions) => {
+        if (active) {
+          setReadingSessions(sessions);
+          setReadingTimeError(false);
+          setNow(Date.now());
+        }
+      }).catch(() => { if (active) setReadingTimeError(true); });
+    };
+    refresh();
+    const timer = setInterval(refresh, 10_000);
+    return () => { active = false; clearInterval(timer); };
+  }, [bookId, isOpen]);
+  const dailyReading = useMemo(() => summarizeReadingTime(readingSessions), [readingSessions]);
+  const today = readingDateKey(now, Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+  const todayMilliseconds = dailyReading.find((day) => day.date === today)?.milliseconds ?? 0;
+  const totalMilliseconds = dailyReading.reduce((sum, day) => sum + day.milliseconds, 0);
   const displayedPage = draftPage ?? sliderValue;
   const percentage = total === undefined
     ? undefined
@@ -106,6 +133,45 @@ function ProgressDrawerContent({
                 onPress={() => total !== undefined && goToPage(total - 1)}
               />
             </View>
+            <View className="gap-3 border-t border-border pt-4">
+              <Text className="text-base font-semibold text-foreground">{t('reader.readingTime')}</Text>
+              {readingTimeError ? (
+                <Text className="text-sm text-muted">{t('reader.readingTimeLoadFailed')}</Text>
+              ) : (
+                <>
+                  <View className="flex-row justify-between">
+                    <View className="gap-1">
+                      <Text className="text-xs text-muted">{t('reader.today')}</Text>
+                      <Text className="text-base text-foreground">{formatDuration(todayMilliseconds, t)}</Text>
+                    </View>
+                    <View className="items-end gap-1">
+                      <Text className="text-xs text-muted">{t('reader.totalReadingTime')}</Text>
+                      <Text className="text-base text-foreground">{formatDuration(totalMilliseconds, t)}</Text>
+                    </View>
+                  </View>
+                  {dailyReading.length > 0 && (
+                    <>
+                      <Text className="text-xs text-muted">{t('reader.dailyReadingTime')}</Text>
+                      <ScrollView className="max-h-36" nestedScrollEnabled showsVerticalScrollIndicator>
+                        <View className="gap-2">
+                          {dailyReading.map((day) => (
+                            <View key={day.date} className="flex-row justify-between">
+                              <Text className="text-sm text-muted">{day.date}</Text>
+                              <Text className="text-sm text-foreground">{formatDuration(day.milliseconds, t)}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </ScrollView>
+                    </>
+                  )}
+                  {readingSessions.filter((item) => item.endedAt > item.startedAt).slice(0, 2).map((item) => (
+                    <Text key={item.id} className="text-xs text-muted">
+                      {formatSessionTime(item)} · {formatDuration(item.endedAt - item.startedAt, t)}
+                    </Text>
+                  ))}
+                </>
+              )}
+            </View>
           </View>
         </BottomSheet.Content>
       </BottomSheet.Portal>
@@ -140,9 +206,28 @@ function toSliderValue(value: number | number[]): number {
   return Math.round(Array.isArray(value) ? (value[0] ?? 0) : value);
 }
 
+function formatDuration(milliseconds: number, t: ReturnType<typeof useTranslation>['t']): string {
+  if (milliseconds > 0 && milliseconds < 60_000) return t('reader.lessThanMinute');
+  const minutes = Math.floor(milliseconds / 60_000);
+  if (minutes < 60) return t('reader.readingMinutes', { minutes });
+  return t('reader.readingDuration', { hours: Math.floor(minutes / 60), minutes: minutes % 60 });
+}
+
+function formatSessionTime(session: ReadingSession): string {
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    timeZone: session.timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  });
+  const startDate = readingDateKey(session.startedAt, session.timeZone);
+  const endDate = readingDateKey(session.endedAt, session.timeZone);
+  const start = `${startDate} ${formatter.format(session.startedAt)}`;
+  const end = `${startDate === endDate ? '' : `${endDate} `}${formatter.format(session.endedAt)}`;
+  return `${start}–${end} ${session.timeZone}`;
+}
+
 /** Keep the closing view mounted while settled-page updates stay outside it. */
 export const ProgressDrawer = memo(ProgressDrawerContent, (previous, next) =>
-  previous.isOpen === next.isOpen
+  previous.bookId === next.bookId
+  && previous.isOpen === next.isOpen
   && previous.runtime === next.runtime
   && previous.onOpenChange === next.onOpenChange
   && (!next.isOpen || previous.snapshot === next.snapshot));

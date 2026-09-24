@@ -98,4 +98,19 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     name: 'bookmark_excerpts',
     statements: ["ALTER TABLE bookmarks ADD COLUMN text TEXT NOT NULL DEFAULT ''"],
   },
+  {
+    version: 6,
+    name: 'reading_sessions',
+    statements: [
+      `CREATE TABLE IF NOT EXISTS reading_sessions (
+        id TEXT PRIMARY KEY NOT NULL,
+        book_id TEXT NOT NULL,
+        started_at INTEGER NOT NULL,
+        ended_at INTEGER NOT NULL CHECK (ended_at >= started_at),
+        time_zone TEXT NOT NULL,
+        FOREIGN KEY(book_id) REFERENCES books(id) ON DELETE CASCADE
+      )`,
+      'CREATE INDEX IF NOT EXISTS reading_sessions_book_time_index ON reading_sessions(book_id, started_at)',
+    ],
+  },
 ];
