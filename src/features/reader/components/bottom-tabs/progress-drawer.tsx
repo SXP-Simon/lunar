@@ -51,22 +51,15 @@ function ProgressDrawerContent({
         <BottomSheet.Content
           backgroundClassName="rounded-t-3xl"
           bottomInset={bottomInset}
-          contentContainerClassName="h-full px-0"
+          contentContainerClassName="px-0 pb-0!"
           detached
-          enableDynamicSizing={false}
-          enableOverDrag={false}
-          snapPoints={['38%']}>
-          <View className="gap-6 px-5 pb-8 pt-2">
-            <View className="items-center gap-2">
-              <BottomSheet.Title className="rounded-full bg-background px-5 py-2 text-2xl tabular-nums text-foreground">
-                {total === undefined ? t('reader.calculatingPages') : `${displayedPage + 1} / ${total}`}
-              </BottomSheet.Title>
-              <BottomSheet.Description className="text-sm text-muted">
-                {percentage === undefined
-                  ? t('reader.calculatingBookPages')
-                  : t('reader.readingProgress', { percentage })}
-              </BottomSheet.Description>
-            </View>
+          enableOverDrag={false}>
+          <View className="gap-5 px-5 pb-4 pt-2">
+            <BottomSheet.Title className="text-center text-sm font-normal text-muted">
+              {percentage === undefined
+                ? t('reader.calculatingBookPages')
+                : t('reader.readingProgress', { percentage })}
+            </BottomSheet.Title>
 
             <Slider
               accessibilityLabel={t('reader.choosePage')}
