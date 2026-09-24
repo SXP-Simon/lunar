@@ -27,6 +27,7 @@ export const zhCN = {
     english: 'English',
     reading: '阅读',
     readingSettings: '阅读设置',
+    about: '关于',
     keepScreenAwake: '阅读时保持屏幕常亮',
     keepScreenAwakeDescription: '阅读页面打开期间，防止屏幕自动锁定',
     showSystemStatusBar: '阅读时显示时间和电量',

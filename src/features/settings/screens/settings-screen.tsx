@@ -71,6 +71,12 @@ export function SettingsScreen() {
                 onPress={() => router.push('/settings/reading')}
               />
             </View>
+            <View className="mt-8">
+              <SettingSection
+                title={t('settings.about')}
+                onPress={() => router.push('/settings/about')}
+              />
+            </View>
           </View>
         </ScrollView>
       </View>

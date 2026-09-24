@@ -29,6 +29,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     english: 'English',
     reading: 'Reading',
     readingSettings: 'Reading settings',
+    about: 'About',
     keepScreenAwake: 'Keep screen awake while reading',
     keepScreenAwakeDescription: 'Prevent automatic screen lock while the reader is open',
     showSystemStatusBar: 'Show time and battery while reading',
