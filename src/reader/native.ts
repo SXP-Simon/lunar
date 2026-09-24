@@ -38,6 +38,7 @@ export {
 } from './skia/anime/controller/use-reader-page-turn';
 export { createReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export { ReaderSelectionOverlay } from './skia/rendering/reader-selection-overlay';
+export type { ReaderSelectionBinding } from './skia/rendering/selection-binding';
 export type { ReaderSurfaceTransform } from './skia/rendering/surface-transform';
 export { resolveReaderRangeOverlays, resolveReaderSearchOverlays } from './skia/rendering/reader-overlays';
 export type { ReaderOverlayRect } from './skia/rendering/reader-overlays';

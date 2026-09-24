@@ -16,6 +16,8 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { scheduleOnRN } from 'react-native-worklets';
+import { useReaderSelectionDrag } from '../hooks/use-reader-selection-drag';
 import { useCSSVariable, useResolveClassNames, useUniwind } from 'uniwind';
 import {
   SafeAreaListener,
@@ -31,9 +33,11 @@ import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-rea
 import { useTranslation } from '@/i18n';
 import {
   createReaderWordSelectionAtPoint,
+  createReaderTextSelectionFromRange,
+  type ReaderTextSelectionRange,
+  type ReaderSelectionPoint,
   createReaderTextSelectionFromSourceRange,
   findReaderHitIndex,
-  updateReaderTextSelectionBoundaryAtPoint,
   updateReaderTextSelectionAtPoint,
   type ReaderFootnote,
   type ReaderRenderFrame,
@@ -93,6 +97,8 @@ export default function ReaderScreen() {
   const { toast } = useToast();
   const [reservedInsets, setReservedInsets] = useState(insets);
   const { theme } = useUniwind();
+  const selectionHandleColor = useCSSVariable('--color-reader-selection') as string;
+  const selectionOutlineColor = useCSSVariable('--color-background') as string;
   const selectionFillColor = useCSSVariable('--color-reader-selection-fill') as string;
   const highlightFillColor = useCSSVariable('--color-reader-highlight-fill') as string;
   const highlightPink = useCSSVariable('--color-reader-highlight-pink') as string;
@@ -136,8 +142,6 @@ export default function ReaderScreen() {
   const [selectionState, setSelection] = useState<OwnedReaderTextSelection>();
   const [isHighlighting, setIsHighlighting] = useState(false);
   const selectionRef = useRef<ReaderTextSelection | undefined>(undefined);
-  const pendingSelectionPoint = useRef<{ x: number; y: number } | undefined>(undefined);
-  const selectionFrame = useRef<number | undefined>(undefined);
   const isHighlightingRef = useRef(false);
   const [surfaceTransform, setSurfaceTransform] = useState<ReaderSurfaceTransform>();
   const footnoteRequestRef = useRef(0);
@@ -417,88 +421,6 @@ export default function ReaderScreen() {
     return surfaceTransform?.toDisplayPoint(x, y) ?? { x, y };
   }, [surfaceTransform]);
 
-  const beginSelection = useCallback((x: number, y: number) => {
-    const hitMap = session.runtime.getCurrentHitMap();
-    if (!hitMap) return;
-    const point = displayPoint(x, y);
-    const wordSelection = createReaderWordSelectionAtPoint(hitMap.entries, point.x, point.y);
-    if (!wordSelection) return;
-    const nextSelection = expandHighlightSelection(wordSelection);
-    selectionRef.current = nextSelection;
-    setSelection({
-      ...nextSelection,
-      revisionId: session.snapshot.revisionId,
-      spreadIndex: session.snapshot.spreadIndex,
-      renderId: session.snapshot.renderId,
-    });
-    setControlsVisible(false);
-  }, [displayPoint, expandHighlightSelection, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
-
-  const updateSelection = useCallback((x: number, y: number) => {
-    const currentSelection = selectionRef.current;
-    const hitMap = session.runtime.getCurrentHitMap();
-    if (!currentSelection || !hitMap) return;
-    const point = displayPoint(x, y);
-    const nextSelection = updateReaderTextSelectionAtPoint(
-      hitMap.entries,
-      currentSelection,
-      point.x,
-      point.y,
-    );
-    if (!nextSelection || nextSelection === currentSelection) return;
-    selectionRef.current = nextSelection;
-    setSelection({
-      ...nextSelection,
-      revisionId: session.snapshot.revisionId,
-      spreadIndex: session.snapshot.spreadIndex,
-      renderId: session.snapshot.renderId,
-    });
-  }, [displayPoint, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
-
-  const flushSelectionUpdate = useCallback(() => {
-    if (selectionFrame.current !== undefined) cancelAnimationFrame(selectionFrame.current);
-    selectionFrame.current = undefined;
-    const point = pendingSelectionPoint.current;
-    pendingSelectionPoint.current = undefined;
-    if (point) updateSelection(point.x, point.y);
-  }, [updateSelection]);
-
-  const queueSelectionUpdate = useCallback((x: number, y: number) => {
-    pendingSelectionPoint.current = { x, y };
-    if (selectionFrame.current !== undefined) return;
-    selectionFrame.current = requestAnimationFrame(flushSelectionUpdate);
-  }, [flushSelectionUpdate]);
-
-  useEffect(() => () => {
-    if (selectionFrame.current !== undefined) cancelAnimationFrame(selectionFrame.current);
-  }, []);
-
-  const updateSelectionBoundary = useCallback((
-    boundary: 'start' | 'end',
-    x: number,
-    y: number,
-  ) => {
-    const currentSelection = selectionRef.current;
-    const hitMap = session.runtime.getCurrentHitMap();
-    if (!currentSelection || !hitMap) return;
-    const point = displayPoint(x, y);
-    const nextSelection = updateReaderTextSelectionBoundaryAtPoint(
-      hitMap.entries,
-      currentSelection,
-      boundary,
-      point.x,
-      point.y,
-    );
-    if (!nextSelection || nextSelection === currentSelection) return;
-    selectionRef.current = nextSelection;
-    setSelection({
-      ...nextSelection,
-      revisionId: session.snapshot.revisionId,
-      spreadIndex: session.snapshot.spreadIndex,
-      renderId: session.snapshot.renderId,
-    });
-  }, [displayPoint, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
-
   const refineSelectionGeometry = useCallback(async () => {
     const currentSelection = selectionRef.current;
     if (!currentSelection) return;
@@ -526,20 +448,72 @@ export default function ReaderScreen() {
     setSelection({ ...refinedSelection, revisionId, spreadIndex, renderId });
   }, [expandHighlightSelection, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
 
-  /* eslint-disable react-hooks/refs */
+  const selectionPageKey = `${session.snapshot.revisionId}:${session.snapshot.spreadIndex}:${session.snapshot.renderId}`;
+  const commitSelectionDrag = useCallback((range: ReaderTextSelectionRange | undefined,
+    point: ReaderSelectionPoint, owner: string) => {
+    const snapshot = session.runtime.getSnapshot();
+    if (owner !== `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId}`) return;
+    const entries = session.runtime.getCurrentHitMap()?.entries;
+    const current = selectionRef.current;
+    if (!entries) return;
+    const display = displayPoint(point.x, point.y);
+    const next = range ? createReaderTextSelectionFromRange(entries, range)
+      : current ? updateReaderTextSelectionAtPoint(entries, current, display.x, display.y) : undefined;
+    if (!next) { clearSelection(); return; }
+    selectionRef.current = next;
+    void refineSelectionGeometry();
+  }, [clearSelection, displayPoint, refineSelectionGeometry, session.runtime]);
+  const selectionDrag = useReaderSelectionDrag({ entries: currentHitEntries, transform: surfaceTransform,
+    selection, pageKey: selectionPageKey, onCommit: commitSelectionDrag });
+  const { begin: beginSelectionDrag, move: moveSelectionDrag, finish: finishSelectionDrag,
+    initialize: initializeSelectionDrag } = selectionDrag;
+  const hasSelection = Boolean(selection);
+  useEffect(() => {
+    if (hasSelection) return session.runtime.suspendBackgroundPagination();
+  }, [hasSelection, session.runtime]);
+
+  const beginSelection = useCallback((x: number, y: number) => {
+    const hitMap = session.runtime.getCurrentHitMap();
+    if (!hitMap) return;
+    const point = displayPoint(x, y);
+    const wordSelection = createReaderWordSelectionAtPoint(hitMap.entries, point.x, point.y);
+    if (!wordSelection) return;
+    const nextSelection = expandHighlightSelection(wordSelection);
+    initializeSelectionDrag(nextSelection);
+    selectionRef.current = nextSelection;
+    setSelection({
+      ...nextSelection,
+      revisionId: session.snapshot.revisionId,
+      spreadIndex: session.snapshot.spreadIndex,
+      renderId: session.snapshot.renderId,
+    });
+    setControlsVisible(false);
+  }, [displayPoint, expandHighlightSelection, initializeSelectionDrag, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, session.snapshot.spreadIndex]);
+
+  /* eslint-disable react-hooks/refs -- Gesture callbacks execute on events, outside React rendering. */
   const selectionGesture = useMemo(() => configureReaderSelectionGesture(Gesture.Pan())
     .enabled(isReady && !isSettling)
     .averageTouches(true)
     .cancelsTouchesInView(true)
-    .runOnJS(true)
-    .onStart((event) => beginSelection(event.x, event.y))
-    .onUpdate((event) => queueSelectionUpdate(event.x, event.y))
-    .onEnd((event) => {
-      pendingSelectionPoint.current = { x: event.x, y: event.y };
-      flushSelectionUpdate();
-      void refineSelectionGeometry();
+    .onStart((event) => {
+      'worklet';
+      beginSelectionDrag('extend', event.x, event.y);
+      scheduleOnRN(beginSelection, event.x, event.y);
+    })
+    .onUpdate((event) => {
+      'worklet';
+      moveSelectionDrag('extend', event.x, event.y);
+    })
+    .onEnd((event, success) => {
+      'worklet';
+      moveSelectionDrag('extend', event.x, event.y);
+      finishSelectionDrag(!success);
+    })
+    .onFinalize((_event, success) => {
+      'worklet';
+      if (!success) finishSelectionDrag(true);
     }),
-  [beginSelection, flushSelectionUpdate, isReady, isSettling, queueSelectionUpdate, refineSelectionGeometry]);
+  [beginSelection, beginSelectionDrag, finishSelectionDrag, isReady, isSettling, moveSelectionDrag]);
   /* eslint-enable react-hooks/refs */
   const handleReadingDoubleTap = useCallback((x: number, y: number) => {
     if (!isReady || isSettling || automaticNavigationActive || selection) return;
@@ -887,7 +861,10 @@ export default function ReaderScreen() {
             overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}
             overlayInsets={contentInsets}
             resolvePageOverlays={resolvePageHighlights}
-            selectionRects={activeHighlight ? undefined : selectionViewportRects}
+            selectionBinding={selectionDrag.binding}
+            selectionShowFill={!activeHighlight}
+            selectionHandleColor={selectionHandleColor}
+            selectionOutlineColor={selectionOutlineColor}
             selectionColor={selectionFillColor}
             resolvePageBookmark={resolvePageBookmark}
             bookmarkColor={bookmarkColor}
@@ -978,8 +955,7 @@ export default function ReaderScreen() {
           colorLabels={{ yellow: t('reader.highlightYellow'), pink: t('reader.highlightPink'), purple: t('reader.highlightPurple'), blue: t('reader.highlightBlue'), green: t('reader.highlightGreen') }}
           onColorChange={(color) => void highlightSelection(color)}
           isHighlightDisabled={isHighlighting || !highlightsLoaded}
-          onBoundaryMove={updateSelectionBoundary}
-          onBoundaryMoveEnd={() => void refineSelectionGeometry()}
+          drag={selectionDrag}
           onCopy={() => void copySelection()}
           onHighlight={() => void (activeHighlight ? deleteHighlight() : highlightSelection())}
           rects={selectionViewportRects}

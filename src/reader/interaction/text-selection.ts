@@ -18,10 +18,12 @@ export interface ReaderTextSelectionSearchSegment {
   readonly request: ReaderTextRangeGeometryRequest;
 }
 
-interface ReaderTextSelectionOrigin {
+export interface ReaderTextSelectionRange {
   readonly start: ReaderTextSelectionEndpoint;
   readonly end: ReaderTextSelectionEndpoint;
 }
+
+type ReaderTextSelectionOrigin = ReaderTextSelectionRange;
 
 interface ReaderTextSelectionPortion {
   readonly entry: ReaderHitEntry;
@@ -225,6 +227,18 @@ export function createReaderTextSelectionFromSourceRange(
   }
   if (!start || !end) return undefined;
   const range = { start, end };
+  return createSelection(entries, range, range.end);
+}
+
+export function createReaderTextSelectionFromRange(
+  entries: readonly ReaderHitEntry[], range: ReaderTextSelectionRange,
+): ReaderTextSelection | undefined {
+  const start = entries[range.start.entryIndex]; const end = entries[range.end.entryIndex];
+  if (!start || !end || !isSelectable(start) || !isSelectable(end)
+    || !Number.isInteger(range.start.charIndex) || !Number.isInteger(range.end.charIndex)
+    || range.start.charIndex < 0 || range.start.charIndex > start.text.length
+    || range.end.charIndex < 0 || range.end.charIndex > end.text.length
+    || compareEndpoints(range.start, range.end) >= 0) return undefined;
   return createSelection(entries, range, range.end);
 }
 

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { configureReaderSelectionGesture } from '../../src/features/reader/components/reader-selection-controls';
 
 // These tests exercise gesture configuration without rendering native controls.
+vi.mock('react-native-reanimated', () => ({ default: { View: 'AnimatedView' }, useAnimatedStyle: vi.fn() }));
 vi.mock('react-native', () => ({ View: 'View' }));
 vi.mock('react-native-gesture-handler', () => ({ Gesture: {}, GestureDetector: 'GestureDetector' }));
 vi.mock('expo-symbols', () => ({ SymbolView: 'SymbolView' }));

@@ -52,6 +52,8 @@ import { ReaderBookmarkMark, ReaderBookmarkPullMark } from './reader-bookmark-ma
 import { composePageCurlPicture, recordNativeViewportPicture } from './page-picture';
 import { readerBookmarkPlacement, ReaderBookmarkWidth } from './reader-bookmark-geometry';
 import { createReaderSurfaceTransform, type ReaderSurfaceTransform } from './surface-transform';
+import type { ReaderSelectionBinding } from './selection-binding';
+import { ReaderSelectionLayer } from './selection-layer';
 
 export type { ReaderSurfaceTransform } from './surface-transform';
 export { PAGE_TURN_DURATION_MS, READER_PAGE_ANIMATION_STYLES } from '../anime';
@@ -72,6 +74,10 @@ export interface ReaderSurfaceProps {
   /** Transient selection in viewport coordinates; excluded from turn recordings. */
   readonly selectionRects?: readonly ReaderRect[];
   readonly selectionColor?: string;
+  readonly selectionBinding?: ReaderSelectionBinding;
+  readonly selectionShowFill?: boolean;
+  readonly selectionHandleColor?: string;
+  readonly selectionOutlineColor?: string;
   readonly resolvePageOverlays?: ReaderPageOverlayResolver;
   readonly resolvePageBookmark?: (snapshot: ReaderSnapshot, frame: ReaderPageContent['frame']) => boolean;
   readonly bookmarkColor?: string;
@@ -120,6 +126,10 @@ export const ReaderSurface = memo(function ReaderSurface({
   overlays = EmptyOverlays,
   selectionRects,
   selectionColor,
+  selectionBinding,
+  selectionShowFill = true,
+  selectionHandleColor,
+  selectionOutlineColor,
   resolvePageOverlays,
   resolvePageBookmark,
   bookmarkColor = '#E5594B',
@@ -709,7 +719,12 @@ export const ReaderSurface = memo(function ReaderSurface({
           outlineColor={bookmarkOutlineColor} hintColor={bookmarkHintColor}
           readyColor={bookmarkReadyColor} font={bookmarkHintFont} labels={bookmarkPullLabels} />
       )}
-      {selectionColor && !interactiveTurn && automaticTurns.length === 0 && selectionRects?.map((rect, index) => (
+      {selectionBinding && selectionColor && !interactiveTurn && automaticTurns.length === 0 && (
+        <ReaderSelectionLayer binding={selectionBinding} color={selectionColor}
+          handleColor={selectionHandleColor ?? selectionColor} outlineColor={selectionOutlineColor ?? paperColor}
+          showFill={selectionShowFill} />
+      )}
+      {!selectionBinding && selectionColor && !interactiveTurn && automaticTurns.length === 0 && selectionRects?.map((rect, index) => (
         <RoundedRect key={`selection:${index}`} x={rect.x} y={rect.y} width={rect.width}
           height={rect.height} r={2} color={selectionColor} />
       ))}

@@ -4,7 +4,8 @@ import { useThemeColor } from 'heroui-native/hooks';
 import { Fragment, useMemo } from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
-import { useCSSVariable } from 'uniwind';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import type { ReaderSelectionDragController } from '../hooks/use-reader-selection-drag';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 
 import type { ReaderRect } from '@/reader';
@@ -19,7 +20,6 @@ const ViewportPadding = 12;
 
 const HandleTouchSize = 48;
 const HandleVisualOffsetY = 8;
-const HandleKnobCenterOffsetY = 14;
 const HighlightColorClasses: Record<ReaderHighlightColor, string> = {
   yellow: 'bg-reader-highlight-fill',
   pink: 'bg-reader-highlight-pink',
@@ -95,8 +95,7 @@ interface ReaderSelectionControlsProps {
   readonly safeAreaInsets: EdgeInsets;
   readonly onCopy: () => void;
   readonly onHighlight: () => void;
-  readonly onBoundaryMove: (boundary: 'start' | 'end', x: number, y: number) => void;
-  readonly onBoundaryMoveEnd: () => void;
+  readonly drag: ReaderSelectionDragController;
 }
 
 export function ReaderSelectionControls({
@@ -116,11 +115,11 @@ export function ReaderSelectionControls({
   safeAreaInsets,
   onCopy,
   onHighlight,
-  onBoundaryMove,
-  onBoundaryMoveEnd,
+  drag,
 }: ReaderSelectionControlsProps) {
   const foreground = useThemeColor('foreground');
-  const selectionColor = useCSSVariable('--color-reader-selection') as string;
+  const { dragging } = drag.binding;
+  const toolbarStyle = useAnimatedStyle(() => ({ opacity: dragging.value ? 0 : 1 }));
   const layout = computeReaderSelectionControlsLayout(
     rects,
     viewportWidth,
@@ -131,15 +130,15 @@ export function ReaderSelectionControls({
 
   return (
     <Fragment>
-      <View
+      <Animated.View
         accessibilityLabel={selectionLabel}
         accessibilityRole="toolbar"
         className="absolute z-30 h-[108px] justify-center rounded-2xl border border-border bg-surface px-2 shadow-lg"
-        style={{
+        style={[{
           left: layout.toolbar.left,
           top: layout.toolbar.top,
           width: ReaderSelectionToolbarWidth,
-        }}>
+        }, toolbarStyle]}>
         <View className="h-12 flex-row items-center justify-center">
           {ReaderHighlightColors.map((color) => (
             <Button
@@ -193,24 +192,16 @@ export function ReaderSelectionControls({
             <Button.Label className="text-xs">{highlightLabel}</Button.Label>
           </Button>
         </View>
-      </View>
+      </Animated.View>
       <SelectionHandle
         boundary="start"
         label={startHandleLabel}
-        onMove={onBoundaryMove}
-        onMoveEnd={onBoundaryMoveEnd}
-        selectionColor={selectionColor}
-        x={layout.startHandle.x}
-        y={layout.startHandle.y}
+        drag={drag}
       />
       <SelectionHandle
         boundary="end"
         label={endHandleLabel}
-        onMove={onBoundaryMove}
-        onMoveEnd={onBoundaryMoveEnd}
-        selectionColor={selectionColor}
-        x={layout.endHandle.x}
-        y={layout.endHandle.y}
+        drag={drag}
       />
     </Fragment>
   );
@@ -219,50 +210,44 @@ export function ReaderSelectionControls({
 interface SelectionHandleProps {
   readonly boundary: 'start' | 'end';
   readonly label: string;
-  readonly selectionColor: string;
-  readonly x: number;
-  readonly y: number;
-  readonly onMove: (boundary: 'start' | 'end', x: number, y: number) => void;
-  readonly onMoveEnd: () => void;
+  readonly drag: ReaderSelectionDragController;
 }
 
-function SelectionHandle({
-  boundary,
-  label,
-  selectionColor,
-  x,
-  y,
-  onMove,
-  onMoveEnd,
-}: SelectionHandleProps) {
+function SelectionHandle({ boundary, label, drag }: SelectionHandleProps) {
+  const { begin, moveHandle, finish, binding } = drag;
+  const position = boundary === 'start' ? binding.startHandle : binding.endHandle;
+  const style = useAnimatedStyle(() => ({ transform: [
+    { translateX: position.value.x - HandleTouchSize / 2 },
+    { translateY: position.value.y - HandleVisualOffsetY },
+  ] }));
   const gesture = useMemo(() => Gesture.Pan()
     .minDistance(0)
-    .runOnJS(true)
-    .onUpdate((event) => onMove(
-      boundary,
-      event.absoluteX,
-      event.absoluteY - HandleKnobCenterOffsetY,
-    ))
-    .onEnd(onMoveEnd), [boundary, onMove, onMoveEnd]);
+    .maxPointers(1)
+    .shouldCancelWhenOutside(false)
+    .onStart(() => {
+      'worklet';
+      begin(boundary);
+    })
+    .onUpdate(event => {
+      'worklet';
+      moveHandle(boundary, event.translationX, event.translationY);
+    })
+    .onEnd((event, success) => {
+      'worklet';
+      moveHandle(boundary, event.translationX, event.translationY);
+      finish(!success);
+    })
+    .onFinalize((_event, success) => {
+      'worklet';
+      if (!success) finish(true);
+    }), [begin, boundary, finish, moveHandle]);
 
+  // Transparent native targets retain touch capture and accessibility. The
+  // knob and stem are painted with the selection in the reader's Skia Canvas.
   return (
     <GestureDetector gesture={gesture}>
-      <View
-        accessible
-        accessibilityLabel={label}
-        accessibilityRole="adjustable"
-        collapsable={false}
-        className="absolute z-30 h-12 w-12 items-center"
-        style={{
-          left: x - HandleTouchSize / 2,
-          top: y - HandleVisualOffsetY,
-        }}>
-        <View className="h-3 w-0.5" style={{ backgroundColor: selectionColor }} />
-        <View
-          className="h-5 w-5 rounded-full border-2 border-background shadow-sm"
-          style={{ backgroundColor: selectionColor }}
-        />
-      </View>
+      <Animated.View accessible accessibilityLabel={label} accessibilityRole="adjustable"
+        collapsable={false} className="absolute left-0 top-0 z-30 h-12 w-12" style={style} />
     </GestureDetector>
   );
 }
