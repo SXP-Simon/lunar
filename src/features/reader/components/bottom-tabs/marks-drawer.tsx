@@ -27,6 +27,7 @@ interface MarksDrawerProps {
   readonly bookmarksError?: unknown;
   readonly highlightsError?: unknown;
   readonly onRemoveBookmark: (id: string) => Promise<void>;
+  readonly onRemoveHighlight: (id: string) => Promise<void>;
   readonly onNavigated: () => void;
 }
 
@@ -75,15 +76,16 @@ export function MarksDrawer(props: MarksDrawerProps) {
     navigation.requestNavigation(() => props.runtime.goToLocator(entry.locator));
   }
 
-  async function remove(id: string) {
+  async function remove(id: string, kind: 'bookmarks' | 'highlights') {
     if (pending.current || navigation.isPending()) return;
     pending.current = true;
     setRemoving(true);
     try {
-      await props.onRemoveBookmark(id);
-      toast.show({ variant: 'success', label: t('reader.bookmarkRemoved') });
+      if (kind === 'bookmarks') await props.onRemoveBookmark(id);
+      else await props.onRemoveHighlight(id);
+      toast.show({ variant: 'success', label: t(kind === 'bookmarks' ? 'reader.bookmarkRemoved' : 'reader.highlightRemoved') });
     } catch {
-      toast.show({ variant: 'danger', label: t('reader.bookmarkSaveFailed') });
+      toast.show({ variant: 'danger', label: t(kind === 'bookmarks' ? 'reader.bookmarkRemoveFailed' : 'reader.highlightRemoveFailed') });
     } finally { pending.current = false; setRemoving(false); }
   }
 
@@ -124,9 +126,6 @@ export function MarksDrawer(props: MarksDrawerProps) {
                   </View>
                 </Button>
               );
-              if (tab === 'highlights') {
-                return <View className="border-b border-border">{content}</View>;
-              }
               return (
                 <View className="overflow-hidden border-b border-border">
                   <ReanimatedSwipeable
@@ -137,12 +136,14 @@ export function MarksDrawer(props: MarksDrawerProps) {
                     rightThreshold={40}
                     renderRightActions={(_progress, _translation, swipeableMethods) => (
                       <Button
-                        accessibilityLabel={t('reader.removeBookmark', { title: item.title })}
+                        accessibilityLabel={tab === 'bookmarks'
+                          ? t('reader.removeBookmark', { title: item.title })
+                          : t('reader.removeHighlight')}
                         className="h-full w-20 self-stretch rounded-none px-0"
                         isDisabled={busy}
                         onPress={() => {
                           swipeableMethods.close();
-                          void remove(item.id);
+                          void remove(item.id, tab);
                         }}
                         size="sm"
                         variant="danger">

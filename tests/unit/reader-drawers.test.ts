@@ -85,6 +85,7 @@ function marksProps(): ComponentProps<typeof MarksDrawer> {
     bookmarksLoaded: true,
     highlightsLoaded: true,
     onRemoveBookmark: vi.fn(),
+    onRemoveHighlight: vi.fn(),
   };
 }
 

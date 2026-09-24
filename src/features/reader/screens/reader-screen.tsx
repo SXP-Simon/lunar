@@ -1038,6 +1038,7 @@ export default function ReaderScreen() {
         bookmarksError={bookmarksError}
         highlightsError={highlightsError}
         onRemoveBookmark={removeBookmark}
+        onRemoveHighlight={(id) => removeHighlights([id])}
         onNavigated={clearSelection}
       />
       <ProgressDrawer

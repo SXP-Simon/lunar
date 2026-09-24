@@ -209,6 +209,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     highlightSelection: 'Mark',
     removeHighlight: 'Remove mark',
     highlightRemoved: 'Mark removed',
+    highlightRemoveFailed: 'Could not remove mark',
     highlightLoadFailed: 'Could not load marks. Reopen the book to retry.',
     highlightYellow: 'Yellow mark',
     highlightPink: 'Pink mark',

@@ -207,6 +207,7 @@ export const zhCN = {
     highlightSelection: '标记',
     removeHighlight: '取消标记',
     highlightRemoved: '标记取消成功',
+    highlightRemoveFailed: '无法取消标记',
     highlightLoadFailed: '读取标记失败，请重新打开书籍',
     highlightYellow: '黄色标记',
     highlightPink: '粉色标记',
