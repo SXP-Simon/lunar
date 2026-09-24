@@ -3,7 +3,7 @@ import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
 import { Slider } from 'heroui-native/slider';
 import { memo, useEffect, useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ReaderSnapshot } from '@/reader';
@@ -81,31 +81,52 @@ function ProgressDrawerContent({
           contentContainerClassName="px-0 pb-0!"
           detached
           enableOverDrag={false}>
-          <View className="gap-5 px-5 pb-4 pt-2">
-            <BottomSheet.Title className="text-center text-sm font-normal text-muted">
-              {percentage === undefined
-                ? t('reader.calculatingBookPages')
-                : t('reader.readingProgress', { percentage })}
-            </BottomSheet.Title>
+          <View className="gap-5 px-5 pb-4 pt-5">
+            <View className="flex-row items-center">
+              <View className="min-w-0 flex-1 items-center gap-1">
+                <Text className="text-2xl font-semibold text-foreground" numberOfLines={1} adjustsFontSizeToFit>
+                  {percentage === undefined ? '—' : `${percentage}%`}
+                </Text>
+                <BottomSheet.Title className="text-center text-xs font-normal text-muted">
+                  {t('reader.readingProgressLabel')}
+                </BottomSheet.Title>
+              </View>
+              <View className="h-10 w-px bg-border" />
+              <View className="min-w-0 flex-1 items-center gap-1">
+                <Text className="text-2xl font-semibold text-foreground" numberOfLines={1} adjustsFontSizeToFit>
+                  {readingTimeError ? '—' : formatDuration(todayMilliseconds, t)}
+                </Text>
+                <Text className="text-center text-xs text-muted">{t('reader.todayReadingTime')}</Text>
+              </View>
+              <View className="h-10 w-px bg-border" />
+              <View className="min-w-0 flex-1 items-center gap-1">
+                <Text className="text-2xl font-semibold text-foreground" numberOfLines={1} adjustsFontSizeToFit>
+                  {readingTimeError ? '—' : formatDuration(totalMilliseconds, t)}
+                </Text>
+                <Text className="text-center text-xs text-muted">{t('reader.totalReadingTime')}</Text>
+              </View>
+            </View>
 
-            <Slider
-              accessibilityLabel={t('reader.choosePage')}
-              isDisabled={!hasAbsolutePosition || total <= 1}
-              maxValue={sliderMax}
-              minValue={0}
-              onChange={(value) => setDraftPage(toSliderValue(value))}
-              onChangeEnd={(value) => {
-                const target = toSliderValue(value);
-                setDraftPage(undefined);
-                if (hasAbsolutePosition) void runtime.goToSpread(target);
-              }}
-              step={1}
-              value={displayedPage}>
-              <Slider.Track className="h-3 rounded-full bg-surface-secondary">
-                <Slider.Fill />
-                <Slider.Thumb />
-              </Slider.Track>
-            </Slider>
+            <View className="rounded-full bg-surface-secondary px-4 py-3">
+              <Slider
+                accessibilityLabel={t('reader.choosePage')}
+                isDisabled={!hasAbsolutePosition || total <= 1}
+                maxValue={sliderMax}
+                minValue={0}
+                onChange={(value) => setDraftPage(toSliderValue(value))}
+                onChangeEnd={(value) => {
+                  const target = toSliderValue(value);
+                  setDraftPage(undefined);
+                  if (hasAbsolutePosition) void runtime.goToSpread(target);
+                }}
+                step={1}
+                value={displayedPage}>
+                <Slider.Track className="h-2 rounded-full bg-surface-tertiary">
+                  <Slider.Fill />
+                  <Slider.Thumb />
+                </Slider.Track>
+              </Slider>
+            </View>
 
             <View className="flex-row items-center justify-between">
               <ProgressAction
@@ -133,45 +154,9 @@ function ProgressDrawerContent({
                 onPress={() => total !== undefined && goToPage(total - 1)}
               />
             </View>
-            <View className="gap-3 border-t border-border pt-4">
-              <Text className="text-base font-semibold text-foreground">{t('reader.readingTime')}</Text>
-              {readingTimeError ? (
-                <Text className="text-sm text-muted">{t('reader.readingTimeLoadFailed')}</Text>
-              ) : (
-                <>
-                  <View className="flex-row justify-between">
-                    <View className="gap-1">
-                      <Text className="text-xs text-muted">{t('reader.today')}</Text>
-                      <Text className="text-base text-foreground">{formatDuration(todayMilliseconds, t)}</Text>
-                    </View>
-                    <View className="items-end gap-1">
-                      <Text className="text-xs text-muted">{t('reader.totalReadingTime')}</Text>
-                      <Text className="text-base text-foreground">{formatDuration(totalMilliseconds, t)}</Text>
-                    </View>
-                  </View>
-                  {dailyReading.length > 0 && (
-                    <>
-                      <Text className="text-xs text-muted">{t('reader.dailyReadingTime')}</Text>
-                      <ScrollView className="max-h-36" nestedScrollEnabled showsVerticalScrollIndicator>
-                        <View className="gap-2">
-                          {dailyReading.map((day) => (
-                            <View key={day.date} className="flex-row justify-between">
-                              <Text className="text-sm text-muted">{day.date}</Text>
-                              <Text className="text-sm text-foreground">{formatDuration(day.milliseconds, t)}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      </ScrollView>
-                    </>
-                  )}
-                  {readingSessions.filter((item) => item.endedAt > item.startedAt).slice(0, 2).map((item) => (
-                    <Text key={item.id} className="text-xs text-muted">
-                      {formatSessionTime(item)} · {formatDuration(item.endedAt - item.startedAt, t)}
-                    </Text>
-                  ))}
-                </>
-              )}
-            </View>
+            {readingTimeError && (
+              <Text className="text-center text-xs text-muted">{t('reader.readingTimeLoadFailed')}</Text>
+            )}
           </View>
         </BottomSheet.Content>
       </BottomSheet.Portal>
@@ -210,18 +195,8 @@ function formatDuration(milliseconds: number, t: ReturnType<typeof useTranslatio
   if (milliseconds > 0 && milliseconds < 60_000) return t('reader.lessThanMinute');
   const minutes = Math.floor(milliseconds / 60_000);
   if (minutes < 60) return t('reader.readingMinutes', { minutes });
+  if (minutes % 60 === 0) return t('reader.readingHours', { hours: Math.floor(minutes / 60) });
   return t('reader.readingDuration', { hours: Math.floor(minutes / 60), minutes: minutes % 60 });
-}
-
-function formatSessionTime(session: ReadingSession): string {
-  const formatter = new Intl.DateTimeFormat(undefined, {
-    timeZone: session.timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-  });
-  const startDate = readingDateKey(session.startedAt, session.timeZone);
-  const endDate = readingDateKey(session.endedAt, session.timeZone);
-  const start = `${startDate} ${formatter.format(session.startedAt)}`;
-  const end = `${startDate === endDate ? '' : `${endDate} `}${formatter.format(session.endedAt)}`;
-  return `${start}–${end} ${session.timeZone}`;
 }
 
 /** Keep the closing view mounted while settled-page updates stay outside it. */
