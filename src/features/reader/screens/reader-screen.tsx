@@ -125,7 +125,13 @@ export default function ReaderScreen() {
   }>();
   const [footnote, setFootnote] = useState<ReaderFootnote>();
   const [isFootnoteOpen, setIsFootnoteOpen] = useState(false);
-  const [imageViewer, setImageViewer] = useState<{ uri: string; description: string; revisionId: number; renderId?: number }>();
+  const [imageViewer, setImageViewer] = useState<{
+    uri: string;
+    description: string;
+    origin: { x: number; y: number; width: number; height: number };
+    revisionId: number;
+    renderId?: number;
+  }>();
   const pendingImageLinkPress = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [selectionState, setSelection] = useState<OwnedReaderTextSelection>();
   const [isHighlighting, setIsHighlighting] = useState(false);
@@ -313,7 +319,9 @@ export default function ReaderScreen() {
   const canvasBackground = isReady
     ? session.runtime.getBackgroundColor()
     : initialPaperColor;
-  const readerChromeVisible = controlsVisible || Boolean(session.errorMessage);
+  const activeImageViewer = imageViewer?.revisionId === session.snapshot.revisionId
+    && imageViewer.renderId === session.snapshot.renderId ? imageViewer : undefined;
+  const readerChromeVisible = (controlsVisible || Boolean(session.errorMessage)) && !activeImageViewer;
   const handleSafeAreaChange = useCallback<SafeAreaListenerProps['onChange']>(
     ({ insets: nextInsets }) => {
       setReservedInsets((current) => preserveLargestInsets(current, nextInsets));
@@ -330,19 +338,12 @@ export default function ReaderScreen() {
   }, [bookmarksError, t, toast]);
 
   useEffect(() => () => {
-    if (imageViewer) deleteReaderImageFile(imageViewer.uri);
-  }, [imageViewer]);
+    if (activeImageViewer) deleteReaderImageFile(activeImageViewer.uri);
+  }, [activeImageViewer]);
 
   useEffect(() => () => {
     if (pendingImageLinkPress.current) clearTimeout(pendingImageLinkPress.current);
   }, []);
-
-  useEffect(() => {
-    if (imageViewer && (imageViewer.revisionId !== session.snapshot.revisionId
-      || imageViewer.renderId !== session.snapshot.renderId)) {
-      setImageViewer(undefined);
-    }
-  }, [imageViewer, session.snapshot.renderId, session.snapshot.revisionId]);
 
   useEffect(() => {
     if (!session.errorMessage) {
@@ -552,16 +553,24 @@ export default function ReaderScreen() {
       return;
     }
     try {
+      const origin = surfaceTransform?.toViewportPoint(hit.bounds.x, hit.bounds.y) ?? { x: hit.bounds.x, y: hit.bounds.y };
       setImageViewer({
         uri: createReaderImageFile(hit.imageSource, bytes),
         description: hit.imageAlt || t('reader.imageViewer'),
+        origin: {
+          x: origin.x,
+          y: origin.y,
+          width: hit.bounds.width * (surfaceTransform?.scale ?? 1),
+          height: hit.bounds.height * (surfaceTransform?.scale ?? 1),
+        },
         revisionId: session.snapshot.revisionId,
         renderId: session.snapshot.renderId,
       });
     } catch {
       toast.show({ variant: 'danger', label: t('reader.imageUnavailable') });
     }
-  }, [automaticNavigationActive, displayPoint, isReady, isSettling, selection, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, t, toast]);
+  }, [automaticNavigationActive, displayPoint, isReady, isSettling, selection, session.runtime, session.snapshot.renderId, session.snapshot.revisionId, surfaceTransform, t, toast]);
+  /* eslint-disable react-hooks/refs */
   const imageDoubleTapGesture = useMemo(() => Gesture.Tap()
     .enabled(isReady && !isSettling && !automaticNavigationActive && !selection)
     .numberOfTaps(2)
@@ -570,6 +579,7 @@ export default function ReaderScreen() {
     .onEnd((event, success) => {
       if (success) handleReadingDoubleTap(event.x, event.y);
     }), [automaticNavigationActive, handleReadingDoubleTap, isReady, isSettling, selection]);
+  /* eslint-enable react-hooks/refs */
   const readingGesture = useMemo(
     () => Gesture.Simultaneous(
       imageDoubleTapGesture,
@@ -985,7 +995,7 @@ export default function ReaderScreen() {
         />
       )}
 
-      {(controlsVisible || isTocOpen || isProgressOpen || isTypographyOpen || isMarksOpen) && (
+      {!activeImageViewer && (controlsVisible || isTocOpen || isProgressOpen || isTypographyOpen || isMarksOpen) && (
         <IconTabBar
           activeKey={isTocOpen ? 'toc' : isProgressOpen ? 'progress' : isTypographyOpen ? 'typography' : isMarksOpen ? 'marks' : undefined}
           items={tabItems}
@@ -1041,16 +1051,21 @@ export default function ReaderScreen() {
         isOpen={isFootnoteOpen}
         onOpenChange={handleFootnoteOpenChange}
       />
-      <ImageViewer
-        uri={imageViewer?.uri}
-        description={imageViewer?.description ?? t('reader.imageViewer')}
-        closeLabel={t('reader.closeImageViewer')}
-        onClose={() => setImageViewer(undefined)}
-        onError={() => {
-          setImageViewer(undefined);
-          toast.show({ variant: 'danger', label: t('reader.imageUnavailable') });
-        }}
-      />
+      {activeImageViewer && viewport && (
+        <ImageViewer
+          key={activeImageViewer.uri}
+          uri={activeImageViewer.uri}
+          origin={activeImageViewer.origin}
+          viewport={viewport}
+          description={activeImageViewer.description}
+          closeLabel={t('reader.closeImageViewer')}
+          onClose={() => setImageViewer(undefined)}
+          onError={() => {
+            setImageViewer(undefined);
+            toast.show({ variant: 'danger', label: t('reader.imageUnavailable') });
+          }}
+        />
+      )}
     </View>
   );
 }
