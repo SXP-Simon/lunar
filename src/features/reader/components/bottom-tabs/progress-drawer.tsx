@@ -76,7 +76,7 @@ function ProgressDrawerContent({
       <BottomSheet.Portal disableFullWindowOverlay unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
         <BottomSheet.Content
-          backgroundClassName="rounded-t-3xl"
+          backgroundClassName="rounded-t-3xl bg-background dark:bg-overlay"
           bottomInset={bottomInset}
           contentContainerClassName="px-0 pb-0!"
           detached
@@ -107,7 +107,7 @@ function ProgressDrawerContent({
               </View>
             </View>
 
-            <View className="rounded-full bg-surface-secondary px-4 py-3">
+            <View className="rounded-full bg-surface px-4 py-3 dark:bg-surface-secondary">
               <Slider
                 accessibilityLabel={t('reader.choosePage')}
                 isDisabled={!hasAbsolutePosition || total <= 1}
@@ -123,7 +123,7 @@ function ProgressDrawerContent({
                 value={displayedPage}>
                 <Slider.Track className="h-2 rounded-full bg-surface-tertiary">
                   <Slider.Fill />
-                  <Slider.Thumb />
+                  <Slider.Thumb className="border border-border bg-surface dark:border-0 dark:bg-accent" />
                 </Slider.Track>
               </Slider>
             </View>
@@ -176,7 +176,7 @@ function ProgressAction({ accessibilityLabel, isDisabled, name, onPress }: Progr
   return (
     <Button
       accessibilityLabel={accessibilityLabel}
-      className="size-11 rounded-full"
+      className="size-11 rounded-full bg-surface dark:bg-transparent"
       isDisabled={isDisabled}
       isIconOnly
       onPress={onPress}

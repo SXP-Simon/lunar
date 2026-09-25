@@ -146,7 +146,7 @@ export function FontPickerContent({ role, onBack }: FontPickerContentProps) {
             <SearchField.Input
               {...keyboardHandlers}
               accessibilityLabel={t('reader.searchFonts')}
-              className="min-w-0 flex-1 rounded-2xl border border-field-border bg-surface-secondary focus:border-navigation-active"
+              className="min-w-0 flex-1 rounded-2xl border border-field-border bg-surface focus:border-navigation-active dark:bg-surface-secondary"
               placeholder={t('reader.searchFonts')}
             />
             <SearchField.ClearButton />
@@ -179,7 +179,7 @@ export function FontPickerContent({ role, onBack }: FontPickerContentProps) {
           }
           if (item.kind === 'note') {
             return (
-              <View className="rounded-2xl bg-surface-secondary px-4 py-4">
+              <View className="rounded-2xl bg-surface px-4 py-4 dark:bg-surface-secondary">
                 <Text className="text-sm leading-6 text-muted">{item.text}</Text>
               </View>
             );

@@ -6,7 +6,7 @@
 
 @theme static {
   --color-brand-50: hsl(0 0% 100%);
-  --color-brand-100: hsl(0 0% 96%);
+  --color-brand-100: #F4F4F4;
   --color-brand-200: hsl(0 0% 90%);
   --color-brand-300: hsl(0 0% 80%);
   --color-brand-400: hsl(0 0% 64%);
@@ -17,7 +17,7 @@
   --color-brand-900: hsl(0 0% 8%);
   --color-brand-950: hsl(0 0% 0%);
   --color-navigation-active: hsl(211 100% 50%);
-  --color-reader-controls: hsl(0 0% 94.902%);
+  --color-reader-controls: var(--color-brand-50);
   --color-reader-selection: hsl(176 56% 55%);
   --color-reader-bookmark: hsl(6 78% 59%);
   --color-reader-selection-fill: hsl(176 56% 55% / 0.38);
@@ -38,7 +38,7 @@
 
 @layer theme {
   @variant light {
-    --color-reader-controls: hsl(0 0% 94.902%);
+    --color-reader-controls: var(--color-brand-50);
     --background: var(--color-brand-100);
     --foreground: var(--color-brand-950);
     --surface: var(--color-brand-50);

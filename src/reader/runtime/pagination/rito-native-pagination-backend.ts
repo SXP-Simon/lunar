@@ -1106,7 +1106,7 @@ function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../../co
     ? { backgroundColor: '#000000', foregroundColor: '#FFFFFF', spreadBodyBackgroundColor: '#000000' }
     : layout.theme === 'paper'
       ? { backgroundColor: '#FAF9F6', foregroundColor: '#202020', spreadBodyBackgroundColor: '#FAF9F6' }
-      : { backgroundColor: '#FFFFFF', foregroundColor: '#000000', spreadBodyBackgroundColor: '#FFFFFF' };
+      : { backgroundColor: '#F4F4F4', foregroundColor: '#000000', spreadBodyBackgroundColor: '#F4F4F4' };
   return {
     viewportWidth: layout.viewport.width,
     viewportHeight: layout.viewport.height,

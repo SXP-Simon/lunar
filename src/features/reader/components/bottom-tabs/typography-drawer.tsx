@@ -7,7 +7,7 @@ import { Slider } from 'heroui-native/slider';
 import { useEffect, useState } from 'react';
 import { BackHandler, Keyboard, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { withUniwind } from 'uniwind';
+import { useUniwind, withUniwind } from 'uniwind';
 
 import {
   type ReaderFontRef,
@@ -48,6 +48,7 @@ interface CompactTypographySliderProps extends TypographySliderProps {
 
 export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps) {
   const { t } = useTranslation();
+  const { theme } = useUniwind();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
@@ -128,7 +129,7 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
         unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
         <BottomSheet.Content
-          backgroundClassName="rounded-t-3xl"
+          backgroundClassName="rounded-t-3xl bg-background dark:bg-overlay"
           bottomInset={bottomInset}
           contentContainerClassName="h-full flex-1 p-0"
           detached
@@ -160,10 +161,14 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
                         key={option.style}
                         accessibilityLabel={t('reader.transition', { style: option.label })}
                         accessibilityState={{ selected }}
-                        className="min-w-0 flex-1 rounded-xl px-2"
+                        className={selected && theme === 'dark'
+                          ? 'min-w-0 flex-1 rounded-xl px-2'
+                          : selected
+                            ? 'min-w-0 flex-1 rounded-xl border border-foreground bg-surface px-2'
+                            : 'min-w-0 flex-1 rounded-xl bg-surface px-2 dark:bg-transparent'}
                         onPress={() => setAnimationStyle(option.style)}
                         size="sm"
-                        variant={selected ? 'primary' : 'ghost'}>
+                        variant={selected && theme === 'dark' ? 'primary' : 'ghost'}>
                         <Button.Label numberOfLines={1}>{option.label}</Button.Label>
                       </Button>
                     );
@@ -205,7 +210,7 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
                   value={draft.lineHeight}
                 />
               </View>
-              <View className="overflow-hidden rounded-2xl bg-surface-secondary">
+              <View className="overflow-hidden rounded-2xl bg-surface dark:bg-surface-secondary">
                 <FontRow
                   label={t('reader.bodyFont')}
                   onPress={() => setPickerRole('body')}
@@ -283,7 +288,7 @@ function TypographySlider({
   onChangeEnd,
 }: TypographySliderProps) {
   return (
-    <View className="h-14 flex-row items-center gap-3 rounded-2xl bg-surface-secondary px-4">
+    <View className="h-14 flex-row items-center gap-3 rounded-2xl bg-surface px-4 dark:bg-surface-secondary">
       <Text className="text-sm text-muted">A</Text>
       <Slider
         accessibilityLabel={accessibilityLabel}
@@ -297,7 +302,7 @@ function TypographySlider({
         <Slider.Track className="h-2 rounded-full bg-surface-tertiary">
           <Slider.Fill className="rounded-full bg-accent" />
           <Slider.Thumb className="size-11 rounded-full bg-transparent! p-0!">
-            <View className="size-11 items-center justify-center rounded-full bg-surface-tertiary">
+            <View className="size-11 items-center justify-center rounded-full border border-border bg-surface dark:border-0 dark:bg-surface-tertiary">
               <Text className="text-base tabular-nums text-foreground">{formatValue(value)}</Text>
             </View>
           </Slider.Thumb>
@@ -321,7 +326,7 @@ function CompactTypographySlider({
   onChangeEnd,
 }: CompactTypographySliderProps) {
   return (
-    <View className="h-14 min-w-0 flex-1 flex-row items-center gap-2 rounded-full bg-surface-secondary px-3">
+    <View className="h-14 min-w-0 flex-1 flex-row items-center gap-2 rounded-full bg-surface px-3 dark:bg-surface-secondary">
       <Text className="text-sm text-muted">{startLabel}</Text>
       <Slider
         accessibilityLabel={accessibilityLabel}
@@ -335,7 +340,7 @@ function CompactTypographySlider({
         <Slider.Track className="h-10 bg-transparent">
           <Slider.Fill className="bg-transparent" />
           <Slider.Thumb className="h-12 w-14 rounded-full bg-transparent! p-0!">
-            <View className="h-12 w-14 items-center justify-center rounded-full bg-surface-tertiary">
+            <View className="h-12 w-14 items-center justify-center rounded-full border border-border bg-surface dark:border-0 dark:bg-surface-tertiary">
               <Text className="text-sm font-medium text-foreground">{label}</Text>
             </View>
           </Slider.Thumb>

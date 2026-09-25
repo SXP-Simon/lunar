@@ -39,7 +39,7 @@ export const IconTabBar = memo(function IconTabBar({ items, activeKey, onSelect,
   return (
     <Portal name="reader-icon-tab-bar">
       <View
-        className="absolute bottom-0 left-0 right-0 z-50 bg-reader-controls px-3"
+        className="absolute bottom-0 left-0 right-0 z-50 bg-surface px-3"
         pointerEvents="box-none"
         style={{
           paddingTop: IconTabBarTopPadding,

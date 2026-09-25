@@ -44,7 +44,7 @@ function TocDrawerContent({ isOpen, onOpenChange, runtime, toc, snapshot }: TocD
       <BottomSheet.Portal disableFullWindowOverlay unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
         <BottomSheet.Content
-          backgroundClassName="rounded-t-3xl"
+          backgroundClassName="rounded-t-3xl bg-background dark:bg-overlay"
           bottomInset={bottomInset}
           contentContainerClassName="h-full"
           contentContainerProps={{ style: { flex: 1, padding: 0 } }}
@@ -77,7 +77,7 @@ function TocDrawerContent({ isOpen, onOpenChange, runtime, toc, snapshot }: TocD
                 <Button
                   accessibilityLabel={t('reader.goToToc', { title: entry.label })}
                   accessibilityState={{ selected: isCurrent }}
-                  className="h-auto min-h-12 justify-start rounded-xl px-3"
+                  className="h-auto min-h-12 justify-start rounded-xl bg-surface px-3 dark:bg-transparent"
                   isDisabled={busy}
                   onPress={() => requestNavigation(() => runtime.goToToc(entry.href))}
                   style={{ marginLeft: Math.min(entry.depth, 4) * 14 }}

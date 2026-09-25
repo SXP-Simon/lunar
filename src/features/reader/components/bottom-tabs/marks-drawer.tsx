@@ -8,6 +8,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useUniwind } from 'uniwind';
 import { useTranslation } from '@/i18n';
 import type { ReaderLocator, ReaderRuntime, ReaderTocEntry } from '@/reader';
 import type { ReaderBookmark } from '../../domain/reader-bookmark';
@@ -41,6 +42,7 @@ interface MarkEntry {
 
 export function MarksDrawer(props: MarksDrawerProps) {
   const { t } = useTranslation();
+  const { theme } = useUniwind();
   const { toast } = useToast();
   const insets = useSafeAreaInsets();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
@@ -93,14 +95,19 @@ export function MarksDrawer(props: MarksDrawerProps) {
     <BottomSheet isOpen={props.isOpen} onOpenChange={props.onOpenChange}>
       <BottomSheet.Portal disableFullWindowOverlay unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
-        <BottomSheet.Content backgroundClassName="rounded-t-3xl" bottomInset={bottomInset}
+        <BottomSheet.Content backgroundClassName="rounded-t-3xl bg-background dark:bg-overlay" bottomInset={bottomInset}
           contentContainerClassName="h-full flex-1 p-0!" detached enableDynamicSizing={false}
           enableOverDrag={false} snapPoints={['62%', '88%']}>
           <View className="gap-3 border-b border-border px-5 pb-3">
             <BottomSheet.Title className="text-xl text-foreground">{t('reader.marks')}</BottomSheet.Title>
             <View className="flex-row gap-2">
               {(['bookmarks', 'highlights'] as const).map((key) => (
-                <Button key={key} className="flex-1" size="sm" variant={tab === key ? 'secondary' : 'ghost'}
+                <Button key={key} className={tab === key && theme === 'dark'
+                  ? 'flex-1'
+                  : tab === key
+                    ? 'flex-1 border border-foreground bg-surface'
+                    : 'flex-1 bg-surface dark:bg-transparent'} size="sm"
+                  variant={tab === key && theme === 'dark' ? 'secondary' : 'ghost'}
                   accessibilityRole="tab" accessibilityState={{ selected: tab === key }}
                   onPress={() => setTab(key)}>
                   <Button.Label>{t(key === 'bookmarks' ? 'reader.bookmarksCount' : 'reader.highlightsCount', {

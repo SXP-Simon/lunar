@@ -37,10 +37,10 @@ export function SelectItem({
   const activeColor = useCSSVariable('--color-navigation-active') as string;
 
   return (
-    <View className={twMerge('overflow-hidden bg-surface-secondary', GROUP_CORNERS[groupPosition])}>
+    <View className={twMerge('overflow-hidden bg-surface dark:bg-surface-secondary', GROUP_CORNERS[groupPosition])}>
       <Select.Item
         {...props}
-        className={twMerge('min-h-14 px-4 py-4 active:bg-surface-tertiary', className)}>
+        className={twMerge('min-h-14 px-4 py-4 active:bg-surface-secondary dark:active:bg-surface-tertiary', className)}>
         {({ isSelected }) => (
           <>
             <Select.ItemLabel
@@ -53,7 +53,7 @@ export function SelectItem({
           </>
         )}
       </Select.Item>
-      {showSeparator ? <Separator className="mx-4 bg-surface-tertiary/60" /> : null}
+      {showSeparator ? <Separator className="mx-4 bg-border dark:bg-surface-tertiary/60" /> : null}
     </View>
   );
 }
@@ -94,7 +94,7 @@ export function SelectSheet<Value extends string>({
       <Select.Portal unstable_accessibilityContainerViewIsModal>
         <Select.Overlay />
         <Select.Content
-          backgroundClassName="bg-surface"
+          backgroundClassName="bg-background dark:bg-surface"
           contentContainerClassName="px-6 pb-8"
           presentation="bottom-sheet"
           snapPoints={['35%']}>

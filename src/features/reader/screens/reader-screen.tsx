@@ -98,7 +98,7 @@ export default function ReaderScreen() {
   const [reservedInsets, setReservedInsets] = useState(insets);
   const { theme } = useUniwind();
   const selectionHandleColor = useCSSVariable('--color-reader-selection') as string;
-  const selectionOutlineColor = useCSSVariable('--color-background') as string;
+  const pageBackgroundColor = useCSSVariable('--color-background') as string;
   const selectionFillColor = useCSSVariable('--color-reader-selection-fill') as string;
   const highlightFillColor = useCSSVariable('--color-reader-highlight-fill') as string;
   const highlightPink = useCSSVariable('--color-reader-highlight-pink') as string;
@@ -320,7 +320,7 @@ export default function ReaderScreen() {
   const progressPercentage = totalSpreads === undefined
     ? undefined
     : Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
-  const initialPaperColor = readerTheme === 'dark' ? '#000000' : '#FFFFFF';
+  const initialPaperColor = pageBackgroundColor;
   const canvasBackground = isReady
     ? session.runtime.getBackgroundColor()
     : initialPaperColor;
@@ -864,7 +864,7 @@ export default function ReaderScreen() {
             selectionBinding={selectionDrag.binding}
             selectionShowFill={!activeHighlight}
             selectionHandleColor={selectionHandleColor}
-            selectionOutlineColor={selectionOutlineColor}
+            selectionOutlineColor={pageBackgroundColor}
             selectionColor={selectionFillColor}
             resolvePageBookmark={resolvePageBookmark}
             bookmarkColor={bookmarkColor}
