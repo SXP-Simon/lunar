@@ -64,11 +64,13 @@
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
     "nitrogen": "0.37.0",
+    "sharp": "^0.35.4",
     "typescript": "~6.0.3",
     "vite": "7.2.4",
     "vitest": "3.2.4"
   },
   "scripts": {
+    "assets:brand": "node scripts/generate-brand-assets.mjs",
     "eas-build-pre-install": "bash scripts/eas-install-rito-toolchain.sh",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",

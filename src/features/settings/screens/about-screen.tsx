@@ -6,12 +6,14 @@ import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
 import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { withUniwind } from 'uniwind';
+import { useUniwind, withUniwind } from 'uniwind';
 
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
 
 const APP_ICON = require('../../../../assets/images/icon.png');
+const WORDMARK_BLACK = require('../../../../assets/images/wordmark-black.png');
+const WORDMARK_WHITE = require('../../../../assets/images/wordmark-white.png');
 const Image = withUniwind(ExpoImage);
 
 export function AboutScreen() {
@@ -19,6 +21,7 @@ export function AboutScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const foreground = useThemeColor('foreground');
+  const { theme } = useUniwind();
   const version = Constants.expoConfig?.version;
   const year = new Date().getFullYear();
   useMarkInitialContentReady(true);
@@ -59,7 +62,12 @@ export function AboutScreen() {
               source={APP_ICON}
             />
           </View>
-          <Text className="mt-7 text-3xl font-semibold text-foreground">Lunar</Text>
+          <Image
+            accessibilityLabel="Lunar"
+            className="mt-7 h-9 w-32"
+            contentFit="contain"
+            source={theme === 'dark' ? WORDMARK_WHITE : WORDMARK_BLACK}
+          />
           {version ? <Text className="mt-3 text-base text-muted">{version}</Text> : null}
         </View>
         <Text className="pt-12 text-center text-sm text-muted">
