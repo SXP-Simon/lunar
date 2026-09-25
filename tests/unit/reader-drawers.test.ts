@@ -14,7 +14,10 @@ vi.mock('react-native', () => ({
   View: ({ children }: { children: ReactNode }) => React.createElement('div', null, children),
 }));
 vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }));
-vi.mock('uniwind', () => ({ useCSSVariable: () => '#000000' }));
+vi.mock('uniwind', () => ({
+  useCSSVariable: () => '#000000',
+  useUniwind: () => ({ theme: 'light' }),
+}));
 vi.mock('expo-symbols', () => ({
   SymbolView: ({ name }: { name: { web: string } }) => React.createElement('i', { 'data-symbol': name.web }),
 }));

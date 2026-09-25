@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ImageViewer } from '../../src/features/reader/components/image-viewer';
+import { ImageViewer } from '../../src/components/ui/image-viewer';
 
 type GestureEvent = Record<string, number>;
 type GestureCallback = (event: GestureEvent, success: boolean) => void;
