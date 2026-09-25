@@ -1,6 +1,5 @@
 import { Image as ExpoImage } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { useThemeColor } from 'heroui-native/hooks';
 import { PressableFeedback } from 'heroui-native/pressable-feedback';
 import { memo, useCallback, useMemo, useRef } from 'react';
 import { Text, View } from 'react-native';
@@ -12,7 +11,7 @@ import {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import { withUniwind } from 'uniwind';
+import { useCSSVariable, withUniwind } from 'uniwind';
 
 import { Fonts, useTheme } from '@/hooks/use-theme';
 import { useTranslation } from '@/i18n';
@@ -90,7 +89,7 @@ export const BookCard = memo(function BookCard({
 }: BookCardProps) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const selectedIconColor = useThemeColor('accent-foreground');
+  const selectedIconColor = useCSSVariable('--color-brand-50') as string;
   const selectionActivatedRef = useRef(false);
   const feedbackScale = useSharedValue(1);
   const feedbackStyle = useAnimatedStyle(() => ({
@@ -163,37 +162,25 @@ export const BookCard = memo(function BookCard({
           }}>
           <BookCoverArtwork imageUri={book.cover.imageUri} mark={book.cover.mark} />
           <View
-            pointerEvents="none"
-            className={isSelected
-              ? 'absolute inset-0 rounded bg-foreground opacity-10'
-              : 'absolute inset-0 rounded bg-foreground opacity-0'}
-          />
-          <View
-            className="absolute right-1.5 bottom-1.5 rounded-lg bg-foreground px-[5px] py-0.5">
+            className="absolute right-1.5 bottom-1.5 rounded-lg bg-foreground/45 px-[5px] py-0.5">
             <Text className="text-[9px] font-semibold leading-3 text-background">
               {Math.round((book.readingProgress ?? 0) * 100)}%
             </Text>
           </View>
-          <View
-            pointerEvents="none"
-            className={isSelected
-              ? 'absolute inset-0 rounded border-[3px] border-accent opacity-100'
-              : 'absolute inset-0 rounded border-[3px] border-accent opacity-0'}
-          />
-          <View
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-            pointerEvents="none"
-            className={isSelected
-              ? 'absolute top-1.5 left-1.5 z-20 size-[27px] items-center justify-center rounded-full bg-accent opacity-100'
-              : 'absolute top-1.5 left-1.5 z-20 size-[27px] items-center justify-center rounded-full bg-accent opacity-0'}>
-            <SymbolView
-              name={{ ios: 'checkmark', android: 'check', web: 'check' }}
-              size={17}
-              tintColor={selectedIconColor}
-              weight="bold"
-            />
-          </View>
+          {isSelected && (
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              pointerEvents="none"
+              className="absolute top-1.5 left-1.5 z-20 size-[27px] items-center justify-center rounded-full bg-navigation-active">
+              <SymbolView
+                name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                size={17}
+                tintColor={selectedIconColor}
+                weight="bold"
+              />
+            </View>
+          )}
         </View>
 
         <Text
