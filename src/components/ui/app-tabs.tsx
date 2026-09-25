@@ -10,7 +10,7 @@ import type { Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useResolveClassNames } from 'uniwind';
+import { useCSSVariable, useResolveClassNames } from 'uniwind';
 
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from '@/i18n';
@@ -46,9 +46,10 @@ export default function AppTabs() {
 
 function TabButton({ isFocused, label, type, ...props }: TabButtonProps) {
   const theme = useTheme();
+  const activeColor = useCSSVariable('--color-navigation-active') as string;
   const tabButtonStyle = useResolveClassNames('h-[58px] flex-1 items-center justify-center gap-0.5');
   const pressedTabButtonStyle = useResolveClassNames('opacity-[0.58]');
-  const color = isFocused ? theme.navigationActive : theme.textSecondary;
+  const color = isFocused ? activeColor : theme.textSecondary;
   const iconName =
     type === 'library'
       ? {
@@ -69,7 +70,7 @@ function TabButton({ isFocused, label, type, ...props }: TabButtonProps) {
       hitSlop={6}
       style={({ pressed }) => [tabButtonStyle, pressed && pressedTabButtonStyle]}>
       <SymbolView name={iconName} size={24} tintColor={color} />
-      <Text className={isFocused ? 'text-[10px] font-medium leading-[13px] text-accent' : 'text-[10px] font-medium leading-[13px] text-muted'}>
+      <Text className={isFocused ? 'text-[10px] font-medium leading-[13px] text-navigation-active' : 'text-[10px] font-medium leading-[13px] text-muted'}>
         {label}
       </Text>
     </Pressable>

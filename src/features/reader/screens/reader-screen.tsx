@@ -27,8 +27,8 @@ import {
 } from 'react-native-safe-area-context';
 
 import { IconTabBar } from '../components/icon-tab-bar';
-import { ImageViewer } from '../components/image-viewer';
 import { createReaderImageFile, deleteReaderImageFile } from '../infrastructure/reader-image-file';
+import { ImageViewer } from '@/components/ui/image-viewer';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
 import {
