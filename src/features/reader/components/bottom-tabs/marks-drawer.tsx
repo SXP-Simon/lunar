@@ -105,8 +105,8 @@ export function MarksDrawer(props: MarksDrawerProps) {
                 <Button key={key} className={tab === key && theme === 'dark'
                   ? 'flex-1'
                   : tab === key
-                    ? 'flex-1 border border-foreground bg-surface'
-                    : 'flex-1 bg-surface dark:bg-transparent'} size="sm"
+                    ? 'flex-1 bg-surface'
+                    : 'flex-1 dark:bg-transparent'} size="sm"
                   variant={tab === key && theme === 'dark' ? 'secondary' : 'ghost'}
                   accessibilityRole="tab" accessibilityState={{ selected: tab === key }}
                   onPress={() => setTab(key)}>
@@ -161,7 +161,7 @@ export function MarksDrawer(props: MarksDrawerProps) {
                         />
                       </Button>
                     )}>
-                    <View className="bg-surface">{content}</View>
+                    <View>{content}</View>
                   </ReanimatedSwipeable>
                 </View>
               );

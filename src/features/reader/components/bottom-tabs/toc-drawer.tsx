@@ -52,7 +52,7 @@ function TocDrawerContent({ isOpen, onOpenChange, runtime, toc, snapshot }: TocD
           enableDynamicSizing={false}
           enableOverDrag={false}
           snapPoints={['62%', '88%']}>
-          <View className="flex-row items-center justify-between border-b border-border px-5 pb-3">
+          <View className="flex-row items-center justify-between px-5 pb-3">
             <View className="min-w-0 flex-1 gap-1 pr-3">
               <BottomSheet.Title className="text-xl text-foreground">
                 {t('reader.toc')}
@@ -77,7 +77,7 @@ function TocDrawerContent({ isOpen, onOpenChange, runtime, toc, snapshot }: TocD
                 <Button
                   accessibilityLabel={t('reader.goToToc', { title: entry.label })}
                   accessibilityState={{ selected: isCurrent }}
-                  className="h-auto min-h-12 justify-start rounded-xl bg-surface px-3 dark:bg-transparent"
+                  className="h-auto min-h-12 justify-start rounded-xl px-3 dark:bg-transparent"
                   isDisabled={busy}
                   onPress={() => requestNavigation(() => runtime.goToToc(entry.href))}
                   style={{ marginLeft: Math.min(entry.depth, 4) * 14 }}

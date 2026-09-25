@@ -7,7 +7,7 @@ import { Slider } from 'heroui-native/slider';
 import { useEffect, useState } from 'react';
 import { BackHandler, Keyboard, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useUniwind, withUniwind } from 'uniwind';
+import { withUniwind } from 'uniwind';
 
 import {
   type ReaderFontRef,
@@ -48,7 +48,6 @@ interface CompactTypographySliderProps extends TypographySliderProps {
 
 export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps) {
   const { t } = useTranslation();
-  const { theme } = useUniwind();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
@@ -161,15 +160,13 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
                         key={option.style}
                         accessibilityLabel={t('reader.transition', { style: option.label })}
                         accessibilityState={{ selected }}
-                        className={selected && theme === 'dark'
-                          ? 'min-w-0 flex-1 rounded-xl px-2'
-                          : selected
-                            ? 'min-w-0 flex-1 rounded-xl border border-foreground bg-surface px-2'
-                            : 'min-w-0 flex-1 rounded-xl bg-surface px-2 dark:bg-transparent'}
+                        className="min-w-0 flex-1 rounded-xl bg-surface px-2 dark:bg-transparent"
                         onPress={() => setAnimationStyle(option.style)}
                         size="sm"
-                        variant={selected && theme === 'dark' ? 'primary' : 'ghost'}>
-                        <Button.Label numberOfLines={1}>{option.label}</Button.Label>
+                        variant="ghost">
+                        <Button.Label className={selected ? 'text-navigation-active' : undefined} numberOfLines={1}>
+                          {option.label}
+                        </Button.Label>
                       </Button>
                     );
                   })}

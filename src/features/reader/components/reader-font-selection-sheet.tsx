@@ -37,7 +37,7 @@ export function ReaderFontSelectionSheet({ role, isOpen, onOpenChange }: ReaderF
       <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay />
         <BottomSheet.Content
-          backgroundClassName="bg-surface"
+          backgroundClassName="bg-background dark:bg-surface"
           contentContainerClassName="h-full flex-1 p-0"
           topInset={insets.top}
           bottomInset={insets.bottom}

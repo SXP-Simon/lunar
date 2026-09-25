@@ -107,7 +107,7 @@ function ProgressDrawerContent({
               </View>
             </View>
 
-            <View className="rounded-full bg-surface px-4 py-3 dark:bg-surface-secondary">
+            <View className="rounded-full px-4 py-3">
               <Slider
                 accessibilityLabel={t('reader.choosePage')}
                 isDisabled={!hasAbsolutePosition || total <= 1}
@@ -176,7 +176,7 @@ function ProgressAction({ accessibilityLabel, isDisabled, name, onPress }: Progr
   return (
     <Button
       accessibilityLabel={accessibilityLabel}
-      className="size-11 rounded-full bg-surface dark:bg-transparent"
+      className="size-11 rounded-full dark:bg-transparent"
       isDisabled={isDisabled}
       isIconOnly
       onPress={onPress}
