@@ -1,10 +1,10 @@
 <img src="public/hero.webp" alt="Lunar" />
 
-Lunar is a lightweight, native-rendered cross-platform EPUB reader. 
+Lunar is a lightweight, native-rendered cross-platform EPUB reader.
 
 Powered by [Rito](https://github.com/Ringyuki/Rito), it uses a Skia rendering pipeline to deliver consistent visuals across platforms, polished page-turn animations, and high-performance native rendering.
 
-## 📦 Installation
+## Installation
 
 ### Download from Releases
 

@@ -64,7 +64,9 @@
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
     "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "nitrogen": "0.37.0",
+    "prettier": "^3.9.9",
     "sharp": "^0.35.4",
     "typescript": "~6.0.3",
     "vite": "7.2.4",
@@ -94,6 +96,18 @@
     "autolinking": {
       "nativeModulesDir": "./modules/expo"
     }
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx}": [
+      "eslint --fix --no-warn-ignored",
+      "prettier --write"
+    ],
+    "src/**/*.{json,css,md}": "prettier --write"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "printWidth": 120,
+    "bracketSameLine": true
   },
   "private": true
 }
