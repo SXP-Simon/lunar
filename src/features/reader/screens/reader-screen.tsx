@@ -69,6 +69,7 @@ const ReaderSurfaceBottomSpacing = 4;
 const EmptyReaderHitEntries = [] as const;
 
 interface OwnedReaderTextSelection extends ReaderTextSelection {
+  readonly kind: 'text' | 'highlight';
   readonly revisionId: number;
   readonly spreadIndex: number;
   readonly renderId?: number;
@@ -245,6 +246,7 @@ export default function ReaderScreen() {
     selectionState.renderId === session.snapshot.renderId
       ? selectionState
       : undefined;
+  const textSelection = selection?.kind === 'text' ? selection : undefined;
   const canTurnWithVolumeKeys =
     isReady &&
     !isSettling &&
@@ -502,7 +504,7 @@ export default function ReaderScreen() {
     const spreadIndex = session.snapshot.spreadIndex;
     const renderId = session.snapshot.renderId;
     selectionRef.current = requestedSelection;
-    setSelection({ ...requestedSelection, revisionId, spreadIndex, renderId });
+    setSelection({ ...requestedSelection, kind: 'text', revisionId, spreadIndex, renderId });
     if (requestedSelection.geometryRequests.length === 0) return;
     const groups = await Promise.all(
       requestedSelection.geometryRequests.map((request) =>
@@ -520,7 +522,7 @@ export default function ReaderScreen() {
     if (bounds.length === 0) return;
     const refinedSelection = { ...requestedSelection, bounds };
     selectionRef.current = refinedSelection;
-    setSelection({ ...refinedSelection, revisionId, spreadIndex, renderId });
+    setSelection({ ...refinedSelection, kind: 'text', revisionId, spreadIndex, renderId });
   }, [
     expandHighlightSelection,
     session.runtime,
@@ -555,7 +557,7 @@ export default function ReaderScreen() {
   const selectionDrag = useReaderSelectionDrag({
     entries: currentHitEntries,
     transform: surfaceTransform,
-    selection,
+    selection: textSelection,
     pageKey: selectionPageKey,
     onCommit: commitSelectionDrag,
   });
@@ -582,6 +584,7 @@ export default function ReaderScreen() {
       selectionRef.current = nextSelection;
       setSelection({
         ...nextSelection,
+        kind: 'text',
         revisionId: session.snapshot.revisionId,
         spreadIndex: session.snapshot.spreadIndex,
         renderId: session.snapshot.renderId,
@@ -788,6 +791,7 @@ export default function ReaderScreen() {
         selectionRef.current = nextSelection;
         setSelection({
           ...nextSelection,
+          kind: 'highlight',
           revisionId: session.snapshot.revisionId,
           spreadIndex: session.snapshot.spreadIndex,
           renderId: session.snapshot.renderId,
@@ -918,10 +922,10 @@ export default function ReaderScreen() {
     if (!activeHighlight || isHighlightingRef.current) return;
     isHighlightingRef.current = true;
     setIsHighlighting(true);
-    const selected = selectionRef.current;
+    // Close the transient controls in the same update as the optimistic removal.
+    clearSelection();
     try {
       await removeHighlights([activeHighlight.id]);
-      if (selectionRef.current === selected) clearSelection();
       toast.show({ variant: 'success', label: t('reader.highlightRemoved') });
     } catch (error) {
       toast.show({
@@ -1060,7 +1064,7 @@ export default function ReaderScreen() {
             overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}
             overlayInsets={contentInsets}
             resolvePageOverlays={resolvePageHighlights}
-            selectionBinding={selectionDrag.binding}
+            selectionBinding={textSelection ? selectionDrag.binding : undefined}
             selectionShowFill={!activeHighlight}
             selectionHandleColor={selectionHandleColor}
             selectionOutlineColor={pageBackgroundColor}
@@ -1170,7 +1174,7 @@ export default function ReaderScreen() {
           }}
           onColorChange={(color) => void highlightSelection(color)}
           isHighlightDisabled={isHighlighting || !highlightsLoaded}
-          drag={selectionDrag}
+          drag={textSelection ? selectionDrag : undefined}
           onCopy={() => void copySelection()}
           onHighlight={() => void (activeHighlight ? deleteHighlight() : highlightSelection())}
           rects={selectionViewportRects}

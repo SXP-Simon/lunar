@@ -57,15 +57,10 @@ export function computeReaderSelectionControlsLayout(
   const minY = Math.min(...rects.map((rect) => rect.y));
   const maxY = Math.max(...rects.map((rect) => rect.y + rect.height));
   const minimumTop = safeAreaInsets.top + ViewportPadding;
-  const maximumTop = viewportHeight
-    - safeAreaInsets.bottom
-    - ViewportPadding
-    - ReaderSelectionToolbarHeight;
+  const maximumTop = viewportHeight - safeAreaInsets.bottom - ViewportPadding - ReaderSelectionToolbarHeight;
   const aboveTop = minY - ToolbarGap - ReaderSelectionToolbarHeight;
   const belowTop = maxY + ToolbarGap;
-  const top = aboveTop >= minimumTop
-    ? aboveTop
-    : Math.min(maximumTop, Math.max(minimumTop, belowTop));
+  const top = aboveTop >= minimumTop ? aboveTop : Math.min(maximumTop, Math.max(minimumTop, belowTop));
   const centerX = (minX + maxX) / 2;
   const left = Math.min(
     viewportWidth - safeAreaInsets.right - ViewportPadding - ReaderSelectionToolbarWidth,
@@ -95,7 +90,7 @@ interface ReaderSelectionControlsProps {
   readonly safeAreaInsets: EdgeInsets;
   readonly onCopy: () => void;
   readonly onHighlight: () => void;
-  readonly drag: ReaderSelectionDragController;
+  readonly drag?: ReaderSelectionDragController;
 }
 
 export function ReaderSelectionControls({
@@ -118,14 +113,9 @@ export function ReaderSelectionControls({
   drag,
 }: ReaderSelectionControlsProps) {
   const foreground = useThemeColor('foreground');
-  const { dragging } = drag.binding;
-  const toolbarStyle = useAnimatedStyle(() => ({ opacity: dragging.value ? 0 : 1 }));
-  const layout = computeReaderSelectionControlsLayout(
-    rects,
-    viewportWidth,
-    viewportHeight,
-    safeAreaInsets,
-  );
+  const dragging = drag?.binding.dragging;
+  const toolbarStyle = useAnimatedStyle(() => ({ opacity: dragging?.value ? 0 : 1 }));
+  const layout = computeReaderSelectionControlsLayout(rects, viewportWidth, viewportHeight, safeAreaInsets);
   if (!layout) return null;
 
   return (
@@ -134,11 +124,14 @@ export function ReaderSelectionControls({
         accessibilityLabel={selectionLabel}
         accessibilityRole="toolbar"
         className="absolute z-30 h-[108px] justify-center rounded-2xl border border-border bg-surface px-2 shadow-lg"
-        style={[{
-          left: layout.toolbar.left,
-          top: layout.toolbar.top,
-          width: ReaderSelectionToolbarWidth,
-        }, toolbarStyle]}>
+        style={[
+          {
+            left: layout.toolbar.left,
+            top: layout.toolbar.top,
+            width: ReaderSelectionToolbarWidth,
+          },
+          toolbarStyle,
+        ]}>
         <View className="h-12 flex-row items-center justify-center">
           {ReaderHighlightColors.map((color) => (
             <Button
@@ -153,7 +146,11 @@ export function ReaderSelectionControls({
               variant="ghost">
               <View className={`h-7 w-7 items-center justify-center rounded-full ${HighlightColorClasses[color]}`}>
                 {selectedColor === color && (
-                  <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={17} tintColor={foreground} />
+                  <SymbolView
+                    name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                    size={17}
+                    tintColor={foreground}
+                  />
                 )}
               </View>
             </Button>
@@ -183,9 +180,11 @@ export function ReaderSelectionControls({
             size="sm"
             variant="ghost">
             <SymbolView
-              name={isExistingHighlight
-                ? { ios: 'trash', android: 'delete', web: 'delete' }
-                : { ios: 'highlighter', android: 'ink_highlighter', web: 'ink_highlighter' }}
+              name={
+                isExistingHighlight
+                  ? { ios: 'trash', android: 'delete', web: 'delete' }
+                  : { ios: 'highlighter', android: 'ink_highlighter', web: 'ink_highlighter' }
+              }
               size={22}
               tintColor={foreground}
             />
@@ -193,16 +192,12 @@ export function ReaderSelectionControls({
           </Button>
         </View>
       </Animated.View>
-      <SelectionHandle
-        boundary="start"
-        label={startHandleLabel}
-        drag={drag}
-      />
-      <SelectionHandle
-        boundary="end"
-        label={endHandleLabel}
-        drag={drag}
-      />
+      {drag && (
+        <Fragment>
+          <SelectionHandle boundary="start" label={startHandleLabel} drag={drag} />
+          <SelectionHandle boundary="end" label={endHandleLabel} drag={drag} />
+        </Fragment>
+      )}
     </Fragment>
   );
 }
@@ -216,38 +211,50 @@ interface SelectionHandleProps {
 function SelectionHandle({ boundary, label, drag }: SelectionHandleProps) {
   const { begin, moveHandle, finish, binding } = drag;
   const position = boundary === 'start' ? binding.startHandle : binding.endHandle;
-  const style = useAnimatedStyle(() => ({ transform: [
-    { translateX: position.value.x - HandleTouchSize / 2 },
-    { translateY: position.value.y - HandleVisualOffsetY },
-  ] }));
-  const gesture = useMemo(() => Gesture.Pan()
-    .minDistance(0)
-    .maxPointers(1)
-    .shouldCancelWhenOutside(false)
-    .onStart(() => {
-      'worklet';
-      begin(boundary);
-    })
-    .onUpdate(event => {
-      'worklet';
-      moveHandle(boundary, event.translationX, event.translationY);
-    })
-    .onEnd((event, success) => {
-      'worklet';
-      moveHandle(boundary, event.translationX, event.translationY);
-      finish(!success);
-    })
-    .onFinalize((_event, success) => {
-      'worklet';
-      if (!success) finish(true);
-    }), [begin, boundary, finish, moveHandle]);
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: position.value.x - HandleTouchSize / 2 },
+      { translateY: position.value.y - HandleVisualOffsetY },
+    ],
+  }));
+  const gesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .minDistance(0)
+        .maxPointers(1)
+        .shouldCancelWhenOutside(false)
+        .onStart(() => {
+          'worklet';
+          begin(boundary);
+        })
+        .onUpdate((event) => {
+          'worklet';
+          moveHandle(boundary, event.translationX, event.translationY);
+        })
+        .onEnd((event, success) => {
+          'worklet';
+          moveHandle(boundary, event.translationX, event.translationY);
+          finish(!success);
+        })
+        .onFinalize((_event, success) => {
+          'worklet';
+          if (!success) finish(true);
+        }),
+    [begin, boundary, finish, moveHandle],
+  );
 
   // Transparent native targets retain touch capture and accessibility. The
   // knob and stem are painted with the selection in the reader's Skia Canvas.
   return (
     <GestureDetector gesture={gesture}>
-      <Animated.View accessible accessibilityLabel={label} accessibilityRole="adjustable"
-        collapsable={false} className="absolute left-0 top-0 z-30 h-12 w-12" style={style} />
+      <Animated.View
+        accessible
+        accessibilityLabel={label}
+        accessibilityRole="adjustable"
+        collapsable={false}
+        className="absolute left-0 top-0 z-30 h-12 w-12"
+        style={style}
+      />
     </GestureDetector>
   );
 }
