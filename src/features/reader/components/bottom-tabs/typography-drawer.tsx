@@ -4,21 +4,18 @@ import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
 import { Slider } from 'heroui-native/slider';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Keyboard, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { withUniwind } from 'uniwind';
 
-import {
-  type ReaderFontRef,
-  type ReaderFontRole,
-  type ReaderTypography,
-} from '@/reader';
+import { type ReaderFontRef, type ReaderFontRole, type ReaderTypography } from '@/reader';
 import type { ReaderPageAnimationStyle } from '@/reader/native';
 import { useTranslation } from '@/i18n';
 import { type ImportedReaderFont, useFontStore, useReaderStore } from '@/stores';
 import { FontPickerContent } from '../font-picker-content';
 import { getReaderBottomTabBarInset } from './constants';
+import { createTypographyCommitScheduler, stepTypographyValue } from '../../services/typography-adjustment';
 
 interface TypographyDrawerProps {
   readonly isOpen: boolean;
@@ -32,24 +29,27 @@ const HANDLE_HEIGHT = 24;
 
 interface TypographySliderProps {
   readonly accessibilityLabel: string;
+  readonly decreaseLabel: string;
+  readonly increaseLabel: string;
   readonly value: number;
   readonly minValue: number;
   readonly maxValue: number;
   readonly step: number;
   readonly onChange: (value: number) => void;
   readonly onChangeEnd: (value: number) => void;
+  readonly onStep: (direction: -1 | 1) => void;
 }
 
 interface CompactTypographySliderProps extends TypographySliderProps {
-  readonly endLabel: string;
   readonly label: string;
-  readonly startLabel: string;
+  readonly stacked: boolean;
 }
 
 export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height, width, fontScale } = useWindowDimensions();
+  const compactSlidersStacked = width < 360 || fontScale > 1.3;
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const typography = useReaderStore((state) => state.typography);
   const updateTypography = useReaderStore((state) => state.updateTypography);
@@ -57,6 +57,8 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
   const setAnimationStyle = useReaderStore((state) => state.setAnimationStyle);
   const fonts = useFontStore((state) => state.fonts);
   const [draft, setDraft] = useState<ReaderTypography>(typography);
+  const draftRef = useRef(draft);
+  const commitScheduler = useMemo(() => createTypographyCommitScheduler(updateTypography), [updateTypography]);
   const [pickerRole, setPickerRole] = useState<ReaderFontRole | null>(null);
   const [wasOpen, setWasOpen] = useState(isOpen);
   const [settingsHeight, setSettingsHeight] = useState(400);
@@ -86,12 +88,29 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
   ];
 
   const updateDraft = (key: TypographyKey, value: number) => {
+    draftRef.current = { ...draftRef.current, [key]: value };
     setDraft((current) => ({ ...current, [key]: value }));
   };
 
   const commit = (key: TypographyKey, value: number) => {
-    updateTypography({ [key]: value } as Partial<ReaderTypography>);
+    commitScheduler.commit(key, value);
   };
+
+  const adjust = (key: TypographyKey, direction: -1 | 1, step: number, min: number, max: number) => {
+    const value = stepTypographyValue(draftRef.current[key], direction, step, min, max);
+    if (value === draftRef.current[key]) return;
+    updateDraft(key, value);
+    commitScheduler.schedule(key, value);
+  };
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
+
+  useEffect(() => {
+    if (!isOpen) commitScheduler.flush();
+    return () => commitScheduler.flush();
+  }, [commitScheduler, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -111,6 +130,7 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
 
   const handleOpenChange = (value: boolean) => {
     if (!value) {
+      commitScheduler.flush();
       Keyboard.dismiss();
     }
     onOpenChange(value);
@@ -123,9 +143,7 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
 
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={handleOpenChange}>
-      <BottomSheet.Portal
-        disableFullWindowOverlay
-        unstable_accessibilityContainerViewIsModal>
+      <BottomSheet.Portal disableFullWindowOverlay unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
         <BottomSheet.Content
           backgroundClassName="rounded-t-3xl bg-background dark:bg-overlay"
@@ -147,9 +165,7 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
               onContentSizeChange={(_width, contentHeight) => setSettingsHeight(Math.ceil(contentHeight))}
               showsVerticalScrollIndicator={false}>
               <View className="gap-1">
-                <BottomSheet.Title className="text-xl text-foreground">
-                  {t('reader.typography')}
-                </BottomSheet.Title>
+                <BottomSheet.Title className="text-xl text-foreground">{t('reader.typography')}</BottomSheet.Title>
               </View>
               <View className="gap-2">
                 <View className="flex-row gap-2">
@@ -160,7 +176,7 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
                         key={option.style}
                         accessibilityLabel={t('reader.transition', { style: option.label })}
                         accessibilityState={{ selected }}
-                        className="min-w-0 flex-1 rounded-xl bg-surface px-2 dark:bg-transparent"
+                        className="min-w-0 flex-1 rounded-xl bg-surface px-2 dark:bg-surface-secondary"
                         onPress={() => setAnimationStyle(option.style)}
                         size="sm"
                         variant="ghost">
@@ -172,53 +188,55 @@ export function TypographyDrawer({ isOpen, onOpenChange }: TypographyDrawerProps
                   })}
                 </View>
               </View>
-              <TypographySlider
-                accessibilityLabel={t('reader.adjustFontSize')}
-                maxValue={32}
-                minValue={12}
-                onChange={(value) => updateDraft('fontSize', value)}
-                onChangeEnd={(value) => commit('fontSize', value)}
-                step={1}
-                value={draft.fontSize}
-              />
-              <View className="flex-row gap-4">
+              <View className="gap-2">
+                <Text className="px-1 text-sm text-muted">{t('reader.fontSize')}</Text>
+                <TypographySlider
+                  accessibilityLabel={t('reader.adjustFontSize')}
+                  decreaseLabel={t('reader.decreaseFontSize')}
+                  increaseLabel={t('reader.increaseFontSize')}
+                  maxValue={32}
+                  minValue={12}
+                  onChange={(value) => updateDraft('fontSize', value)}
+                  onChangeEnd={(value) => commit('fontSize', value)}
+                  onStep={(direction) => adjust('fontSize', direction, 1, 12, 32)}
+                  step={1}
+                  value={draft.fontSize}
+                />
+              </View>
+              <View className={compactSlidersStacked ? 'gap-4' : 'flex-row gap-4'}>
                 <CompactTypographySlider
                   accessibilityLabel={t('reader.adjustMargins')}
-                  endLabel={t('reader.large')}
+                  decreaseLabel={t('reader.decreaseMargins')}
+                  increaseLabel={t('reader.increaseMargins')}
                   label={t('reader.margin')}
+                  stacked={compactSlidersStacked}
                   maxValue={56}
                   minValue={8}
                   onChange={(value) => updateDraft('marginHorizontal', value)}
                   onChangeEnd={(value) => commit('marginHorizontal', value)}
-                  startLabel={t('reader.small')}
+                  onStep={(direction) => adjust('marginHorizontal', direction, 4, 8, 56)}
                   step={4}
                   value={draft.marginHorizontal}
                 />
                 <CompactTypographySlider
                   accessibilityLabel={t('reader.adjustLineHeight')}
-                  endLabel={t('reader.loose')}
+                  decreaseLabel={t('reader.decreaseLineHeight')}
+                  increaseLabel={t('reader.increaseLineHeight')}
                   label={t('reader.lineHeight')}
+                  stacked={compactSlidersStacked}
                   maxValue={2.4}
                   minValue={1.1}
                   onChange={(value) => updateDraft('lineHeight', value)}
                   onChangeEnd={(value) => commit('lineHeight', value)}
-                  startLabel={t('reader.tight')}
+                  onStep={(direction) => adjust('lineHeight', direction, 0.05, 1.1, 2.4)}
                   step={0.05}
                   value={draft.lineHeight}
                 />
               </View>
               <View className="overflow-hidden rounded-2xl bg-surface dark:bg-surface-secondary">
-                <FontRow
-                  label={t('reader.bodyFont')}
-                  onPress={() => setPickerRole('body')}
-                  value={bodyFontLabel}
-                />
+                <FontRow label={t('reader.bodyFont')} onPress={() => setPickerRole('body')} value={bodyFontLabel} />
                 <View className="mx-4 h-px bg-border" />
-                <FontRow
-                  label={t('reader.uiFont')}
-                  onPress={() => setPickerRole('chrome')}
-                  value={chromeFontLabel}
-                />
+                <FontRow label={t('reader.uiFont')} onPress={() => setPickerRole('chrome')} value={chromeFontLabel} />
               </View>
             </SettingsScrollView>
           )}
@@ -277,16 +295,28 @@ function FontRow({ label, value, onPress }: FontRowProps) {
 
 function TypographySlider({
   accessibilityLabel,
+  decreaseLabel,
+  increaseLabel,
   value,
   minValue,
   maxValue,
   step,
   onChange,
   onChangeEnd,
+  onStep,
 }: TypographySliderProps) {
   return (
-    <View className="h-14 flex-row items-center gap-3 rounded-2xl bg-surface px-4 dark:bg-surface-secondary">
-      <Text className="text-sm text-muted">A</Text>
+    <View className="h-14 flex-row items-center rounded-2xl bg-surface px-1 dark:bg-surface-secondary">
+      <Button
+        accessibilityLabel={decreaseLabel}
+        className="size-11 min-w-0 shrink-0 rounded-full px-0"
+        isIconOnly
+        isDisabled={value <= minValue}
+        onPress={() => onStep(-1)}
+        size="sm"
+        variant="ghost">
+        <Button.Label className="text-sm">A</Button.Label>
+      </Button>
       <Slider
         accessibilityLabel={accessibilityLabel}
         className="min-w-0 flex-1"
@@ -305,45 +335,79 @@ function TypographySlider({
           </Slider.Thumb>
         </Slider.Track>
       </Slider>
-      <Text className="text-xl text-foreground">A</Text>
+      <Button
+        accessibilityLabel={increaseLabel}
+        className="size-11 min-w-0 shrink-0 rounded-full px-0"
+        isIconOnly
+        isDisabled={value >= maxValue}
+        onPress={() => onStep(1)}
+        size="sm"
+        variant="ghost">
+        <Button.Label className="text-xl">A</Button.Label>
+      </Button>
     </View>
   );
 }
 
 function CompactTypographySlider({
   accessibilityLabel,
-  endLabel,
+  decreaseLabel,
+  increaseLabel,
   label,
+  stacked,
   value,
   minValue,
   maxValue,
-  startLabel,
   step,
   onChange,
   onChangeEnd,
+  onStep,
 }: CompactTypographySliderProps) {
   return (
-    <View className="h-14 min-w-0 flex-1 flex-row items-center gap-2 rounded-full bg-surface px-3 dark:bg-surface-secondary">
-      <Text className="text-sm text-muted">{startLabel}</Text>
-      <Slider
-        accessibilityLabel={accessibilityLabel}
-        className="min-w-0 flex-1"
-        maxValue={maxValue}
-        minValue={minValue}
-        onChange={(next) => onChange(toSliderValue(next))}
-        onChangeEnd={(next) => onChangeEnd(toSliderValue(next))}
-        step={step}
-        value={value}>
-        <Slider.Track className="h-10 bg-transparent">
-          <Slider.Fill className="bg-transparent" />
-          <Slider.Thumb className="h-12 w-14 rounded-full bg-transparent! p-0!">
-            <View className="h-12 w-14 items-center justify-center rounded-full border border-border bg-surface dark:border-0 dark:bg-surface-tertiary">
-              <Text className="text-sm font-medium text-foreground">{label}</Text>
-            </View>
-          </Slider.Thumb>
-        </Slider.Track>
-      </Slider>
-      <Text className="text-sm text-muted">{endLabel}</Text>
+    <View className={stacked ? 'w-full gap-2' : 'min-w-0 flex-1 gap-2'}>
+      <Text className="px-1 text-sm text-muted">{label}</Text>
+      <View className="h-14 flex-row items-center rounded-2xl bg-surface px-1 dark:bg-surface-secondary">
+        <Button
+          accessibilityLabel={decreaseLabel}
+          className="h-11 w-8 min-w-0 shrink-0 rounded-full px-0"
+          hitSlop={{ left: 6, right: 6 }}
+          isIconOnly
+          isDisabled={value <= minValue}
+          onPress={() => onStep(-1)}
+          size="sm"
+          variant="ghost">
+          <Button.Label className="text-base">−</Button.Label>
+        </Button>
+        <Slider
+          accessibilityLabel={accessibilityLabel}
+          className="min-w-0 flex-1"
+          maxValue={maxValue}
+          minValue={minValue}
+          onChange={(next) => onChange(toSliderValue(next))}
+          onChangeEnd={(next) => onChangeEnd(toSliderValue(next))}
+          step={step}
+          value={value}>
+          <Slider.Track className="h-2 rounded-full bg-surface-tertiary">
+            <Slider.Fill className="rounded-full bg-accent" />
+            <Slider.Thumb className="size-11 rounded-full bg-transparent! p-0!">
+              <View className="size-11 items-center justify-center rounded-full border border-border bg-surface dark:border-0 dark:bg-surface-tertiary">
+                <Text className="text-sm tabular-nums text-foreground">{formatValue(value)}</Text>
+              </View>
+            </Slider.Thumb>
+          </Slider.Track>
+        </Slider>
+        <Button
+          accessibilityLabel={increaseLabel}
+          className="h-11 w-8 min-w-0 shrink-0 rounded-full px-0"
+          hitSlop={{ left: 6, right: 6 }}
+          isIconOnly
+          isDisabled={value >= maxValue}
+          onPress={() => onStep(1)}
+          size="sm"
+          variant="ghost">
+          <Button.Label className="text-base">+</Button.Label>
+        </Button>
+      </View>
     </View>
   );
 }

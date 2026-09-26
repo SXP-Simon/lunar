@@ -17,6 +17,7 @@ vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ b
 vi.mock('uniwind', () => ({
   useCSSVariable: () => '#000000',
   useUniwind: () => ({ theme: 'light' }),
+  withUniwind: (component: unknown) => component,
 }));
 vi.mock('expo-symbols', () => ({
   SymbolView: ({ name }: { name: { web: string } }) => React.createElement('i', { 'data-symbol': name.web }),
@@ -27,6 +28,20 @@ vi.mock('../../src/features/reader/components/bottom-tabs/constants', () => ({
 }));
 vi.mock('heroui-native/toast', () => ({ useToast: () => ({ toast: { show: showToast } }) }));
 vi.mock('heroui-native/hooks', () => ({ useThemeColor: () => '#ffffff' }));
+vi.mock('heroui-native/pressable-feedback', () => ({
+  PressableFeedback: Object.assign(({ children, isDisabled, ...props }: {
+    children: React.ReactElement;
+    isDisabled?: boolean;
+  }) => React.cloneElement(children, { ...props, disabled: isDisabled }), {
+    Highlight: () => null,
+  }),
+}));
+vi.mock('react-native-gesture-handler', () => ({
+  Pressable: (props: { accessibilityLabel: string; onPress: () => void; children: ReactNode }) => {
+    buttons.set(props.accessibilityLabel, props.onPress);
+    return props.children;
+  },
+}));
 vi.mock('react-native-gesture-handler/ReanimatedSwipeable', () => ({
   default: ({ children, renderRightActions }: {
     children: ReactNode;
