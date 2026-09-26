@@ -6,7 +6,7 @@ import { Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useCSSVariable } from 'uniwind';
 import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import type { ReaderSelectionDragController } from '../hooks/use-reader-selection-drag';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 
@@ -17,13 +17,17 @@ import {
   type ReaderHighlightColor,
   type ReaderHighlightStyle,
 } from '../domain/reader-highlight';
-export const ReaderSelectionToolbarWidth = 360;
-export const ReaderSelectionToolbarHeight = 122;
+export const ReaderSelectionToolbarWidth = 320;
+export const ReaderSelectionToolbarHeight = 108;
 
 const SelectionHoldDuration = 400;
 const SelectionMovementTolerance = 4;
 const ToolbarGap = 12;
 const ViewportPadding = 12;
+const ToolbarFadeInDuration = 180;
+const ToolbarFadeOutDuration = 140;
+const ToolbarEntering = FadeIn.duration(ToolbarFadeInDuration);
+const ToolbarExiting = FadeOut.duration(ToolbarFadeOutDuration);
 
 const HandleTouchSize = 48;
 const HandleVisualOffsetY = 8;
@@ -78,7 +82,7 @@ export function computeReaderSelectionControlsLayout(
   );
   if (width <= 0) return undefined;
   const compact = width < ReaderSelectionToolbarWidth;
-  const height = measuredHeight ?? (compact ? 174 : ReaderSelectionToolbarHeight);
+  const height = measuredHeight ?? (compact ? 156 : ReaderSelectionToolbarHeight);
   const maximumTop = Math.max(minimumTop, viewportHeight - safeAreaInsets.bottom - ViewportPadding - height);
   const aboveTop = minY - ToolbarGap - height;
   const belowTop = maxY + ToolbarGap;
@@ -155,7 +159,11 @@ export function ReaderSelectionControls({
   const [measuredHeight, setMeasuredHeight] = useState<number>();
   const selectionColor = useCSSVariable('--color-navigation-active') as string;
   const dragging = drag?.binding.dragging;
-  const toolbarStyle = useAnimatedStyle(() => ({ opacity: dragging?.value ? 0 : 1 }));
+  const toolbarStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(dragging?.value ? 0 : 1, {
+      duration: dragging?.value ? ToolbarFadeOutDuration : ToolbarFadeInDuration,
+    }),
+  }));
   const layout = computeReaderSelectionControlsLayout(
     rects,
     viewportWidth,
@@ -168,117 +176,124 @@ export function ReaderSelectionControls({
   return (
     <Fragment>
       <Animated.View
+        entering={ToolbarEntering}
+        exiting={ToolbarExiting}
         accessibilityLabel={selectionLabel}
         accessibilityRole="toolbar"
         pointerEvents="box-none"
-        onLayout={(event) => setMeasuredHeight(event.nativeEvent.layout.height)}
-        className={`absolute z-30 gap-2.5 ${layout.toolbar.placement === 'above' ? 'flex-col-reverse' : 'flex-col'}`}
-        style={[
-          {
-            left: layout.toolbar.left,
-            top: layout.toolbar.top,
-            width: layout.toolbar.width,
-          },
-          toolbarStyle,
-        ]}>
-        <View className="min-h-16 flex-row items-center rounded-2xl border border-border bg-surface px-2 py-0.5 shadow-lg">
-          <View
-            pointerEvents="none"
-            className={`absolute size-2.5 rotate-45 bg-surface ${layout.toolbar.placement === 'above' ? '-bottom-1.5 border-b border-r border-border' : '-top-1.5 border-l border-t border-border'}`}
-            style={{ left: layout.toolbar.arrowLeft }}
-          />
-          <Button
-            accessibilityLabel={copyLabel}
-            className="min-h-14 flex-1 flex-col gap-1 rounded-xl px-2 py-2"
-            onPress={onCopy}
-            size="sm"
-            variant="ghost">
-            <SymbolView
-              name={{ ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' }}
-              size={21}
-              tintColor={foreground}
-            />
-            <Button.Label className="text-xs">{copyLabel}</Button.Label>
-          </Button>
-          <View className="h-8 w-px bg-border" />
-          <Button
-            accessibilityLabel={highlightLabel}
-            className="min-h-14 flex-1 flex-col gap-1 rounded-xl px-2 py-2"
-            isDisabled={isHighlightDisabled}
-            onPress={onHighlight}
-            size="sm"
-            variant="ghost">
-            <SymbolView
-              name={
-                isExistingHighlight
-                  ? { ios: 'trash', android: 'delete', web: 'delete' }
-                  : { ios: 'highlighter', android: 'ink_highlighter', web: 'ink_highlighter' }
-              }
-              size={22}
-              tintColor={foreground}
-            />
-            <Button.Label className="text-xs">{highlightLabel}</Button.Label>
-          </Button>
-        </View>
-        <View
+        className="absolute z-30"
+        style={{
+          left: layout.toolbar.left,
+          top: layout.toolbar.top,
+          width: layout.toolbar.width,
+        }}>
+        {/* Keep drag opacity separate from the mount and unmount animations. */}
+        <Animated.View
           pointerEvents="box-none"
-          className={layout.toolbar.compact ? 'items-center gap-2' : 'h-12 flex-row items-center gap-2'}>
-          <View className="flex-row">
-            {ReaderHighlightStyles.map((style) => (
-              <Button
-                key={style}
-                isIconOnly
-                size="sm"
-                variant="ghost"
-                accessibilityLabel={styleLabels[style]}
-                accessibilityState={{ selected: selectedStyle === style }}
-                isDisabled={isHighlightDisabled}
-                onPress={() => onStyleChange(style)}
-                className={`size-11 rounded-full border bg-surface p-0 shadow-sm ${selectedStyle === style ? 'border-navigation-active' : 'border-border'}`}>
-                <View pointerEvents="none" className="items-center justify-center">
-                  <Text
-                    className={`text-xl leading-6 ${style === 'highlight' ? 'rounded bg-default px-1' : ''} ${selectedStyle === style ? 'text-navigation-active' : 'text-foreground'}`}>
-                    A
-                  </Text>
-                  {style !== 'highlight' && (
-                    <Svg width={22} height={5} viewBox="0 0 22 5">
-                      <Path
-                        d={style === 'underline' ? 'M1 2.5 H21' : 'M1 2.5 Q3 -0.5 5 2.5 T9 2.5 T13 2.5 T17 2.5 T21 2.5'}
-                        fill="none"
-                        stroke={selectedStyle === style ? selectionColor : foreground}
-                        strokeWidth={1.5}
+          onLayout={(event) => setMeasuredHeight(event.nativeEvent.layout.height)}
+          className={`gap-2 ${layout.toolbar.placement === 'above' ? 'flex-col-reverse' : 'flex-col'}`}
+          style={toolbarStyle}>
+          <View className="min-h-14 flex-row items-center rounded-2xl border border-border bg-surface px-1.5 py-0.5 shadow-lg">
+            <View
+              pointerEvents="none"
+              className={`absolute size-2.5 rotate-45 bg-surface ${layout.toolbar.placement === 'above' ? '-bottom-1.5 border-b border-r border-border' : '-top-1.5 border-l border-t border-border'}`}
+              style={{ left: layout.toolbar.arrowLeft }}
+            />
+            <Button
+              accessibilityLabel={copyLabel}
+              className="h-auto min-h-12 flex-1 flex-col gap-0.5 rounded-xl px-2 py-1"
+              onPress={onCopy}
+              size="sm"
+              variant="ghost">
+              <SymbolView
+                name={{ ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' }}
+                size={19}
+                tintColor={foreground}
+              />
+              <Button.Label className="text-xs">{copyLabel}</Button.Label>
+            </Button>
+            <View className="h-6 w-px bg-border" />
+            <Button
+              accessibilityLabel={highlightLabel}
+              className="h-auto min-h-12 flex-1 flex-col gap-0.5 rounded-xl px-2 py-1"
+              isDisabled={isHighlightDisabled}
+              onPress={onHighlight}
+              size="sm"
+              variant="ghost">
+              <SymbolView
+                name={
+                  isExistingHighlight
+                    ? { ios: 'trash', android: 'delete', web: 'delete' }
+                    : { ios: 'highlighter', android: 'ink_highlighter', web: 'ink_highlighter' }
+                }
+                size={20}
+                tintColor={foreground}
+              />
+              <Button.Label className="text-xs">{highlightLabel}</Button.Label>
+            </Button>
+          </View>
+          <View
+            pointerEvents="box-none"
+            className={layout.toolbar.compact ? 'items-center gap-2' : 'h-11 flex-row items-center gap-2'}>
+            <View className="h-11 flex-row items-center gap-1">
+              {ReaderHighlightStyles.map((style) => (
+                <Button
+                  key={style}
+                  isIconOnly
+                  size="sm"
+                  variant="ghost"
+                  accessibilityLabel={styleLabels[style]}
+                  accessibilityState={{ selected: selectedStyle === style }}
+                  isDisabled={isHighlightDisabled}
+                  onPress={() => onStyleChange(style)}
+                  hitSlop={{ top: 2, bottom: 2 }}
+                  className={`size-10 rounded-full border bg-surface p-0 shadow-sm ${selectedStyle === style ? 'border-navigation-active' : 'border-border'}`}>
+                  <View pointerEvents="none" className="items-center justify-center">
+                    <Text
+                      className={`text-lg leading-5 ${style === 'highlight' ? 'rounded bg-default px-1' : ''} ${selectedStyle === style ? 'text-navigation-active' : 'text-foreground'}`}>
+                      A
+                    </Text>
+                    {style !== 'highlight' && (
+                      <Svg width={20} height={5} viewBox="0 0 22 5">
+                        <Path
+                          d={
+                            style === 'underline' ? 'M1 2.5 H21' : 'M1 2.5 Q3 -0.5 5 2.5 T9 2.5 T13 2.5 T17 2.5 T21 2.5'
+                          }
+                          fill="none"
+                          stroke={selectedStyle === style ? selectionColor : foreground}
+                          strokeWidth={1.5}
+                        />
+                      </Svg>
+                    )}
+                  </View>
+                </Button>
+              ))}
+            </View>
+            <View className="h-10 flex-row items-center rounded-full bg-surface px-0.5 shadow-sm">
+              {ReaderHighlightColors.map((color) => (
+                <Button
+                  key={color}
+                  accessibilityLabel={colorLabels[color]}
+                  accessibilityState={{ selected: selectedColor === color }}
+                  className="h-10 w-9 rounded-full p-0"
+                  size="sm"
+                  variant="ghost"
+                  isDisabled={isHighlightDisabled}
+                  onPress={() => onColorChange(color)}>
+                  <View className={`size-5.5 items-center justify-center rounded-full ${HighlightColorClasses[color]}`}>
+                    {selectedColor === color && (
+                      <SymbolView
+                        name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                        size={14}
+                        tintColor={foreground}
                       />
-                    </Svg>
-                  )}
-                </View>
-              </Button>
-            ))}
+                    )}
+                  </View>
+                </Button>
+              ))}
+            </View>
           </View>
-          <View className="h-12 flex-row items-center rounded-full bg-surface shadow-sm">
-            {ReaderHighlightColors.map((color) => (
-              <Button
-                key={color}
-                accessibilityLabel={colorLabels[color]}
-                accessibilityState={{ selected: selectedColor === color }}
-                className="size-11 rounded-full p-0"
-                isIconOnly
-                size="sm"
-                variant="ghost"
-                isDisabled={isHighlightDisabled}
-                onPress={() => onColorChange(color)}>
-                <View className={`size-7 items-center justify-center rounded-full ${HighlightColorClasses[color]}`}>
-                  {selectedColor === color && (
-                    <SymbolView
-                      name={{ ios: 'checkmark', android: 'check', web: 'check' }}
-                      size={17}
-                      tintColor={foreground}
-                    />
-                  )}
-                </View>
-              </Button>
-            ))}
-          </View>
-        </View>
+        </Animated.View>
       </Animated.View>
       {drag && (
         <Fragment>

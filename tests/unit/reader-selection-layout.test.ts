@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { computeReaderSelectionControlsLayout } from '../../src/features/reader/components/reader-selection-controls';
 
 // Layout calculations use plain rectangles; native components are not rendered.
-vi.mock('react-native-reanimated', () => ({ default: { View: 'AnimatedView' }, useAnimatedStyle: vi.fn() }));
+vi.mock('react-native-reanimated', () => ({
+  default: { View: 'AnimatedView' },
+  useAnimatedStyle: vi.fn(),
+  FadeIn: { duration: vi.fn().mockReturnValue({}) },
+  FadeOut: { duration: vi.fn().mockReturnValue({}) },
+}));
 vi.mock('react-native', () => ({ View: 'View' }));
 vi.mock('react-native-gesture-handler', () => ({ Gesture: {}, GestureDetector: 'GestureDetector' }));
 vi.mock('expo-symbols', () => ({ SymbolView: 'SymbolView' }));
@@ -22,7 +27,7 @@ describe('reader selection controls layout', () => {
       844,
       insets,
     );
-    expect(layout?.toolbar).toMatchObject({ left: 12, top: 166, width: 360, placement: 'above', compact: false });
+    expect(layout?.toolbar).toMatchObject({ left: 12, top: 180, width: 320, placement: 'above', compact: false });
     expect(layout?.startHandle).toEqual({ x: 100, y: 324 });
     expect(layout?.endHandle).toEqual({ x: 220, y: 324 });
   });
@@ -50,14 +55,14 @@ describe('reader selection controls layout', () => {
   it('accounts for enlarged text and both horizontal safe areas', () => {
     const layout = computeReaderSelectionControlsLayout([{ x: 500, y: 700, width: 60, height: 30 }],
       600, 844, { ...insets, left: 40, right: 40 }, 200)!;
-    expect(layout.toolbar).toMatchObject({ left: 188, top: 488, width: 360, placement: 'above' });
-    expect(layout.toolbar.arrowLeft).toBeLessThanOrEqual(330);
+    expect(layout.toolbar).toMatchObject({ left: 228, top: 488, width: 320, placement: 'above' });
+    expect(layout.toolbar.arrowLeft).toBeLessThanOrEqual(290);
   });
 
   it('keeps a tall selection toolbar within the vertical safe area', () => {
     const layout = computeReaderSelectionControlsLayout([{ x: 20, y: 60, width: 260, height: 520 }],
       320, 640, insets)!;
     expect(layout.toolbar.top).toBeGreaterThanOrEqual(52);
-    expect(layout.toolbar.top + 174).toBeLessThanOrEqual(604);
+    expect(layout.toolbar.top + 156).toBeLessThanOrEqual(604);
   });
 });
