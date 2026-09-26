@@ -16,6 +16,11 @@ allowBuilds:
 
 patchedDependencies:
   '@shopify/react-native-skia@2.6.2': patches/@shopify__react-native-skia@2.6.2.patch
+  'html-entities@2.5.3': patches/html-entities@2.5.3.patch
+
+overrides:
+  # Preserve Expensify's exact fork without permitting arbitrary Git subdependencies.
+  'expensify-common@2.0.207>simply-deferred': file:vendor/simply-deferred-77a08a9.tgz
 
 # standard-navigation imports React without declaring it as a runtime dependency.
 packageExtensions:

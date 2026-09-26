@@ -1,39 +1,39 @@
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
-import { TextArea } from 'heroui-native/text-area';
-import { useBottomSheetAwareHandlers } from 'heroui-native/hooks';
+import { MarkdownTextInput, parseExpensiMark, type MarkdownStyle } from '@expensify/react-native-live-markdown';
+import { useBottomSheetAwareHandlers, useThemeColor } from 'heroui-native/hooks';
 import { useToast } from 'heroui-native/toast';
-import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
-import { BackHandler, Keyboard, ScrollView, Text, View, type TextInput } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
+import { BackHandler, Keyboard, Text, View } from 'react-native';
+import { useCSSVariable, withUniwind } from 'uniwind';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { useTranslation } from '@/i18n';
-import {
-  formatReaderNote,
-  ReaderNoteFormats,
-  ReaderNoteMaxLength,
-  type NoteTextSelection,
-  type ReaderNoteFormat,
-} from '../domain/note-markdown';
+import { ReaderNoteMaxLength } from '../domain/note-markdown';
 
-const FormatGlyphs: Record<ReaderNoteFormat, string> = {
-  bold: 'B',
-  italic: 'I',
-  heading: 'H',
-  list: '≡',
-  quote: '❝',
-  code: '</>',
-  link: '↗',
-};
+const LiveMarkdownInput = withUniwind(MarkdownTextInput);
+function parseNote(input: string) {
+  'worklet';
+  return parseExpensiMark(input, ReaderNoteMaxLength);
+}
 
 interface ReaderNoteEditorDrawerProps {
   readonly isOpen: boolean;
   readonly initialNote: string;
   readonly onClose: () => void;
   readonly onSave: (content: string) => Promise<void>;
+  readonly portalHostName: string;
+  readonly confirmationHostName: string;
 }
 
-export function ReaderNoteEditorDrawer({ isOpen, initialNote, onClose, onSave }: ReaderNoteEditorDrawerProps) {
+export function ReaderNoteEditorDrawer({
+  isOpen,
+  initialNote,
+  onClose,
+  onSave,
+  portalHostName,
+  confirmationHostName,
+}: ReaderNoteEditorDrawerProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const insets = useSafeAreaInsets();
@@ -41,10 +41,17 @@ export function ReaderNoteEditorDrawer({ isOpen, initialNote, onClose, onSave }:
   const [saving, setSaving] = useState(false);
   const [discarding, setDiscarding] = useState(false);
   const pending = useRef(false);
-  const input = useRef<TextInput>(null);
-  const cursor = useRef<NoteTextSelection>({ start: 0, end: 0 });
-  const [selection, setSelection] = useState<NoteTextSelection>();
   const dirty = value !== initialNote;
+  const [draftSession, setDraftSession] = useState({ isOpen, initialNote });
+  // Reset the draft for an opening session without remounting the sheet.
+  // HeroUI needs the same sheet instance to transition from false to true.
+  if (draftSession.isOpen !== isOpen || draftSession.initialNote !== initialNote) {
+    setDraftSession({ isOpen, initialNote });
+    if (isOpen) {
+      setValue(initialNote);
+      setDiscarding(false);
+    }
+  }
 
   const close = useCallback(() => {
     if (pending.current) return;
@@ -64,15 +71,6 @@ export function ReaderNoteEditorDrawer({ isOpen, initialNote, onClose, onSave }:
     });
     return () => subscription.remove();
   }, [close, discarding, isOpen]);
-
-  function format(kind: ReaderNoteFormat) {
-    const result = formatReaderNote(value, cursor.current, kind, t('reader.noteFormatPlaceholder'));
-    if (result.text.length > ReaderNoteMaxLength) return;
-    setValue(result.text);
-    setSelection(result.selection);
-    cursor.current = result.selection;
-    input.current?.focus();
-  }
 
   async function save() {
     if (pending.current || !value.trim()) return;
@@ -102,7 +100,10 @@ export function ReaderNoteEditorDrawer({ isOpen, initialNote, onClose, onSave }:
         onOpenChange={(next) => {
           if (!next) close();
         }}>
-        <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
+        <BottomSheet.Portal
+          hostName={portalHostName}
+          disableFullWindowOverlay
+          unstable_accessibilityContainerViewIsModal>
           <BottomSheet.Overlay isCloseOnPress={!saving} />
           <BottomSheet.Content
             snapPoints={['72%', '92%']}
@@ -131,43 +132,19 @@ export function ReaderNoteEditorDrawer({ isOpen, initialNote, onClose, onSave }:
               </Button>
             </View>
             <View className="min-h-0 flex-1 rounded-2xl bg-surface p-3">
-              <ScrollView
-                horizontal
-                keyboardShouldPersistTaps="always"
-                showsHorizontalScrollIndicator={false}
-                className="max-h-11 grow-0">
-                {ReaderNoteFormats.map((kind) => (
-                  <Button
-                    key={kind}
-                    isIconOnly
-                    size="sm"
-                    variant="ghost"
-                    className="size-10 rounded-lg"
-                    accessibilityLabel={t(`reader.noteFormat.${kind}`)}
-                    isDisabled={saving}
-                    onPress={() => format(kind)}>
-                    <Button.Label className={kind === 'italic' ? 'text-base italic' : 'text-base font-semibold'}>
-                      {FormatGlyphs[kind]}
-                    </Button.Label>
-                  </Button>
-                ))}
-              </ScrollView>
               <NoteEditorInput
-                ref={input}
                 value={value}
-                selection={selection}
-                isDisabled={saving}
+                editable={!saving}
+                multiline
+                textAlignVertical="top"
+                parser={parseNote}
                 accessibilityLabel={t('reader.noteMine')}
                 placeholder={t('reader.notePlaceholder')}
                 className="min-h-0 flex-1 bg-transparent px-0 py-3 text-base leading-6"
+                placeholderTextColorClassName="accent-muted"
+                selectionColorClassName="accent-navigation-active"
                 maxLength={ReaderNoteMaxLength}
-                onChangeText={(text) => {
-                  setValue(text);
-                  setSelection(undefined);
-                }}
-                onSelectionChange={(event) => {
-                  cursor.current = event.nativeEvent.selection;
-                }}
+                onChangeText={setValue}
               />
               <Text className="text-xs text-muted">
                 {t('reader.noteMarkdownHint')} · {value.length}/{ReaderNoteMaxLength}
@@ -177,6 +154,7 @@ export function ReaderNoteEditorDrawer({ isOpen, initialNote, onClose, onSave }:
         </BottomSheet.Portal>
       </BottomSheet>
       <ConfirmModal
+        portalHostName={confirmationHostName}
         isOpen={discarding}
         title={t('reader.noteDiscardTitle')}
         description={t('reader.noteDiscardDescription')}
@@ -196,7 +174,19 @@ export function ReaderNoteEditorDrawer({ isOpen, initialNote, onClose, onSave }:
   );
 }
 
-function NoteEditorInput(props: ComponentProps<typeof TextArea>) {
+function NoteEditorInput(props: ComponentProps<typeof LiveMarkdownInput>) {
   const { onFocus, onBlur } = useBottomSheetAwareHandlers();
-  return <TextArea {...props} onFocus={onFocus} onBlur={onBlur} />;
+  const [foreground, muted, background, border] = useThemeColor(['foreground', 'muted', 'default', 'border']);
+  const link = useCSSVariable('--color-navigation-active') as string;
+  const markdownStyle = useMemo<MarkdownStyle>(
+    () => ({
+      syntax: { color: muted },
+      link: { color: link },
+      blockquote: { borderColor: border },
+      code: { color: foreground, backgroundColor: background, borderColor: border },
+      pre: { color: foreground, backgroundColor: background, borderColor: border },
+    }),
+    [background, border, foreground, link, muted],
+  );
+  return <LiveMarkdownInput {...props} markdownStyle={markdownStyle} onFocus={onFocus} onBlur={onBlur} />;
 }

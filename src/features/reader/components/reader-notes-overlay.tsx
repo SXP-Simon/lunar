@@ -4,7 +4,8 @@ import { SymbolView } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
 import { useToast } from 'heroui-native/toast';
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useId, useRef, useState, type RefObject } from 'react';
+import { PortalHost } from 'heroui-native/portal';
 import { BackHandler, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,11 +37,13 @@ export function ReaderNotesOverlay({ quote, notes, blurTarget, onClose, onSave, 
   const foreground = useThemeColor('foreground');
   const muted = useThemeColor('muted');
   const [expanded, setExpanded] = useState(false);
-  const [editor, setEditor] = useState<{ key: number; note?: ReaderNote; open: boolean }>();
-  const nextEditorKey = useRef(0);
+  const [editor, setEditor] = useState<{ note?: ReaderNote; open: boolean }>();
   const [deleting, setDeleting] = useState<ReaderNote>();
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
+  const portalId = useId();
+  const editorHostName = `${portalId}:editor`;
+  const confirmationHostName = `${portalId}:confirmation`;
   const canClose = !editor?.open && !deleting && !busy;
 
   useEffect(() => {
@@ -53,7 +56,7 @@ export function ReaderNotesOverlay({ quote, notes, blurTarget, onClose, onSave, 
   }, [canClose, onClose]);
 
   function edit(note?: ReaderNote) {
-    setEditor({ key: ++nextEditorKey.current, note, open: true });
+    setEditor({ note, open: true });
   }
 
   async function copy() {
@@ -208,16 +211,22 @@ export function ReaderNotesOverlay({ quote, notes, blurTarget, onClose, onSave, 
           </Button>
         </View>
       </Animated.View>
-      {editor && (
-        <ReaderNoteEditorDrawer
-          key={editor.key}
-          isOpen={editor.open}
-          initialNote={editor.note?.content ?? ''}
-          onClose={() => setEditor((current) => (current ? { ...current, open: false } : current))}
-          onSave={(content) => onSave(content, editor.note?.id)}
-        />
-      )}
+      <View pointerEvents="box-none" collapsable={false} className="absolute inset-0 z-60">
+        <PortalHost name={editorHostName} />
+        <View pointerEvents="box-none" className="absolute inset-0 z-10">
+          <PortalHost name={confirmationHostName} />
+        </View>
+      </View>
+      <ReaderNoteEditorDrawer
+        isOpen={Boolean(editor?.open)}
+        initialNote={editor?.note?.content ?? ''}
+        portalHostName={editorHostName}
+        confirmationHostName={confirmationHostName}
+        onClose={() => setEditor((current) => (current ? { ...current, open: false } : current))}
+        onSave={(content) => onSave(content, editor?.note?.id)}
+      />
       <ConfirmModal
+        portalHostName={confirmationHostName}
         isOpen={Boolean(deleting)}
         title={t('reader.noteDelete')}
         description={t('reader.noteDeleteDescription')}

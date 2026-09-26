@@ -15,6 +15,7 @@ export interface ConfirmModalProps {
   readonly isDestructive?: boolean;
   readonly onConfirm: () => void;
   readonly onOpenChange: (isOpen: boolean) => void;
+  readonly portalHostName?: string;
 }
 
 export function ConfirmModal({
@@ -28,6 +29,7 @@ export function ConfirmModal({
   isDestructive = false,
   onConfirm,
   onOpenChange,
+  portalHostName,
 }: ConfirmModalProps) {
   const { t } = useTranslation();
   const handleOpenChange = (nextIsOpen: boolean) => {
@@ -38,17 +40,16 @@ export function ConfirmModal({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={handleOpenChange}>
-      <Dialog.Portal unstable_accessibilityContainerViewIsModal>
+      <Dialog.Portal
+        hostName={portalHostName}
+        disableFullWindowOverlay={Boolean(portalHostName)}
+        unstable_accessibilityContainerViewIsModal>
         <Dialog.Overlay />
         <Dialog.Content className="mx-5 max-w-md gap-4 rounded-2xl p-5">
           <Dialog.Title>{title}</Dialog.Title>
           {description && <Dialog.Description>{description}</Dialog.Description>}
           <View className="flex-row gap-3">
-            <Button
-              className="flex-1"
-              isDisabled={isConfirming}
-              onPress={() => onOpenChange(false)}
-              variant="tertiary">
+            <Button className="flex-1" isDisabled={isConfirming} onPress={() => onOpenChange(false)} variant="tertiary">
               {cancelLabel ?? t('action.cancel')}
             </Button>
             <Button

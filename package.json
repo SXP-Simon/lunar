@@ -4,11 +4,13 @@
   "version": "0.2.0",
   "packageManager": "pnpm@11.24.0",
   "dependencies": {
+    "@expensify/react-native-live-markdown": "0.1.342",
     "@expo/metro-runtime": "~57.0.16",
     "@expo/ui": "~57.0.19",
     "@gorhom/bottom-sheet": "5.2.9",
     "@ritojs/react-native": "file:modules/rito-rn",
     "@shopify/react-native-skia": "2.6.2",
+    "expensify-common": "2.0.207",
     "expo": "~57.0.24",
     "expo-asset": "~57.0.18",
     "expo-blur": "~57.0.3",
@@ -36,6 +38,8 @@
     "expo-web-browser": "~57.0.3",
     "fflate": "^0.8.3",
     "heroui-native": "1.0.8",
+    "html-entities": "2.5.3",
+    "html-to-md": "0.8.8",
     "i18next": "^26.4.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -59,6 +63,9 @@
     "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@babel/plugin-transform-class-properties": "^7.29.7",
+    "@babel/plugin-transform-classes": "^7.29.7",
+    "@babel/plugin-transform-unicode-regex": "^7.29.7",
     "@types/node": "^22.20.2",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "~57.0.9",

@@ -4,13 +4,29 @@ import { useMemo } from 'react';
 import { useResolveClassNames } from 'uniwind';
 import { useToast } from 'heroui-native/toast';
 import { useTranslation } from '@/i18n';
-import { readerNoteLink } from '../domain/note-markdown';
+import { readerNoteDisplayMarkdown, readerNoteLink } from '../domain/note-markdown';
+import { decode } from 'html-entities';
 
 const parser = new MarkdownIt({ html: false, linkify: true, breaks: true });
+// The HTML converter preserves entities inside code. Decode only code tokens,
+// after Markdown parsing, so literal code can never become HTML or formatting.
+parser.core.ruler.after(
+  'inline',
+  'expensi-code-entities',
+  (state: { tokens: { type: string; content: string; children?: { type: string; content: string }[] }[] }) => {
+    for (const token of state.tokens) {
+      if (token.type === 'fence' || token.type === 'code_block') token.content = decode(token.content);
+      for (const child of token.children ?? []) {
+        if (child.type === 'code_inline') child.content = decode(child.content);
+      }
+    }
+  },
+);
 const ImageHandlers = ['https://', 'http://'];
 
 /** Theme adapter; parsing and rendering are owned by the Markdown library. */
 export function ReaderNoteMarkdown({ value }: { readonly value: string }) {
+  const markdown = useMemo(() => readerNoteDisplayMarkdown(value), [value]);
   const { t } = useTranslation();
   const { toast } = useToast();
   const body = useResolveClassNames('text-base leading-6 text-foreground');
@@ -57,7 +73,7 @@ export function ReaderNoteMarkdown({ value }: { readonly value: string }) {
           void Linking.openURL(url).catch(() => toast.show({ variant: 'danger', label: t('reader.linkOpenFailed') }));
         return false;
       }}>
-      {value}
+      {markdown}
     </Markdown>
   );
 }

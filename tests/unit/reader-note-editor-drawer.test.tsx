@@ -6,27 +6,37 @@ import { ReaderNotesOverlay } from '../../src/features/reader/components/reader-
 import type { ReaderNote } from '../../src/features/reader/domain/reader-highlight';
 
 const ui = vi.hoisted(() => ({
-  cells: [] as unknown[], cursor: 0,
+  cells: [] as unknown[], cursor: 0, effects: [] as (() => void)[], dirty: false,
+  openStates: [] as boolean[], hosts: [] as string[], portal: '' ,
   buttons: new Map<string, { onPress: () => void; isDisabled?: boolean }>(),
   input: undefined as undefined | { value: string; onChangeText: (value: string) => void },
   confirm: undefined as undefined | { isOpen: boolean; onConfirm: () => void; onOpenChange: (open: boolean) => void },
   toast: vi.fn(),
 }));
 
+vi.mock('expensify-common/ExpensiMark', async () => {
+  const { createRequire } = await import('node:module');
+  return createRequire(import.meta.url)('expensify-common/ExpensiMark');
+});
 vi.mock('react', async (importOriginal) => {
   const original = await importOriginal<typeof import('react')>();
   return { ...original,
     useState: (initial: unknown) => {
       const index = ui.cursor++;
       if (!(index in ui.cells)) ui.cells[index] = initial;
-      return [ui.cells[index], (next: unknown) => { ui.cells[index] = typeof next === 'function' ? next(ui.cells[index]) : next; }];
+      return [ui.cells[index], (next: unknown) => { const value = typeof next === 'function' ? next(ui.cells[index]) : next; ui.dirty ||= !Object.is(value, ui.cells[index]); ui.cells[index] = value; }];
     },
     useRef: (initial: unknown) => {
       const index = ui.cursor++;
       if (!(index in ui.cells)) ui.cells[index] = { current: initial };
       return ui.cells[index];
     },
-    useEffect: () => {},
+    useEffect: (effect: () => void, deps: unknown[]) => {
+      const index = ui.cursor++;
+      const previous = ui.cells[index] as unknown[] | undefined;
+      if (!previous || deps.some((value, i) => !Object.is(value, previous[i]))) ui.effects.push(effect);
+      ui.cells[index] = deps;
+    },
     useCallback: (callback: unknown) => callback,
   };
 });
@@ -34,26 +44,29 @@ vi.mock('react-native', () => ({
   Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
   View: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   ScrollView: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  Keyboard: { dismiss: vi.fn() }, BackHandler: {}, useWindowDimensions: () => ({ height: 844 }),
+  Keyboard: { dismiss: vi.fn() }, BackHandler: { addEventListener: () => ({ remove() {} }) }, useWindowDimensions: () => ({ height: 844 }),
 }));
 vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 24, bottom: 24 }) }));
 vi.mock('expo-symbols', () => ({ SymbolView: () => null }));
-vi.mock('heroui-native/hooks', () => ({ useThemeColor: () => '#fff', useBottomSheetAwareHandlers: () => ({ onFocus: vi.fn(), onBlur: vi.fn() }) }));
+vi.mock('heroui-native/hooks', () => ({ useThemeColor: (tokens: unknown) => Array.isArray(tokens) ? tokens.map(() => '#fff') : '#fff', useBottomSheetAwareHandlers: () => ({ onFocus: vi.fn(), onBlur: vi.fn() }) }));
 vi.mock('expo-blur', () => ({ BlurView: () => null }));
 vi.mock('expo-clipboard', () => ({ setStringAsync: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('uniwind', () => ({ useUniwind: () => ({ theme: 'dark' }), withUniwind: (component: unknown) => component }));
+vi.mock('uniwind', () => ({ useCSSVariable: () => '#0088ff', useUniwind: () => ({ theme: 'dark' }), withUniwind: (component: unknown) => component }));
 vi.mock('react-native-reanimated', () => ({
   default: { View: ({ children }: { children: ReactNode }) => <div>{children}</div> },
   FadeIn: { duration: () => ({}) }, FadeOut: { duration: () => ({}) },
 }));
 vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock('heroui-native/toast', () => ({ useToast: () => ({ toast: { show: ui.toast } }) }));
-vi.mock('heroui-native/text-area', () => ({ TextArea: (props: typeof ui.input) => { ui.input = props; return null; } }));
+vi.mock('@expensify/react-native-live-markdown', () => ({ parseExpensiMark: vi.fn(), MarkdownTextInput: (props: typeof ui.input) => { ui.input = props; return null; } }));
+vi.mock('heroui-native/portal', () => ({ PortalHost: ({ name }: { name: string }) => { ui.hosts.push(name); return null; } }));
 vi.mock('@/components/ui/confirm-modal', () => ({ ConfirmModal: (props: typeof ui.confirm) => { ui.confirm = props; return null; } }));
 vi.mock('../../src/features/reader/components/reader-note-markdown', () => ({ ReaderNoteMarkdown: ({ value }: { value: string }) => <span>{value}</span> }));
 vi.mock('heroui-native/bottom-sheet', () => {
   const Container = ({ children }: { children: ReactNode }) => children;
-  return { BottomSheet: Object.assign(Container, { Portal: Container, Content: Container, Title: Container, Overlay: () => null }) };
+  const Root = ({ isOpen, children }: { isOpen: boolean; children: ReactNode }) => { ui.openStates.push(isOpen); return isOpen ? children : null; };
+  const Portal = ({ hostName, children }: { hostName: string; children: ReactNode }) => { ui.portal = hostName; return children; };
+  return { BottomSheet: Object.assign(Root, { Portal, Content: Container, Title: Container, Overlay: () => null }) };
 });
 vi.mock('heroui-native/button', () => ({ Button: Object.assign((props: {
   children: ReactNode; accessibilityLabel?: string; onPress: () => void; isDisabled?: boolean;
@@ -67,16 +80,27 @@ vi.mock('heroui-native/button', () => ({ Button: Object.assign((props: {
 
 beforeEach(() => {
   vi.stubGlobal('React', React);
-  ui.cells = []; ui.cursor = 0; ui.buttons.clear(); ui.toast.mockClear(); ui.input = undefined;
+  ui.effects = []; ui.openStates = []; ui.hosts = []; ui.dirty = false; ui.cells = []; ui.cursor = 0; ui.buttons.clear(); ui.toast.mockClear(); ui.input = undefined;
 });
 afterEach(() => vi.unstubAllGlobals());
+
+function renderTree(tree: ReactNode): string {
+  let markup = '';
+  for (let pass = 0; pass < 10; pass++) {
+    ui.cursor = 0; ui.input = undefined; ui.dirty = false; ui.effects = [];
+    markup = renderToStaticMarkup(tree);
+    for (const effect of ui.effects) effect();
+    if (!ui.dirty) return markup;
+  }
+  throw new Error('Render did not settle');
+}
 
 function setup(initialNote = '', onSave = vi.fn().mockResolvedValue(undefined)) {
   const onClose = vi.fn();
   const render = () => {
     ui.cursor = 0;
     ui.input = undefined;
-    renderToStaticMarkup(<ReaderNoteEditorDrawer isOpen initialNote={initialNote} onClose={onClose} onSave={onSave} />);
+    renderTree(<ReaderNoteEditorDrawer portalHostName="editor" confirmationHostName="confirm" isOpen initialNote={initialNote} onClose={onClose} onSave={onSave} />);
   };
   render();
   return { render, onClose, onSave };
@@ -138,7 +162,7 @@ describe('reader notes viewing overlay', () => {
     const onClose = vi.fn();
     const render = () => {
       ui.cursor = 0; ui.input = undefined;
-      return renderToStaticMarkup(<ReaderNotesOverlay quote="引用原文" notes={notes} blurTarget={{ current: null }}
+      return renderTree(<ReaderNotesOverlay quote="引用原文" notes={notes} blurTarget={{ current: null }}
         onSave={onSave} onRemove={onRemove} onClose={onClose} />);
     };
     return { render, onSave, onRemove, onClose };
@@ -156,12 +180,16 @@ describe('reader notes viewing overlay', () => {
     expect(markup).toContain('**第一条**');
     expect(markup).toContain('*第二条*');
     expect(ui.input).toBeUndefined();
+    expect(ui.openStates.at(-1)).toBe(false);
   });
   it('opens an empty drawer only after Add note and keeps the viewer open after saving', async () => {
     const app = setupViewer();
     expect(app.render()).toContain('reader.noteNone');
     ui.buttons.get('reader.noteAdd')!.onPress(); app.render();
     expect(ui.input!.value).toBe('');
+    expect(ui.openStates[0]).toBe(false);
+    expect(ui.openStates.at(-1)).toBe(true);
+    expect(ui.hosts).toContain(ui.portal);
     ui.input!.onChangeText('新笔记'); app.render();
     ui.buttons.get('reader.noteSave')!.onPress();
     await vi.waitFor(() => expect(app.onSave).toHaveBeenCalledWith('新笔记', undefined));

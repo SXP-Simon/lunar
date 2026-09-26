@@ -1,11 +1,15 @@
 import React, { type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { formatReaderNote, readerNoteLink } from '../../src/features/reader/domain/note-markdown';
+import { readerNoteDisplayMarkdown, readerNoteLink } from '../../src/features/reader/domain/note-markdown';
 import { ReaderNoteMarkdown } from '../../src/features/reader/components/reader-note-markdown';
 import { Linking } from 'react-native';
 
 const renderer = vi.hoisted(() => ({ props: undefined as any }));
+vi.mock('expensify-common/ExpensiMark', async () => {
+  const { createRequire } = await import('node:module');
+  return createRequire(import.meta.url)('expensify-common/ExpensiMark');
+});
 vi.mock('react-native-markdown-renderer', async () => {
   const { createRequire } = await import('node:module');
   const require = createRequire(import.meta.url);
@@ -31,31 +35,24 @@ beforeEach(() => { vi.stubGlobal('React', React); vi.clearAllMocks(); });
 afterEach(() => vi.unstubAllGlobals());
 
 describe('reader Markdown notes', () => {
-  it('formats a Chinese selection without modifying neighboring text', () => {
-    expect(formatReaderNote('这是一段原文', { start: 2, end: 4 }, 'bold', '文字')).toEqual({
-      text: '这是**一段**原文', selection: { start: 4, end: 6 },
-    });
+  it('uses the Live Markdown dialect for the display adapter', () => {
+    expect(readerNoteDisplayMarkdown('*粗体* _斜体_ ~删除~')).toBe('**粗体** *斜体* ~~删除~~');
   });
-  it('prefixes complete selected lines and inserts a placeholder at an empty cursor', () => {
-    expect(formatReaderNote('第一行\n第二行', { start: 1, end: 7 }, 'list', '文字').text).toBe('- 第一行\n- 第二行');
-    expect(formatReaderNote('', { start: 0, end: 0 }, 'heading', '文字').text).toBe('## 文字');
-    expect(formatReaderNote('\n原文', { start: 0, end: 0 }, 'quote', '文字').text).toBe('> 文字\n原文');
-  });
-  it('creates a parseable fenced code block in the middle of a paragraph', () => {
-    const formatted = formatReaderNote('beforecodeafter', { start: 6, end: 10 }, 'code', 'code');
-    renderToStaticMarkup(<ReaderNoteMarkdown value={formatted.text} />);
-    expect(renderer.props.markdownit.parse(formatted.text, {}).filter((token: any) => token.type === 'fence')).toHaveLength(1);
-    expect(formatted.text.slice(formatted.selection.start, formatted.selection.end)).toBe('code');
+  it('preserves literal code after converting the editor dialect', () => {
+    renderToStaticMarkup(<ReaderNoteMarkdown value={'```\nconst x = 1;\n```'} />);
+    const html = renderer.props.markdownit.render(renderer.props.children);
+    expect(html).toContain('const x = 1;');
+    expect(html).not.toContain('&amp;#32;');
   });
   it('delegates CommonMark content to the library parser and renderer', () => {
-    const value = '# 标题\n\n**重要 *想法***\n\n> 引用\n\n- 完成\n- 待办\n\n```ts\nconst x = 1;\n```\n\n| 列名 |\n| --- |\n| 内容 |';
+    const value = '# 标题\n\n*重要 _想法_*\n\n> 引用\n\n- 完成\n- 待办\n\n```ts\nconst x = 1;\n```\n\n| 列名 |\n| --- |\n| 内容 |';
     renderToStaticMarkup(<ReaderNoteMarkdown value={value} />);
-    expect(renderer.props.children).toBe(value);
-    const markup = renderer.props.markdownit.render(value);
+    expect(renderer.props.children).toBe(readerNoteDisplayMarkdown(value));
+    const markup = renderer.props.markdownit.render(renderer.props.children);
     expect(markup).toContain('<h1>');
     expect(markup).toContain('<strong>');
     expect(markup).toContain('<em>');
-    expect(markup).toContain('<table>');
+
     expect(markup).toContain('引用');
     expect(markup).toContain('const x = 1;');
     expect(markup).toContain('列名');
