@@ -11,6 +11,13 @@ function highlight(id: string, start: number, end: number, text = 'abcdefghij'.s
 }
 
 describe('highlight range editing', () => {
+  it('changes the complete existing mark style and preserves it during recoloring', () => {
+    const existing = { ...highlight('old', 1, 8), style: 'underline' as const };
+    const changed = mergeReaderHighlight([existing], { ...highlight('new', 3, 5), style: 'wavy' });
+    expect(changed.highlight).toMatchObject({ ...existing, style: 'wavy' });
+    expect(mergeReaderHighlight([changed.highlight], { ...highlight('color', 3, 5), color: 'blue' }).highlight)
+      .toMatchObject({ ...existing, color: 'blue', style: 'wavy' });
+  });
   it('edits the complete existing highlight for a contained selection', () => {
     const existing = highlight('old', 1, 8);
     const result = mergeReaderHighlight([existing], { ...highlight('new', 3, 5), color: 'pink' });

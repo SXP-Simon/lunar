@@ -89,9 +89,7 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
   {
     version: 4,
     name: 'reader_highlight_colors',
-    statements: [
-      "ALTER TABLE reader_highlights ADD COLUMN color TEXT NOT NULL DEFAULT 'yellow'",
-    ],
+    statements: ["ALTER TABLE reader_highlights ADD COLUMN color TEXT NOT NULL DEFAULT 'yellow'"],
   },
   {
     version: 5,
@@ -112,5 +110,10 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       )`,
       'CREATE INDEX IF NOT EXISTS reading_sessions_book_time_index ON reading_sessions(book_id, started_at)',
     ],
+  },
+  {
+    version: 7,
+    name: 'reader_highlight_styles',
+    statements: ["ALTER TABLE reader_highlights ADD COLUMN style TEXT NOT NULL DEFAULT 'highlight'"],
   },
 ];

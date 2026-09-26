@@ -9,7 +9,7 @@ import { SQLiteHighlightRepository } from '../../src/features/reader/repositorie
 const databases: DatabaseSync[] = [];
 afterEach(() => { for (const database of databases.splice(0)) database.close(); });
 
-function createDatabase(version = 4) {
+function createDatabase(version = 7) {
   const sqlite = new DatabaseSync(':memory:');
   databases.push(sqlite);
   sqlite.exec('PRAGMA foreign_keys = ON');
@@ -47,8 +47,10 @@ describe('SQLite highlight persistence', () => {
     sqlite.prepare('INSERT INTO reader_highlights VALUES (?, ?, ?, ?, ?, ?)').run(
       highlight.id, highlight.bookId, highlight.href, JSON.stringify(highlight.sourceRange), highlight.text, highlight.createdAt,
     );
-    for (const statement of DATABASE_MIGRATIONS[3].statements) sqlite.exec(statement);
-    expect(await repository.listByBookId('book')).toEqual([{ ...highlight, color: 'yellow' }]);
+    for (const migration of DATABASE_MIGRATIONS.filter((item) => item.version > 3)) {
+      for (const statement of migration.statements) sqlite.exec(statement);
+    }
+    expect(await repository.listByBookId('book')).toEqual([{ ...highlight, color: 'yellow', style: 'highlight' }]);
   });
 
   it('persists color edits and atomically replaces overlapping records', async () => {
@@ -56,7 +58,7 @@ describe('SQLite highlight persistence', () => {
     await repository.save(highlight);
     const updated = { ...highlight, color: 'green' as const, text: 'expanded', sourceRange: { ...highlight.sourceRange, end: { nodePath: [1], textOffset: 8 } } };
     await repository.replace(updated, [highlight.id]);
-    expect(await repository.listByBookId('book')).toEqual([updated]);
+    expect(await repository.listByBookId('book')).toEqual([{ ...updated, style: 'highlight' }]);
     await repository.remove('book', [highlight.id]);
     expect(await repository.listByBookId('book')).toEqual([]);
   });
@@ -65,7 +67,7 @@ describe('SQLite highlight persistence', () => {
     const { repository } = createDatabase();
     await repository.save(highlight);
     await expect(repository.replace({ ...highlight, text: null as unknown as string }, [highlight.id])).rejects.toThrow();
-    expect(await repository.listByBookId('book')).toEqual([{ ...highlight, color: 'yellow' }]);
+    expect(await repository.listByBookId('book')).toEqual([{ ...highlight, color: 'yellow', style: 'highlight' }]);
   });
 
   it('scopes deletions to the owning book', async () => {
@@ -82,5 +84,15 @@ describe('SQLite highlight persistence', () => {
     expect(await repository.listByBookId('book')).toHaveLength(1);
     sqlite.exec("UPDATE reader_highlights SET color = 'invalid'");
     expect((await repository.listByBookId('book'))[0].color).toBe('yellow');
+  });
+
+  it.each(['highlight', 'underline', 'wavy'] as const)('round trips the %s style independently of color', async (style) => {
+    const { sqlite, repository } = createDatabase();
+    await repository.save({ ...highlight, color: 'pink', style });
+    expect(await repository.listByBookId('book')).toEqual([{ ...highlight, color: 'pink', style }]);
+    await repository.save({ ...highlight, color: 'blue', style });
+    expect((await repository.listByBookId('book'))[0]).toMatchObject({ color: 'blue', style });
+    sqlite.exec("UPDATE reader_highlights SET style = 'invalid'");
+    expect((await repository.listByBookId('book'))[0].style).toBe('highlight');
   });
 });

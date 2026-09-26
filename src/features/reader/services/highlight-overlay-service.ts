@@ -30,7 +30,13 @@ export function createReaderHighlightOverlayResolver(
     const key = `${snapshot.revisionId}:${href}`;
     const cached = cache.get(frame);
     if (cached?.key === key) return cached.overlays;
-    const overlays = createReaderHighlightOverlays(snapshot.revisionId, href, frame.hits ?? [], chapters.get(href) ?? [], colors);
+    const overlays = createReaderHighlightOverlays(
+      snapshot.revisionId,
+      href,
+      frame.hits ?? [],
+      chapters.get(href) ?? [],
+      colors,
+    );
     cache.set(frame, { key, overlays });
     return overlays;
   };
@@ -61,7 +67,9 @@ export function createReaderHighlightOverlays(
       bounds,
       color: colors[highlight.color ?? 'yellow'],
       radius: 2,
-    })));
+      ...highlightDecoration(highlight),
+    })),
+  );
 }
 
 export async function resolveReaderSelectionSourceRange(
@@ -70,10 +78,8 @@ export async function resolveReaderSelectionSourceRange(
   href: string,
 ): Promise<ReaderSourceRange | undefined> {
   if (selection.sourceRange) return selection.sourceRange;
-  if (
-    selection.searchSegments.length === 0
-    || selection.searchSegments.length !== selection.geometryRequests.length
-  ) return undefined;
+  if (selection.searchSegments.length === 0 || selection.searchSegments.length !== selection.geometryRequests.length)
+    return undefined;
 
   const ranges: ReaderSourceRange[] = [];
   for (const segment of selection.searchSegments) {
@@ -82,11 +88,7 @@ export async function resolveReaderSelectionSourceRange(
       caseSensitive: true,
       limit: 256,
     });
-    const range = resolveReaderTextSelectionSegmentSourceRange(
-      segment,
-      response.results,
-      href,
-    );
+    const range = resolveReaderTextSelectionSegmentSourceRange(segment, response.results, href);
     if (!range || !rangeFollows(ranges.at(-1), range)) return undefined;
     ranges.push(range);
   }
@@ -111,12 +113,15 @@ export async function resolveReaderHighlightOverlays(
     if (highlight.href !== href) continue;
     const localSelection = createReaderTextSelectionFromSourceRange(entries, highlight.sourceRange);
     if (localSelection) {
-      overlays.push(...localSelection.bounds.map((bounds) => ({
-        revisionId,
-        bounds,
-        color,
-        radius: 2,
-      })));
+      overlays.push(
+        ...localSelection.bounds.map((bounds) => ({
+          revisionId,
+          bounds,
+          color,
+          radius: 2,
+          ...highlightDecoration(highlight),
+        })),
+      );
       continue;
     }
 
@@ -129,16 +134,25 @@ export async function resolveReaderHighlightOverlays(
         start: result.start,
         end: result.end,
       });
-      overlays.push(...rects.map((rect) => ({
-        revisionId,
-        bounds: rect.bounds,
-        color,
-        radius: 2,
-      })));
+      overlays.push(
+        ...rects.map((rect) => ({
+          revisionId,
+          bounds: rect.bounds,
+          color,
+          radius: 2,
+          ...highlightDecoration(highlight),
+        })),
+      );
     }
   }
 
   return overlays;
+}
+
+function highlightDecoration(highlight: ReaderHighlight): Pick<ReaderOverlayRect, 'decoration' | 'thickness'> {
+  return highlight.style === 'underline' || highlight.style === 'wavy'
+    ? { decoration: highlight.style, thickness: 1.5 }
+    : {};
 }
 
 async function resolveHighlightSegments(
@@ -157,37 +171,44 @@ async function resolveHighlightSegments(
   });
   const exactResult = fullResponse.results.find((result) => {
     const range = result.locator?.sourceRange;
-    return result.locator?.manifestHref === href
-      && pageIndexes.has(result.pageIndex)
-      && range !== undefined
-      && sameSourcePoint(range.start, highlight.sourceRange.start)
-      && sameSourcePoint(range.end, highlight.sourceRange.end);
+    return (
+      result.locator?.manifestHref === href &&
+      pageIndexes.has(result.pageIndex) &&
+      range !== undefined &&
+      sameSourcePoint(range.start, highlight.sourceRange.start) &&
+      sameSourcePoint(range.end, highlight.sourceRange.end)
+    );
   });
   if (exactResult) return [exactResult];
 
   const textSegments = normalizedText.split('\n').filter(Boolean);
   if (textSegments.length === 0) return [];
-  const responses = await Promise.all(textSegments.map((query) => runtime.search({
-    query,
-    caseSensitive: true,
-    limit: 256,
-  })));
+  const responses = await Promise.all(
+    textSegments.map((query) =>
+      runtime.search({
+        query,
+        caseSensitive: true,
+        limit: 256,
+      }),
+    ),
+  );
 
   const selected: ReaderSearchResult[] = [];
   for (let index = 0; index < responses.length; index += 1) {
     const candidates = responses[index].results
       .filter((result) => result.locator?.manifestHref === href)
       .filter((result) => pageIndexes.has(result.pageIndex))
-      .filter((result) => result.locator?.sourceRange
-        && containsSourceRange(highlight.sourceRange, result.locator.sourceRange))
+      .filter(
+        (result) =>
+          result.locator?.sourceRange && containsSourceRange(highlight.sourceRange, result.locator.sourceRange),
+      )
       .sort(compareSearchResultsBySource);
     const previousRange = selected.at(-1)?.locator?.sourceRange;
     const candidate = candidates.find((result) => {
       const range = result.locator?.sourceRange;
       if (!range || !rangeFollows(previousRange, range)) return false;
       if (index === 0 && !sameSourcePoint(range.start, highlight.sourceRange.start)) return false;
-      return index !== responses.length - 1
-        || sameSourcePoint(range.end, highlight.sourceRange.end);
+      return index !== responses.length - 1 || sameSourcePoint(range.end, highlight.sourceRange.end);
     });
     if (!candidate) return [];
     selected.push(candidate);
@@ -196,8 +217,7 @@ async function resolveHighlightSegments(
 }
 
 function containsSourceRange(container: ReaderSourceRange, value: ReaderSourceRange): boolean {
-  return compareSourcePoints(container.start, value.start) <= 0
-    && compareSourcePoints(value.end, container.end) <= 0;
+  return compareSourcePoints(container.start, value.start) <= 0 && compareSourcePoints(value.end, container.end) <= 0;
 }
 
 function rangeFollows(previous: ReaderSourceRange | undefined, current: ReaderSourceRange): boolean {

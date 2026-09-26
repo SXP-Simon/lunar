@@ -10,6 +10,7 @@ vi.mock('expo-symbols', () => ({ SymbolView: 'SymbolView' }));
 vi.mock('heroui-native/button', () => ({ Button: 'Button' }));
 vi.mock('heroui-native/hooks', () => ({ useThemeColor: vi.fn() }));
 vi.mock('uniwind', () => ({ useCSSVariable: vi.fn() }));
+vi.mock('react-native-svg', () => ({ default: 'Svg', Path: 'Path' }));
 
 const insets = { top: 40, right: 0, bottom: 24, left: 0 };
 
@@ -21,7 +22,7 @@ describe('reader selection controls layout', () => {
       844,
       insets,
     );
-    expect(layout?.toolbar).toEqual({ left: 34, top: 180 });
+    expect(layout?.toolbar).toMatchObject({ left: 12, top: 166, width: 360, placement: 'above', compact: false });
     expect(layout?.startHandle).toEqual({ x: 100, y: 324 });
     expect(layout?.endHandle).toEqual({ x: 220, y: 324 });
   });
@@ -33,7 +34,7 @@ describe('reader selection controls layout', () => {
       640,
       insets,
     );
-    expect(layout?.toolbar).toEqual({ left: 12, top: 90 });
+    expect(layout?.toolbar).toMatchObject({ left: 12, top: 90, width: 296, placement: 'below', compact: true });
   });
 
   it('keeps the toolbar inside horizontal viewport padding', () => {
@@ -43,6 +44,20 @@ describe('reader selection controls layout', () => {
       640,
       insets,
     );
-    expect(layout?.toolbar.left).toBe(56);
+    expect(layout?.toolbar.left).toBe(12);
+  });
+
+  it('accounts for enlarged text and both horizontal safe areas', () => {
+    const layout = computeReaderSelectionControlsLayout([{ x: 500, y: 700, width: 60, height: 30 }],
+      600, 844, { ...insets, left: 40, right: 40 }, 200)!;
+    expect(layout.toolbar).toMatchObject({ left: 188, top: 488, width: 360, placement: 'above' });
+    expect(layout.toolbar.arrowLeft).toBeLessThanOrEqual(330);
+  });
+
+  it('keeps a tall selection toolbar within the vertical safe area', () => {
+    const layout = computeReaderSelectionControlsLayout([{ x: 20, y: 60, width: 260, height: 520 }],
+      320, 640, insets)!;
+    expect(layout.toolbar.top).toBeGreaterThanOrEqual(52);
+    expect(layout.toolbar.top + 174).toBeLessThanOrEqual(604);
   });
 });

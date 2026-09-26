@@ -1,7 +1,13 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import type { ReaderSourcePoint, ReaderSourceRange } from '@/reader';
-import { ReaderHighlightColors, type ReaderHighlight, type ReaderHighlightColor } from '../domain/reader-highlight';
+import {
+  ReaderHighlightColors,
+  ReaderHighlightStyles,
+  type ReaderHighlight,
+  type ReaderHighlightColor,
+  type ReaderHighlightStyle,
+} from '../domain/reader-highlight';
 import type { HighlightRepository } from './highlight-repository';
 
 interface HighlightRow {
@@ -12,6 +18,7 @@ interface HighlightRow {
   readonly text: string;
   readonly created_at: number;
   readonly color: string;
+  readonly style: string;
 }
 
 export class SQLiteHighlightRepository implements HighlightRepository {
@@ -24,29 +31,38 @@ export class SQLiteHighlightRepository implements HighlightRepository {
     );
     return rows.flatMap((row) => {
       const sourceRange = parseSourceRange(row.source_range_json);
-      return sourceRange ? [{
-        id: row.id,
-        bookId: row.book_id,
-        href: row.href,
-        sourceRange,
-        text: row.text,
-        createdAt: row.created_at,
-        color: ReaderHighlightColors.includes(row.color as ReaderHighlightColor)
-          ? row.color as ReaderHighlightColor : 'yellow',
-      }] : [];
+      return sourceRange
+        ? [
+            {
+              id: row.id,
+              bookId: row.book_id,
+              href: row.href,
+              sourceRange,
+              text: row.text,
+              createdAt: row.created_at,
+              color: ReaderHighlightColors.includes(row.color as ReaderHighlightColor)
+                ? (row.color as ReaderHighlightColor)
+                : 'yellow',
+              style: ReaderHighlightStyles.includes(row.style as ReaderHighlightStyle)
+                ? (row.style as ReaderHighlightStyle)
+                : 'highlight',
+            },
+          ]
+        : [];
     });
   }
 
   async save(highlight: ReaderHighlight): Promise<void> {
     await this.database.runAsync(
       `INSERT INTO reader_highlights (
-        id, book_id, href, source_range_json, text, created_at, color
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        id, book_id, href, source_range_json, text, created_at, color, style
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(book_id, href, source_range_json) DO UPDATE SET
         id = excluded.id,
         text = excluded.text,
         created_at = excluded.created_at,
-        color = excluded.color`,
+        color = excluded.color,
+        style = excluded.style`,
       highlight.id,
       highlight.bookId,
       highlight.href,
@@ -54,6 +70,7 @@ export class SQLiteHighlightRepository implements HighlightRepository {
       highlight.text,
       highlight.createdAt,
       highlight.color ?? 'yellow',
+      highlight.style ?? 'highlight',
     );
   }
 
@@ -87,11 +104,12 @@ function parseSourcePoint(value: unknown): ReaderSourcePoint | undefined {
   if (!value || typeof value !== 'object') return undefined;
   const point = value as { readonly nodePath?: unknown; readonly textOffset?: unknown };
   if (
-    !Array.isArray(point.nodePath)
-    || !point.nodePath.every((part) => Number.isSafeInteger(part) && part >= 0)
-    || !Number.isSafeInteger(point.textOffset)
-    || Number(point.textOffset) < 0
-  ) return undefined;
+    !Array.isArray(point.nodePath) ||
+    !point.nodePath.every((part) => Number.isSafeInteger(part) && part >= 0) ||
+    !Number.isSafeInteger(point.textOffset) ||
+    Number(point.textOffset) < 0
+  )
+    return undefined;
   return {
     nodePath: point.nodePath as number[],
     textOffset: Number(point.textOffset),

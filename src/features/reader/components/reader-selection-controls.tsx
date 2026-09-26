@@ -1,17 +1,24 @@
 import { SymbolView } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
-import { Fragment, useMemo } from 'react';
-import { View } from 'react-native';
+import { Fragment, useMemo, useState } from 'react';
+import { Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { useCSSVariable } from 'uniwind';
 import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import type { ReaderSelectionDragController } from '../hooks/use-reader-selection-drag';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 
 import type { ReaderRect } from '@/reader';
-import { ReaderHighlightColors, type ReaderHighlightColor } from '../domain/reader-highlight';
-export const ReaderSelectionToolbarWidth = 252;
-export const ReaderSelectionToolbarHeight = 108;
+import {
+  ReaderHighlightColors,
+  ReaderHighlightStyles,
+  type ReaderHighlightColor,
+  type ReaderHighlightStyle,
+} from '../domain/reader-highlight';
+export const ReaderSelectionToolbarWidth = 360;
+export const ReaderSelectionToolbarHeight = 122;
 
 const SelectionHoldDuration = 400;
 const SelectionMovementTolerance = 4;
@@ -38,7 +45,14 @@ export function configureReaderSelectionGesture(gesture: PanGesture): PanGesture
 }
 
 export interface ReaderSelectionControlsLayout {
-  readonly toolbar: { readonly left: number; readonly top: number };
+  readonly toolbar: {
+    readonly left: number;
+    readonly top: number;
+    readonly width: number;
+    readonly placement: 'above' | 'below';
+    readonly compact: boolean;
+    readonly arrowLeft: number;
+  };
   readonly startHandle: { readonly x: number; readonly y: number };
   readonly endHandle: { readonly x: number; readonly y: number };
 }
@@ -48,6 +62,7 @@ export function computeReaderSelectionControlsLayout(
   viewportWidth: number,
   viewportHeight: number,
   safeAreaInsets: EdgeInsets,
+  measuredHeight?: number,
 ): ReaderSelectionControlsLayout | undefined {
   const first = rects[0];
   const last = rects.at(-1);
@@ -57,17 +72,35 @@ export function computeReaderSelectionControlsLayout(
   const minY = Math.min(...rects.map((rect) => rect.y));
   const maxY = Math.max(...rects.map((rect) => rect.y + rect.height));
   const minimumTop = safeAreaInsets.top + ViewportPadding;
-  const maximumTop = viewportHeight - safeAreaInsets.bottom - ViewportPadding - ReaderSelectionToolbarHeight;
-  const aboveTop = minY - ToolbarGap - ReaderSelectionToolbarHeight;
+  const width = Math.min(
+    ReaderSelectionToolbarWidth,
+    viewportWidth - safeAreaInsets.left - safeAreaInsets.right - ViewportPadding * 2,
+  );
+  if (width <= 0) return undefined;
+  const compact = width < ReaderSelectionToolbarWidth;
+  const height = measuredHeight ?? (compact ? 174 : ReaderSelectionToolbarHeight);
+  const maximumTop = Math.max(minimumTop, viewportHeight - safeAreaInsets.bottom - ViewportPadding - height);
+  const aboveTop = minY - ToolbarGap - height;
   const belowTop = maxY + ToolbarGap;
-  const top = aboveTop >= minimumTop ? aboveTop : Math.min(maximumTop, Math.max(minimumTop, belowTop));
+  const placement =
+    aboveTop >= minimumTop || (belowTop > maximumTop && minY - minimumTop > maximumTop + height - maxY)
+      ? 'above'
+      : 'below';
+  const top = Math.max(minimumTop, Math.min(maximumTop, placement === 'above' ? aboveTop : belowTop));
   const centerX = (minX + maxX) / 2;
   const left = Math.min(
-    viewportWidth - safeAreaInsets.right - ViewportPadding - ReaderSelectionToolbarWidth,
-    Math.max(safeAreaInsets.left + ViewportPadding, centerX - ReaderSelectionToolbarWidth / 2),
+    viewportWidth - safeAreaInsets.right - ViewportPadding - width,
+    Math.max(safeAreaInsets.left + ViewportPadding, centerX - width / 2),
   );
   return {
-    toolbar: { left, top },
+    toolbar: {
+      left,
+      top,
+      width,
+      placement,
+      compact,
+      arrowLeft: Math.max(20, Math.min(width - 30, centerX - left - 5)),
+    },
     startHandle: { x: first.x, y: first.y + first.height },
     endHandle: { x: last.x + last.width, y: last.y + last.height },
   };
@@ -84,6 +117,9 @@ interface ReaderSelectionControlsProps {
   readonly selectedColor: ReaderHighlightColor;
   readonly colorLabels: Readonly<Record<ReaderHighlightColor, string>>;
   readonly onColorChange: (color: ReaderHighlightColor) => void;
+  readonly selectedStyle: ReaderHighlightStyle;
+  readonly styleLabels: Readonly<Record<ReaderHighlightStyle, string>>;
+  readonly onStyleChange: (style: ReaderHighlightStyle) => void;
   readonly rects: readonly ReaderRect[];
   readonly viewportWidth: number;
   readonly viewportHeight: number;
@@ -104,6 +140,9 @@ export function ReaderSelectionControls({
   selectedColor,
   colorLabels,
   onColorChange,
+  selectedStyle,
+  styleLabels,
+  onStyleChange,
   rects,
   viewportWidth,
   viewportHeight,
@@ -113,9 +152,17 @@ export function ReaderSelectionControls({
   drag,
 }: ReaderSelectionControlsProps) {
   const foreground = useThemeColor('foreground');
+  const [measuredHeight, setMeasuredHeight] = useState<number>();
+  const selectionColor = useCSSVariable('--color-navigation-active') as string;
   const dragging = drag?.binding.dragging;
   const toolbarStyle = useAnimatedStyle(() => ({ opacity: dragging?.value ? 0 : 1 }));
-  const layout = computeReaderSelectionControlsLayout(rects, viewportWidth, viewportHeight, safeAreaInsets);
+  const layout = computeReaderSelectionControlsLayout(
+    rects,
+    viewportWidth,
+    viewportHeight,
+    safeAreaInsets,
+    measuredHeight,
+  );
   if (!layout) return null;
 
   return (
@@ -123,44 +170,26 @@ export function ReaderSelectionControls({
       <Animated.View
         accessibilityLabel={selectionLabel}
         accessibilityRole="toolbar"
-        className="absolute z-30 h-[108px] justify-center rounded-2xl border border-border bg-surface px-2 shadow-lg"
+        pointerEvents="box-none"
+        onLayout={(event) => setMeasuredHeight(event.nativeEvent.layout.height)}
+        className={`absolute z-30 gap-2.5 ${layout.toolbar.placement === 'above' ? 'flex-col-reverse' : 'flex-col'}`}
         style={[
           {
             left: layout.toolbar.left,
             top: layout.toolbar.top,
-            width: ReaderSelectionToolbarWidth,
+            width: layout.toolbar.width,
           },
           toolbarStyle,
         ]}>
-        <View className="h-12 flex-row items-center justify-center">
-          {ReaderHighlightColors.map((color) => (
-            <Button
-              key={color}
-              accessibilityLabel={colorLabels[color]}
-              accessibilityState={{ selected: selectedColor === color }}
-              className="h-11 w-11 rounded-full px-0"
-              isIconOnly
-              isDisabled={isHighlightDisabled}
-              onPress={() => onColorChange(color)}
-              size="sm"
-              variant="ghost">
-              <View className={`h-7 w-7 items-center justify-center rounded-full ${HighlightColorClasses[color]}`}>
-                {selectedColor === color && (
-                  <SymbolView
-                    name={{ ios: 'checkmark', android: 'check', web: 'check' }}
-                    size={17}
-                    tintColor={foreground}
-                  />
-                )}
-              </View>
-            </Button>
-          ))}
-        </View>
-        <View className="h-px bg-border" />
-        <View className="h-12 flex-row items-center justify-center">
+        <View className="min-h-16 flex-row items-center rounded-2xl border border-border bg-surface px-2 py-0.5 shadow-lg">
+          <View
+            pointerEvents="none"
+            className={`absolute size-2.5 rotate-45 bg-surface ${layout.toolbar.placement === 'above' ? '-bottom-1.5 border-b border-r border-border' : '-top-1.5 border-l border-t border-border'}`}
+            style={{ left: layout.toolbar.arrowLeft }}
+          />
           <Button
             accessibilityLabel={copyLabel}
-            className="h-11 flex-1 rounded-md px-1"
+            className="min-h-14 flex-1 flex-col gap-1 rounded-xl px-2 py-2"
             onPress={onCopy}
             size="sm"
             variant="ghost">
@@ -171,10 +200,10 @@ export function ReaderSelectionControls({
             />
             <Button.Label className="text-xs">{copyLabel}</Button.Label>
           </Button>
-          <View className="h-7 w-px bg-border" />
+          <View className="h-8 w-px bg-border" />
           <Button
             accessibilityLabel={highlightLabel}
-            className="h-11 flex-1 rounded-md px-1"
+            className="min-h-14 flex-1 flex-col gap-1 rounded-xl px-2 py-2"
             isDisabled={isHighlightDisabled}
             onPress={onHighlight}
             size="sm"
@@ -190,6 +219,65 @@ export function ReaderSelectionControls({
             />
             <Button.Label className="text-xs">{highlightLabel}</Button.Label>
           </Button>
+        </View>
+        <View
+          pointerEvents="box-none"
+          className={layout.toolbar.compact ? 'items-center gap-2' : 'h-12 flex-row items-center gap-2'}>
+          <View className="flex-row">
+            {ReaderHighlightStyles.map((style) => (
+              <Button
+                key={style}
+                isIconOnly
+                size="sm"
+                variant="ghost"
+                accessibilityLabel={styleLabels[style]}
+                accessibilityState={{ selected: selectedStyle === style }}
+                isDisabled={isHighlightDisabled}
+                onPress={() => onStyleChange(style)}
+                className={`size-11 rounded-full border bg-surface p-0 shadow-sm ${selectedStyle === style ? 'border-navigation-active' : 'border-border'}`}>
+                <View pointerEvents="none" className="items-center justify-center">
+                  <Text
+                    className={`text-xl leading-6 ${style === 'highlight' ? 'rounded bg-default px-1' : ''} ${selectedStyle === style ? 'text-navigation-active' : 'text-foreground'}`}>
+                    A
+                  </Text>
+                  {style !== 'highlight' && (
+                    <Svg width={22} height={5} viewBox="0 0 22 5">
+                      <Path
+                        d={style === 'underline' ? 'M1 2.5 H21' : 'M1 2.5 Q3 -0.5 5 2.5 T9 2.5 T13 2.5 T17 2.5 T21 2.5'}
+                        fill="none"
+                        stroke={selectedStyle === style ? selectionColor : foreground}
+                        strokeWidth={1.5}
+                      />
+                    </Svg>
+                  )}
+                </View>
+              </Button>
+            ))}
+          </View>
+          <View className="h-12 flex-row items-center rounded-full bg-surface shadow-sm">
+            {ReaderHighlightColors.map((color) => (
+              <Button
+                key={color}
+                accessibilityLabel={colorLabels[color]}
+                accessibilityState={{ selected: selectedColor === color }}
+                className="size-11 rounded-full p-0"
+                isIconOnly
+                size="sm"
+                variant="ghost"
+                isDisabled={isHighlightDisabled}
+                onPress={() => onColorChange(color)}>
+                <View className={`size-7 items-center justify-center rounded-full ${HighlightColorClasses[color]}`}>
+                  {selectedColor === color && (
+                    <SymbolView
+                      name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                      size={17}
+                      tintColor={foreground}
+                    />
+                  )}
+                </View>
+              </Button>
+            ))}
+          </View>
         </View>
       </Animated.View>
       {drag && (

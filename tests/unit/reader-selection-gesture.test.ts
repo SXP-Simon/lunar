@@ -11,6 +11,7 @@ vi.mock('expo-symbols', () => ({ SymbolView: 'SymbolView' }));
 vi.mock('heroui-native/button', () => ({ Button: 'Button' }));
 vi.mock('heroui-native/hooks', () => ({ useThemeColor: vi.fn() }));
 vi.mock('uniwind', () => ({ useCSSVariable: vi.fn() }));
+vi.mock('react-native-svg', () => ({ default: 'Svg', Path: 'Path' }));
 
 function configuredGesture() {
   const gesture = {

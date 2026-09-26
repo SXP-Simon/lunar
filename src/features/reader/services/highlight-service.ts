@@ -2,7 +2,7 @@ import { randomUUID } from 'expo-crypto';
 
 import { getLunarDatabase } from '@/db';
 import type { ReaderSourceRange } from '@/reader';
-import type { ReaderHighlight, ReaderHighlightColor } from '../domain/reader-highlight';
+import type { ReaderHighlight, ReaderHighlightColor, ReaderHighlightStyle } from '../domain/reader-highlight';
 import { mergeReaderHighlight, normalizeReaderHighlights } from '../domain/highlight-ranges';
 import { SQLiteHighlightRepository } from '../repositories/sqlite-highlight-repository';
 
@@ -12,6 +12,7 @@ export interface CreateReaderHighlightInput {
   readonly sourceRange: ReaderSourceRange;
   readonly text: string;
   readonly color?: ReaderHighlightColor;
+  readonly style?: ReaderHighlightStyle;
 }
 
 export async function listReaderHighlights(bookId: string): Promise<readonly ReaderHighlight[]> {
@@ -22,7 +23,10 @@ export async function listReaderHighlights(bookId: string): Promise<readonly Rea
   if (normalized.length < original.length) {
     await database.withExclusiveTransactionAsync(async (transaction) => {
       const transactionalRepository = new SQLiteHighlightRepository(transaction);
-      await transactionalRepository.remove(bookId, original.map((highlight) => highlight.id));
+      await transactionalRepository.remove(
+        bookId,
+        original.map((highlight) => highlight.id),
+      );
       for (const highlight of normalized) await transactionalRepository.save(highlight);
     });
   }
@@ -36,10 +40,7 @@ export async function createReaderHighlight(input: CreateReaderHighlightInput): 
   return highlight;
 }
 
-export function prepareReaderHighlight(
-  input: CreateReaderHighlightInput,
-  highlights: readonly ReaderHighlight[],
-) {
+export function prepareReaderHighlight(input: CreateReaderHighlightInput, highlights: readonly ReaderHighlight[]) {
   const highlight: ReaderHighlight = {
     ...input,
     id: randomUUID(),

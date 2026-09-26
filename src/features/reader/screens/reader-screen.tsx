@@ -56,7 +56,7 @@ import { useReaderSession } from '../hooks/use-reader-session';
 import { useReadingTime } from '../hooks/use-reading-time';
 import { useReaderVolumeKeys } from '../hooks/use-reader-volume-keys';
 import { containsHighlightRange } from '../domain/highlight-ranges';
-import type { ReaderHighlightColor } from '../domain/reader-highlight';
+import type { ReaderHighlightColor, ReaderHighlightStyle } from '../domain/reader-highlight';
 import {
   createReaderHighlightOverlayResolver,
   createReaderHighlightRegions,
@@ -853,7 +853,7 @@ export default function ReaderScreen() {
   }, [clearSelection, selection, t, toast]);
 
   const highlightSelection = useCallback(
-    async (color?: ReaderHighlightColor) => {
+    async (color?: ReaderHighlightColor, style?: ReaderHighlightStyle) => {
       const href = session.snapshot.position?.locator?.manifestHref;
       if (isHighlightingRef.current) return;
       if (!selection || !href || !bookId) {
@@ -874,13 +874,13 @@ export default function ReaderScreen() {
           sourceRange,
           text: selection.text,
           color: color ?? activeHighlight?.color ?? 'yellow',
+          style: style ?? activeHighlight?.style ?? 'highlight',
         });
         const saved = await operation;
-        toast.show({ variant: 'success', label: t('reader.highlightSaved') });
-        if (!color && selectionRef.current === selected) clearSelection();
+        if (!color && !style && selectionRef.current === selected) clearSelection();
         const latest = session.runtime.getSnapshot();
         if (
-          color &&
+          (color || style) &&
           selectionRef.current === selected &&
           latest.revisionId === selection.revisionId &&
           latest.spreadIndex === selection.spreadIndex &&
@@ -1165,6 +1165,13 @@ export default function ReaderScreen() {
           highlightLabel={t(activeHighlight ? 'reader.removeHighlight' : 'reader.highlightSelection')}
           isExistingHighlight={Boolean(activeHighlight)}
           selectedColor={activeHighlight?.color ?? 'yellow'}
+          selectedStyle={activeHighlight?.style ?? 'highlight'}
+          styleLabels={{
+            highlight: t('reader.highlightStyleFill'),
+            underline: t('reader.highlightStyleUnderline'),
+            wavy: t('reader.highlightStyleWavy'),
+          }}
+          onStyleChange={(style) => void highlightSelection(undefined, style)}
           colorLabels={{
             yellow: t('reader.highlightYellow'),
             pink: t('reader.highlightPink'),

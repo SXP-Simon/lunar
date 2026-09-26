@@ -4,19 +4,9 @@ import type { DerivedValue, SharedValue } from 'react-native-reanimated';
 import type { ReaderRect, ReaderRenderFrame, ReaderSnapshot } from '../../../contracts';
 import type { CompiledReaderPicture } from '../../rendering/picture-compiler';
 
-export type ReaderPageAnimationStyle =
-  | 'cover'
-  | 'page'
-  | 'slide'
-  | 'overlay'
-  | 'pageCurl'
-  | 'simulation';
+export type ReaderPageAnimationStyle = 'cover' | 'page' | 'slide' | 'overlay' | 'pageCurl' | 'simulation';
 
-export const READER_PAGE_ANIMATION_STYLES: readonly ReaderPageAnimationStyle[] = [
-  'cover',
-  'page',
-  'slide',
-];
+export const READER_PAGE_ANIMATION_STYLES: readonly ReaderPageAnimationStyle[] = ['cover', 'page', 'slide'];
 
 export interface ReaderPageOverlay {
   readonly revisionId?: number;
@@ -25,6 +15,7 @@ export interface ReaderPageOverlay {
   readonly radius?: number;
   readonly outline?: boolean;
   readonly thickness?: number;
+  readonly decoration?: 'underline' | 'wavy';
 }
 
 export interface ReaderPageContent {

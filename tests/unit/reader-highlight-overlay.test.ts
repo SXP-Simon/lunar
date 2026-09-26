@@ -41,6 +41,15 @@ describe('reader highlight overlays', () => {
   const snapshot = { revisionId: 7, spreadIndex: 0, position: { locator: { manifestHref: 'chapter.xhtml' } } } as ReaderSnapshot;
   const frame = { spreadIndex: 0, hits: sourceEntries } as ReaderRenderFrame;
 
+  it.each(['underline', 'wavy'] as const)('retains %s geometry on both pages during a native turn', (style) => {
+    const resolve = createReaderHighlightOverlayResolver([{ ...highlight, style }], colors);
+    const source = decorateReaderPageOverlays({ key: 'source', snapshot, frame } as ReaderPageContent, resolve);
+    const target = decorateReaderPageOverlays({ key: 'target', snapshot, frame: { ...frame, hits: sourceEntries.slice(1) } } as ReaderPageContent, resolve);
+    const faces = nativeAutomaticPageTurnFaces({ id: 1, from: source, to: target, direction: 1 });
+    expect(faces.front.overlays?.map((overlay) => overlay.decoration)).toEqual([style, style]);
+    expect(faces.background.overlays?.[0]).toMatchObject({ decoration: style, thickness: 1.5, bounds: entries[1].bounds });
+  });
+
   it('computes persistent overlays synchronously and caches them with the immutable frame', () => {
     const resolve = createReaderHighlightOverlayResolver([highlight], colors);
     const overlays = resolve(snapshot, frame);

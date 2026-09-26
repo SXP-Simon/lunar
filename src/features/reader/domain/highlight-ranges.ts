@@ -9,8 +9,9 @@ export function compareHighlightPoints(left: ReaderSourcePoint, right: ReaderSou
 }
 
 export function containsHighlightRange(container: ReaderSourceRange, value: ReaderSourceRange): boolean {
-  return compareHighlightPoints(container.start, value.start) <= 0
-    && compareHighlightPoints(container.end, value.end) >= 0;
+  return (
+    compareHighlightPoints(container.start, value.start) <= 0 && compareHighlightPoints(container.end, value.end) >= 0
+  );
 }
 
 export function mergeReaderHighlight(
@@ -23,13 +24,17 @@ export function mergeReaderHighlight(
   while (expanded) {
     expanded = false;
     for (const existing of highlights) {
-      if (removedIds.has(existing.id) || existing.bookId !== candidate.bookId || existing.href !== candidate.href) continue;
-      if (compareHighlightPoints(existing.sourceRange.end, highlight.sourceRange.start) <= 0
-        || compareHighlightPoints(existing.sourceRange.start, highlight.sourceRange.end) >= 0) continue;
+      if (removedIds.has(existing.id) || existing.bookId !== candidate.bookId || existing.href !== candidate.href)
+        continue;
+      if (
+        compareHighlightPoints(existing.sourceRange.end, highlight.sourceRange.start) <= 0 ||
+        compareHighlightPoints(existing.sourceRange.start, highlight.sourceRange.end) >= 0
+      )
+        continue;
       removedIds.add(existing.id);
       expanded = true;
       if (containsHighlightRange(existing.sourceRange, highlight.sourceRange)) {
-        highlight = { ...existing, color: candidate.color ?? existing.color };
+        highlight = { ...existing, color: candidate.color ?? existing.color, style: candidate.style ?? existing.style };
       } else if (!containsHighlightRange(highlight.sourceRange, existing.sourceRange)) {
         const existingFirst = compareHighlightPoints(existing.sourceRange.start, highlight.sourceRange.start) < 0;
         const first = existingFirst ? existing : highlight;
@@ -46,10 +51,12 @@ export function mergeReaderHighlight(
 }
 
 export function normalizeReaderHighlights(highlights: readonly ReaderHighlight[]): readonly ReaderHighlight[] {
-  const ordered = [...highlights].sort((left, right) =>
-    left.bookId.localeCompare(right.bookId)
-    || left.href.localeCompare(right.href)
-    || compareHighlightPoints(left.sourceRange.start, right.sourceRange.start));
+  const ordered = [...highlights].sort(
+    (left, right) =>
+      left.bookId.localeCompare(right.bookId) ||
+      left.href.localeCompare(right.href) ||
+      compareHighlightPoints(left.sourceRange.start, right.sourceRange.start),
+  );
   const normalized: ReaderHighlight[] = [];
   for (const candidate of ordered) {
     const previous = normalized.at(-1);
@@ -64,6 +71,7 @@ export function normalizeReaderHighlights(highlights: readonly ReaderHighlight[]
       normalized[normalized.length - 1] = {
         ...highlight,
         color: candidate.createdAt >= previous.createdAt ? candidate.color : previous.color,
+        style: candidate.createdAt >= previous.createdAt ? candidate.style : previous.style,
         createdAt: Math.max(candidate.createdAt, previous.createdAt),
       };
     }
@@ -74,8 +82,10 @@ export function normalizeReaderHighlights(highlights: readonly ReaderHighlight[]
 function joinOverlappingText(first: ReaderHighlight, last: ReaderHighlight): string {
   const left = first.text.replace(/\r?\n/gu, '');
   const right = last.text.replace(/\r?\n/gu, '');
-  if (first.sourceRange.end.nodePath.length === last.sourceRange.start.nodePath.length
-    && first.sourceRange.end.nodePath.every((part, index) => part === last.sourceRange.start.nodePath[index])) {
+  if (
+    first.sourceRange.end.nodePath.length === last.sourceRange.start.nodePath.length &&
+    first.sourceRange.end.nodePath.every((part, index) => part === last.sourceRange.start.nodePath[index])
+  ) {
     const overlap = first.sourceRange.end.textOffset - last.sourceRange.start.textOffset;
     if (overlap > 0 && overlap <= right.length && left.endsWith(right.slice(0, overlap))) {
       return left + right.slice(overlap);
