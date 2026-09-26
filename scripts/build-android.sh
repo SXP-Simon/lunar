@@ -10,6 +10,7 @@ case "$PROFILE" in
 esac
 OUTPUT="${2:-lunar-${PROFILE}.${EXTENSION}}"
 EAS_CLI_VERSION=21.8.0
+EXPO_DOCTOR_VERSION=1.20.4
 
 : "${EXPO_TOKEN:?EXPO_TOKEN must be provided by the build environment}"
 
@@ -31,7 +32,7 @@ if (( ${#SYSTEM_PACKAGES[@]} > 0 )); then
   apt-get install -y --no-install-recommends "${SYSTEM_PACKAGES[@]}"
 fi
 
-for command_name in java javac node unzip wget curl git; do
+for command_name in java javac node unzip wget curl git timeout; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "$command_name is required in the CNB build image." >&2
     exit 1
@@ -86,6 +87,23 @@ fi
 
 pnpm install --frozen-lockfile
 
+# EAS build-tools runs Doctor with a 30-second timer whose process-tree cleanup
+# can throw an uncaught ESRCH. Run it here with GNU timeout instead; retain EAS's
+# advisory treatment of Doctor findings and let the build checks below enforce
+# type, test, lint and SDK dependency compatibility requirements.
+DOCTOR_APP_VARIANT=production
+case "$PROFILE" in
+  development|nightly) DOCTOR_APP_VARIANT="$PROFILE" ;;
+esac
+echo "Running Expo Doctor before the local build (180-second timeout)"
+if APP_VARIANT="$DOCTOR_APP_VARIANT" timeout --kill-after=10s 180s \
+  pnpm dlx "expo-doctor@$EXPO_DOCTOR_VERSION" --verbose; then
+  echo "Expo Doctor completed successfully."
+else
+  DOCTOR_STATUS=$?
+  echo "Warning: Expo Doctor exited with status $DOCTOR_STATUS; see diagnostics above. Continuing as EAS normally does." >&2
+fi
+
 if [[ "$PROFILE" == release || "$PROFILE" == nightly ]]; then
   pnpm run check
   pnpm run test:release
@@ -96,7 +114,7 @@ fi
 rm -rf "${TMPDIR:-/tmp}/metro-cache" "${TMPDIR:-/tmp}"/haste-map-*
 
 mkdir -p "$(dirname "$OUTPUT")"
-pnpm dlx "eas-cli@$EAS_CLI_VERSION" build \
+EAS_BUILD_DISABLE_EXPO_DOCTOR_STEP=1 pnpm dlx "eas-cli@$EAS_CLI_VERSION" build \
   --profile "$PROFILE" \
   --platform android \
   --local \
