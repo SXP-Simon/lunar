@@ -3,7 +3,7 @@ import { memo, useEffect, useMemo } from 'react';
 import { I18nManager, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, type SharedValue } from 'react-native-reanimated';
-import { runOnUI, scheduleOnRN } from 'react-native-worklets';
+import { isUIRuntime, runOnUI, scheduleOnRN } from 'react-native-worklets';
 
 const AnimatedFill = Animated.createAnimatedComponent(Slider.Fill);
 const AnimatedThumb = Animated.createAnimatedComponent(Slider.Thumb);
@@ -115,8 +115,15 @@ export const ReaderProgressSlider = memo(function ReaderProgressSlider({
     ],
   );
 
-  const fillStyle = useAnimatedStyle(() => ({ start: 0, width: Math.min(width.value, offset.value + ThumbSize) }));
-  const thumbStyle = useAnimatedStyle(() => ({ start: 0, transform: [{ translateX: offset.value * direction }] }));
+  const fillStyle = useAnimatedStyle(() => {
+    // Reanimated also evaluates initial styles during React rendering.
+    if (!isUIRuntime()) return { start: 0, width: ThumbSize };
+    return { start: 0, width: Math.min(width.value, offset.value + ThumbSize) };
+  });
+  const thumbStyle = useAnimatedStyle(() => {
+    if (!isUIRuntime()) return { start: 0, transform: [{ translateX: 0 }] };
+    return { start: 0, transform: [{ translateX: offset.value * direction }] };
+  });
 
   return (
     <Slider

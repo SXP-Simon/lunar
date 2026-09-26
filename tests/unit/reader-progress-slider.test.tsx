@@ -4,18 +4,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReaderProgressSlider } from '../../src/features/reader/components/reader-progress-slider';
 import type { SharedValue } from 'react-native-reanimated';
 
-const { handlers, layout } = vi.hoisted(() => ({
+const { handlers, layout, runtime } = vi.hoisted(() => ({
   handlers: new Map<string, (...args: any[]) => void>(),
   layout: { callback: undefined as undefined | ((event: { nativeEvent: { layout: { width: number } } }) => void) },
+  runtime: { rendering: false, styles: [] as (() => unknown)[] },
 }));
 
 vi.mock('react-native', () => ({ I18nManager: { isRTL: false } }));
 vi.mock('react-native-reanimated', () => ({
   default: { createAnimatedComponent: (component: unknown) => component },
-  useSharedValue: (value: unknown) => ({ value, set(next: unknown) { this.value = next; } }),
-  useAnimatedStyle: () => ({}),
+  useSharedValue: (initial: unknown) => {
+    let value = initial;
+    return {
+      get value() {
+        if (runtime.rendering) throw new Error('Shared value read during render');
+        return value;
+      },
+      set(next: unknown) { value = next; },
+    };
+  },
+  useAnimatedStyle: (updater: () => unknown) => {
+    runtime.styles.push(updater);
+    runtime.rendering = true;
+    try { return updater(); } finally { runtime.rendering = false; }
+  },
 }));
 vi.mock('react-native-worklets', () => ({
+  isUIRuntime: () => !runtime.rendering,
   runOnUI: (callback: (...args: any[]) => void) => callback,
   scheduleOnRN: (callback: (...args: any[]) => void, ...args: any[]) => callback(...args),
 }));
@@ -49,6 +64,7 @@ vi.mock('heroui-native/slider', () => {
 beforeEach(() => {
   vi.stubGlobal('React', React);
   handlers.clear();
+  runtime.styles = [];
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -64,6 +80,18 @@ function setup() {
 }
 
 describe('reader progress slider gesture boundaries', () => {
+  it('initializes animation styles without reading shared values during render', () => {
+    expect(() => setup()).not.toThrow();
+    runtime.rendering = true;
+    try {
+      expect(runtime.styles[0]()).toEqual({ start: 0, width: 28 });
+      expect(runtime.styles[1]()).toEqual({ start: 0, transform: [{ translateX: 0 }] });
+    } finally { runtime.rendering = false; }
+    handlers.get('begin')!();
+    handlers.get('update')!({ translationX: 100 });
+    expect(runtime.styles[0]()).toEqual({ start: 0, width: 178 });
+    expect(runtime.styles[1]()).toEqual({ start: 0, transform: [{ translateX: 150 }] });
+  });
   it('keeps continuous drag samples local and submits once on release', () => {
     const { onChangeEnd, onDragBegin, previewPage } = setup();
     handlers.get('begin')!();

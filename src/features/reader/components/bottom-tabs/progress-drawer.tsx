@@ -6,6 +6,7 @@ import { memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore }
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isUIRuntime } from 'react-native-worklets';
 
 import type { ReaderSnapshot } from '@/reader';
 import type { LunarReaderRuntime } from '@/reader/native';
@@ -101,7 +102,8 @@ function ProgressDrawerContent({ bookId, isOpen, onOpenChange, runtime, snapshot
   const percentage = total === undefined ? undefined : Math.round((displayedPage / Math.max(total - 1, 1)) * 100);
   const progressLabel = t('reader.readingProgressLabel');
   const progressTextProps = useAnimatedProps<TextInputProps & { text: string }>(() => {
-    const text = total === undefined ? '—' : `${Math.round((previewPage.value / Math.max(sliderMax, 1)) * 100)}%`;
+    const page = isUIRuntime() ? previewPage.value : displayedPage;
+    const text = total === undefined ? '—' : `${Math.round((page / Math.max(sliderMax, 1)) * 100)}%`;
     return { text, accessibilityLabel: `${progressLabel}: ${text}` };
   });
   const goToPage = useCallback(
