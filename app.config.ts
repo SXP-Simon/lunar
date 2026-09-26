@@ -20,6 +20,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const androidPackage = config.android?.package ?? 'com.lunarain_079.lunar';
   const compactAndroidDevBuild =
     process.env.LUNAR_ANDROID_COMPACT_DEV_BUILD === 'true';
+  const compactAndroidApk =
+    compactAndroidDevBuild || process.env.LUNAR_ANDROID_COMPACT_APK === 'true';
   const buildArchs = getAndroidAbis(process.env.LUNAR_ANDROID_ABIS);
 
   return {
@@ -39,14 +41,17 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-build-properties',
         {
-          android: compactAndroidDevBuild
-            ? {
-                buildArchs,
-                enableBundleCompression: true,
-                networkInspector: false,
-                useLegacyPackaging: true,
-              }
-            : { buildArchs },
+          android: {
+            buildArchs,
+            enableMinifyInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
+            // Compress standalone APK downloads; keep AAB packaging defaults.
+            ...(compactAndroidApk && {
+              enableBundleCompression: true,
+              useLegacyPackaging: true,
+            }),
+            ...(compactAndroidDevBuild && { networkInspector: false }),
+          },
         },
       ],
       'expo-asset',

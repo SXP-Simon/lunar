@@ -44,6 +44,7 @@
       "developmentClient": false,
       "credentialsSource": "remote",
       "env": {
+        "LUNAR_ANDROID_COMPACT_APK": "true",
         "LUNAR_ANDROID_ABIS": "arm64-v8a"
       },
       "android": {

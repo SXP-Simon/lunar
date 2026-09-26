@@ -38,12 +38,7 @@
       "expo-sqlite",
       "expo-image",
       "expo-web-browser",
-      [
-        "expo-font",
-        {
-          "fonts": ["./assets/fonts/LXGWWenKai-Regular.ttf"]
-        }
-      ]
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,
