@@ -12,6 +12,10 @@ CNB 同样能通过 GitHub Release API 创建发布并上传 APK；此方案需�
 
 当前选择 GitHub 以简化发布维护。标准执行器的容量有限，共享构建步骤清理闲置预装工具并限制 Cargo 为两个编译任务。首次完整构建仍须确认磁盘、内存及耗时。公开仓库与私有仓库的执行器规格及计费规则以官方文档为准。[GitHub 执行器规格](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
 
+共享构建步骤沿用 `5041c563af1ca6e83c20310010c97068da094d81` 之前的 CNB 编译顺序：准备 Node.js 22 与 Java 17，由 `scripts/build-android.sh` 初始化 Android SDK、安装依赖、执行检查，再通过 EAS CLI 21.8.0 本地编译并校验 APK 签名。SDK 包清单为 `platform-tools`、`platforms;android-36`、`build-tools;36.0.0`、`ndk;27.1.12297006` 和 `cmake;3.30.5`。Rust 工具仍由原有 EAS 安装钩子准备。
+
+Android SDK 安装统一由构建脚本负责。SDK 目录优先使用执行器的 `ANDROID_HOME`，其次使用 `ANDROID_SDK_ROOT`，缺少配置时使用 `/opt/android-sdk`。共享步骤将选定目录传给后续 APK 校验任务。原先的 `setup-android@v3` 默认列表包含无法获取的 `tools` 包，该步骤移除后，构建脚本仅安装项目所需 SDK 包。
+
 `.cnb.yml` 保留 CNB 分支开发构建，移除版本标签发布。GitHub 发布自动化停止同步 CNB，`CNB_SECRET` 与 CNB 的 GitHub 发布令牌退出本方案的凭证要求。
 
 ## 应用版本

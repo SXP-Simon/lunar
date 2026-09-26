@@ -43,7 +43,6 @@ runs:
       with:
         distribution: temurin
         java-version: '17'
-    - uses: android-actions/setup-android@v3
     - name: Build signed APK
       shell: bash
       env:
@@ -54,6 +53,13 @@ runs:
         RITO_FFI_REBUILD: '1'
         CARGO_BUILD_JOBS: '2'
       run: |
+        # Use the same SDK bootstrap and package list as the previous CNB build.
+        # build-android.sh installs command-line tools and missing SDK packages.
+        export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}"
+        export ANDROID_SDK_ROOT="$ANDROID_HOME"
+        # Later APK verification steps need the same SDK directory.
+        echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
         export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.1.12297006"
         export ANDROID_NDK="$ANDROID_NDK_HOME"
         export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
