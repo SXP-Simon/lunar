@@ -1,9 +1,10 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
-import { Slider } from 'heroui-native/slider';
-import { memo, useEffect, useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { useToast } from 'heroui-native/toast';
+import { memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { Text, TextInput, View, type TextInputProps } from 'react-native';
+import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { ReaderSnapshot } from '@/reader';
@@ -13,6 +14,10 @@ import { useTranslation } from '@/i18n';
 import { readingDateKey, summarizeReadingTime, type ReadingSession } from '../../domain/reading-time';
 import { listReadingSessions } from '../../services/reading-time-service';
 import { getReaderBottomTabBarInset } from './constants';
+import { createProgressNavigationController } from '../../services/progress-navigation';
+import { ReaderProgressSlider } from '../reader-progress-slider';
+
+const AnimatedProgressText = Animated.createAnimatedComponent(TextInput);
 
 interface ProgressDrawerProps {
   readonly bookId: string;
@@ -22,14 +27,9 @@ interface ProgressDrawerProps {
   readonly snapshot: ReaderSnapshot;
 }
 
-function ProgressDrawerContent({
-  bookId,
-  isOpen,
-  onOpenChange,
-  runtime,
-  snapshot,
-}: ProgressDrawerProps) {
+function ProgressDrawerContent({ bookId, isOpen, onOpenChange, runtime, snapshot }: ProgressDrawerProps) {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const insets = useSafeAreaInsets();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const total = snapshot.totalSpreads;
@@ -37,7 +37,35 @@ function ProgressDrawerContent({
   const hasAbsolutePosition = currentPage !== undefined && total !== undefined;
   const sliderValue = currentPage ?? 0;
   const sliderMax = Math.max(0, (total ?? 1) - 1);
-  const [draftPage, setDraftPage] = useState<number>();
+  const onNavigationFailure = useCallback(() => {
+    toast.show({ variant: 'danger', label: t('reader.pageNavigationFailed') });
+  }, [t, toast]);
+  const progressNavigation = useMemo(
+    () =>
+      createProgressNavigationController(async (page) => {
+        const current = runtime.getSnapshot();
+        if (current.bookId !== bookId || current.revisionId !== snapshot.revisionId) {
+          throw new Error('Reading session changed before progress navigation');
+        }
+        return (await runtime.goToSpread(page)).bookSpreadIndex;
+      }, onNavigationFailure),
+    [bookId, runtime, snapshot.revisionId, onNavigationFailure],
+  );
+  const { draftPage, isNavigating } = useSyncExternalStore(
+    progressNavigation.subscribe,
+    progressNavigation.getSnapshot,
+    progressNavigation.getSnapshot,
+  );
+  useEffect(() => {
+    progressNavigation.activate();
+    return () => progressNavigation.dispose();
+  }, [progressNavigation]);
+  useEffect(() => {
+    progressNavigation.observe(currentPage);
+  }, [currentPage, progressNavigation]);
+  useEffect(() => {
+    if (!isOpen) progressNavigation.dismiss();
+  }, [isOpen, progressNavigation]);
   const [readingSessions, setReadingSessions] = useState<readonly ReadingSession[]>([]);
   const [readingTimeError, setReadingTimeError] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -45,34 +73,52 @@ function ProgressDrawerContent({
     if (!isOpen || !bookId) return;
     let active = true;
     const refresh = () => {
-      void listReadingSessions(bookId).then((sessions) => {
-        if (active) {
-          setReadingSessions(sessions);
-          setReadingTimeError(false);
-          setNow(Date.now());
-        }
-      }).catch(() => { if (active) setReadingTimeError(true); });
+      void listReadingSessions(bookId)
+        .then((sessions) => {
+          if (active) {
+            setReadingSessions(sessions);
+            setReadingTimeError(false);
+            setNow(Date.now());
+          }
+        })
+        .catch(() => {
+          if (active) setReadingTimeError(true);
+        });
     };
     refresh();
     const timer = setInterval(refresh, 10_000);
-    return () => { active = false; clearInterval(timer); };
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
   }, [bookId, isOpen]);
   const dailyReading = useMemo(() => summarizeReadingTime(readingSessions), [readingSessions]);
   const today = readingDateKey(now, Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
   const todayMilliseconds = dailyReading.find((day) => day.date === today)?.milliseconds ?? 0;
   const totalMilliseconds = dailyReading.reduce((sum, day) => sum + day.milliseconds, 0);
   const displayedPage = draftPage ?? sliderValue;
-  const percentage = total === undefined
-    ? undefined
-    : Math.round((displayedPage / Math.max(total - 1, 1)) * 100);
-  const goToPage = (target: number) => {
-    if (!hasAbsolutePosition) return;
-    setDraftPage(undefined);
-    void runtime.goToSpread(Math.min(Math.max(target, 0), sliderMax));
-  };
+  const previewPage = useSharedValue(displayedPage);
+  const percentage = total === undefined ? undefined : Math.round((displayedPage / Math.max(total - 1, 1)) * 100);
+  const progressLabel = t('reader.readingProgressLabel');
+  const progressTextProps = useAnimatedProps<TextInputProps & { text: string }>(() => {
+    const text = total === undefined ? '—' : `${Math.round((previewPage.value / Math.max(sliderMax, 1)) * 100)}%`;
+    return { text, accessibilityLabel: `${progressLabel}: ${text}` };
+  });
+  const goToPage = useCallback(
+    (target: number) => {
+      if (!hasAbsolutePosition) return;
+      progressNavigation.request(Math.min(Math.max(target, 0), sliderMax));
+    },
+    [hasAbsolutePosition, progressNavigation, sliderMax],
+  );
 
   return (
-    <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+    <BottomSheet
+      isOpen={isOpen}
+      onOpenChange={(value) => {
+        if (!value) progressNavigation.dismiss();
+        onOpenChange(value);
+      }}>
       <BottomSheet.Portal disableFullWindowOverlay unstable_accessibilityContainerViewIsModal>
         <BottomSheet.Overlay style={{ bottom: bottomInset }} />
         <BottomSheet.Content
@@ -84,9 +130,16 @@ function ProgressDrawerContent({
           <View className="gap-5 px-5 pb-4 pt-5">
             <View className="flex-row items-center">
               <View className="min-w-0 flex-1 items-center gap-1">
-                <Text className="text-2xl font-semibold text-foreground" numberOfLines={1} adjustsFontSizeToFit>
-                  {percentage === undefined ? '—' : `${percentage}%`}
-                </Text>
+                <AnimatedProgressText
+                  accessibilityRole="text"
+                  animatedProps={progressTextProps}
+                  className="w-full p-0 text-center text-2xl font-semibold text-foreground"
+                  defaultValue={percentage === undefined ? '—' : `${percentage}%`}
+                  editable={false}
+                  caretHidden
+                  pointerEvents="none"
+                  underlineColorAndroid="transparent"
+                />
                 <BottomSheet.Title className="text-center text-xs font-normal text-muted">
                   {t('reader.readingProgressLabel')}
                 </BottomSheet.Title>
@@ -108,48 +161,40 @@ function ProgressDrawerContent({
             </View>
 
             <View className="rounded-full px-4 py-3">
-              <Slider
+              <ReaderProgressSlider
                 accessibilityLabel={t('reader.choosePage')}
-                isDisabled={!hasAbsolutePosition || total <= 1}
+                isDisabled={isNavigating || !hasAbsolutePosition || total <= 1}
                 maxValue={sliderMax}
-                minValue={0}
-                onChange={(value) => setDraftPage(toSliderValue(value))}
-                onChangeEnd={(value) => {
-                  const target = toSliderValue(value);
-                  setDraftPage(undefined);
-                  if (hasAbsolutePosition) void runtime.goToSpread(target);
-                }}
-                step={1}
-                value={displayedPage}>
-                <Slider.Track className="h-2 rounded-full bg-surface-tertiary">
-                  <Slider.Fill />
-                  <Slider.Thumb className="border border-border bg-surface dark:border-0 dark:bg-accent" />
-                </Slider.Track>
-              </Slider>
+                onDragBegin={progressNavigation.beginDrag}
+                previewPage={previewPage}
+                onDragCancel={progressNavigation.cancelDrag}
+                onChangeEnd={goToPage}
+                value={displayedPage}
+              />
             </View>
 
             <View className="flex-row items-center justify-between">
               <ProgressAction
                 accessibilityLabel={t('reader.firstPage')}
-                isDisabled={!hasAbsolutePosition || currentPage === 0}
+                isDisabled={isNavigating || !hasAbsolutePosition || displayedPage === 0}
                 name={{ ios: 'backward.end.fill', android: 'first_page', web: 'first_page' }}
                 onPress={() => goToPage(0)}
               />
               <ProgressAction
                 accessibilityLabel={t('reader.previousTenPages')}
-                isDisabled={!hasAbsolutePosition || currentPage === 0}
+                isDisabled={isNavigating || !hasAbsolutePosition || displayedPage === 0}
                 name={{ ios: 'gobackward.10', android: 'replay_10', web: 'replay_10' }}
-                onPress={() => goToPage((currentPage ?? 0) - 10)}
+                onPress={() => goToPage((progressNavigation.getSnapshot().draftPage ?? sliderValue) - 10)}
               />
               <ProgressAction
                 accessibilityLabel={t('reader.nextTenPages')}
-                isDisabled={!hasAbsolutePosition || (currentPage ?? 0) >= (total ?? 1) - 1}
+                isDisabled={isNavigating || !hasAbsolutePosition || displayedPage >= sliderMax}
                 name={{ ios: 'goforward.10', android: 'forward_10', web: 'forward_10' }}
-                onPress={() => goToPage((currentPage ?? 0) + 10)}
+                onPress={() => goToPage((progressNavigation.getSnapshot().draftPage ?? sliderValue) + 10)}
               />
               <ProgressAction
                 accessibilityLabel={t('reader.lastPage')}
-                isDisabled={!hasAbsolutePosition || (currentPage ?? 0) >= (total ?? 1) - 1}
+                isDisabled={isNavigating || !hasAbsolutePosition || displayedPage >= sliderMax}
                 name={{ ios: 'forward.end.fill', android: 'last_page', web: 'last_page' }}
                 onPress={() => total !== undefined && goToPage(total - 1)}
               />
@@ -187,10 +232,6 @@ function ProgressAction({ accessibilityLabel, isDisabled, name, onPress }: Progr
   );
 }
 
-function toSliderValue(value: number | number[]): number {
-  return Math.round(Array.isArray(value) ? (value[0] ?? 0) : value);
-}
-
 function formatDuration(milliseconds: number, t: ReturnType<typeof useTranslation>['t']): string {
   if (milliseconds > 0 && milliseconds < 60_000) return t('reader.lessThanMinute');
   const minutes = Math.floor(milliseconds / 60_000);
@@ -200,9 +241,12 @@ function formatDuration(milliseconds: number, t: ReturnType<typeof useTranslatio
 }
 
 /** Keep the closing view mounted while settled-page updates stay outside it. */
-export const ProgressDrawer = memo(ProgressDrawerContent, (previous, next) =>
-  previous.bookId === next.bookId
-  && previous.isOpen === next.isOpen
-  && previous.runtime === next.runtime
-  && previous.onOpenChange === next.onOpenChange
-  && (!next.isOpen || previous.snapshot === next.snapshot));
+export const ProgressDrawer = memo(
+  ProgressDrawerContent,
+  (previous, next) =>
+    previous.bookId === next.bookId &&
+    previous.isOpen === next.isOpen &&
+    previous.runtime === next.runtime &&
+    previous.onOpenChange === next.onOpenChange &&
+    (!next.isOpen || previous.snapshot === next.snapshot),
+);

@@ -189,6 +189,7 @@ export const zhCN = {
     readingTimeSaveFailed: '阅读时间保存失败',
     readingTimeLoadFailed: '阅读时间读取失败',
     choosePage: '选择阅读页面',
+    pageNavigationFailed: '暂时无法跳转到所选页面',
     firstPage: '回到第一页',
     previousTenPages: '后退十页',
     nextTenPages: '前进十页',

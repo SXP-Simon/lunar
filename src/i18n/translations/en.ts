@@ -191,6 +191,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     readingTimeSaveFailed: 'Could not save reading time',
     readingTimeLoadFailed: 'Could not load reading time',
     choosePage: 'Choose reading page',
+    pageNavigationFailed: 'Could not navigate to the selected page',
     firstPage: 'Go to first page',
     previousTenPages: 'Go back ten pages',
     nextTenPages: 'Go forward ten pages',
