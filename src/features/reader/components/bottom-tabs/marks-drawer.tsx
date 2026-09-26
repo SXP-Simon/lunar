@@ -12,6 +12,7 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind, withUniwind } from 'uniwind';
 import { useTranslation } from '@/i18n';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import type { ReaderLocator, ReaderRuntime, ReaderTocEntry } from '@/reader';
 import type { ReaderBookmark } from '../../domain/reader-bookmark';
 import type { ReaderHighlight } from '../../domain/reader-highlight';
@@ -33,6 +34,7 @@ interface MarksDrawerProps {
   readonly highlightsError?: unknown;
   readonly onRemoveBookmark: (id: string) => Promise<void>;
   readonly onRemoveHighlight: (id: string) => Promise<void>;
+  readonly onOpenNote: (highlight: ReaderHighlight) => void;
   readonly onNavigated: () => void;
 }
 
@@ -42,6 +44,7 @@ interface MarkEntry {
   readonly title: string;
   readonly text: string;
   readonly createdAt: number;
+  readonly noteCount?: number;
 }
 
 export function MarksDrawer(props: MarksDrawerProps) {
@@ -53,6 +56,7 @@ export function MarksDrawer(props: MarksDrawerProps) {
   const dangerForeground = useThemeColor('danger-foreground');
   const [tab, setTab] = useState<'bookmarks' | 'highlights'>('bookmarks');
   const [removing, setRemoving] = useState(false);
+  const [noteMarkToDelete, setNoteMarkToDelete] = useState<string>();
   const pending = useRef(false);
   const navigation = useDrawerNavigation({
     onOpenChange: props.onOpenChange,
@@ -73,6 +77,7 @@ export function MarksDrawer(props: MarksDrawerProps) {
         title: titles.get(highlight.href) ?? t('reader.highlightSelection'),
         text: highlight.text.replace(/\s+/g, ' ').trim(),
         createdAt: highlight.createdAt,
+        noteCount: highlight.notes?.length,
         locator: {
           spineIdref: highlight.href,
           manifestHref: highlight.href,
@@ -98,6 +103,7 @@ export function MarksDrawer(props: MarksDrawerProps) {
     try {
       if (kind === 'bookmarks') await props.onRemoveBookmark(id);
       else await props.onRemoveHighlight(id);
+      setNoteMarkToDelete(undefined);
       toast.show({
         variant: 'success',
         label: t(kind === 'bookmarks' ? 'reader.bookmarkRemoved' : 'reader.highlightRemoved'),
@@ -114,125 +120,157 @@ export function MarksDrawer(props: MarksDrawerProps) {
   }
 
   return (
-    <BottomSheet isOpen={props.isOpen} onOpenChange={props.onOpenChange}>
-      <BottomSheet.Portal disableFullWindowOverlay unstable_accessibilityContainerViewIsModal>
-        <BottomSheet.Overlay style={{ bottom: bottomInset }} />
-        <BottomSheet.Content
-          backgroundClassName="rounded-t-3xl bg-background dark:bg-overlay"
-          bottomInset={bottomInset}
-          contentContainerClassName="h-full flex-1 p-0!"
-          detached
-          enableDynamicSizing={false}
-          enableOverDrag={false}
-          snapPoints={['62%', '88%']}
-          activeOffsetY={[-12, 12]}
-          failOffsetX={[-8, 8]}>
-          <View className="gap-3 border-b border-border px-5 pb-3">
-            <BottomSheet.Title className="text-xl text-foreground">{t('reader.marks')}</BottomSheet.Title>
-            <View className="flex-row gap-2">
-              {(['bookmarks', 'highlights'] as const).map((key) => (
-                <Button
-                  key={key}
-                  className={
-                    tab === key && theme === 'dark'
-                      ? 'flex-1'
-                      : tab === key
-                        ? 'flex-1 bg-surface'
-                        : 'flex-1 dark:bg-transparent'
-                  }
-                  size="sm"
-                  variant={tab === key && theme === 'dark' ? 'secondary' : 'ghost'}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: tab === key }}
-                  onPress={() => setTab(key)}>
-                  <Button.Label>
-                    {t(key === 'bookmarks' ? 'reader.bookmarksCount' : 'reader.highlightsCount', {
-                      count: key === 'bookmarks' ? props.bookmarks.length : props.highlights.length,
-                    })}
-                  </Button.Label>
-                </Button>
-              ))}
+    <>
+      <BottomSheet isOpen={props.isOpen} onOpenChange={props.onOpenChange}>
+        <BottomSheet.Portal disableFullWindowOverlay unstable_accessibilityContainerViewIsModal>
+          <BottomSheet.Overlay style={{ bottom: bottomInset }} />
+          <BottomSheet.Content
+            backgroundClassName="rounded-t-3xl bg-background dark:bg-overlay"
+            bottomInset={bottomInset}
+            contentContainerClassName="h-full flex-1 p-0!"
+            detached
+            enableDynamicSizing={false}
+            enableOverDrag={false}
+            snapPoints={['62%', '88%']}
+            activeOffsetY={[-12, 12]}
+            failOffsetX={[-8, 8]}>
+            <View className="gap-3 border-b border-border px-5 pb-3">
+              <BottomSheet.Title className="text-xl text-foreground">{t('reader.marks')}</BottomSheet.Title>
+              <View className="flex-row gap-2">
+                {(['bookmarks', 'highlights'] as const).map((key) => (
+                  <Button
+                    key={key}
+                    className={
+                      tab === key && theme === 'dark'
+                        ? 'flex-1'
+                        : tab === key
+                          ? 'flex-1 bg-surface'
+                          : 'flex-1 dark:bg-transparent'
+                    }
+                    size="sm"
+                    variant={tab === key && theme === 'dark' ? 'secondary' : 'ghost'}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: tab === key }}
+                    onPress={() => setTab(key)}>
+                    <Button.Label>
+                      {t(key === 'bookmarks' ? 'reader.bookmarksCount' : 'reader.highlightsCount', {
+                        count: key === 'bookmarks' ? props.bookmarks.length : props.highlights.length,
+                      })}
+                    </Button.Label>
+                  </Button>
+                ))}
+              </View>
             </View>
-          </View>
-          <BottomSheetFlatList<MarkEntry>
-            className="flex-1"
-            data={entries}
-            keyExtractor={(item: MarkEntry) => item.id}
-            contentContainerClassName="px-3 pb-6"
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item }: { item: MarkEntry }) => {
-              const content = (
-                <PressableFeedback
-                  asChild
-                  animation={false}
-                  className="min-h-20 w-full flex-row px-3 py-4"
-                  isDisabled={busy}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('reader.goToMark', { text: item.text || item.title })}
-                  onPress={() => void navigate(item)}>
-                  <MarkPressable cancelable>
-                    <PressableFeedback.Highlight />
-                    <View className="flex-1 gap-2">
-                      <Text className="text-xs text-muted" numberOfLines={1}>
-                        {item.title}
-                      </Text>
-                      <Text className="text-base leading-6 text-foreground" numberOfLines={3}>
-                        {item.text || item.title}
-                      </Text>
-                      <Text className="text-xs text-muted">{new Date(item.createdAt).toLocaleDateString()}</Text>
-                    </View>
-                  </MarkPressable>
-                </PressableFeedback>
-              );
-              return (
-                <View className="overflow-hidden border-b border-border">
-                  <ReanimatedSwipeable
-                    dragOffsetFromLeftEdge={8}
-                    dragOffsetFromRightEdge={8}
-                    enabled={!busy}
-                    enableTrackpadTwoFingerGesture
-                    overshootRight={false}
-                    rightThreshold={32}
-                    renderRightActions={(_progress, _translation, swipeableMethods) => (
-                      <Button
-                        accessibilityLabel={
-                          tab === 'bookmarks'
-                            ? t('reader.removeBookmark', { title: item.title })
-                            : t('reader.removeHighlight')
-                        }
-                        className="h-full w-20 self-stretch rounded-none px-0"
-                        isDisabled={busy}
-                        onPress={() => {
-                          swipeableMethods.close();
-                          void remove(item.id, tab);
-                        }}
-                        size="sm"
-                        variant="danger">
-                        <SymbolView
-                          name={{ ios: 'trash', android: 'delete', web: 'delete' }}
-                          size={22}
-                          tintColor={dangerForeground}
-                        />
-                      </Button>
-                    )}>
-                    <View className="bg-background dark:bg-overlay">{content}</View>
-                  </ReanimatedSwipeable>
-                </View>
-              );
-            }}
-            ListEmptyComponent={
-              <Text className="px-5 py-10 text-center leading-6 text-muted">
-                {error
-                  ? t(tab === 'bookmarks' ? 'reader.bookmarkLoadFailed' : 'reader.highlightLoadFailed')
-                  : !loaded
-                    ? t('reader.loadingMarks')
-                    : t(tab === 'bookmarks' ? 'reader.noBookmarks' : 'reader.noHighlights')}
-              </Text>
-            }
-          />
-        </BottomSheet.Content>
-      </BottomSheet.Portal>
-    </BottomSheet>
+            <BottomSheetFlatList<MarkEntry>
+              className="flex-1"
+              data={entries}
+              keyExtractor={(item: MarkEntry) => item.id}
+              contentContainerClassName="px-3 pb-6"
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }: { item: MarkEntry }) => {
+                const content = (
+                  <PressableFeedback
+                    asChild
+                    animation={false}
+                    className="min-h-20 w-full flex-row px-3 py-4"
+                    isDisabled={busy}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('reader.goToMark', { text: item.text || item.title })}
+                    onPress={() => void navigate(item)}>
+                    <MarkPressable cancelable>
+                      <PressableFeedback.Highlight />
+                      <View className="flex-1 gap-2">
+                        <Text className="text-xs text-muted" numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text className="text-base leading-6 text-foreground" numberOfLines={3}>
+                          {item.text || item.title}
+                        </Text>
+                        <Text className="text-xs text-muted">{new Date(item.createdAt).toLocaleDateString()}</Text>
+                      </View>
+                    </MarkPressable>
+                  </PressableFeedback>
+                );
+                return (
+                  <View className="overflow-hidden border-b border-border">
+                    <ReanimatedSwipeable
+                      dragOffsetFromLeftEdge={8}
+                      dragOffsetFromRightEdge={8}
+                      enabled={!busy}
+                      enableTrackpadTwoFingerGesture
+                      overshootRight={false}
+                      rightThreshold={32}
+                      renderRightActions={(_progress, _translation, swipeableMethods) => (
+                        <Button
+                          accessibilityLabel={
+                            tab === 'bookmarks'
+                              ? t('reader.removeBookmark', { title: item.title })
+                              : t('reader.removeHighlight')
+                          }
+                          className="h-full w-20 self-stretch rounded-none px-0"
+                          isDisabled={busy}
+                          onPress={() => {
+                            swipeableMethods.close();
+                            if (tab === 'highlights' && item.noteCount) setNoteMarkToDelete(item.id);
+                            else void remove(item.id, tab);
+                          }}
+                          size="sm"
+                          variant="danger">
+                          <SymbolView
+                            name={{ ios: 'trash', android: 'delete', web: 'delete' }}
+                            size={22}
+                            tintColor={dangerForeground}
+                          />
+                        </Button>
+                      )}>
+                      <View className="bg-background dark:bg-overlay">
+                        {content}
+                        {Boolean(item.noteCount) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="mb-3 ml-3 self-start"
+                            isDisabled={busy}
+                            onPress={() => {
+                              const highlight = props.highlights.find((entry) => entry.id === item.id);
+                              if (highlight) props.onOpenNote(highlight);
+                            }}>
+                            <Button.Label className="text-navigation-active">{t('reader.noteTitle')}</Button.Label>
+                          </Button>
+                        )}
+                      </View>
+                    </ReanimatedSwipeable>
+                  </View>
+                );
+              }}
+              ListEmptyComponent={
+                <Text className="px-5 py-10 text-center leading-6 text-muted">
+                  {error
+                    ? t(tab === 'bookmarks' ? 'reader.bookmarkLoadFailed' : 'reader.highlightLoadFailed')
+                    : !loaded
+                      ? t('reader.loadingMarks')
+                      : t(tab === 'bookmarks' ? 'reader.noBookmarks' : 'reader.noHighlights')}
+                </Text>
+              }
+            />
+          </BottomSheet.Content>
+        </BottomSheet.Portal>
+      </BottomSheet>
+      <ConfirmModal
+        isOpen={Boolean(noteMarkToDelete)}
+        title={t('reader.removeHighlight')}
+        description={t('reader.noteRemoveMarkDescription')}
+        confirmLabel={t('reader.removeHighlight')}
+        isDestructive
+        isConfirming={removing}
+        onOpenChange={(open) => {
+          if (!open) setNoteMarkToDelete(undefined);
+        }}
+        onConfirm={() => {
+          if (noteMarkToDelete) void remove(noteMarkToDelete, 'highlights');
+        }}
+      />
+    </>
   );
 }
 

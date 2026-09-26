@@ -9,7 +9,7 @@ import { SQLiteHighlightRepository } from '../../src/features/reader/repositorie
 const databases: DatabaseSync[] = [];
 afterEach(() => { for (const database of databases.splice(0)) database.close(); });
 
-function createDatabase(version = 7) {
+function createDatabase(version = 9) {
   const sqlite = new DatabaseSync(':memory:');
   databases.push(sqlite);
   sqlite.exec('PRAGMA foreign_keys = ON');
@@ -42,6 +42,35 @@ const highlight: ReaderHighlight = {
 };
 
 describe('SQLite highlight persistence', () => {
+  it('migrates version seven annotations without changing their appearance or source', async () => {
+    const { sqlite, repository } = createDatabase(7);
+    sqlite.prepare('INSERT INTO reader_highlights VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      highlight.id, highlight.bookId, highlight.href, JSON.stringify(highlight.sourceRange), highlight.text,
+      highlight.createdAt, 'pink', 'wavy',
+    );
+    for (const migration of DATABASE_MIGRATIONS.filter((item) => item.version > 7)) {
+      for (const statement of migration.statements) sqlite.exec(statement);
+    }
+    expect(await repository.listByBookId('book')).toEqual([{ ...highlight, color: 'pink', style: 'wavy' }]);
+  });
+
+  it('preserves Markdown exactly, edits only the owning note and deletes it independently of the mark', async () => {
+    const { repository } = createDatabase();
+    const note = { id: 'n1', content: '## 想法\n\n**重要**\n\n```ts\nconst x = 1;\n```', createdAt: 1, updatedAt: 1 };
+    const second = { ...note, id: 'n2' };
+    const stored = { ...highlight, color: 'purple' as const, style: 'underline' as const, notes: [note, second] };
+    await repository.save(stored);
+    expect(await repository.listByBookId('book')).toEqual([stored]);
+    await expect(repository.updateNotes('other', highlight.id, [])).rejects.toThrow();
+    expect(await repository.listByBookId('book')).toEqual([stored]);
+    const updated = { ...note, content: note.content + '\n修改', updatedAt: 2 };
+    await repository.updateNotes('book', highlight.id, [updated, second]);
+    expect(await repository.listByBookId('book')).toEqual([{ ...stored, notes: [updated, second] }]);
+    await repository.updateNotes('book', highlight.id, [second]);
+    expect(await repository.listByBookId('book')).toEqual([{ ...stored, notes: [second] }]);
+    await repository.updateNotes('book', highlight.id, []);
+    expect(await repository.listByBookId('book')).toEqual([{ ...highlight, color: 'purple', style: 'underline' }]);
+  });
   it('migrates existing records to yellow without losing their ranges or text', async () => {
     const { sqlite, repository } = createDatabase(3);
     sqlite.prepare('INSERT INTO reader_highlights VALUES (?, ?, ?, ?, ?, ?)').run(

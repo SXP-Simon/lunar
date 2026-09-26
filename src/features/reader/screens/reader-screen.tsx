@@ -11,7 +11,7 @@ import { BackHandler, PixelRatio, Pressable, Text, View, type LayoutChangeEvent 
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useReaderSelectionDrag } from '../hooks/use-reader-selection-drag';
-import { useCSSVariable, useResolveClassNames, useUniwind } from 'uniwind';
+import { useCSSVariable, useResolveClassNames, useUniwind, withUniwind } from 'uniwind';
 import {
   SafeAreaListener,
   useSafeAreaInsets,
@@ -22,6 +22,7 @@ import {
 import { IconTabBar } from '../components/icon-tab-bar';
 import { createReaderImageFile, deleteReaderImageFile } from '../infrastructure/reader-image-file';
 import { ImageViewer } from '@/components/ui/image-viewer';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
 import {
@@ -52,11 +53,14 @@ import { ReaderControls } from '../components/reader-controls';
 import { FootnoteDrawer } from '../components/footnote-drawer';
 import { configureReaderSelectionGesture, ReaderSelectionControls } from '../components/reader-selection-controls';
 import { useReaderHighlights } from '../hooks/use-reader-highlights';
+import { useReaderNote } from '../hooks/use-reader-note';
+import { ReaderNotesOverlay } from '../components/reader-notes-overlay';
+import { BlurTargetView } from 'expo-blur';
 import { useReaderSession } from '../hooks/use-reader-session';
 import { useReadingTime } from '../hooks/use-reading-time';
 import { useReaderVolumeKeys } from '../hooks/use-reader-volume-keys';
 import { containsHighlightRange } from '../domain/highlight-ranges';
-import type { ReaderHighlightColor, ReaderHighlightStyle } from '../domain/reader-highlight';
+import type { ReaderHighlight, ReaderHighlightColor, ReaderHighlightStyle } from '../domain/reader-highlight';
 import {
   createReaderHighlightOverlayResolver,
   createReaderHighlightRegions,
@@ -67,6 +71,7 @@ import {
 const ReaderSurfaceTopSpacing = 4;
 const ReaderSurfaceBottomSpacing = 4;
 const EmptyReaderHitEntries = [] as const;
+const ReaderBlurTarget = withUniwind(BlurTargetView);
 
 interface OwnedReaderTextSelection extends ReaderTextSelection {
   readonly kind: 'text' | 'highlight';
@@ -137,7 +142,9 @@ export default function ReaderScreen() {
   const pendingImageLinkPress = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [selectionState, setSelection] = useState<OwnedReaderTextSelection>();
   const [isHighlighting, setIsHighlighting] = useState(false);
+  const [highlightToDelete, setHighlightToDelete] = useState<ReaderHighlight>();
   const selectionRef = useRef<ReaderTextSelection | undefined>(undefined);
+  const noteBlurTarget = useRef<View>(null);
   const isHighlightingRef = useRef(false);
   const [surfaceTransform, setSurfaceTransform] = useState<ReaderSurfaceTransform>();
   const footnoteRequestRef = useRef(0);
@@ -167,9 +174,11 @@ export default function ReaderScreen() {
     highlights,
     addHighlight,
     removeHighlights,
+    updateNotes,
     isLoaded: highlightsLoaded,
     error: highlightsError,
   } = useReaderHighlights(bookId ?? '');
+  const note = useReaderNote({ bookId: bookId ?? '', runtime: session.runtime, highlights, addHighlight, updateNotes });
   const {
     bookmarks,
     addBookmark,
@@ -257,6 +266,7 @@ export default function ReaderScreen() {
     !isTypographyOpen &&
     !isMarksOpen &&
     !isFootnoteOpen &&
+    !note.isOpen &&
     !imageViewer;
   const handleVolumeKeyPress = useCallback(
     (direction: 'next' | 'previous') => {
@@ -379,7 +389,8 @@ export default function ReaderScreen() {
       !isProgressOpen &&
       !isTypographyOpen &&
       !isMarksOpen &&
-      !isFootnoteOpen,
+      !isFootnoteOpen &&
+      !note.isOpen,
     bookmarked: Boolean(currentBookmark),
     onStart: beginBookmarkPull,
     onCommit: commitBookmarkPull,
@@ -918,26 +929,30 @@ export default function ReaderScreen() {
     ],
   );
 
-  const deleteHighlight = useCallback(async () => {
-    if (!activeHighlight || isHighlightingRef.current) return;
-    isHighlightingRef.current = true;
-    setIsHighlighting(true);
-    // Close the transient controls in the same update as the optimistic removal.
-    clearSelection();
-    try {
-      await removeHighlights([activeHighlight.id]);
-      toast.show({ variant: 'success', label: t('reader.highlightRemoved') });
-    } catch (error) {
-      toast.show({
-        variant: 'danger',
-        label: t('reader.highlightSaveFailed'),
-        description: error instanceof Error ? error.message : undefined,
-      });
-    } finally {
-      isHighlightingRef.current = false;
-      setIsHighlighting(false);
-    }
-  }, [activeHighlight, clearSelection, removeHighlights, t, toast]);
+  const deleteHighlight = useCallback(
+    async (highlight = activeHighlight) => {
+      if (!highlight || isHighlightingRef.current) return;
+      isHighlightingRef.current = true;
+      setIsHighlighting(true);
+      // Close the transient controls in the same update as the optimistic removal.
+      clearSelection();
+      try {
+        await removeHighlights([highlight.id]);
+        setHighlightToDelete(undefined);
+        toast.show({ variant: 'success', label: t('reader.highlightRemoved') });
+      } catch (error) {
+        toast.show({
+          variant: 'danger',
+          label: t('reader.highlightSaveFailed'),
+          description: error instanceof Error ? error.message : undefined,
+        });
+      } finally {
+        isHighlightingRef.current = false;
+        setIsHighlighting(false);
+      }
+    },
+    [activeHighlight, clearSelection, removeHighlights, t, toast],
+  );
 
   const selectionViewportRects = useMemo(() => {
     if (!selection || !surfaceTransform) return [];
@@ -1046,7 +1061,12 @@ export default function ReaderScreen() {
       />
       <NavigationBar hidden={!readerChromeVisible} style={readerTheme === 'dark' ? 'dark' : 'light'} />
 
-      <View onLayout={handleLayout} className="absolute inset-0 overflow-hidden bg-default">
+      <ReaderBlurTarget
+        ref={noteBlurTarget}
+        onLayout={handleLayout}
+        className="absolute inset-0 overflow-hidden bg-default"
+        accessibilityElementsHidden={note.isOpen}
+        importantForAccessibility={note.isOpen ? 'no-hide-descendants' : 'auto'}>
         <>
           <ReaderSurface
             runtime={session.runtime}
@@ -1156,13 +1176,15 @@ export default function ReaderScreen() {
               })}
           </View>
         </GestureDetector>
-      </View>
+      </ReaderBlurTarget>
 
-      {selection && viewport && (
+      {selection && viewport && !note.isOpen && (
         <ReaderSelectionControls
           copyLabel={t('reader.copySelection')}
           endHandleLabel={t('reader.selectionEndHandle')}
           highlightLabel={t(activeHighlight ? 'reader.removeHighlight' : 'reader.highlightSelection')}
+          noteLabel={t('reader.noteTitle')}
+          onNote={() => note.openSelection(selection, chapterHref, activeHighlight)}
           isExistingHighlight={Boolean(activeHighlight)}
           selectedColor={activeHighlight?.color ?? 'yellow'}
           selectedStyle={activeHighlight?.style ?? 'highlight'}
@@ -1183,7 +1205,10 @@ export default function ReaderScreen() {
           isHighlightDisabled={isHighlighting || !highlightsLoaded}
           drag={textSelection ? selectionDrag : undefined}
           onCopy={() => void copySelection()}
-          onHighlight={() => void (activeHighlight ? deleteHighlight() : highlightSelection())}
+          onHighlight={() => {
+            if (activeHighlight?.notes?.length) setHighlightToDelete(activeHighlight);
+            else void (activeHighlight ? deleteHighlight() : highlightSelection());
+          }}
           rects={selectionViewportRects}
           safeAreaInsets={reservedInsets}
           selectionLabel={t('reader.selectionToolbar')}
@@ -1196,6 +1221,30 @@ export default function ReaderScreen() {
       {readerChromeVisible && (
         <ReaderControls onBack={handleBack} safeAreaInsets={reservedInsets} bookTitle={bookTitle} />
       )}
+
+      {note.isOpen && note.target && (
+        <ReaderNotesOverlay
+          key={note.target.key}
+          quote={note.target.text}
+          notes={note.notes}
+          blurTarget={noteBlurTarget}
+          onClose={note.close}
+          onSave={note.save}
+          onRemove={note.remove}
+        />
+      )}
+      <ConfirmModal
+        isOpen={Boolean(highlightToDelete)}
+        title={t('reader.removeHighlight')}
+        description={t('reader.noteRemoveMarkDescription')}
+        confirmLabel={t('reader.removeHighlight')}
+        isDestructive
+        isConfirming={isHighlighting}
+        onOpenChange={(open) => {
+          if (!open) setHighlightToDelete(undefined);
+        }}
+        onConfirm={() => void deleteHighlight(highlightToDelete)}
+      />
 
       {!activeImageViewer && (controlsVisible || isTocOpen || isProgressOpen || isTypographyOpen || isMarksOpen) && (
         <IconTabBar
@@ -1237,6 +1286,10 @@ export default function ReaderScreen() {
         toc={session.toc}
         bookmarks={bookmarks}
         highlights={highlights}
+        onOpenNote={(highlight) => {
+          setIsMarksOpen(false);
+          note.openHighlight(highlight);
+        }}
         bookmarksLoaded={bookmarksLoaded}
         highlightsLoaded={highlightsLoaded}
         bookmarksError={bookmarksError}

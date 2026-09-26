@@ -47,7 +47,16 @@ export function mergeReaderHighlight(
       }
     }
   }
-  return { highlight, removedIds: [...removedIds] };
+  // Preserve each note's identity when a selection absorbs several marks.
+  const notes = [...highlights.filter((item) => removedIds.has(item.id)), candidate]
+    .sort((left, right) => compareHighlightPoints(left.sourceRange.start, right.sourceRange.start))
+    .flatMap((item) => item.notes ?? []);
+  const byId = new Map(notes.map((note) => [note.id, note]));
+  const mergedNotes = [...byId.values()].sort((a, b) => a.createdAt - b.createdAt);
+  return {
+    highlight: mergedNotes.length ? { ...highlight, notes: mergedNotes } : highlight,
+    removedIds: [...removedIds],
+  };
 }
 
 export function normalizeReaderHighlights(highlights: readonly ReaderHighlight[]): readonly ReaderHighlight[] {

@@ -113,6 +113,7 @@ export function computeReaderSelectionControlsLayout(
 interface ReaderSelectionControlsProps {
   readonly copyLabel: string;
   readonly highlightLabel: string;
+  readonly noteLabel: string;
   readonly selectionLabel: string;
   readonly startHandleLabel: string;
   readonly endHandleLabel: string;
@@ -130,12 +131,14 @@ interface ReaderSelectionControlsProps {
   readonly safeAreaInsets: EdgeInsets;
   readonly onCopy: () => void;
   readonly onHighlight: () => void;
+  readonly onNote: () => void;
   readonly drag?: ReaderSelectionDragController;
 }
 
 export function ReaderSelectionControls({
   copyLabel,
   highlightLabel,
+  noteLabel,
   selectionLabel,
   startHandleLabel,
   endHandleLabel,
@@ -153,6 +156,7 @@ export function ReaderSelectionControls({
   safeAreaInsets,
   onCopy,
   onHighlight,
+  onNote,
   drag,
 }: ReaderSelectionControlsProps) {
   const foreground = useThemeColor('foreground');
@@ -230,6 +234,21 @@ export function ReaderSelectionControls({
                 tintColor={foreground}
               />
               <Button.Label className="text-xs">{highlightLabel}</Button.Label>
+            </Button>
+            <View className="h-6 w-px bg-border" />
+            <Button
+              accessibilityLabel={noteLabel}
+              className="h-auto min-h-12 flex-1 flex-col gap-0.5 rounded-xl px-2 py-1"
+              isDisabled={isHighlightDisabled}
+              onPress={onNote}
+              size="sm"
+              variant="ghost">
+              <SymbolView
+                name={{ ios: 'square.and.pencil', android: 'edit_note', web: 'edit_note' }}
+                size={20}
+                tintColor={foreground}
+              />
+              <Button.Label className="text-xs">{noteLabel}</Button.Label>
             </Button>
           </View>
           <View

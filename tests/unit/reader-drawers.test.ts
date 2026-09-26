@@ -23,6 +23,7 @@ vi.mock('expo-symbols', () => ({
   SymbolView: ({ name }: { name: { web: string } }) => React.createElement('i', { 'data-symbol': name.web }),
 }));
 vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock('@/components/ui/confirm-modal', () => ({ ConfirmModal: () => null }));
 vi.mock('../../src/features/reader/components/bottom-tabs/constants', () => ({
   getReaderBottomTabBarInset: () => 48,
 }));
@@ -104,6 +105,7 @@ function marksProps(): ComponentProps<typeof MarksDrawer> {
     highlightsLoaded: true,
     onRemoveBookmark: vi.fn(),
     onRemoveHighlight: vi.fn(),
+    onOpenNote: vi.fn(),
   };
 }
 

@@ -7,6 +7,7 @@ import {
   type ReaderHighlight,
   type ReaderHighlightColor,
   type ReaderHighlightStyle,
+  type ReaderNote,
 } from '../domain/reader-highlight';
 import type { HighlightRepository } from './highlight-repository';
 
@@ -19,6 +20,7 @@ interface HighlightRow {
   readonly created_at: number;
   readonly color: string;
   readonly style: string;
+  readonly notes_json: string;
 }
 
 export class SQLiteHighlightRepository implements HighlightRepository {
@@ -31,6 +33,7 @@ export class SQLiteHighlightRepository implements HighlightRepository {
     );
     return rows.flatMap((row) => {
       const sourceRange = parseSourceRange(row.source_range_json);
+      const notes = parseNotes(row.notes_json);
       return sourceRange
         ? [
             {
@@ -40,6 +43,7 @@ export class SQLiteHighlightRepository implements HighlightRepository {
               sourceRange,
               text: row.text,
               createdAt: row.created_at,
+              ...(notes.length ? { notes } : {}),
               color: ReaderHighlightColors.includes(row.color as ReaderHighlightColor)
                 ? (row.color as ReaderHighlightColor)
                 : 'yellow',
@@ -55,14 +59,15 @@ export class SQLiteHighlightRepository implements HighlightRepository {
   async save(highlight: ReaderHighlight): Promise<void> {
     await this.database.runAsync(
       `INSERT INTO reader_highlights (
-        id, book_id, href, source_range_json, text, created_at, color, style
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        id, book_id, href, source_range_json, text, created_at, color, style, notes_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(book_id, href, source_range_json) DO UPDATE SET
         id = excluded.id,
         text = excluded.text,
         created_at = excluded.created_at,
         color = excluded.color,
-        style = excluded.style`,
+        style = excluded.style,
+        notes_json = excluded.notes_json`,
       highlight.id,
       highlight.bookId,
       highlight.href,
@@ -71,6 +76,7 @@ export class SQLiteHighlightRepository implements HighlightRepository {
       highlight.createdAt,
       highlight.color ?? 'yellow',
       highlight.style ?? 'highlight',
+      JSON.stringify(highlight.notes ?? []),
     );
   }
 
@@ -87,6 +93,34 @@ export class SQLiteHighlightRepository implements HighlightRepository {
       await this.database.runAsync('DELETE FROM reader_highlights WHERE book_id = ? AND id = ?', bookId, id);
     }
   }
+
+  async updateNotes(bookId: string, id: string, notes: readonly ReaderNote[]): Promise<void> {
+    const result = await this.database.runAsync(
+      'UPDATE reader_highlights SET notes_json = ? WHERE book_id = ? AND id = ?',
+      JSON.stringify(notes),
+      bookId,
+      id,
+    );
+    if (result.changes === 0) throw new Error('The annotation no longer exists');
+  }
+}
+
+function parseNotes(value: string): readonly ReaderNote[] {
+  const parsed: unknown = JSON.parse(value);
+  if (
+    !Array.isArray(parsed) ||
+    !parsed.every(
+      (note) =>
+        note &&
+        typeof note.id === 'string' &&
+        typeof note.content === 'string' &&
+        Number.isFinite(note.createdAt) &&
+        Number.isFinite(note.updatedAt),
+    )
+  ) {
+    throw new Error('Invalid stored notes');
+  }
+  return parsed as ReaderNote[];
 }
 
 function parseSourceRange(value: string): ReaderSourceRange | undefined {

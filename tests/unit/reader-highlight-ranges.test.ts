@@ -11,6 +11,23 @@ function highlight(id: string, start: number, end: number, text = 'abcdefghij'.s
 }
 
 describe('highlight range editing', () => {
+  it('preserves notes during appearance changes and expansion over multiple marked passages', () => {
+    const first = { ...highlight('first', 1, 3), notes: [{ id: 'a', content: '**first**', createdAt: 1, updatedAt: 1 }] };
+    const second = { ...highlight('second', 5, 8), notes: [{ id: 'b', content: '> second', createdAt: 2, updatedAt: 2 }] };
+    expect(mergeReaderHighlight([first], { ...highlight('edit', 1, 3), color: 'blue', style: 'wavy' }).highlight)
+      .toMatchObject({ notes: first.notes, color: 'blue', style: 'wavy' });
+    const expanded = mergeReaderHighlight([second, first], highlight('expand', 0, 9));
+    expect(expanded.highlight.notes).toEqual([...first.notes, ...second.notes]);
+    expect(expanded.removedIds).toHaveLength(2);
+  });
+
+  it('retains both notes when normalizing historical overlapping records', () => {
+    const records = [{ ...highlight('a', 0, 5), notes: [{ id: 'a', content: 'first', createdAt: 1, updatedAt: 1 }] },
+      { ...highlight('b', 3, 8), notes: [{ id: 'b', content: 'second', createdAt: 2, updatedAt: 2 }] }];
+    const normalized = normalizeReaderHighlights(records);
+    expect(normalized).toHaveLength(1);
+    expect(normalized[0].notes).toEqual([...records[0].notes, ...records[1].notes]);
+  });
   it('changes the complete existing mark style and preserves it during recoloring', () => {
     const existing = { ...highlight('old', 1, 8), style: 'underline' as const };
     const changed = mergeReaderHighlight([existing], { ...highlight('new', 3, 5), style: 'wavy' });

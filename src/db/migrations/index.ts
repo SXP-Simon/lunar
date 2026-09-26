@@ -116,4 +116,17 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     name: 'reader_highlight_styles',
     statements: ["ALTER TABLE reader_highlights ADD COLUMN style TEXT NOT NULL DEFAULT 'highlight'"],
   },
+  {
+    version: 8,
+    name: 'reader_highlight_notes',
+    statements: ["ALTER TABLE reader_highlights ADD COLUMN note TEXT NOT NULL DEFAULT ''"],
+  },
+  {
+    version: 9,
+    name: 'reader_multiple_notes',
+    statements: [
+      "ALTER TABLE reader_highlights ADD COLUMN notes_json TEXT NOT NULL DEFAULT '[]'",
+      'ALTER TABLE reader_highlights DROP COLUMN note',
+    ],
+  },
 ];
