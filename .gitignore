@@ -56,3 +56,4 @@ example
 
 target/
 reports/
+.vscode/
