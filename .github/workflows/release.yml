@@ -1,13 +1,12 @@
-name: Release Android via CNB
+name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing GitHub tag, for example v1.0.0 or v1.1.0-rc.1'
+        description: Existing version tag, for example v0.1.1
         required: true
         type: string
 
@@ -18,47 +17,64 @@ concurrency:
   group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+  LUNAR_GITHUB_REPOSITORY: ${{ github.repository }}
+
 jobs:
-  sync-release:
+  build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    env:
-      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Validate and check out the release tag
-        shell: bash
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate version, changelog and destination
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]
           git checkout --detach "refs/tags/$RELEASE_TAG"
-          node scripts/release.mjs validate "$RELEASE_TAG"
+          node scripts/release.mjs preflight "$RELEASE_TAG"
+      - uses: ./.github/actions/build-android
+        with:
+          profile: release
+          expo-token: ${{ secrets.EXPO_TOKEN }}
+      - name: Verify APK and prepare release assets
+        run: node scripts/release.mjs prepare "$RELEASE_TAG"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-android-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+          overwrite: true
 
-      - name: Sync only this tag to CNB
-        shell: bash
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-android-${{ github.run_id }}
+          path: artifacts/
+      - name: Publish verified assets and bilingual changelog
         env:
-          CNB_SECRET: ${{ secrets.CNB_SECRET }}
-        run: |
-          : "${CNB_SECRET:?Configure the CNB_SECRET repository secret}"
-          ASKPASS="$RUNNER_TEMP/cnb-askpass.sh"
-          cat > "$ASKPASS" <<'SCRIPT'
-          #!/usr/bin/env bash
-          case "$1" in
-            *Username*) printf '%s\n' 'cnb' ;;
-            *Password*) printf '%s\n' "$CNB_SECRET" ;;
-          esac
-          SCRIPT
-          chmod 700 "$ASKPASS"
-          trap 'rm -f "$ASKPASS"' EXIT
-          export GIT_ASKPASS="$ASKPASS" GIT_TERMINAL_PROMPT=0
-          git push https://cnb.cool/Umbrae-Labs/lunar.git "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
-          {
-            echo "### Release handed to CNB"
-            echo "Tag: $RELEASE_TAG"
-            echo "CNB builds: https://cnb.cool/Umbrae-Labs/lunar/-/build"
-            echo "The GitHub job confirms tag synchronization. CNB publishes the release after the build succeeds."
-            echo "For an existing CNB tag, retry its CNB build; pushing the same tag again does not start another build."
-          } >> "$GITHUB_STEP_SUMMARY"
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/release.mjs publish "$RELEASE_TAG"

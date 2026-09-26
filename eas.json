@@ -30,6 +30,13 @@
         "APP_VARIANT": "production"
       }
     },
+    "nightly": {
+      "extends": "release",
+      "environment": "preview",
+      "env": {
+        "APP_VARIANT": "nightly"
+      }
+    },
     "release": {
       "extends": "production",
       "environment": "production",

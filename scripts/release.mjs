@@ -13,19 +13,36 @@ export function validateVersion(tag, packageVersion, appVersion) {
   return { tag, version: match[1], prerelease: Boolean(match[2]) };
 }
 
-export function validateApk(badging, version, packageName) {
+export function validateApk(badging, version, packageName, { allowDebuggable = false } = {}) {
   const pkg = /^package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'/m.exec(badging);
   const abi = /^native-code: (.+)$/m.exec(badging)?.[1].trim();
   if (!pkg || pkg[1] !== packageName || pkg[3] !== version || Number(pkg[2]) < 1) {
     throw new Error('APK package name or version differs from the release configuration.');
   }
   if (abi !== "'arm64-v8a'") throw new Error('Release APK must contain only the supported arm64-v8a ABI.');
-  if (/^application-debuggable/m.test(badging)) throw new Error('Release APK is debuggable.');
+  if (!allowDebuggable && /^application-debuggable/m.test(badging)) throw new Error('Release APK is debuggable.');
   return { packageName: pkg[1], versionCode: Number(pkg[2]), abi: 'arm64-v8a' };
 }
 
+export async function readChangelog(tag, root = 'changelog') {
+  if (!/^v\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.[1-9]\d*)?$/.test(tag)) {
+    throw new Error('Invalid changelog tag.');
+  }
+  const sections = [];
+  for (const [locale, heading] of [
+    ['zh-CN', '中文'],
+    ['en-US', 'English'],
+  ]) {
+    const file = resolve(root, tag, `${locale}.md`);
+    const content = (await readFile(file, 'utf8')).trim();
+    if (!content || /\bTODO\b|\bTBD\b|待填写/i.test(content)) throw new Error(`Complete changelog: ${file}`);
+    sections.push(`## ${heading}\n\n${content}`);
+  }
+  return sections.join('\n\n');
+}
+
 export function githubClient(token) {
-  if (!token) throw new Error('GITHUB_RELEASE_TOKEN is required in the CNB release secret import.');
+  if (!token) throw new Error('GITHUB_TOKEN or GITHUB_RELEASE_TOKEN is required.');
   return async (method, endpoint, body, contentType = 'application/json') => {
     const url = new URL(endpoint, 'https://api.github.com');
     if (url.protocol !== 'https:' || !['api.github.com', 'uploads.github.com'].includes(url.hostname)) {
@@ -57,7 +74,7 @@ export async function preflight(api, repository, release, commit) {
     object = (await api('GET', `${base}/git/tags/${object.sha}`)).object;
   }
   if (object.type !== 'commit' || object.sha !== commit) {
-    throw new Error('GitHub tag and the CNB checkout must identify the same commit.');
+    throw new Error('GitHub tag and the build checkout must identify the same commit.');
   }
   let existing;
   for (let page = 1; ; page++) {
@@ -72,17 +89,21 @@ export async function preflight(api, repository, release, commit) {
   return { base, existing, marker };
 }
 
-export async function publish(api, repository, release, commit, assets) {
+export async function publish(api, repository, release, commit, assets, notes) {
+  if (!notes?.trim()) throw new Error('Release notes are required.');
   const { base, existing, marker } = await preflight(api, repository, release, commit);
-  const draft = existing ?? await api('POST', `${base}/releases`, {
-    tag_name: release.tag,
-    target_commitish: commit,
-    name: `Lunar ${release.tag}`,
-    body: `${marker}\nAndroid arm64-v8a APK.\n\nSource commit: ${commit}`,
-    draft: true,
-    prerelease: release.prerelease,
-    generate_release_notes: true,
-  });
+  const body = `${marker}\n${notes}\n\nSource commit: ${commit}`;
+  const draft =
+    existing ??
+    (await api('POST', `${base}/releases`, {
+      tag_name: release.tag,
+      target_commitish: commit,
+      name: release.name ?? `Lunar ${release.tag}`,
+      body,
+      draft: true,
+      prerelease: release.prerelease,
+      generate_release_notes: false,
+    }));
   // Only replace artifacts in a draft created by this script for this commit.
   for (const asset of assets) {
     const previous = draft.assets?.find((item) => item.name === asset.name);
@@ -97,6 +118,7 @@ export async function publish(api, repository, release, commit, assets) {
   // Recheck the remote tag after uploading and before exposing the assets.
   await preflight(api, repository, release, commit);
   return api('PATCH', `${base}/releases/${draft.id}`, {
+    body,
     draft: false,
     prerelease: release.prerelease,
     make_latest: release.prerelease ? 'false' : 'legacy',
@@ -105,41 +127,88 @@ export async function publish(api, repository, release, commit, assets) {
 
 async function main() {
   const [command, explicitTag] = process.argv.slice(2);
-  if (!['validate', 'preflight', 'publish'].includes(command)) {
-    throw new Error('Usage: node scripts/release.mjs <validate|preflight|publish> [tag]');
+  if (!['validate', 'preflight', 'prepare', 'publish'].includes(command)) {
+    throw new Error('Usage: node scripts/release.mjs <validate|preflight|prepare|publish> [tag]');
   }
   const pkg = JSON.parse(await readFile('package.json', 'utf8'));
   const { expo } = JSON.parse(await readFile('app.json', 'utf8'));
   const release = validateVersion(explicitTag ?? process.env.CNB_BRANCH, pkg.version, expo.version);
+  const notes = await readChangelog(release.tag);
   if (command === 'validate') {
     console.log(`Validated ${release.tag}.`);
     return;
   }
   const repository = process.env.LUNAR_GITHUB_REPOSITORY;
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-  const api = githubClient(process.env.GITHUB_RELEASE_TOKEN);
   if (command === 'preflight') {
+    const api = githubClient(process.env.GITHUB_TOKEN ?? process.env.GITHUB_RELEASE_TOKEN);
     await preflight(api, repository, release, commit);
     console.log(`Validated GitHub tag ${release.tag} at ${commit}.`);
     return;
   }
   const apk = await readFile('artifacts/lunar-release.apk');
-  const badging = execFileSync(resolve(process.env.ANDROID_HOME ?? '/opt/android-sdk', 'build-tools/36.0.0/aapt'),
-    ['dump', 'badging', 'artifacts/lunar-release.apk'], { encoding: 'utf8' });
-  const android = validateApk(badging, release.version, expo.android.package);
   const name = `lunar-${release.tag}-android-arm64-v8a.apk`;
   const digest = createHash('sha256').update(apk).digest('hex');
+  if (command === 'publish') {
+    const metadata = JSON.parse(await readFile('artifacts/release.json', 'utf8'));
+    if (
+      metadata.commit !== commit ||
+      metadata.tag !== release.tag ||
+      metadata.sha256 !== digest ||
+      metadata.repository !== repository
+    ) {
+      throw new Error('Release artifact metadata differs from the publishing checkout.');
+    }
+    const assets = await Promise.all(
+      [name, 'SHA256SUMS.txt', 'release.json'].map(async (assetName) => ({
+        name: assetName,
+        data: await readFile(resolve('artifacts', assetName)),
+        contentType: 'application/octet-stream',
+      })),
+    );
+    if (!assets[0].data.equals(apk)) throw new Error('Named release APK differs from the verified APK.');
+    const result = await publish(
+      githubClient(process.env.GITHUB_TOKEN ?? process.env.GITHUB_RELEASE_TOKEN),
+      repository,
+      release,
+      commit,
+      assets,
+      notes,
+    );
+    console.log(`Published ${result.html_url}`);
+    return;
+  }
+  const badging = execFileSync(
+    resolve(process.env.ANDROID_HOME ?? '/opt/android-sdk', 'build-tools/36.0.0/aapt'),
+    ['dump', 'badging', 'artifacts/lunar-release.apk'],
+    { encoding: 'utf8' },
+  );
+  const android = validateApk(badging, release.version, expo.android.package);
   const assets = [
     { name, data: apk, contentType: 'application/vnd.android.package-archive' },
     { name: 'SHA256SUMS.txt', data: Buffer.from(`${digest}  ${name}\n`), contentType: 'text/plain' },
-    { name: 'release.json', data: Buffer.from(`${JSON.stringify({
-      ...release, ...android, repository, commit, sha256: digest, artifact: name,
-    }, null, 2)}\n`), contentType: 'application/octet-stream' },
+    {
+      name: 'release.json',
+      data: Buffer.from(
+        `${JSON.stringify(
+          {
+            ...release,
+            ...android,
+            repository,
+            commit,
+            sha256: digest,
+            artifact: name,
+          },
+          null,
+          2,
+        )}\n`,
+      ),
+      contentType: 'application/octet-stream',
+    },
   ];
   await mkdir('artifacts', { recursive: true });
   for (const asset of assets) await writeFile(resolve('artifacts', asset.name), asset.data);
-  const result = await publish(api, repository, release, commit, assets);
-  console.log(`Published ${result.html_url}`);
+  console.log(`Prepared ${release.tag} artifacts.`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

@@ -4,9 +4,9 @@ set -euo pipefail
 PROFILE="${1:-}"
 
 case "$PROFILE" in
-  development|preview|release) EXTENSION=apk ;;
+  development|preview|release|nightly) EXTENSION=apk ;;
   production) EXTENSION=aab ;;
-  *) echo "Usage: $0 <development|preview|release|production> [output]" >&2; exit 1 ;;
+  *) echo "Usage: $0 <development|preview|release|nightly|production> [output]" >&2; exit 1 ;;
 esac
 OUTPUT="${2:-lunar-${PROFILE}.${EXTENSION}}"
 EAS_CLI_VERSION=21.8.0
@@ -86,7 +86,7 @@ fi
 
 pnpm install --frozen-lockfile
 
-if [[ "$PROFILE" == release ]]; then
+if [[ "$PROFILE" == release || "$PROFILE" == nightly ]]; then
   pnpm run check
   pnpm run test:release
   EXPO_OFFLINE=1 pnpm run check:expo

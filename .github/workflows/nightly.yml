@@ -1,0 +1,89 @@
+name: Nightly
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      commit: ${{ steps.source.outputs.commit }}
+      tag: ${{ steps.source.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test publishing automation
+        run: node --test tests/release/*.test.mjs
+      - name: Record one source commit for both APKs
+        id: source
+        run: |
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tag=nightly-$(date -u +%Y%m%d)-${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [nightly, development]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+      - uses: ./.github/actions/build-android
+        with:
+          profile: ${{ matrix.profile }}
+          expo-token: ${{ secrets.EXPO_TOKEN }}
+      - name: Verify APK and record its identity
+        env:
+          BUILD_PROFILE: ${{ matrix.profile }}
+        run: node scripts/nightly.mjs prepare "$BUILD_PROFILE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-${{ matrix.profile }}-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+          overwrite: true
+
+  publish:
+    needs: [prepare, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nightly-*-${{ github.run_id }}
+          path: artifacts/
+          merge-multiple: true
+      - name: Publish both APKs as one prerelease
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          LUNAR_GITHUB_REPOSITORY: ${{ github.repository }}
+          NIGHTLY_TAG: ${{ needs.prepare.outputs.tag }}
+        run: node scripts/nightly.mjs publish

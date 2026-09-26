@@ -5,9 +5,7 @@ import { useApplicationSettingsStore } from '@/stores';
 import { findMostRecentlyReadBookId } from '../services/reading-state-service';
 
 export default function ReadingLaunchScreen() {
-  const resumeReadingOnLaunch = useApplicationSettingsStore(
-    (state) => state.resumeReadingOnLaunch,
-  );
+  const resumeReadingOnLaunch = useApplicationSettingsStore((state) => state.resumeReadingOnLaunch);
   const [recentBookId, setRecentBookId] = useState<string | null>();
 
   useEffect(() => {
@@ -40,9 +38,10 @@ export default function ReadingLaunchScreen() {
     return null;
   }
 
-  const href: Href = resumeReadingOnLaunch && recentBookId
-    ? { pathname: '/reader/[bookId]', params: { bookId: recentBookId } }
-    : '/library' as Href;
+  const href: Href =
+    resumeReadingOnLaunch && recentBookId
+      ? { pathname: '/reader/[bookId]', params: { bookId: recentBookId } }
+      : '/library';
 
   return <Redirect href={href} />;
 }

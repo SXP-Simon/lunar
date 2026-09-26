@@ -10,7 +10,7 @@ Powered by [Rito](https://github.com/Ringyuki/Rito), it uses a Skia rendering pi
 
 Go to the [Releases](https://github.com/Umbrae-Labs/lunar/releases) page and download the latest installer.
 
-You can also download a Nightly build from [AutoBuild](https://github.com/Umbrae-Labs/lunar/releases/tag/dev-latest) to try the latest features.
+You can also download the latest `nightly-*` prerelease from [Releases](https://github.com/Umbrae-Labs/lunar/releases) to try the latest features. Each nightly provides a standalone Nightly APK and a Develop APK that requires an Expo development server. Release, Nightly and Develop can be installed together.
 
 ## Contributing
 

@@ -4,11 +4,29 @@ on:
   push:
     branches: ['**']
     paths:
-      - "src/**"
+      - 'src/**'
+      - '.github/**'
+      - 'scripts/**'
+      - 'tests/release/**'
+      - 'changelog/**'
+      - 'app.config.ts'
+      - 'eas.json'
+      - 'app.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
   pull_request:
     branches: ['main']
     paths:
-      - "src/**"
+      - 'src/**'
+      - '.github/**'
+      - 'scripts/**'
+      - 'tests/release/**'
+      - 'changelog/**'
+      - 'app.config.ts'
+      - 'eas.json'
+      - 'app.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
