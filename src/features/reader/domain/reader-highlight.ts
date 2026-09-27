@@ -5,6 +5,8 @@ export type ReaderHighlightColor = (typeof ReaderHighlightColors)[number];
 export const ReaderHighlightStyles = ['highlight', 'underline', 'wavy'] as const;
 export type ReaderHighlightStyle = (typeof ReaderHighlightStyles)[number];
 
+export const ReaderNoteMaxLength = 20000;
+
 export interface ReaderNote {
   readonly id: string;
   readonly content: string;

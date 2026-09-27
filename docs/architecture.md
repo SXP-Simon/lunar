@@ -8,6 +8,8 @@
 
 [MUST] `src/components/providers` 仅承载应用级 Provider。
 
+[MUST] `src/components/markdown` 承载通用 Markdown 编辑、展示与解析适配，通过公开入口提供组件，保持业务状态、文案与持久化隔离。
+
 [MUST] `src/features/<feature>` 承载单一业务域的界面、业务组件、Hooks、领域类型、仓储、业务服务与专属设备适配器。
 
 [MUST] `src/reader` 仅承载 EPUB 阅读内核及其公开契约。
@@ -27,6 +29,8 @@
 [MUST] `src/app` 通过 `src/features` 组合业务界面。
 
 [MUST] `src/features` 可以依赖 `src/components/ui`、`src/db`、`src/stores` 与 `src/reader` 的公开入口。
+
+[MUST] 业务包通过 `src/components/markdown` 的公开入口使用通用 Markdown 组件；Markdown 组件禁止依赖业务包。
 
 [MUST] 业务包之间仅通过各自公开入口共享领域类型与能力契约。
 

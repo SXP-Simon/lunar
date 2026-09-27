@@ -1,18 +1,14 @@
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
-import { MarkdownTextInput, type MarkdownStyle } from '@expensify/react-native-live-markdown';
-import { useBottomSheetAwareHandlers, useThemeColor } from 'heroui-native/hooks';
+import { useBottomSheetAwareHandlers } from 'heroui-native/hooks';
 import { useToast } from 'heroui-native/toast';
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
 import { BackHandler, Keyboard, Text, View } from 'react-native';
-import { useCSSVariable, withUniwind } from 'uniwind';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { useTranslation } from '@/i18n';
-import { ReaderNoteMaxLength } from '../domain/note-markdown';
-import { parseReaderNote } from '../domain/note-live-markdown';
-
-const LiveMarkdownInput = withUniwind(MarkdownTextInput);
+import { MarkdownEditor } from '@/components/markdown';
+import { ReaderNoteMaxLength } from '../domain/reader-highlight';
 
 interface ReaderNoteEditorDrawerProps {
   readonly isOpen: boolean;
@@ -132,14 +128,9 @@ export function ReaderNoteEditorDrawer({
               <NoteEditorInput
                 value={value}
                 editable={!saving}
-                multiline
-                textAlignVertical="top"
-                parser={parseReaderNote}
                 accessibilityLabel={t('reader.noteMine')}
                 placeholder={t('reader.notePlaceholder')}
-                className="min-h-0 flex-1 bg-transparent px-0 py-3 text-base leading-6 text-foreground"
-                placeholderTextColorClassName="accent-muted"
-                selectionColorClassName="accent-navigation-active"
+                className="min-h-0 flex-1 px-0 py-3"
                 maxLength={ReaderNoteMaxLength}
                 onChangeText={setValue}
               />
@@ -171,19 +162,7 @@ export function ReaderNoteEditorDrawer({
   );
 }
 
-function NoteEditorInput(props: ComponentProps<typeof LiveMarkdownInput>) {
+function NoteEditorInput(props: ComponentProps<typeof MarkdownEditor>) {
   const { onFocus, onBlur } = useBottomSheetAwareHandlers();
-  const [foreground, muted, background, border] = useThemeColor(['foreground', 'muted', 'default', 'border']);
-  const link = useCSSVariable('--color-navigation-active') as string;
-  const markdownStyle = useMemo<MarkdownStyle>(
-    () => ({
-      syntax: { color: muted },
-      link: { color: link },
-      blockquote: { borderColor: border },
-      code: { color: foreground, backgroundColor: background, borderColor: border },
-      pre: { color: foreground, backgroundColor: background, borderColor: border },
-    }),
-    [background, border, foreground, link, muted],
-  );
-  return <LiveMarkdownInput {...props} markdownStyle={markdownStyle} onFocus={onFocus} onBlur={onBlur} />;
+  return <MarkdownEditor {...props} onFocus={onFocus} onBlur={onBlur} />;
 }

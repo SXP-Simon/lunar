@@ -13,7 +13,7 @@ import { useUniwind, withUniwind } from 'uniwind';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { useTranslation } from '@/i18n';
 import type { ReaderNote } from '../domain/reader-highlight';
-import { ReaderNoteMarkdown } from './reader-note-markdown';
+import { MarkdownView } from '@/components/markdown';
 import { ReaderNoteEditorDrawer } from './reader-note-editor-drawer';
 
 const NotesBlur = withUniwind(BlurView);
@@ -194,7 +194,10 @@ export function ReaderNotesOverlay({ quote, notes, blurTarget, onClose, onSave, 
                       />
                     </Button>
                   </View>
-                  <ReaderNoteMarkdown value={note.content} />
+                  <MarkdownView
+                    value={note.content}
+                    onLinkError={() => toast.show({ variant: 'danger', label: t('reader.linkOpenFailed') })}
+                  />
                 </View>
               ))
             )}

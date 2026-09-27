@@ -3,13 +3,17 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReaderNoteEditorDrawer } from '../../src/features/reader/components/reader-note-editor-drawer';
 import { ReaderNotesOverlay } from '../../src/features/reader/components/reader-notes-overlay';
+import { MarkdownEditor } from '../../src/components/markdown';
 import type { ReaderNote } from '../../src/features/reader/domain/reader-highlight';
 
 const ui = vi.hoisted(() => ({
   cells: [] as unknown[], cursor: 0, effects: [] as (() => void)[], dirty: false,
   openStates: [] as boolean[], hosts: [] as string[], portal: '' ,
   buttons: new Map<string, { onPress: () => void; isDisabled?: boolean }>(),
-  input: undefined as undefined | { value: string; onChangeText: (value: string) => void },
+  input: undefined as undefined | {
+    value: string; onChangeText: (value: string) => void;
+    maxLength?: number; placeholder?: string; onFocus?: () => void;
+  },
   confirm: undefined as undefined | { isOpen: boolean; onConfirm: () => void; onOpenChange: (open: boolean) => void },
   toast: vi.fn(),
 }));
@@ -61,7 +65,7 @@ vi.mock('heroui-native/toast', () => ({ useToast: () => ({ toast: { show: ui.toa
 vi.mock('@expensify/react-native-live-markdown', () => ({ parseExpensiMark: vi.fn(), MarkdownTextInput: (props: typeof ui.input) => { ui.input = props; return null; } }));
 vi.mock('heroui-native/portal', () => ({ PortalHost: ({ name }: { name: string }) => { ui.hosts.push(name); return null; } }));
 vi.mock('@/components/ui/confirm-modal', () => ({ ConfirmModal: (props: typeof ui.confirm) => { ui.confirm = props; return null; } }));
-vi.mock('../../src/features/reader/components/reader-note-markdown', () => ({ ReaderNoteMarkdown: ({ value }: { value: string }) => <span>{value}</span> }));
+vi.mock('../../src/components/markdown/markdown-view', () => ({ MarkdownView: ({ value }: { value: string }) => <span>{value}</span> }));
 vi.mock('heroui-native/bottom-sheet', () => {
   const Container = ({ children }: { children: ReactNode }) => children;
   const Root = ({ isOpen, children }: { isOpen: boolean; children: ReactNode }) => { ui.openStates.push(isOpen); return isOpen ? children : null; };
@@ -107,6 +111,18 @@ function setup(initialNote = '', onSave = vi.fn().mockResolvedValue(undefined)) 
 }
 
 describe('reader note editor interactions', () => {
+  it('can use the shared editor outside a sheet with caller-owned input props', () => {
+    const onChangeText = vi.fn();
+    const onFocus = vi.fn();
+    renderTree(<MarkdownEditor value="## 草稿" maxLength={500} placeholder="输入内容"
+      onChangeText={onChangeText} onFocus={onFocus} />);
+    expect(ui.openStates).toEqual([]);
+    expect(ui.input).toMatchObject({ value: '## 草稿', maxLength: 500, placeholder: '输入内容' });
+    ui.input!.onChangeText('修改内容');
+    ui.input!.onFocus!();
+    expect(onChangeText).toHaveBeenCalledWith('修改内容');
+    expect(onFocus).toHaveBeenCalledOnce();
+  });
   it('retains the draft after a save failure and allows retrying', async () => {
     const onSave = vi.fn().mockRejectedValueOnce(new Error('disk full')).mockResolvedValue(undefined);
     const app = setup('', onSave);

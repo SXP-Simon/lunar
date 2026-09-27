@@ -2,9 +2,7 @@ import { Linking } from 'react-native';
 import Markdown, { MarkdownIt } from 'react-native-markdown-renderer';
 import { useMemo } from 'react';
 import { useResolveClassNames } from 'uniwind';
-import { useToast } from 'heroui-native/toast';
-import { useTranslation } from '@/i18n';
-import { readerNoteDisplayMarkdown, readerNoteLink } from '../domain/note-markdown';
+import { toDisplayMarkdown, markdownLink } from './markdown-format';
 import { decode } from 'html-entities';
 
 const parser = new MarkdownIt({ html: false, linkify: true, breaks: true });
@@ -25,10 +23,14 @@ parser.core.ruler.after(
 const ImageHandlers = ['https://', 'http://'];
 
 /** Theme adapter; parsing and rendering are owned by the Markdown library. */
-export function ReaderNoteMarkdown({ value }: { readonly value: string }) {
-  const markdown = useMemo(() => readerNoteDisplayMarkdown(value), [value]);
-  const { t } = useTranslation();
-  const { toast } = useToast();
+export interface MarkdownViewProps {
+  readonly value: string;
+  readonly onLinkPress?: (url: string) => void | Promise<unknown>;
+  readonly onLinkError?: (error: unknown) => void;
+}
+
+export function MarkdownView({ value, onLinkPress, onLinkError }: MarkdownViewProps) {
+  const markdown = useMemo(() => toDisplayMarkdown(value), [value]);
   const body = useResolveClassNames('text-base leading-6 text-foreground');
   const foreground = useResolveClassNames('text-foreground');
   const code = useResolveClassNames('rounded-lg bg-default p-2 font-mono text-sm text-foreground');
@@ -68,9 +70,16 @@ export function ReaderNoteMarkdown({ value }: { readonly value: string }) {
       allowedImageHandlers={ImageHandlers}
       defaultImageHandler={null}
       onLinkPress={(href) => {
-        const url = readerNoteLink(href);
-        if (url)
-          void Linking.openURL(url).catch(() => toast.show({ variant: 'danger', label: t('reader.linkOpenFailed') }));
+        const url = markdownLink(href);
+        if (url) {
+          void (async () => {
+            try {
+              await (onLinkPress ?? Linking.openURL)(url);
+            } catch (error) {
+              onLinkError?.(error);
+            }
+          })();
+        }
         return false;
       }}>
       {markdown}

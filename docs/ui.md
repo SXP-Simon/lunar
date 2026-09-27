@@ -32,6 +32,8 @@
 
 [MUST] 同类交互在多个业务包共享时，由 `src/components/ui` 提供统一组件契约。
 
+[MUST] 通用 Markdown 组件归属 `src/components/markdown`，由调用方传入内容、输入约束、文案和业务事件处理。
+
 [MUST] 仅由单一业务使用的组件归属对应 `src/features/<feature>/components`。
 
 ## 确认弹窗

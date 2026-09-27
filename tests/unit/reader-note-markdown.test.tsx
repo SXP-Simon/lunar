@@ -1,8 +1,8 @@
 import React, { type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readerNoteDisplayMarkdown, readerNoteLink } from '../../src/features/reader/domain/note-markdown';
-import { ReaderNoteMarkdown } from '../../src/features/reader/components/reader-note-markdown';
+import { toDisplayMarkdown, markdownLink } from '../../src/components/markdown/markdown-format';
+import { MarkdownView } from '../../src/components/markdown/markdown-view';
 import { Linking } from 'react-native';
 
 const renderer = vi.hoisted(() => ({ props: undefined as any }));
@@ -29,19 +29,27 @@ vi.mock('react-native', () => ({
   Image: ({ source, accessibilityLabel }: { source: { uri: string }; accessibilityLabel?: string }) => <img src={source.uri} alt={accessibilityLabel} />,
   Linking: { openURL: vi.fn().mockResolvedValue(undefined) },
 }));
-vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
-vi.mock('heroui-native/toast', () => ({ useToast: () => ({ toast: { show: vi.fn() } }) }));
 beforeEach(() => { vi.stubGlobal('React', React); vi.clearAllMocks(); });
 afterEach(() => vi.unstubAllGlobals());
 
-describe('reader Markdown notes', () => {
+describe('shared Markdown view', () => {
+  it('lets the caller handle links and reports failures without owning notifications', async () => {
+    const error = new Error('Cannot open link');
+    const onLinkPress = vi.fn().mockRejectedValue(error);
+    const onLinkError = vi.fn();
+    renderToStaticMarkup(<MarkdownView value="[link](https://example.com)" onLinkPress={onLinkPress} onLinkError={onLinkError} />);
+    renderer.props.onLinkPress('https://example.com');
+    await vi.waitFor(() => expect(onLinkError).toHaveBeenCalledWith(error));
+    expect(onLinkPress).toHaveBeenCalledWith('https://example.com/');
+    expect(Linking.openURL).not.toHaveBeenCalled();
+  });
   it.each([1, 2, 3, 4, 5, 6])('renders level %i headings in saved notes', (level) => {
-    renderToStaticMarkup(<ReaderNoteMarkdown value={`${'#'.repeat(level)} 这是什么`} />);
+    renderToStaticMarkup(<MarkdownView value={`${'#'.repeat(level)} 这是什么`} />);
     const html = renderer.props.markdownit.render(renderer.props.children);
     expect(html).toContain(`<h${level}>这是什么</h${level}>`);
   });
   it('keeps heading-like text inside code literal and preserves inline emphasis', () => {
-    renderToStaticMarkup(<ReaderNoteMarkdown value={'## *标题*\n\n```\n## 代码\n```\n\n`### 原文`'} />);
+    renderToStaticMarkup(<MarkdownView value={'## *标题*\n\n```\n## 代码\n```\n\n`### 原文`'} />);
     const html = renderer.props.markdownit.render(renderer.props.children);
     expect(html).toContain('<h2><strong>标题</strong></h2>');
     expect(html).toContain('## 代码');
@@ -50,18 +58,18 @@ describe('reader Markdown notes', () => {
     expect(html).not.toContain('<h3>原文');
   });
   it('uses the Live Markdown dialect for the display adapter', () => {
-    expect(readerNoteDisplayMarkdown('*粗体* _斜体_ ~删除~')).toBe('**粗体** *斜体* ~~删除~~');
+    expect(toDisplayMarkdown('*粗体* _斜体_ ~删除~')).toBe('**粗体** *斜体* ~~删除~~');
   });
   it('preserves literal code after converting the editor dialect', () => {
-    renderToStaticMarkup(<ReaderNoteMarkdown value={'```\nconst x = 1;\n```'} />);
+    renderToStaticMarkup(<MarkdownView value={'```\nconst x = 1;\n```'} />);
     const html = renderer.props.markdownit.render(renderer.props.children);
     expect(html).toContain('const x = 1;');
     expect(html).not.toContain('&amp;#32;');
   });
   it('delegates CommonMark content to the library parser and renderer', () => {
     const value = '# 标题\n\n*重要 _想法_*\n\n> 引用\n\n- 完成\n- 待办\n\n```ts\nconst x = 1;\n```\n\n| 列名 |\n| --- |\n| 内容 |';
-    renderToStaticMarkup(<ReaderNoteMarkdown value={value} />);
-    expect(renderer.props.children).toBe(readerNoteDisplayMarkdown(value));
+    renderToStaticMarkup(<MarkdownView value={value} />);
+    expect(renderer.props.children).toBe(toDisplayMarkdown(value));
     const markup = renderer.props.markdownit.render(renderer.props.children);
     expect(markup).toContain('<h1>');
     expect(markup).toContain('<strong>');
@@ -73,7 +81,7 @@ describe('reader Markdown notes', () => {
     expect(markup).toContain('内容');
   });
   it('treats HTML as text and permits only supported external link schemes', () => {
-    renderToStaticMarkup(<ReaderNoteMarkdown value={'<script>alert(1)</script>\n\n[unsafe](javascript:alert)\n\n[safe](https://example.com)'} />);
+    renderToStaticMarkup(<MarkdownView value={'<script>alert(1)</script>\n\n[unsafe](javascript:alert)\n\n[safe](https://example.com)'} />);
     const markup = renderer.props.markdownit.render(renderer.props.children);
     expect(markup).not.toContain('<script>');
     expect(markup.match(/<a /g)).toHaveLength(1);
@@ -81,10 +89,10 @@ describe('reader Markdown notes', () => {
     expect(Linking.openURL).not.toHaveBeenCalled();
     renderer.props.onLinkPress('https://example.com');
     expect(Linking.openURL).toHaveBeenCalledWith('https://example.com/');
-    expect(readerNoteLink('https://example.com/path')).toBe('https://example.com/path');
-    expect(readerNoteLink('mailto:test@example.com')).toBe('mailto:test@example.com');
+    expect(markdownLink('https://example.com/path')).toBe('https://example.com/path');
+    expect(markdownLink('mailto:test@example.com')).toBe('mailto:test@example.com');
     for (const url of ['javascript:alert(1)', 'file:///private/file', 'data:text/html,a', '../book.xhtml']) {
-      expect(readerNoteLink(url)).toBeUndefined();
+      expect(markdownLink(url)).toBeUndefined();
     }
   });
 });

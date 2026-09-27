@@ -9,7 +9,7 @@ const babelRequire = createRequire(require.resolve('babel-preset-expo'));
 const babel = babelRequire('@babel/core');
 const commonRoot = dirname(require.resolve('expensify-common'));
 const liveRoot = resolve(dirname(require.resolve('@expensify/react-native-live-markdown')), '../../src');
-const noteRoot = resolve('src/features/reader/domain');
+const markdownRoot = resolve('src/components/markdown');
 
 // Compile the installed parser and its dependencies with the app's Babel config.
 // Ordinary unit tests mock the native input and never inspect its worklet closure.
@@ -32,13 +32,13 @@ function loadParser() {
         return { parseExpensiMark: load(resolve(liveRoot, 'parseExpensiMark.ts')).default };
       }
       const dependency =
-        (filename.startsWith(liveRoot) || filename.startsWith(noteRoot)) && name.startsWith('.')
+        (filename.startsWith(liveRoot) || filename.startsWith(markdownRoot)) && name.startsWith('.')
           ? resolve(dirname(filename), `${name}.ts`)
           : localRequire.resolve(name);
       if (
         dependency.startsWith(commonRoot) ||
         dependency.startsWith(liveRoot) ||
-        dependency.startsWith(noteRoot) ||
+        dependency.startsWith(markdownRoot) ||
         name === 'html-entities'
       ) {
         return load(dependency);
@@ -53,7 +53,7 @@ function loadParser() {
     );
     return module.exports;
   }
-  return load(resolve(noteRoot, 'note-live-markdown.ts')).parseReaderNote;
+  return load(resolve(markdownRoot, 'live-markdown-parser.ts')).parseLiveMarkdown;
 }
 
 // Follow worklet and context-object factories, as Worklets does during transfer.
@@ -92,7 +92,7 @@ function transfer(value: any, cache = new Map<any, any>()): any {
   return result;
 }
 
-describe('native note parser worklet', () => {
+describe('shared Markdown parser worklet', () => {
   let parser: any;
   beforeAll(() => {
     parser = loadParser();
@@ -100,6 +100,17 @@ describe('native note parser worklet', () => {
 
   it('transfers its complete closure without capturing class instances', () => {
     expect(() => transfer(parser)).not.toThrow();
+  });
+
+  it('accepts a caller-specific limit and has no reader-note limit by default', () => {
+    const parse = transfer(parser);
+    expect(parse('*hello*', 5)).toEqual([]);
+    expect(parse('*hello*', 10)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: 'bold', start: 1, length: 5 })]),
+    );
+    expect(parse(`${'a'.repeat(20_001)}\n## 标题`)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: 'h1', length: 2 })]),
+    );
   });
 
   it('formats notes using the transferred parser', () => {
