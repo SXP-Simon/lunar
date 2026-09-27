@@ -96,7 +96,18 @@ export function useReaderSelection({
     [surfaceTransform],
   );
 
+  const isCurrentPage = useCallback(() => {
+    const current = runtime.getSnapshot();
+    return (
+      current.phase === 'ready' &&
+      current.revisionId === snapshot.revisionId &&
+      current.spreadIndex === snapshot.spreadIndex &&
+      current.renderId === snapshot.renderId
+    );
+  }, [runtime, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex]);
+
   const refineSelectionGeometry = useCallback(async () => {
+    if (!isCurrentPage()) return;
     const currentSelection = selectionRef.current;
     if (!currentSelection) return;
     const requestedSelection = expandHighlightSelection(currentSelection);
@@ -121,11 +132,12 @@ export function useReaderSelection({
     const refinedSelection = { ...requestedSelection, bounds };
     selectionRef.current = refinedSelection;
     setSelection({ ...refinedSelection, kind: 'text', revisionId, spreadIndex, renderId });
-  }, [expandHighlightSelection, runtime, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex]);
+  }, [expandHighlightSelection, isCurrentPage, runtime, snapshot.renderId, snapshot.revisionId, snapshot.spreadIndex]);
 
   const selectionPageKey = `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId}`;
   const commitSelectionDrag = useCallback(
     (range: ReaderTextSelectionRange | undefined, point: ReaderSelectionPoint, owner: string) => {
+      if (!isCurrentPage()) return;
       const snapshot = runtime.getSnapshot();
       if (owner !== `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId}`) return;
       const entries = runtime.getCurrentHitMap()?.entries;
@@ -144,7 +156,7 @@ export function useReaderSelection({
       selectionRef.current = next;
       void refineSelectionGeometry();
     },
-    [clearSelection, displayPoint, refineSelectionGeometry, runtime],
+    [clearSelection, displayPoint, isCurrentPage, refineSelectionGeometry, runtime],
   );
   const selectionDrag = useReaderSelectionDrag({
     entries: currentHitEntries,
@@ -166,6 +178,7 @@ export function useReaderSelection({
 
   const beginSelection = useCallback(
     (x: number, y: number) => {
+      if (!enabled || !isCurrentPage()) return;
       const hitMap = runtime.getCurrentHitMap();
       if (!hitMap) return;
       const point = displayPoint(x, y);
@@ -185,6 +198,8 @@ export function useReaderSelection({
     },
     [
       displayPoint,
+      enabled,
+      isCurrentPage,
       onSelectionStart,
       expandHighlightSelection,
       initializeSelectionDrag,
@@ -225,6 +240,7 @@ export function useReaderSelection({
   /* eslint-enable react-hooks/refs */
   const selectHighlightAtPoint = useCallback(
     (x: number, y: number) => {
+      if (!enabled || !isCurrentPage()) return false;
       const point = displayPoint(x, y);
       const region = highlightRegions.find(({ selection: highlightedSelection }) =>
         highlightedSelection.bounds.some(
@@ -254,7 +270,7 @@ export function useReaderSelection({
       }
       return false;
     },
-    [displayPoint, highlightRegions, onSelectionStart, snapshot],
+    [displayPoint, enabled, highlightRegions, isCurrentPage, onSelectionStart, snapshot],
   );
 
   const getSelection = useCallback(() => selectionRef.current, []);

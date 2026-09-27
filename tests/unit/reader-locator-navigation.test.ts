@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ReaderFontRegistry, ReaderLocator } from '../../src/reader/contracts';
+import type { ReaderFontRegistry, ReaderLocator, ReaderTextRangeGeometryRequest, ReaderTextRangeRect } from '../../src/reader/contracts';
+import type { RitoTextRangeRequest } from '../../modules/rito-rn/src/protocol/interaction';
 import type { RitoArtifact, RitoBackgroundAdvance } from '../../modules/rito-rn/src/protocol/artifact-types';
 import type { RitoArtifactRequest } from '../../modules/rito-rn/src/protocol/requests';
 import { DEFAULT_READER_TYPOGRAPHY } from '../../src/reader/typography/defaults';
@@ -58,6 +59,17 @@ async function setup(options: { completed?: boolean; runtime?: boolean; spreadMo
     readPublication: async () => ({ metadata: { title: 'Book', language: 'en', identifier: 'book' }, toc: [],
       spine: [{ idref: 'first', href: 'first.xhtml' }, { idref: 'second', href: 'second.xhtml' }] }),
     getArtifact: (id: bigint) => artifacts.get(id),
+    requestAdjacent: vi.fn(async () => {
+      const candidate = { ...destination, artifactId: nextId++, requestId: nextId };
+      artifacts.set(candidate.artifactId, candidate);
+      return candidate;
+    }),
+    textRangeGeometry: vi.fn(async (request: RitoTextRangeRequest) => ({
+      artifactId: request.artifactId,
+      pageIndex: request.pageIndex,
+      rects: [{ bounds: { x: Number(request.artifactId) * 10, y: 40, width: 20, height: 18 },
+        blockIndex: 0, lineIndex: 0, runIndex: 0, startCharIndex: 0, endCharIndex: 2 }],
+    })),
     requestArtifact: vi.fn(async (request: RitoArtifactRequest) => {
       const candidate = { ...destination, artifactId: nextId++, requestId: request.requestId };
       artifacts.set(candidate.artifactId, candidate);
@@ -94,6 +106,68 @@ async function setup(options: { completed?: boolean; runtime?: boolean; spreadMo
     data: new ArrayBuffer(0), revisionId: 1, operationId: 1, signal: new AbortController().signal });
   return { backend, publication, session, destination, runtime, loadData, layout };
 }
+
+describe('reader text geometry ownership', () => {
+  const request: ReaderTextRangeGeometryRequest = {
+    pageIndex: 0,
+    start: { blockIndex: 0, lineIndex: 0, runIndex: 0, charIndex: 0 },
+    end: { blockIndex: 0, lineIndex: 0, runIndex: 0, charIndex: 2 },
+  };
+
+  it('uses the visible artifact when retained turn sources share its chapter-local page index', async () => {
+    const { backend, publication, session } = await setup();
+    try {
+      for (const spreadIndex of [1, 2, 3, 2, 1]) {
+        await backend.getFrame(1, spreadIndex);
+        const visible = session.currentVisibleArtifact;
+        const rects = await publication.resolveTextRangeGeometry!(request);
+        expect(session.textRangeGeometry).toHaveBeenLastCalledWith({
+          ...request, sessionId: visible.sessionId, artifactId: visible.artifactId,
+        });
+        expect(rects[0].bounds.x).toBe(Number(visible.artifactId) * 10);
+      }
+    } finally { await backend.close(); }
+  });
+
+  it('rejects a geometry request when a queued turn replaces its visible artifact', async () => {
+    const { backend, publication, session } = await setup();
+    try {
+      const navigation = backend.getFrame(1, 1);
+      const geometry = publication.resolveTextRangeGeometry!(request);
+      await navigation;
+      expect(await geometry).toEqual([]);
+      expect(session.textRangeGeometry).not.toHaveBeenCalled();
+    } finally { await backend.close(); }
+  });
+
+  it('returns no geometry for a page outside the visible artifact', async () => {
+    const { backend, publication, session } = await setup();
+    try {
+      expect(await publication.resolveTextRangeGeometry!({ ...request, pageIndex: 9 })).toEqual([]);
+      expect(session.textRangeGeometry).not.toHaveBeenCalled();
+    } finally { await backend.close(); }
+  });
+
+  it('discards late geometry after navigation replaces a render in the same revision and slot', async () => {
+    const { runtime, publication, destination } = await setup({ completed: true, runtime: true });
+    destination.displayList = { ...destination.displayList, semanticDigest: new Uint8Array([1]) };
+    let resolve!: (rects: readonly ReaderTextRangeRect[]) => void;
+    vi.spyOn(publication, 'resolveTextRangeGeometry').mockReturnValueOnce(
+      new Promise((done) => { resolve = done; }),
+    );
+    try {
+      const owner = runtime.getSnapshot();
+      const geometry = runtime.resolveTextRangeGeometry(request);
+      await runtime.goToLocator(target);
+      expect(runtime.getSnapshot().revisionId).toBe(owner.revisionId);
+      expect(runtime.getSnapshot().spreadIndex).toBe(owner.spreadIndex);
+      expect(runtime.getSnapshot().renderId).not.toBe(owner.renderId);
+      resolve([{ bounds: { x: 10, y: 40, width: 20, height: 18 },
+        blockIndex: 0, lineIndex: 0, runIndex: 0, startCharIndex: 0, endCharIndex: 2 }]);
+      expect(await geometry).toEqual([]);
+    } finally { await runtime.close(); }
+  });
+});
 
 describe('saved reader location navigation', () => {
   it('holds background pagination through overlapping animations and resumes once', async () => {

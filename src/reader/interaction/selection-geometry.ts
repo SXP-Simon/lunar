@@ -8,17 +8,35 @@ export interface ReaderSelectionHit {
   readonly vertical: boolean;
 }
 
-export interface ReaderSelectionPoint { readonly x: number; readonly y: number }
+export interface ReaderSelectionPoint {
+  readonly x: number;
+  readonly y: number;
+}
 
 /** Transfer only numeric hit geometry to UI; keep text and source maps on RN. */
 export function createReaderSelectionHits(
-  entries: readonly ReaderHitEntry[], scale = 1, offsetX = 0, offsetY = 0,
+  entries: readonly ReaderHitEntry[],
+  scale = 1,
+  offsetX = 0,
+  offsetY = 0,
 ): readonly ReaderSelectionHit[] {
-  return entries.flatMap((entry, entryIndex) => entry.imageSource || !entry.text.length ? [] : [{
-    entryIndex, length: entry.text.length, vertical: entry.bounds.height > entry.bounds.width * 1.5,
-    bounds: { x: offsetX + entry.bounds.x * scale, y: offsetY + entry.bounds.y * scale,
-      width: entry.bounds.width * scale, height: entry.bounds.height * scale },
-  }]);
+  return entries.flatMap((entry, entryIndex) =>
+    entry.imageSource || !entry.text.length
+      ? []
+      : [
+          {
+            entryIndex,
+            length: entry.text.length,
+            vertical: entry.bounds.height > entry.bounds.width * 1.5,
+            bounds: {
+              x: offsetX + entry.bounds.x * scale,
+              y: offsetY + entry.bounds.y * scale,
+              width: entry.bounds.width * scale,
+              height: entry.bounds.height * scale,
+            },
+          },
+        ],
+  );
 }
 
 export function compareSelectionEndpoints(a: ReaderTextSelectionEndpoint, b: ReaderTextSelectionEndpoint): number {
@@ -27,18 +45,25 @@ export function compareSelectionEndpoints(a: ReaderTextSelectionEndpoint, b: Rea
 }
 
 export function selectionEndpointAtPoint(
-  hits: readonly ReaderSelectionHit[], x: number, y: number, maximumDistance: number,
+  hits: readonly ReaderSelectionHit[],
+  x: number,
+  y: number,
+  maximumDistance: number,
 ): ReaderTextSelectionEndpoint | undefined {
   'worklet';
   let nearest: ReaderSelectionHit | undefined;
   let best = maximumDistance * maximumDistance;
   // Reverse traversal preserves the display list's topmost exact hit.
   for (let index = hits.length - 1; index >= 0; index -= 1) {
-    const hit = hits[index]; const b = hit.bounds;
+    const hit = hits[index];
+    const b = hit.bounds;
     const dx = Math.max(b.x - x, 0, x - b.x - b.width);
     const dy = Math.max(b.y - y, 0, y - b.y - b.height);
     const distance = dx * dx + dy * dy;
-    if (distance <= best) { nearest = hit; best = distance; }
+    if (distance <= best) {
+      nearest = hit;
+      best = distance;
+    }
     if (distance === 0) break;
   }
   if (!nearest) return undefined;
@@ -50,8 +75,10 @@ export function selectionEndpointAtPoint(
 }
 
 export function moveReaderSelectionRange(
-  range: ReaderTextSelectionRange, origin: ReaderTextSelectionRange,
-  boundary: 'start' | 'end' | 'extend', endpoint: ReaderTextSelectionEndpoint,
+  range: ReaderTextSelectionRange,
+  origin: ReaderTextSelectionRange,
+  boundary: 'start' | 'end' | 'extend',
+  endpoint: ReaderTextSelectionEndpoint,
 ): ReaderTextSelectionRange {
   'worklet';
   let start = boundary === 'start' ? endpoint : range.start;
@@ -62,11 +89,34 @@ export function moveReaderSelectionRange(
     end = before || compareSelectionEndpoints(endpoint, origin.end) < 0 ? origin.end : endpoint;
   }
   if (compareSelectionEndpoints(start, end) >= 0) return range;
-  if (compareSelectionEndpoints(start, range.start) === 0 && compareSelectionEndpoints(end, range.end) === 0) return range;
+  if (compareSelectionEndpoints(start, range.start) === 0 && compareSelectionEndpoints(end, range.end) === 0)
+    return range;
   return { start, end };
 }
 
-export function readerSelectionRects(hits: readonly ReaderSelectionHit[], range: ReaderTextSelectionRange): ReaderRect[] {
+/** Join by line geometry; a narrow punctuation box does not define writing direction. */
+export function mergeReaderSelectionRects(rects: readonly ReaderRect[]): ReaderRect[] {
+  'worklet';
+  const merged: ReaderRect[] = [];
+  for (const rect of rects) {
+    const previous = merged[merged.length - 1];
+    if (
+      previous &&
+      Math.abs(previous.y - rect.y) < 0.5 &&
+      Math.abs(previous.height - rect.height) < 0.5 &&
+      Math.abs(previous.x + previous.width - rect.x) < 1
+    ) {
+      merged[merged.length - 1] = { ...previous, width: rect.x + rect.width - previous.x };
+    } else merged.push(rect);
+  }
+  return merged;
+}
+
+// Worklet dependencies must be initialized before the caller captures them.
+export function readerSelectionRects(
+  hits: readonly ReaderSelectionHit[],
+  range: ReaderTextSelectionRange,
+): ReaderRect[] {
   'worklet';
   const rects: ReaderRect[] = [];
   for (const hit of hits) {
@@ -75,25 +125,26 @@ export function readerSelectionRects(hits: readonly ReaderSelectionHit[], range:
     const from = hit.entryIndex === range.start.entryIndex ? range.start.charIndex : 0;
     const to = hit.entryIndex === range.end.entryIndex ? range.end.charIndex : hit.length;
     if (to <= from) continue;
-    const b = hit.bounds; const start = from / hit.length; const length = (to - from) / hit.length;
+    const b = hit.bounds;
+    const start = from / hit.length;
+    const length = (to - from) / hit.length;
     const rect = hit.vertical
       ? { x: b.x, y: b.y + b.height * start, width: b.width, height: b.height * length }
       : { x: b.x + b.width * start, y: b.y, width: b.width * length, height: b.height };
-    const previous = rects[rects.length - 1];
-    if (!hit.vertical && previous && Math.abs(previous.y - rect.y) < 0.5
-      && Math.abs(previous.height - rect.height) < 0.5
-      && Math.abs(previous.x + previous.width - rect.x) < 1) {
-      rects[rects.length - 1] = { ...previous, width: rect.x + rect.width - previous.x };
-    } else rects.push(rect);
+    rects.push(rect);
   }
-  return rects;
+  return mergeReaderSelectionRects(rects);
 }
 
 export function readerSelectionHandlePoints(rects: readonly ReaderRect[]): {
-  start: ReaderSelectionPoint; end: ReaderSelectionPoint;
+  start: ReaderSelectionPoint;
+  end: ReaderSelectionPoint;
 } {
   'worklet';
-  const first = rects[0]; const last = rects[rects.length - 1];
-  return { start: { x: first?.x ?? 0, y: first ? first.y + first.height : 0 },
-    end: { x: last ? last.x + last.width : 0, y: last ? last.y + last.height : 0 } };
+  const first = rects[0];
+  const last = rects[rects.length - 1];
+  return {
+    start: { x: first?.x ?? 0, y: first ? first.y + first.height : 0 },
+    end: { x: last ? last.x + last.width : 0, y: last ? last.y + last.height : 0 },
+  };
 }

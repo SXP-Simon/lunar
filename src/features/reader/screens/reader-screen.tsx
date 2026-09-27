@@ -41,9 +41,9 @@ import { useReaderPanels } from '../hooks/controls/use-reader-panels';
 import { useReaderViewport } from '../hooks/controls/use-reader-viewport';
 import { useReaderVolumeKeys } from '../hooks/controls/use-reader-volume-keys';
 import { useReaderSession } from '../hooks/session/use-reader-session';
+import { useReaderHitEntries } from '../hooks/session/use-reader-hit-entries';
 import { useReadingTime } from '../hooks/session/use-reading-time';
 
-const EmptyReaderHitEntries = [] as const;
 const ReaderBlurTarget = withUniwind(BlurTargetView);
 
 export default function ReaderScreen() {
@@ -157,9 +157,7 @@ export default function ReaderScreen() {
     ) !== undefined &&
     session.runtime.getCurrentFrame(session.snapshot.spreadIndex) !== undefined;
   useMarkInitialContentReady(isReaderFrameReady || Boolean(session.errorMessage));
-  const currentHitEntries = isReady
-    ? (session.runtime.getCurrentHitMap()?.entries ?? EmptyReaderHitEntries)
-    : EmptyReaderHitEntries;
+  const currentHitEntries = useReaderHitEntries(session.runtime, session.snapshot, isReady);
   const panels = useReaderPanels(isReady);
   const { toggleControls, setPanelOpen } = panels;
   const {
@@ -180,7 +178,7 @@ export default function ReaderScreen() {
     currentHitEntries,
     highlights,
     surfaceTransform,
-    enabled: isReady && !isSettling,
+    enabled: isReady && !isSettling && !automaticNavigationActive,
     onSelectionStart: panels.hideControls,
   });
   const { isHighlighting, highlightToDelete, setHighlightToDelete, highlightSelection, deleteHighlight } =

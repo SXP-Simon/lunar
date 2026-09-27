@@ -278,6 +278,41 @@ describe('reader content actions', () => {
 });
 
 describe('reader selection ownership', () => {
+  it.each(['revisionId', 'spreadIndex', 'renderId'] as const)(
+    'ignores a delayed selection start after the runtime changes its %s before React renders', (field) => {
+      const owner = snapshot();
+      const runtime = {
+        getSnapshot: () => ({ ...owner, [field]: 99 }),
+        getCurrentHitMap: vi.fn(() => ({ entries: [] })),
+      };
+      const onSelectionStart = vi.fn();
+      const options = { runtime, snapshot: owner, currentHitEntries: [], highlights: [],
+        enabled: true, onSelectionStart } as unknown as Parameters<typeof useReaderSelection>[0];
+      const selection = render(() => useReaderSelection(options));
+      harness.gestures.at(-1)!.callbacks.onStart({ x: 0, y: 0 });
+      expect(runtime.getCurrentHitMap).not.toHaveBeenCalled();
+      expect(selection.getSelection()).toBeUndefined();
+      expect(onSelectionStart).not.toHaveBeenCalled();
+    },
+  );
+
+  it('ignores a delayed drag commit from a React callback that belongs to the previous page', () => {
+    const owner = snapshot();
+    const current = { ...owner, renderId: 4 };
+    const runtime = {
+      getSnapshot: () => current,
+      getCurrentHitMap: vi.fn(() => ({ entries: [] })),
+      resolveTextRangeGeometry: vi.fn(),
+    };
+    const options = { runtime, snapshot: owner, currentHitEntries: [], highlights: [],
+      enabled: true, onSelectionStart: vi.fn() } as unknown as Parameters<typeof useReaderSelection>[0];
+    const selection = render(() => useReaderSelection(options));
+    harness.commitSelection!({}, { x: 0, y: 0 }, '1:2:4');
+    expect(runtime.getCurrentHitMap).not.toHaveBeenCalled();
+    expect(runtime.resolveTextRangeGeometry).not.toHaveBeenCalled();
+    expect(selection.getSelection()).toBeUndefined();
+  });
+
   it('releases pagination suspension and ignores late geometry after navigation', async () => {
     let latest = snapshot();
     const geometry = deferred<unknown[]>();
