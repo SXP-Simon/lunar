@@ -1,16 +1,18 @@
 <img src="public/hero.webp" alt="Lunar" />
 
+> The character appearing in the picture is Takashima Zakuro from the game "Wonderful Everyday Down the Rabbit Hole"
+
 Lunar is a lightweight, cross-platform EPUB reader with native rendering.
 
-Powered by [Rito](https://github.com/Ringyuki/Rito), it uses a Skia rendering pipeline to deliver consistent visuals across platforms, polished page-turn animations, and high-performance native rendering.
+Powered by [Rito](https://github.com/Ringyuki/Rito), Lunar combines a Skia rendering pipeline with a native C++ compositor to deliver consistent visuals across platforms, polished page-turn animations, and high-performance native rendering.
 
 ## Installation
 
 ### Download from Releases
 
-Go to the [Releases](https://github.com/Umbrae-Labs/lunar/releases) page and download the latest installer.
+Go to the [Releases](https://github.com/Umbrae-Labs/lunar/releases/latest) page and download the latest installer.
 
-You can also download the latest `nightly-*` prerelease from [Releases](https://github.com/Umbrae-Labs/lunar/releases) to try the latest features. Each nightly provides a standalone Nightly APK and a Develop APK that requires an Expo development server. Release, Nightly and Develop can be installed together.
+You can also download the latest prerelease from [Releases](https://github.com/Umbrae-Labs/lunar/releases) to try the latest features. Each nightly provides a standalone Nightly APK and a Develop APK that requires an Expo development server. Release, Nightly and Develop can be installed together.
 
 ## Contributing
 
