@@ -31,7 +31,6 @@ export default function ExternalImportScreen() {
           for (const result of results) {
             if (result.book) {
               succeeded = true;
-              toast.show({ variant: 'success', label: t('library.importCompleted'), description: result.book.title });
             } else {
               toast.show({
                 variant: 'danger',
