@@ -13,11 +13,13 @@ const ui = vi.hoisted(() => ({
   input: undefined as undefined | {
     value: string; onChangeText: (value: string) => void;
     maxLength?: number; placeholder?: string; onFocus?: () => void;
+    onSelectionChange?: (event: { nativeEvent: { selection: { start: number; end: number } } }) => void;
   },
   confirm: undefined as undefined | { isOpen: boolean; onConfirm: () => void; onOpenChange: (open: boolean) => void },
   toast: vi.fn(),
   measureQuote: undefined as undefined | ((event: { nativeEvent: { lines: unknown[] } }) => void),
   quoteLines: undefined as number | undefined,
+  nativeInput: { focus: vi.fn(), setSelection: vi.fn() },
 }));
 
 vi.mock('expensify-common/ExpensiMark', async () => {
@@ -44,6 +46,7 @@ vi.mock('react', async (importOriginal) => {
       ui.cells[index] = deps;
     },
     useCallback: (callback: unknown) => callback,
+    useLayoutEffect: (effect: () => void) => { ui.effects.push(effect); },
   };
 });
 vi.mock('react-native', () => ({
@@ -70,7 +73,7 @@ vi.mock('react-native-reanimated', () => ({
 }));
 vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock('heroui-native/toast', () => ({ useToast: () => ({ toast: { show: ui.toast } }) }));
-vi.mock('@expensify/react-native-live-markdown', () => ({ parseExpensiMark: vi.fn(), MarkdownTextInput: (props: typeof ui.input) => { ui.input = props; return null; } }));
+vi.mock('@expensify/react-native-live-markdown', () => ({ parseExpensiMark: vi.fn(), MarkdownTextInput: (props: typeof ui.input & { ref: { current: unknown } }) => { ui.input = props; props.ref.current = ui.nativeInput; return null; } }));
 vi.mock('heroui-native/portal', () => ({ PortalHost: ({ name }: { name: string }) => { ui.hosts.push(name); return null; } }));
 vi.mock('@/components/ui/confirm-modal', () => ({ ConfirmModal: (props: typeof ui.confirm) => { ui.confirm = props; return null; } }));
 vi.mock('../../src/components/markdown/markdown-view', () => ({ MarkdownView: ({ value }: { value: string }) => <span>{value}</span> }));
@@ -94,6 +97,7 @@ beforeEach(() => {
   vi.stubGlobal('React', React);
   ui.effects = []; ui.openStates = []; ui.hosts = []; ui.dirty = false; ui.cells = []; ui.cursor = 0; ui.buttons.clear(); ui.toast.mockClear(); ui.input = undefined;
   ui.measureQuote = undefined; ui.quoteLines = undefined;
+  ui.nativeInput.focus.mockClear(); ui.nativeInput.setSelection.mockClear();
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -120,6 +124,20 @@ function setup(initialNote = '', onSave = vi.fn().mockResolvedValue(undefined)) 
 }
 
 describe('reader note editor interactions', () => {
+  it('formats the native selection and positions it only after the new text commits', () => {
+    const app = setup('斜体');
+    ui.input!.onSelectionChange!({ nativeEvent: { selection: { start: 0, end: 2 } } });
+    ui.buttons.get('markdown.italic')!.onPress();
+    expect(ui.nativeInput.setSelection).not.toHaveBeenCalled();
+    app.render();
+    expect(ui.input!.value).toBe('_斜体_');
+    expect(ui.nativeInput.setSelection).toHaveBeenLastCalledWith(1, 3);
+    expect(ui.nativeInput.focus).toHaveBeenCalledOnce();
+    ui.nativeInput.setSelection.mockClear();
+    // Ordinary backspace events must not replay the last toolbar selection.
+    ui.input!.onChangeText('_斜体'); app.render();
+    expect(ui.nativeInput.setSelection).not.toHaveBeenCalled();
+  });
   it('can use the shared editor outside a sheet with caller-owned input props', () => {
     const onChangeText = vi.fn();
     const onFocus = vi.fn();

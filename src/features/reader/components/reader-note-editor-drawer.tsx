@@ -147,6 +147,16 @@ export function ReaderNoteEditorDrawer({
             </View>
             <View className="min-h-0 flex-1 rounded-2xl bg-surface p-3">
               <NoteEditorInput
+                toolbarLabels={{
+                  bold: t('markdown.bold'),
+                  italic: t('markdown.italic'),
+                  strikethrough: t('markdown.strikethrough'),
+                  code: t('markdown.code'),
+                  heading: t('markdown.heading'),
+                  quote: t('markdown.quote'),
+                  codeBlock: t('markdown.codeBlock'),
+                  link: t('markdown.link'),
+                }}
                 value={value}
                 editable={!saving}
                 accessibilityLabel={t('reader.noteMine')}

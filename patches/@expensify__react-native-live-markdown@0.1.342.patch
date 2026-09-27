@@ -1,0 +1,100 @@
+diff --git a/android/src/main/java/com/expensify/livemarkdown/MarkdownTextInputDecoratorView.java b/android/src/main/java/com/expensify/livemarkdown/MarkdownTextInputDecoratorView.java
+index 69427e8e64d57cac79e4bdff777ff55a09708985..7c4d817cc256b86107ebf4a6ff21de89503d3222 100644
+--- a/android/src/main/java/com/expensify/livemarkdown/MarkdownTextInputDecoratorView.java
++++ b/android/src/main/java/com/expensify/livemarkdown/MarkdownTextInputDecoratorView.java
+@@ -37,7 +37,7 @@ public class MarkdownTextInputDecoratorView extends ReactViewGroup {
+       mMarkdownUtils.setMarkdownStyle(mMarkdownStyle);
+       mMarkdownUtils.setParserId(mParserId);
+       mReactEditText = (ReactEditText) child;
+-      mTextWatcher = new MarkdownTextWatcher(mMarkdownUtils);
++      mTextWatcher = new MarkdownTextWatcher(mMarkdownUtils, mReactEditText);
+       mReactEditText.addTextChangedListener(mTextWatcher);
+       applyNewStyles();
+     }
+@@ -74,7 +74,7 @@ public class MarkdownTextInputDecoratorView extends ReactViewGroup {
+     if (mReactEditText != null && mMarkdownUtils != null) {
+       Editable editable = mReactEditText.getText();
+       if (editable instanceof SpannableStringBuilder ssb) {
+-        mMarkdownUtils.applyMarkdownFormatting(ssb);
++        mMarkdownUtils.applyMarkdownFormatting(mReactEditText);
+       }
+     }
+   }
+diff --git a/android/src/main/java/com/expensify/livemarkdown/MarkdownTextWatcher.java b/android/src/main/java/com/expensify/livemarkdown/MarkdownTextWatcher.java
+index d182be1fd77e84a31834d002b5119118f5d28eaa..407f1c2dc9bfa8f1d5e9e124805c0f9f09dcee4b 100644
+--- a/android/src/main/java/com/expensify/livemarkdown/MarkdownTextWatcher.java
++++ b/android/src/main/java/com/expensify/livemarkdown/MarkdownTextWatcher.java
+@@ -5,12 +5,15 @@ import android.text.SpannableStringBuilder;
+ import android.text.TextWatcher;
+ 
+ import androidx.annotation.NonNull;
++import com.facebook.react.views.textinput.ReactEditText;
+ 
+ public class MarkdownTextWatcher implements TextWatcher {
+   private final @NonNull MarkdownUtils mMarkdownUtils;
++  private final @NonNull ReactEditText mEditText;
+ 
+-  public MarkdownTextWatcher(@NonNull MarkdownUtils markdownUtils) {
++  public MarkdownTextWatcher(@NonNull MarkdownUtils markdownUtils, @NonNull ReactEditText editText) {
+     mMarkdownUtils = markdownUtils;
++    mEditText = editText;
+   }
+ 
+   @Override
+@@ -26,7 +29,7 @@ public class MarkdownTextWatcher implements TextWatcher {
+   @Override
+   public void afterTextChanged(Editable editable) {
+     if (editable instanceof SpannableStringBuilder ssb) {
+-      mMarkdownUtils.applyMarkdownFormatting(ssb);
++      mMarkdownUtils.applyMarkdownFormatting(mEditText);
+     }
+   }
+ }
+diff --git a/android/src/main/java/com/expensify/livemarkdown/MarkdownUtils.java b/android/src/main/java/com/expensify/livemarkdown/MarkdownUtils.java
+index 6877e46f9e8455790b6c904ca4c9d2ebf68d15f1..56ab3f149a1407ad62c637f2648a40604ed5738e 100644
+--- a/android/src/main/java/com/expensify/livemarkdown/MarkdownUtils.java
++++ b/android/src/main/java/com/expensify/livemarkdown/MarkdownUtils.java
+@@ -1,10 +1,12 @@
+ package com.expensify.livemarkdown;
+ 
+ import android.text.SpannableStringBuilder;
++import android.text.Editable;
+ 
+ import androidx.annotation.NonNull;
+ 
+ import com.facebook.react.bridge.ReactContext;
++import com.facebook.react.views.textinput.ReactEditText;
+ import com.facebook.systrace.Systrace;
+ 
+ import java.util.List;
+@@ -29,6 +31,30 @@ public class MarkdownUtils {
+     mParserId = parserId;
+   }
+ 
++  // Formatting changes spans, never the user's text or logical selection. Batch
++  // metric-span updates so the IME doesn't observe intermediate cursor positions.
++  public void applyMarkdownFormatting(ReactEditText editText) {
++    Editable editable = editText.getText();
++    if (!(editable instanceof SpannableStringBuilder ssb)) {
++      return;
++    }
++    int start = editText.getSelectionStart();
++    int end = editText.getSelectionEnd();
++    editText.beginBatchEdit();
++    try {
++      applyMarkdownFormatting(ssb);
++    } finally {
++      try {
++        if (start >= 0 && end >= 0 &&
++            (editText.getSelectionStart() != start || editText.getSelectionEnd() != end)) {
++          editText.setSelection(Math.min(start, ssb.length()), Math.min(end, ssb.length()));
++        }
++      } finally {
++        editText.endBatchEdit();
++      }
++    }
++  }
++
+   public void applyMarkdownFormatting(SpannableStringBuilder ssb) {
+     try {
+       Systrace.beginSection(0, "applyMarkdownFormatting");

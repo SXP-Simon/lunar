@@ -1,6 +1,16 @@
 import { type TranslationSchema, zhCN } from './zh-CN';
 
 export const en: TranslationSchema<typeof zhCN> = {
+  markdown: {
+    bold: 'Bold',
+    italic: 'Italic',
+    strikethrough: 'Strikethrough',
+    code: 'Inline code',
+    heading: 'Heading, cycle levels one through six',
+    quote: 'Blockquote',
+    codeBlock: 'Code block',
+    link: 'Link',
+  },
   action: {
     cancel: 'Cancel',
     close: 'Close',

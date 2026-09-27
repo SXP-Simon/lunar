@@ -1,4 +1,14 @@
 export const zhCN = {
+  markdown: {
+    bold: '加粗',
+    italic: '斜体',
+    strikethrough: '删除线',
+    code: '行内代码',
+    heading: '标题，循环一至六级',
+    quote: '引用',
+    codeBlock: '代码块',
+    link: '链接',
+  },
   action: {
     cancel: '取消',
     close: '关闭',
