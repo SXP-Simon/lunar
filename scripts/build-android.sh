@@ -39,6 +39,8 @@ for command_name in java javac node unzip wget curl git timeout; do
   fi
 done
 
+export LUNAR_BUILD_COMMIT="$(git rev-parse HEAD)"
+
 JAVAC_BIN="$(command -v javac)"
 export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$JAVAC_BIN")")")"
 

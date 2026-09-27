@@ -28,7 +28,9 @@ Android SDK 与后续 APK 校验共用 `/opt/android-sdk`。`scripts/cnb-build-a
 
 Nightly 与正式版共用包名，覆盖安装后沿用书库、阅读进度和设置。Develop 使用独立包名和存储，可以与正式版或 Nightly 同时安装。`nightly` 继承 `release` 的 APK 编译和签名配置，使用 `APP_VARIANT=nightly` 与 Expo `preview` 环境。`development` 保留 Expo 开发客户端。`production` 继续用于 AAB 构建。[Expo 应用变体](https://docs.expo.dev/build-reference/variants/) · [Expo SDK 57 开发客户端](https://docs.expo.dev/versions/v57.0.0/sdk/dev-client/)
 
-应用显示名称分别为 `lunar`、`lunar Nightly` 与 `lunar Dev`。链接协议分别为 `lunar`、`lunar-nightly` 与 `lunar-dev`，开发客户端自动协议仅由 Develop 注册。
+正式版与 Nightly 的应用显示名称统一为 `lunar`，Develop 保留 `lunar Dev`。链接协议分别为 `lunar`、`lunar-nightly` 与 `lunar-dev`，开发客户端自动协议仅由 Develop 注册。
+
+应用版本号继续使用 `X.Y.Z`。关于页面中的正式版显示基础版本号，Nightly 显示为 `X.Y.Z Nightly · abc1234`，其中 `abc1234` 为源码提交编号的前七位。构建脚本将当前 Git 提交编号保存到 Expo 配置的 `extra.buildCommit`，应用变体保存到 `extra.buildVariant`；本地预览缺少提交信息时显示 `X.Y.Z Nightly`。Nightly 发布标题、预发布标记和 APK 文件名继续标识发布用途。
 
 ## 首次配置
 

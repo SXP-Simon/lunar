@@ -1,4 +1,3 @@
-import Constants from 'expo-constants';
 import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -11,6 +10,8 @@ import { useUniwind, withUniwind } from 'uniwind';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
 
+import { getAppVersionLabel } from '../infrastructure/app-version';
+
 const APP_ICON = require('../../../../assets/images/icon.png');
 const WORDMARK_BLACK = require('../../../../assets/images/wordmark-black.png');
 const WORDMARK_WHITE = require('../../../../assets/images/wordmark-white.png');
@@ -22,14 +23,19 @@ export function AboutScreen() {
   const insets = useSafeAreaInsets();
   const foreground = useThemeColor('foreground');
   const { theme } = useUniwind();
-  const version = Constants.expoConfig?.version;
+  const version = getAppVersionLabel();
   const year = new Date().getFullYear();
   useMarkInitialContentReady(true);
 
   return (
     <View
       className="flex-1 bg-background"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}>
+      style={{
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
+      }}>
       <View className="w-full max-w-[800px] flex-row items-center gap-2 self-center px-4 py-2">
         <Button
           isIconOnly
@@ -70,9 +76,7 @@ export function AboutScreen() {
           />
           {version ? <Text className="mt-3 text-base text-muted">{version}</Text> : null}
         </View>
-        <Text className="pt-12 text-center text-sm text-muted">
-          © {year} Umbrae Labs
-        </Text>
+        <Text className="pt-12 text-center text-sm text-muted">© {year} Umbrae Labs</Text>
       </ScrollView>
     </View>
   );

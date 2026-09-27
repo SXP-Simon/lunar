@@ -14,6 +14,7 @@ function getAndroidAbis(value: string | undefined): string[] | undefined {
 export default ({ config }: ConfigContext): ExpoConfig => {
   const isDevelopment = process.env.APP_VARIANT === 'development';
   const isNightly = process.env.APP_VARIANT === 'nightly';
+  const buildCommit = process.env.LUNAR_BUILD_COMMIT ?? process.env.LUNAR_SOURCE_COMMIT;
   const name = config.name ?? 'lunar';
   const androidPackage = config.android?.package ?? 'com.lunarain_079.lunar';
   const compactAndroidDevBuild = process.env.LUNAR_ANDROID_COMPACT_DEV_BUILD === 'true';
@@ -22,9 +23,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   return {
     ...config,
-    name: isDevelopment ? `${name} Dev` : isNightly ? `${name} Nightly` : name,
+    name: isDevelopment ? `${name} Dev` : name,
     slug: config.slug ?? 'lunar',
     scheme: isDevelopment ? 'lunar-dev' : isNightly ? 'lunar-nightly' : config.scheme,
+    extra: {
+      ...config.extra,
+      buildVariant: isDevelopment ? 'development' : isNightly ? 'nightly' : 'production',
+      buildCommit: buildCommit && /^[0-9a-f]{40}$/i.test(buildCommit) ? buildCommit : undefined,
+    },
     android: {
       ...config.android,
       package: isDevelopment ? `${androidPackage}.dev` : androidPackage,
