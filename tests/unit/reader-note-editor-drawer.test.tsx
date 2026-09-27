@@ -22,6 +22,7 @@ const ui = vi.hoisted(() => ({
   measureQuote: undefined as undefined | ((event: { nativeEvent: { lines: unknown[] } }) => void),
   quoteLines: undefined as number | undefined,
   nativeInput: { focus: vi.fn(), setSelection: vi.fn() },
+  notePortal: '' as string,
 }));
 
 vi.mock('expensify-common/ExpensiMark', async () => {
@@ -75,7 +76,13 @@ vi.mock('react-native-reanimated', () => ({
 vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock('heroui-native/toast', () => ({ useToast: () => ({ toast: { show: ui.toast } }) }));
 vi.mock('@expensify/react-native-live-markdown', () => ({ parseExpensiMark: vi.fn(), MarkdownTextInput: (props: typeof ui.input & { ref: { current: unknown } }) => { ui.input = props; props.ref.current = ui.nativeInput; return null; } }));
-vi.mock('heroui-native/portal', () => ({ PortalHost: ({ name }: { name: string }) => { ui.hosts.push(name); return null; } }));
+vi.mock('heroui-native/portal', () => ({
+  Portal: ({ name, children }: { name: string; children: ReactNode }) => {
+    ui.notePortal = name;
+    return children;
+  },
+  PortalHost: ({ name }: { name: string }) => { ui.hosts.push(name); return null; },
+}));
 vi.mock('@/components/ui/confirm-modal', () => ({ ConfirmModal: (props: typeof ui.confirm) => { ui.confirm = props; return null; } }));
 vi.mock('../../src/components/markdown/markdown-view', () => ({ MarkdownView: ({ value }: { value: string }) => <span>{value}</span> }));
 vi.mock('heroui-native/bottom-sheet', () => {
@@ -99,6 +106,7 @@ beforeEach(() => {
   ui.effects = []; ui.openStates = []; ui.hosts = []; ui.dirty = false; ui.cells = []; ui.cursor = 0; ui.buttons.clear(); ui.toast.mockClear(); ui.input = undefined;
   ui.measureQuote = undefined; ui.quoteLines = undefined;
   ui.nativeInput.focus.mockClear(); ui.nativeInput.setSelection.mockClear();
+  ui.notePortal = '';
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -259,6 +267,7 @@ describe('reader notes viewing overlay', () => {
     expect(markup).toContain('*第二条*');
     expect(ui.input).toBeUndefined();
     expect(ui.openStates.at(-1)).toBe(false);
+    expect(ui.notePortal).toMatch(/:notes$/);
   });
   it('opens an empty drawer only after Add note and keeps the viewer open after saving', async () => {
     const app = setupViewer();

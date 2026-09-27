@@ -223,6 +223,7 @@ export const zhCN = {
     linkSchemeUnsupported: '这类链接地址无法由阅读器打开',
     copySelection: '复制',
     noteTitle: '笔记',
+    notesCount: '笔记 {{count}}',
     noteAdd: '添加笔记',
     noteNone: '这段引用还没有笔记',
     noteMissing: '这条笔记或所属标记已经删除',

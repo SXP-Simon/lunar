@@ -225,6 +225,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     linkSchemeUnsupported: 'The reader cannot open this type of link',
     copySelection: 'Copy',
     noteTitle: 'Note',
+    notesCount: 'Notes: {{count}}',
     noteAdd: 'Add note',
     noteNone: 'No notes for this quote yet',
     noteMissing: 'This note or its mark has been deleted',

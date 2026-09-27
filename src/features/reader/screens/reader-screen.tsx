@@ -408,7 +408,14 @@ export default function ReaderScreen() {
     imageViewer?.revisionId === session.snapshot.revisionId && imageViewer.renderId === session.snapshot.renderId
       ? imageViewer
       : undefined;
-  const readerChromeVisible = (controlsVisible || Boolean(session.errorMessage)) && !activeImageViewer;
+  const readerChromeVisible =
+    !activeImageViewer &&
+    (controlsVisible ||
+      isTocOpen ||
+      isProgressOpen ||
+      isTypographyOpen ||
+      isMarksOpen ||
+      Boolean(session.errorMessage));
   const handleSafeAreaChange = useCallback<SafeAreaListenerProps['onChange']>(({ insets: nextInsets }) => {
     setReservedInsets((current) => preserveLargestInsets(current, nextInsets));
   }, []);
@@ -1246,7 +1253,7 @@ export default function ReaderScreen() {
         onConfirm={() => void deleteHighlight(highlightToDelete)}
       />
 
-      {!activeImageViewer && (controlsVisible || isTocOpen || isProgressOpen || isTypographyOpen || isMarksOpen) && (
+      {readerChromeVisible && (
         <IconTabBar
           activeKey={
             isTocOpen
@@ -1286,10 +1293,7 @@ export default function ReaderScreen() {
         toc={session.toc}
         bookmarks={bookmarks}
         highlights={highlights}
-        onOpenNote={(highlight) => {
-          setIsMarksOpen(false);
-          note.openHighlight(highlight);
-        }}
+        onOpenNote={note.openHighlight}
         bookmarksLoaded={bookmarksLoaded}
         highlightsLoaded={highlightsLoaded}
         bookmarksError={bookmarksError}

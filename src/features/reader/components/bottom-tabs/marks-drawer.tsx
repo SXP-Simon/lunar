@@ -10,7 +10,7 @@ import { Text, View } from 'react-native';
 import { Pressable } from 'react-native-gesture-handler';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useUniwind, withUniwind } from 'uniwind';
+import { useCSSVariable, useUniwind, withUniwind } from 'uniwind';
 import { useTranslation } from '@/i18n';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import type { ReaderLocator, ReaderRuntime, ReaderTocEntry } from '@/reader';
@@ -54,6 +54,7 @@ export function MarksDrawer(props: MarksDrawerProps) {
   const insets = useSafeAreaInsets();
   const bottomInset = getReaderBottomTabBarInset(insets.bottom);
   const dangerForeground = useThemeColor('danger-foreground');
+  const noteColor = useCSSVariable('--color-navigation-active') as string;
   const [tab, setTab] = useState<'bookmarks' | 'highlights'>('bookmarks');
   const [removing, setRemoving] = useState(false);
   const [noteMarkToDelete, setNoteMarkToDelete] = useState<string>();
@@ -172,7 +173,7 @@ export function MarksDrawer(props: MarksDrawerProps) {
                   <PressableFeedback
                     asChild
                     animation={false}
-                    className="min-h-20 w-full flex-row px-3 py-4"
+                    className="min-h-20 w-full flex-row px-3 pb-2 pt-4"
                     isDisabled={busy}
                     accessibilityRole="button"
                     accessibilityLabel={t('reader.goToMark', { text: item.text || item.title })}
@@ -186,7 +187,6 @@ export function MarksDrawer(props: MarksDrawerProps) {
                         <Text className="text-base leading-6 text-foreground" numberOfLines={3}>
                           {item.text || item.title}
                         </Text>
-                        <Text className="text-xs text-muted">{new Date(item.createdAt).toLocaleDateString()}</Text>
                       </View>
                     </MarkPressable>
                   </PressableFeedback>
@@ -225,19 +225,34 @@ export function MarksDrawer(props: MarksDrawerProps) {
                       )}>
                       <View className="bg-background dark:bg-overlay">
                         {content}
-                        {Boolean(item.noteCount) && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="mb-3 ml-3 self-start"
-                            isDisabled={busy}
-                            onPress={() => {
-                              const highlight = props.highlights.find((entry) => entry.id === item.id);
-                              if (highlight) props.onOpenNote(highlight);
-                            }}>
-                            <Button.Label className="text-navigation-active">{t('reader.noteTitle')}</Button.Label>
-                          </Button>
-                        )}
+                        <View className="min-h-8 flex-row items-center justify-between gap-2 px-3 pb-3">
+                          <Text className="flex-1 text-xs text-muted">
+                            {new Date(item.createdAt).toLocaleDateString()}
+                          </Text>
+                          {Boolean(item.noteCount) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 gap-1 px-2"
+                              accessibilityLabel={t('reader.notesCount', { count: item.noteCount })}
+                              isDisabled={busy}
+                              onPress={() => {
+                                const highlight = props.highlights.find((entry) => entry.id === item.id);
+                                if (highlight) props.onOpenNote(highlight);
+                              }}>
+                              <SymbolView
+                                name={{
+                                  ios: 'text.bubble',
+                                  android: 'chat_bubble_outline',
+                                  web: 'chat_bubble_outline',
+                                }}
+                                size={18}
+                                tintColor={noteColor}
+                              />
+                              <Button.Label className="text-xs text-navigation-active">{item.noteCount}</Button.Label>
+                            </Button>
+                          )}
+                        </View>
                       </View>
                     </ReanimatedSwipeable>
                   </View>
