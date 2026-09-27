@@ -6,8 +6,8 @@ on:
     paths:
       - 'src/**'
       - '.github/**'
+      - '.cnb.yml'
       - 'scripts/**'
-      - 'tests/release/**'
       - 'changelog/**'
       - 'app.config.ts'
       - 'eas.json'
@@ -19,8 +19,8 @@ on:
     paths:
       - 'src/**'
       - '.github/**'
+      - '.cnb.yml'
       - 'scripts/**'
-      - 'tests/release/**'
       - 'changelog/**'
       - 'app.config.ts'
       - 'eas.json'

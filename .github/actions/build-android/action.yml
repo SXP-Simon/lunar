@@ -1,73 +1,25 @@
-name: Build Android APK
-description: Prepare the GitHub Linux runner and run the existing EAS local build
+name: Build Android APK on CNB
+description: Sync the source commit to CNB, wait for compilation, and download verified assets
 inputs:
   profile:
     description: EAS APK build profile
     required: true
-  expo-token:
-    description: Expo project access token
+  cnb-token:
+    description: CNB token with repository code and build trigger read/write permissions
     required: true
+  release-tag:
+    description: Version tag for a release build
+    required: false
 runs:
   using: composite
   steps:
-    - name: Validate build configuration
-      shell: bash
-      env:
-        EXPO_TOKEN: ${{ inputs.expo-token }}
-        BUILD_PROFILE: ${{ inputs.profile }}
-      run: |
-        : "${EXPO_TOKEN:?Configure the EXPO_TOKEN repository secret}"
-        case "$BUILD_PROFILE" in
-          release|nightly|development) ;;
-          *) echo '::error::Unsupported APK build profile'; exit 1 ;;
-        esac
-    - name: Prepare disk space
-      shell: bash
-      run: |
-        set -euo pipefail
-        [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_OS" == Linux ]]
-        df -h "$GITHUB_WORKSPACE" /tmp
-        sudo rm -rf -- /usr/share/dotnet /usr/share/swift /usr/local/.ghcup \
-          /opt/hostedtoolcache/CodeQL /usr/local/lib/android/sdk/system-images \
-          /usr/local/lib/android/sdk/emulator
-        for installed_ndk in /usr/local/lib/android/sdk/ndk/*; do
-          [[ -d "$installed_ndk" ]] || continue
-          [[ "${installed_ndk##*/}" != 27.1.12297006 ]] || continue
-          sudo rm -rf -- "$installed_ndk"
-        done
-        df -h "$GITHUB_WORKSPACE" /tmp
     - uses: actions/setup-node@v4
       with:
         node-version: '22'
-    - uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: '17'
-    - name: Build signed APK
+    - name: Build on CNB and retrieve assets
       shell: bash
       env:
-        EXPO_TOKEN: ${{ inputs.expo-token }}
+        CNB_SECRET: ${{ inputs.cnb-token }}
         BUILD_PROFILE: ${{ inputs.profile }}
-        CI: 'true'
-        LUNAR_ANDROID_ABIS: arm64-v8a
-        RITO_FFI_REBUILD: '1'
-        CARGO_BUILD_JOBS: '2'
-      run: |
-        # Use the same SDK bootstrap and package list as the previous CNB build.
-        # build-android.sh installs command-line tools and missing SDK packages.
-        export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}"
-        export ANDROID_SDK_ROOT="$ANDROID_HOME"
-        # Later APK verification steps need the same SDK directory.
-        echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-        export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.1.12297006"
-        export ANDROID_NDK="$ANDROID_NDK_HOME"
-        export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
-        export ANDROID_NDK_LATEST_HOME="$ANDROID_NDK_HOME"
-        bash scripts/build-android.sh "$BUILD_PROFILE" "artifacts/lunar-${BUILD_PROFILE}.apk"
-    - name: Report disk usage
-      if: always()
-      shell: bash
-      run: |
-        df -h "$GITHUB_WORKSPACE" /tmp
-        df -i "$GITHUB_WORKSPACE" /tmp
+        RELEASE_TAG: ${{ inputs.release-tag }}
+      run: node scripts/cnb-build.mjs

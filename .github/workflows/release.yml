@@ -44,9 +44,8 @@ jobs:
       - uses: ./.github/actions/build-android
         with:
           profile: release
-          expo-token: ${{ secrets.EXPO_TOKEN }}
-      - name: Verify APK and prepare release assets
-        run: node scripts/release.mjs prepare "$RELEASE_TAG"
+          cnb-token: ${{ secrets.CNB_SECRET }}
+          release-tag: ${{ env.RELEASE_TAG }}
       - uses: actions/upload-artifact@v4
         with:
           name: release-android-${{ github.run_id }}

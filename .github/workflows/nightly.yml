@@ -42,15 +42,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.prepare.outputs.commit }}
+          fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/build-android
         with:
           profile: ${{ matrix.profile }}
-          expo-token: ${{ secrets.EXPO_TOKEN }}
-      - name: Verify APK and record its identity
-        env:
-          BUILD_PROFILE: ${{ matrix.profile }}
-        run: node scripts/nightly.mjs prepare "$BUILD_PROFILE"
+          cnb-token: ${{ secrets.CNB_SECRET }}
       - uses: actions/upload-artifact@v4
         with:
           name: nightly-${{ matrix.profile }}-${{ github.run_id }}

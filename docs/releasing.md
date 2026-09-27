@@ -2,21 +2,21 @@
 
 ## 构建与发布
 
-项目使用 GitHub Actions 执行 Android arm64 APK 编译和 GitHub Release 发布。发布自动化包含 `Release` 与 `Nightly` 两个入口，`CI` 继续负责代码检查。原有独立 production 编译入口和 CNB 同步入口合并到这两个任务中。
+项目使用 CNB 执行 Android arm64 APK 编译，使用 GitHub Actions 触发构建、接收附件并发布 GitHub Release。发布自动化包含 `Release` 与 `Nightly` 两个入口，`CI` 继续负责代码检查。
 
-EAS 使用 `--local`，实际编译在 GitHub Linux 执行器中完成。Expo 账号负责项目访问、签名凭证和 Android 构建编号管理。[EAS 本地构建文档](https://docs.expo.dev/build-reference/local-builds/)
+EAS 使用 `--local`，实际编译在 CNB 的 16 核容器中完成。Expo 账号负责项目访问、签名凭证和 Android 构建编号管理。[EAS 本地构建文档](https://docs.expo.dev/build-reference/local-builds/)
 
-GitHub 方案将构建日志、任务状态、附件和重试入口保存在同一平台，发布使用自动生成的 `GITHUB_TOKEN`。构建任务仅授予 `contents: read`，发布任务单独授予 `contents: write`。[GitHub Actions 权限](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions)
+GitHub 的 `ubuntu-24.04` 执行器负责同步、等待、下载和发布，Android 编译由 CNB runner 执行。GitHub 任务摘要提供 CNB 构建日志链接。发布使用自动生成的 `GITHUB_TOKEN`，构建任务授予 `contents: read`，发布任务授予 `contents: write`。[GitHub Actions 权限](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions)
 
-CNB 同样能通过 GitHub Release API 创建发布并上传 APK；此方案需要在 CNB 保存 GitHub 发布令牌，并维护任务触发、提交核对和跨平台状态确认。CNB 的内置 `git:release` 发布到 CNB 本身，GitHub 发布需要调用 GitHub API。现有 CNB 配置申请 16 核，可能有利于 Rust 与 C++ 编译；实际速度应通过相同提交的构建记录比较。[CNB Release 任务](https://docs.cnb.cool/zh/build/internal-steps/git/release.html) · [GitHub Release 附件 API](https://docs.github.com/en/rest/releases/assets)
+共享 action 调用 `scripts/cnb-build.mjs`，沿用原同步配置的 `https://cnb.cool/Umbrae-Labs/lunar` 和 `CNB_SECRET`。脚本将源码提交推送到 `github-build/仓库编号-运行编号-尝试编号-配置` 临时分支，通过 `api_trigger_github_android` 指定提交启动构建。同步使用 `git push -o ci.skip`，随后由 API 单独触发编译。[CNB 自定义事件](https://docs.cnb.cool/zh/build/trigger-rule.html) · [CNB 跳过自动构建](https://docs.cnb.cool/zh/build/skip-pipeline.html)
 
-当前选择 GitHub 以简化发布维护。标准执行器的容量有限，共享构建步骤清理闲置预装工具并限制 Cargo 为两个编译任务。首次完整构建仍须确认磁盘、内存及耗时。公开仓库与私有仓库的执行器规格及计费规则以官方文档为准。[GitHub 执行器规格](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+CNB 编译、签名验证和 APK 元数据验证成功后，将附件保存到对应提交，文件名称包含 GitHub 运行身份。GitHub 仅在 CNB 返回成功状态后下载这些附件，核对源码提交、构建配置与 SHA-256，再保存为该次 Actions 运行的附件。GitHub 发布令牌仅用于 GitHub 发布任务。[CNB API 定义](https://api.cnb.cool/swagger.json)
 
-共享构建步骤沿用 `5041c563af1ca6e83c20310010c97068da094d81` 之前的 CNB 编译顺序：准备 Node.js 22 与 Java 17，由 `scripts/build-android.sh` 初始化 Android SDK、安装依赖、执行检查，再通过 EAS CLI 21.8.0 本地编译并校验 APK 签名。SDK 包清单为 `platform-tools`、`platforms;android-36`、`build-tools;36.0.0`、`ndk;27.1.12297006` 和 `cmake;3.30.5`。Rust 工具仍由原有 EAS 安装钩子准备。
+CNB 复用现有 Node.js 22 镜像与 Android、Gradle、Cargo、Rust 和 pnpm 缓存，由 `scripts/build-android.sh` 准备 Java 17、初始化 Android SDK、安装依赖、执行检查，再通过 EAS CLI 21.8.0 本地编译并校验 APK 签名。SDK 包清单为 `platform-tools`、`platforms;android-36`、`build-tools;36.0.0`、`ndk;27.1.12297006` 和 `cmake;3.30.5`。Rust 工具继续由 EAS 安装钩子准备。
 
-Android SDK 安装统一由构建脚本负责。SDK 目录优先使用执行器的 `ANDROID_HOME`，其次使用 `ANDROID_SDK_ROOT`，缺少配置时使用 `/opt/android-sdk`。共享步骤将选定目录传给后续 APK 校验任务。原先的 `setup-android@v3` 默认列表包含无法获取的 `tools` 包，该步骤移除后，构建脚本仅安装项目所需 SDK 包。
+Android SDK 与后续 APK 校验共用 `/opt/android-sdk`。`scripts/cnb-build-android.sh` 在编译前核对检出的提交，在编译后执行现有 release 或 nightly 的产物准备脚本。
 
-`.cnb.yml` 保留 CNB 分支开发构建，移除版本标签发布。GitHub 发布自动化停止同步 CNB，`CNB_SECRET` 与 CNB 的 GitHub 发布令牌退出本方案的凭证要求。
+`.cnb.yml` 保留 CNB 分支开发构建，并增加供 GitHub 调用的 API 事件。每个构建任务独立申请 CNB runner，Nightly 与 Develop 使用同一源码提交。
 
 ## 应用版本
 
@@ -32,7 +32,13 @@ Nightly 与正式版共用包名，覆盖安装后沿用书库、阅读进度和
 
 ## 首次配置
 
-在 GitHub 仓库的 `Settings → Secrets and variables → Actions` 添加 `EXPO_TOKEN`。对应 Expo 账号应具有项目 `523fd44d-54f4-4bde-9561-e75955b19f4d` 的访问权限。Release 上传使用任务生成的 `GITHUB_TOKEN`。
+在 GitHub 仓库的 `Settings → Secrets and variables → Actions` 配置 `CNB_SECRET`，其访问范围为 `Umbrae-Labs/lunar`，权限包含 `repo-code:rw` 和 `repo-cnb-trigger:rw`。前者用于同步源码及读取提交附件，后者用于触发、查询和停止构建。原同步令牌只有代码权限时，需要增加构建权限。
+
+CNB 继续从 `https://cnb.cool/Umbrae-Labs/secrets/-/blob/main/expo.yml` 导入 `EXPO_TOKEN`，该密钥文件应允许 Lunar 构建读取。对应 Expo 账号应具有项目 `523fd44d-54f4-4bde-9561-e75955b19f4d` 的访问权限。Release 上传使用 GitHub 任务生成的 `GITHUB_TOKEN`。
+
+`expo.yml` 的 `allow_slugs` 应包含 `Umbrae-Labs/lunar`，`allow_events` 应包含 `api_trigger_github_android`，并保留原有开发构建所用的 `push`。如果该文件配置了 `allow_branches`，在原有列表中增加 `github-build/**`；现有 `**` 规则也能匹配这些临时分支。`EXPO_TOKEN` 保持原值。[CNB 密钥文件引用权限](https://docs.cnb.cool/zh/build/file-reference.html)
+
+原有 `github-release.yml` 保存的是 `GITHUB_RELEASE_TOKEN`。当前 CNB 配置仅导入 `expo.yml`，GitHub 发布任务使用自动生成的 `GITHUB_TOKEN`，因此 `github-release.yml` 可以保持原样。
 
 首次运行前确认 `release` 和 `nightly` 两个配置对共用包名使用相同的 EAS 托管 Android 签名凭证。交互式凭证初始化在本地完成，Actions 构建使用非交互模式。
 
@@ -115,8 +121,10 @@ pnpm android
 
 ## 失败处理与验证
 
-上传中断时，Release 保持草稿。在附件保留期内重新执行失败的发布任务，会使用同一次运行的构建附件。重新执行全部任务会重新编译并替换该运行的 Actions 附件。Actions 附件保留七天，公开 Release 附件继续保存。
+CNB 构建失败或被取消时，GitHub 构建任务失败，发布任务跳过执行。等待上限为 160 分钟，超时后尝试停止 CNB 构建。GitHub 取消信号也会触发停止处理。任务结束后删除临时 CNB 分支；强制终止导致清理未完成时，可根据任务摘要中的构建链接和日志中的分支名称手动处理。
+
+上传中断时，Release 保持草稿。在附件保留期内重新执行失败的发布任务，会使用同一次运行的构建附件。重新执行全部任务会重新编译并替换该运行的 Actions 附件，CNB 附件使用新的尝试编号。CNB 和 Actions 附件均保留七天，公开 Release 附件继续保存。
 
 同一提交、同一标签的自动草稿支持恢复。公开 Release 和人工草稿受到保护，后续修改使用新标签发布。Nightly 重试沿用该次运行的标签，标签提交发生变化时发布检查终止。
 
-`pnpm run test:release` 验证版本、双语 changelog、比较链接、APK 元数据、双 APK 提交和摘要一致性、草稿恢复及上传失败处理。完整 APK 编译需要 Linux 或 macOS 环境与 Expo 凭证。首次 GitHub 构建后还需验证 Nightly 与正式版的覆盖安装、数据保留，以及 Develop 的共存和启动。
+完整远程构建需要上述 CNB 与 Expo 凭证。首次远程构建后还需验证 Nightly 与正式版的覆盖安装、数据保留，以及 Develop 的共存和启动。

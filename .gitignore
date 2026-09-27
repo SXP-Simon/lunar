@@ -51,6 +51,7 @@ example
 
 # Build artifacts and local signing credentials
 /artifacts/
+/cnb-artifacts/
 /*.apk
 /*.aab
 /credentials.json
