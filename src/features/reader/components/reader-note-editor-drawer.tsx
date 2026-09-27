@@ -1,6 +1,6 @@
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
-import { MarkdownTextInput, parseExpensiMark, type MarkdownStyle } from '@expensify/react-native-live-markdown';
+import { MarkdownTextInput, type MarkdownStyle } from '@expensify/react-native-live-markdown';
 import { useBottomSheetAwareHandlers, useThemeColor } from 'heroui-native/hooks';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
@@ -10,12 +10,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { useTranslation } from '@/i18n';
 import { ReaderNoteMaxLength } from '../domain/note-markdown';
+import { parseReaderNote } from '../domain/note-live-markdown';
 
 const LiveMarkdownInput = withUniwind(MarkdownTextInput);
-function parseNote(input: string) {
-  'worklet';
-  return parseExpensiMark(input, ReaderNoteMaxLength);
-}
 
 interface ReaderNoteEditorDrawerProps {
   readonly isOpen: boolean;
@@ -137,10 +134,10 @@ export function ReaderNoteEditorDrawer({
                 editable={!saving}
                 multiline
                 textAlignVertical="top"
-                parser={parseNote}
+                parser={parseReaderNote}
                 accessibilityLabel={t('reader.noteMine')}
                 placeholder={t('reader.notePlaceholder')}
-                className="min-h-0 flex-1 bg-transparent px-0 py-3 text-base leading-6"
+                className="min-h-0 flex-1 bg-transparent px-0 py-3 text-base leading-6 text-foreground"
                 placeholderTextColorClassName="accent-muted"
                 selectionColorClassName="accent-navigation-active"
                 maxLength={ReaderNoteMaxLength}

@@ -35,6 +35,20 @@ beforeEach(() => { vi.stubGlobal('React', React); vi.clearAllMocks(); });
 afterEach(() => vi.unstubAllGlobals());
 
 describe('reader Markdown notes', () => {
+  it.each([1, 2, 3, 4, 5, 6])('renders level %i headings in saved notes', (level) => {
+    renderToStaticMarkup(<ReaderNoteMarkdown value={`${'#'.repeat(level)} 这是什么`} />);
+    const html = renderer.props.markdownit.render(renderer.props.children);
+    expect(html).toContain(`<h${level}>这是什么</h${level}>`);
+  });
+  it('keeps heading-like text inside code literal and preserves inline emphasis', () => {
+    renderToStaticMarkup(<ReaderNoteMarkdown value={'## *标题*\n\n```\n## 代码\n```\n\n`### 原文`'} />);
+    const html = renderer.props.markdownit.render(renderer.props.children);
+    expect(html).toContain('<h2><strong>标题</strong></h2>');
+    expect(html).toContain('## 代码');
+    expect(html).toContain('### 原文');
+    expect(html).not.toContain('<h2>代码');
+    expect(html).not.toContain('<h3>原文');
+  });
   it('uses the Live Markdown dialect for the display adapter', () => {
     expect(readerNoteDisplayMarkdown('*粗体* _斜体_ ~删除~')).toBe('**粗体** *斜体* ~~删除~~');
   });

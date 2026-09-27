@@ -9,6 +9,7 @@ const babelRequire = createRequire(require.resolve('babel-preset-expo'));
 const babel = babelRequire('@babel/core');
 const commonRoot = dirname(require.resolve('expensify-common'));
 const liveRoot = resolve(dirname(require.resolve('@expensify/react-native-live-markdown')), '../../src');
+const noteRoot = resolve('src/features/reader/domain');
 
 // Compile the installed parser and its dependencies with the app's Babel config.
 // Ordinary unit tests mock the native input and never inspect its worklet closure.
@@ -27,11 +28,19 @@ function loadParser() {
     const localRequire = createRequire(filename);
     const loadDependency = (name: string) => {
       if (name === 'react-native') return { Platform: { OS: 'android' } };
+      if (name === '@expensify/react-native-live-markdown') {
+        return { parseExpensiMark: load(resolve(liveRoot, 'parseExpensiMark.ts')).default };
+      }
       const dependency =
-        filename.startsWith(liveRoot) && name.startsWith('.')
+        (filename.startsWith(liveRoot) || filename.startsWith(noteRoot)) && name.startsWith('.')
           ? resolve(dirname(filename), `${name}.ts`)
           : localRequire.resolve(name);
-      if (dependency.startsWith(commonRoot) || dependency.startsWith(liveRoot) || name === 'html-entities') {
+      if (
+        dependency.startsWith(commonRoot) ||
+        dependency.startsWith(liveRoot) ||
+        dependency.startsWith(noteRoot) ||
+        name === 'html-entities'
+      ) {
         return load(dependency);
       }
       return localRequire(name);
@@ -44,7 +53,7 @@ function loadParser() {
     );
     return module.exports;
   }
-  return load(resolve(liveRoot, 'parseExpensiMark.ts')).default;
+  return load(resolve(noteRoot, 'note-live-markdown.ts')).parseReaderNote;
 }
 
 // Follow worklet and context-object factories, as Worklets does during transfer.
@@ -110,5 +119,30 @@ describe('native note parser worklet', () => {
     );
     expect(parse('', 20_000)).toEqual([]);
     expect(parse('a'.repeat(20_001), 20_000)).toEqual([]);
+  });
+
+  it.each([1, 2, 3, 4, 5, 6])('formats level %i headings at their original text offsets', (level) => {
+    const parse = transfer(parser);
+    const prefix = `${'#'.repeat(level)} `;
+    const before = '😀 前文\n';
+    expect(parse(`${before}${prefix}这是什么`)).toEqual(
+      expect.arrayContaining([
+        { type: 'syntax', start: before.length, length: prefix.length },
+        { type: 'h1', start: before.length + prefix.length, length: 4 },
+      ]),
+    );
+  });
+
+  it('retains inline formatting within headings and ignores literal code', () => {
+    const parse = transfer(parser);
+    expect(parse('## *标题*')).toEqual(
+      expect.arrayContaining([
+        { type: 'h1', start: 3, length: 4 },
+        expect.objectContaining({ type: 'bold', start: 4, length: 2 }),
+      ]),
+    );
+    for (const input of ['```\n## 代码\n```', '`## 代码`', '\\## 转义', '####### 文本', '##没有空格']) {
+      expect(parse(input).some((range: { type: string }) => range.type === 'h1')).toBe(false);
+    }
   });
 });

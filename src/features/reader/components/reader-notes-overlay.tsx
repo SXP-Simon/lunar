@@ -165,7 +165,6 @@ export function ReaderNotesOverlay({ quote, notes, blurTarget, onClose, onSave, 
                 <View key={note.id} className="gap-3 rounded-3xl bg-surface p-4 dark:bg-surface-secondary">
                   <View className="flex-row items-center justify-between">
                     <View className="flex-1 gap-1">
-                      <Text className="text-sm font-medium text-foreground">{t('reader.noteMine')}</Text>
                       <Text className="text-xs text-muted">{new Date(note.updatedAt).toLocaleString()}</Text>
                     </View>
                     <Button
