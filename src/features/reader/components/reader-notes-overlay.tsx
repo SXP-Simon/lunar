@@ -36,7 +36,10 @@ export function ReaderNotesOverlay({ quote, notes, blurTarget, onClose, onSave, 
   const insets = useSafeAreaInsets();
   const foreground = useThemeColor('foreground');
   const muted = useThemeColor('muted');
-  const [expanded, setExpanded] = useState(false);
+  const [expandedQuote, setExpandedQuote] = useState<string | null>(null);
+  const [quoteLayout, setQuoteLayout] = useState({ quote: '', overflows: false });
+  const expanded = expandedQuote === quote;
+  const canExpandQuote = quoteLayout.quote === quote && quoteLayout.overflows;
   const [editor, setEditor] = useState<{ note?: ReaderNote; open: boolean }>();
   const [deleting, setDeleting] = useState<ReaderNote>();
   const [busy, setBusy] = useState(false);
@@ -112,29 +115,56 @@ export function ReaderNotesOverlay({ quote, notes, blurTarget, onClose, onSave, 
             showsVerticalScrollIndicator={false}
             accessibilityElementsHidden={Boolean(editor?.open)}
             importantForAccessibility={editor?.open ? 'no-hide-descendants' : 'auto'}>
-            <View className="rounded-3xl bg-surface p-4 shadow-sm dark:bg-surface-secondary">
-              <SymbolView
-                name={{ ios: 'quote.opening', android: 'format_quote', web: 'format_quote' }}
-                size={28}
-                tintColor={muted}
-              />
-              <Text
-                selectable
-                numberOfLines={expanded ? undefined : 3}
-                className="mt-2 text-lg leading-7 text-foreground">
-                {quote}
-              </Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="self-end"
-                accessibilityState={{ expanded }}
-                onPress={() => setExpanded(!expanded)}>
-                <Button.Label className="text-xs text-muted">
-                  {t(expanded ? 'reader.noteCollapseQuote' : 'reader.noteExpandQuote')}
-                </Button.Label>
-              </Button>
-              <View className="mt-2 flex-row border-t border-border pt-3">
+            <View className="overflow-hidden rounded-3xl bg-surface p-4 shadow-sm dark:bg-surface-secondary">
+              <View
+                pointerEvents="none"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                className="absolute left-3 top-1 opacity-40">
+                <SymbolView
+                  name={{ ios: 'quote.opening', android: 'format_quote', web: 'format_quote' }}
+                  size={64}
+                  tintColor={muted}
+                />
+              </View>
+              <View className="pt-6">
+                <View>
+                  {/* Measure the full text at the visible quote's width on both platforms. */}
+                  <Text
+                    accessible={false}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                    pointerEvents="none"
+                    className="absolute inset-x-0 top-0 text-lg leading-7 text-foreground opacity-0"
+                    onTextLayout={({ nativeEvent }) => {
+                      const overflows = nativeEvent.lines.length > 2;
+                      setQuoteLayout((current) =>
+                        current.quote === quote && current.overflows === overflows ? current : { quote, overflows },
+                      );
+                    }}>
+                    {quote}
+                  </Text>
+                  <Text
+                    selectable
+                    numberOfLines={expanded ? undefined : 2}
+                    className="text-lg leading-7 text-foreground">
+                    {quote}
+                  </Text>
+                </View>
+              </View>
+              {canExpandQuote && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="self-end"
+                  accessibilityState={{ expanded }}
+                  onPress={() => setExpandedQuote(expanded ? null : quote)}>
+                  <Button.Label className="text-xs text-muted">
+                    {t(expanded ? 'reader.noteCollapseQuote' : 'reader.noteExpandQuote')}
+                  </Button.Label>
+                </Button>
+              )}
+              <View className="flex-row border-t border-border dark:border-muted/40">
                 <Button variant="ghost" className="flex-1" size="sm" onPress={() => void copy()}>
                   <SymbolView
                     name={{ ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' }}
@@ -162,7 +192,7 @@ export function ReaderNotesOverlay({ quote, notes, blurTarget, onClose, onSave, 
               </View>
             ) : (
               notes.map((note) => (
-                <View key={note.id} className="gap-3 rounded-3xl bg-surface p-4 dark:bg-surface-secondary">
+                <View key={note.id} className="gap-1 rounded-3xl bg-surface p-4 dark:bg-surface-secondary">
                   <View className="flex-row items-center justify-between">
                     <View className="flex-1 gap-1">
                       <Text className="text-xs text-muted">{new Date(note.updatedAt).toLocaleString()}</Text>

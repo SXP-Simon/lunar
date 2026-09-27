@@ -39,6 +39,7 @@ export function MarkdownView({ value, onLinkPress, onLinkError }: MarkdownViewPr
   const border = useResolveClassNames('border-border');
   const rule = useResolveClassNames('bg-border');
   const tableHeader = useResolveClassNames('bg-default');
+  const blockSpacing = useResolveClassNames('mt-0 mb-2');
   const styles = useMemo(
     () => ({
       text: body,
@@ -46,6 +47,8 @@ export function MarkdownView({ value, onLinkPress, onLinkError }: MarkdownViewPr
       codeBlock: code,
       inlineCode: code,
       heading: foreground,
+      headingContainer: blockSpacing,
+      paragraph: blockSpacing,
       listUnorderedItemIcon: foreground,
       listOrderedItemIcon: foreground,
       blockquote: quote,
@@ -60,7 +63,7 @@ export function MarkdownView({ value, onLinkPress, onLinkError }: MarkdownViewPr
       heading2Container: border,
       hr: rule,
     }),
-    [body, border, code, foreground, link, quote, rule, tableHeader],
+    [body, border, code, foreground, link, quote, rule, tableHeader, blockSpacing],
   );
 
   return (

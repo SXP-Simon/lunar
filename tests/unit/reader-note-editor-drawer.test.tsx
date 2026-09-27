@@ -16,6 +16,8 @@ const ui = vi.hoisted(() => ({
   },
   confirm: undefined as undefined | { isOpen: boolean; onConfirm: () => void; onOpenChange: (open: boolean) => void },
   toast: vi.fn(),
+  measureQuote: undefined as undefined | ((event: { nativeEvent: { lines: unknown[] } }) => void),
+  quoteLines: undefined as number | undefined,
 }));
 
 vi.mock('expensify-common/ExpensiMark', async () => {
@@ -45,7 +47,13 @@ vi.mock('react', async (importOriginal) => {
   };
 });
 vi.mock('react-native', () => ({
-  Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
+  Text: ({ children, onTextLayout, selectable, numberOfLines }: {
+    children: ReactNode; onTextLayout?: typeof ui.measureQuote; selectable?: boolean; numberOfLines?: number;
+  }) => {
+    if (onTextLayout) ui.measureQuote = onTextLayout;
+    if (selectable) ui.quoteLines = numberOfLines;
+    return <span>{children}</span>;
+  },
   View: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   ScrollView: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Keyboard: { dismiss: vi.fn() }, BackHandler: { addEventListener: () => ({ remove() {} }) }, useWindowDimensions: () => ({ height: 844 }),
@@ -85,6 +93,7 @@ vi.mock('heroui-native/button', () => ({ Button: Object.assign((props: {
 beforeEach(() => {
   vi.stubGlobal('React', React);
   ui.effects = []; ui.openStates = []; ui.hosts = []; ui.dirty = false; ui.cells = []; ui.cursor = 0; ui.buttons.clear(); ui.toast.mockClear(); ui.input = undefined;
+  ui.measureQuote = undefined; ui.quoteLines = undefined;
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -188,6 +197,24 @@ describe('reader notes viewing overlay', () => {
     { id: 'first', content: '**第一条**', createdAt: 1, updatedAt: 1 },
     { id: 'second', content: '*第二条*', createdAt: 2, updatedAt: 2 },
   ];
+
+  it('offers expansion only for quotes that lay out beyond two lines', () => {
+    const app = setupViewer(notes);
+    expect(app.render()).not.toContain('reader.noteExpandQuote');
+    expect(ui.quoteLines).toBe(2);
+    ui.measureQuote!({ nativeEvent: { lines: [{}, {}] } });
+    expect(app.render()).not.toContain('reader.noteExpandQuote');
+    ui.measureQuote!({ nativeEvent: { lines: [{}, {}, {}] } });
+    expect(app.render()).toContain('reader.noteExpandQuote');
+    ui.buttons.get('reader.noteExpandQuote')!.onPress();
+    expect(app.render()).toContain('reader.noteCollapseQuote');
+    expect(ui.quoteLines).toBeUndefined();
+    ui.buttons.get('reader.noteCollapseQuote')!.onPress(); app.render();
+    expect(ui.quoteLines).toBe(2);
+    // A wider layout can fit the quote again without retaining the expand action.
+    ui.measureQuote!({ nativeEvent: { lines: [{}] } });
+    expect(app.render()).not.toContain('reader.noteExpandQuote');
+  });
 
   it('shows the quote and independent notes before mounting an editor', () => {
     const app = setupViewer(notes);

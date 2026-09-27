@@ -1,6 +1,7 @@
 import { BottomSheet } from 'heroui-native/bottom-sheet';
 import { Button } from 'heroui-native/button';
-import { useBottomSheetAwareHandlers } from 'heroui-native/hooks';
+import { SymbolView } from 'expo-symbols';
+import { useBottomSheetAwareHandlers, useThemeColor } from 'heroui-native/hooks';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
 import { BackHandler, Keyboard, Text, View } from 'react-native';
@@ -30,6 +31,7 @@ export function ReaderNoteEditorDrawer({
   const { t } = useTranslation();
   const { toast } = useToast();
   const insets = useSafeAreaInsets();
+  const foreground = useThemeColor('foreground');
   const [value, setValue] = useState(initialNote);
   const [saving, setSaving] = useState(false);
   const [discarding, setDiscarding] = useState(false);
@@ -111,17 +113,36 @@ export function ReaderNoteEditorDrawer({
             backgroundClassName="rounded-t-3xl bg-background dark:bg-overlay"
             contentContainerClassName="h-full flex-1 gap-3 px-5 pt-2"
             contentContainerProps={{ style: { paddingBottom: insets.bottom + 16 } }}>
-            <View className="flex-row items-center justify-between">
-              <Button size="sm" variant="ghost" isDisabled={saving} onPress={close}>
-                {t('action.cancel')}
-              </Button>
-              <BottomSheet.Title>{t(initialNote ? 'reader.noteEdit' : 'reader.noteAdd')}</BottomSheet.Title>
+            <View className="flex-row items-center">
               <Button
+                isIconOnly
                 size="sm"
-                variant="primary"
+                variant="ghost"
+                className="size-10 shrink-0"
+                hitSlop={4}
+                accessibilityLabel={t('action.cancel')}
+                isDisabled={saving}
+                onPress={close}>
+                <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor={foreground} />
+              </Button>
+              <BottomSheet.Title className="min-w-0 flex-1 text-center" numberOfLines={1}>
+                {t(initialNote ? 'reader.noteEdit' : 'reader.noteAdd')}
+              </BottomSheet.Title>
+              <Button
+                isIconOnly
+                size="sm"
+                variant="ghost"
+                className="size-10 shrink-0"
+                hitSlop={4}
+                accessibilityLabel={t(saving ? 'reader.noteSaving' : 'reader.noteSave')}
+                accessibilityState={{ busy: saving }}
                 isDisabled={saving || !dirty || !value.trim()}
                 onPress={() => void save()}>
-                {t(saving ? 'reader.noteSaving' : 'reader.noteSave')}
+                <SymbolView
+                  name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                  size={22}
+                  tintColor={foreground}
+                />
               </Button>
             </View>
             <View className="min-h-0 flex-1 rounded-2xl bg-surface p-3">
