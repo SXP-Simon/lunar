@@ -3,9 +3,9 @@ import { useThemeColor } from 'heroui-native/hooks';
 import {
   useCallback,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   type ComponentProps,
   type ComponentRef,
 } from 'react';
@@ -13,12 +13,15 @@ import { View } from 'react-native';
 import { twMerge } from 'tailwind-merge';
 import { useCSSVariable, withUniwind } from 'uniwind';
 import { parseLiveMarkdown } from './live-markdown-parser';
-import { formatMarkdown, type MarkdownEdit, type MarkdownFormat, type MarkdownSelection } from './markdown-edit';
+import { formatMarkdown, formatMarkdownSelection, type MarkdownFormat, type MarkdownSelection } from './markdown-edit';
 import { MarkdownToolbar, type MarkdownToolbarLabels } from './markdown-toolbar';
 
 const LiveMarkdownInput = withUniwind(MarkdownTextInput);
 
-export type MarkdownEditorProps = Omit<ComponentProps<typeof LiveMarkdownInput>, 'parser' | 'markdownStyle'> & {
+export type MarkdownEditorProps = Omit<
+  ComponentProps<typeof LiveMarkdownInput>,
+  'parser' | 'markdownStyle' | 'selection' | 'formatSelection'
+> & {
   readonly toolbarLabels?: MarkdownToolbarLabels;
 };
 
@@ -33,27 +36,33 @@ export function MarkdownEditor({
   ...props
 }: MarkdownEditorProps) {
   const inputRef = useRef<ComponentRef<typeof LiveMarkdownInput>>(null);
-  const selectionRef = useRef<MarkdownSelection>({ start: 0, end: 0 });
-  const pendingEdit = useRef<MarkdownEdit | null>(null);
+  const [selection, setSelection] = useState<MarkdownSelection>({ start: 0, end: 0 });
   useImperativeHandle(ref, () => inputRef.current!, []);
-  // Apply a toolbar selection only after React has committed the new text. Normal
-  // typing leaves selection entirely native, avoiding stale JS selection echoes.
-  useLayoutEffect(() => {
-    const edit = pendingEdit.current;
-    if (!edit) return;
-    pendingEdit.current = null;
-    if (props.value === edit.value) {
-      inputRef.current?.setSelection(edit.selection.start, edit.selection.end);
-      inputRef.current?.focus();
-    }
-  }, [props.value]);
+  const handleFormatSelection = useCallback(
+    (text: string, start: number, end: number, command: string) =>
+      formatMarkdownSelection(text, start, end, command, maxLength),
+    [maxLength],
+  );
   function applyFormat(format: MarkdownFormat) {
     if (props.editable === false || typeof props.value !== 'string' || !onChangeText) return;
-    const edit = formatMarkdown(props.value, selectionRef.current, format, maxLength);
+    // Native toolbar actions and the library's Web format commands share the
+    // same bold/italic callback. Other toolbar formats use the same edit helper.
+    const result =
+      format === 'bold' || format === 'italic'
+        ? handleFormatSelection(
+            props.value,
+            selection.start,
+            selection.end,
+            format === 'bold' ? 'formatBold' : 'formatItalic',
+          )
+        : undefined;
+    const edit = result
+      ? { value: result.updatedText, selection: result.selection }
+      : formatMarkdown(props.value, selection, format, maxLength);
     if (edit.value === props.value) return;
-    pendingEdit.current = edit;
-    selectionRef.current = edit.selection;
+    inputRef.current?.focus();
     onChangeText(edit.value);
+    setSelection(edit.selection);
   }
   const [foreground, muted, background, border] = useThemeColor(['foreground', 'muted', 'default', 'border']);
   const link = useCSSVariable('--color-navigation-active') as string;
@@ -82,12 +91,12 @@ export function MarkdownEditor({
       selectionColorClassName="accent-navigation-active"
       {...props}
       ref={inputRef}
-      onChangeText={(value) => {
-        pendingEdit.current = null;
-        onChangeText?.(value);
-      }}
+      onChangeText={onChangeText}
+      selection={selection}
+      formatSelection={handleFormatSelection}
       onSelectionChange={(event) => {
-        selectionRef.current = event.nativeEvent.selection;
+        const next = event.nativeEvent.selection;
+        setSelection((current) => (current.start === next.start && current.end === next.end ? current : next));
         onSelectionChange?.(event);
       }}
       className={twMerge('bg-transparent text-base leading-6 text-foreground', className)}

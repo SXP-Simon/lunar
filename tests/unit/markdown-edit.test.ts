@@ -1,7 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { formatMarkdown } from '../../src/components/markdown/markdown-edit';
+import { formatMarkdown, formatMarkdownSelection } from '../../src/components/markdown/markdown-edit';
 
 describe('Markdown toolbar edits', () => {
+  it.each([
+    ['formatBold', '*'],
+    ['formatItalic', '_'],
+  ])('handles the library callback %s', (command, marker) => {
+    expect(formatMarkdownSelection('中文', 0, 2, command)).toEqual({
+      updatedText: `${marker}中文${marker}`,
+      cursorOffset: 2,
+      selection: { start: 1, end: 3 },
+    });
+    expect(formatMarkdownSelection(`${marker}中文${marker}`, 1, 3, command)).toEqual({
+      updatedText: '中文',
+      cursorOffset: -1,
+      selection: { start: 0, end: 2 },
+    });
+    expect(formatMarkdownSelection(`${marker}中文${marker}`, 0, 4, command)).toEqual({
+      updatedText: '中文',
+      cursorOffset: -2,
+      selection: { start: 0, end: 2 },
+    });
+  });
+  it('keeps unsupported commands and over-limit formatting unchanged', () => {
+    expect(formatMarkdownSelection('原文', 0, 2, 'formatUnderline')).toEqual({
+      updatedText: '原文',
+      cursorOffset: 0,
+      selection: { start: 0, end: 2 },
+    });
+    expect(formatMarkdownSelection('原文', 0, 2, 'formatBold', 3).updatedText).toBe('原文');
+  });
   it.each([
     ['bold', '*'],
     ['italic', '_'],

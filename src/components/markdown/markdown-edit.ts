@@ -18,6 +18,21 @@ export interface MarkdownEdit {
   readonly selection: MarkdownSelection;
 }
 
+/** The Live Markdown callback is pure: the library commits its returned text. */
+export function formatMarkdownSelection(text: string, start: number, end: number, command: string, maxLength?: number) {
+  const format = command === 'formatBold' ? 'bold' : command === 'formatItalic' ? 'italic' : undefined;
+  const edit = format
+    ? formatMarkdown(text, { start, end }, format, maxLength)
+    : { value: text, selection: { start, end } };
+  return {
+    updatedText: edit.value,
+    // Web format commands collapse after newly inserted syntax; removing syntax
+    // follows the adjusted selection end, including an enclosing selection.
+    cursorOffset: edit.value.length > text.length ? edit.value.length - text.length : edit.selection.end - end,
+    selection: edit.selection,
+  };
+}
+
 /** UTF-16 offsets match the native input, including Chinese and emoji selections. */
 export function formatMarkdown(
   value: string,

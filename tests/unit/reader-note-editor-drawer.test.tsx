@@ -14,6 +14,8 @@ const ui = vi.hoisted(() => ({
     value: string; onChangeText: (value: string) => void;
     maxLength?: number; placeholder?: string; onFocus?: () => void;
     onSelectionChange?: (event: { nativeEvent: { selection: { start: number; end: number } } }) => void;
+    selection?: { start: number; end: number };
+    formatSelection?: (text: string, start: number, end: number, command: string) => { updatedText: string; cursorOffset: number };
   },
   confirm: undefined as undefined | { isOpen: boolean; onConfirm: () => void; onOpenChange: (open: boolean) => void },
   toast: vi.fn(),
@@ -46,7 +48,6 @@ vi.mock('react', async (importOriginal) => {
       ui.cells[index] = deps;
     },
     useCallback: (callback: unknown) => callback,
-    useLayoutEffect: (effect: () => void) => { ui.effects.push(effect); },
   };
 });
 vi.mock('react-native', () => ({
@@ -124,18 +125,34 @@ function setup(initialNote = '', onSave = vi.fn().mockResolvedValue(undefined)) 
 }
 
 describe('reader note editor interactions', () => {
-  it('formats the native selection and positions it only after the new text commits', () => {
+  it('commits toolbar text and selection together through controlled props', () => {
     const app = setup('斜体');
     ui.input!.onSelectionChange!({ nativeEvent: { selection: { start: 0, end: 2 } } });
+    app.render();
+    expect(ui.input!.selection).toEqual({ start: 0, end: 2 });
+    const formatted = ui.input!.formatSelection!('斜体', 0, 2, 'formatItalic');
+    expect(formatted.updatedText).toBe('_斜体_');
+    expect(ui.input!.value).toBe('斜体');
     ui.buttons.get('markdown.italic')!.onPress();
-    expect(ui.nativeInput.setSelection).not.toHaveBeenCalled();
     app.render();
     expect(ui.input!.value).toBe('_斜体_');
-    expect(ui.nativeInput.setSelection).toHaveBeenLastCalledWith(1, 3);
+    expect(ui.input!.selection).toEqual({ start: 1, end: 3 });
+    expect(ui.nativeInput.setSelection).not.toHaveBeenCalled();
     expect(ui.nativeInput.focus).toHaveBeenCalledOnce();
-    ui.nativeInput.setSelection.mockClear();
-    // Ordinary backspace events must not replay the last toolbar selection.
-    ui.input!.onChangeText('_斜体'); app.render();
+    ui.buttons.get('markdown.italic')!.onPress(); app.render();
+    expect(ui.input!.value).toBe('斜体');
+    expect(ui.input!.selection).toEqual({ start: 0, end: 2 });
+  });
+  it.each(['text-first', 'selection-first'])('uses the reported caret after deleting a format marker: %s', (order) => {
+    const app = setup('_斜体_');
+    ui.input!.onSelectionChange!({ nativeEvent: { selection: { start: 4, end: 4 } } }); app.render();
+    const textChanged = () => ui.input!.onChangeText('_斜体');
+    const selectionChanged = () => ui.input!.onSelectionChange!({ nativeEvent: { selection: { start: 3, end: 3 } } });
+    if (order === 'text-first') { textChanged(); app.render(); selectionChanged(); }
+    else { selectionChanged(); app.render(); textChanged(); }
+    app.render();
+    expect(ui.input!.value).toBe('_斜体');
+    expect(ui.input!.selection).toEqual({ start: 3, end: 3 });
     expect(ui.nativeInput.setSelection).not.toHaveBeenCalled();
   });
   it('can use the shared editor outside a sheet with caller-owned input props', () => {
