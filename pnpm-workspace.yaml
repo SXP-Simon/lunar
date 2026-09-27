@@ -16,6 +16,8 @@ allowBuilds:
 
 patchedDependencies:
   '@shopify/react-native-skia@2.6.2': patches/@shopify__react-native-skia@2.6.2.patch
+  # Str's worklet context must not capture the non-serializable Logger singleton.
+  expensify-common@2.0.207: patches/expensify-common@2.0.207.patch
   'html-entities@2.5.3': patches/html-entities@2.5.3.patch
 
 overrides:

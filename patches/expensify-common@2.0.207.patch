@@ -1,0 +1,44 @@
+diff --git a/dist/esm/str.js b/dist/esm/str.js
+index 0d563db0ff2e87b3403f44b26d6a655b7718f31c..ea5a34419a529b593769068811b90b68c6875672 100644
+--- a/dist/esm/str.js
++++ b/dist/esm/str.js
+@@ -7,7 +7,6 @@ import * as HtmlEntities from 'html-entities';
+ import * as Constants from './CONST';
+ import * as UrlPatterns from './Url';
+ import * as Utils from './utils';
+-import Log from './Log';
+ const REMOVE_SMS_DOMAIN_PATTERN = /@expensify\.sms/gi;
+ function resultFn(parameter, ...args) {
+     if (typeof parameter === 'function') {
+@@ -922,7 +921,8 @@ const Str = {
+     getExtension(url) {
+         var _a, _b;
+         if (typeof url !== 'string') {
+-            Log.warn('Str.getExtension: url is not a string', { url });
++            // Worklet context objects must not capture the Logger singleton.
++            console.warn('Str.getExtension: url is not a string', { url });
+             return undefined;
+         }
+         return (_b = (_a = url.split('.').pop()) === null || _a === void 0 ? void 0 : _a.split('?')[0]) === null || _b === void 0 ? void 0 : _b.toLowerCase();
+diff --git a/dist/str.js b/dist/str.js
+index 124dd32e1195515a28564ded3beaa01cc36313df..b61abf62d514071dd0866b6c71c99117122a04c1 100644
+--- a/dist/str.js
++++ b/dist/str.js
+@@ -45,7 +45,6 @@ const HtmlEntities = __importStar(require("html-entities"));
+ const Constants = __importStar(require("./CONST"));
+ const UrlPatterns = __importStar(require("./Url"));
+ const Utils = __importStar(require("./utils"));
+-const Log_1 = __importDefault(require("./Log"));
+ const REMOVE_SMS_DOMAIN_PATTERN = /@expensify\.sms/gi;
+ function resultFn(parameter, ...args) {
+     if (typeof parameter === 'function') {
+@@ -960,7 +959,8 @@ const Str = {
+     getExtension(url) {
+         var _a, _b;
+         if (typeof url !== 'string') {
+-            Log_1.default.warn('Str.getExtension: url is not a string', { url });
++            // Worklet context objects must not capture the Logger singleton.
++            console.warn('Str.getExtension: url is not a string', { url });
+             return undefined;
+         }
+         return (_b = (_a = url.split('.').pop()) === null || _a === void 0 ? void 0 : _a.split('?')[0]) === null || _b === void 0 ? void 0 : _b.toLowerCase();
