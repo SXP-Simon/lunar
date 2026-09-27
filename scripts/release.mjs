@@ -24,21 +24,50 @@ export function validateApk(badging, version, packageName, { allowDebuggable = f
   return { packageName: pkg[1], versionCode: Number(pkg[2]), abi: 'arm64-v8a' };
 }
 
+export function bilingualNotes(chinese, english) {
+  return `<details>\n<summary>中文</summary>\n\n${chinese}\n\n</details>\n\n## English\n\n${english}`;
+}
+
 export async function readChangelog(tag, root = 'changelog') {
   if (!/^v\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.[1-9]\d*)?$/.test(tag)) {
     throw new Error('Invalid changelog tag.');
   }
   const sections = [];
-  for (const [locale, heading] of [
-    ['zh-CN', '中文'],
-    ['en-US', 'English'],
-  ]) {
+  for (const locale of ['zh-CN', 'en-US']) {
     const file = resolve(root, tag, `${locale}.md`);
     const content = (await readFile(file, 'utf8')).trim();
     if (!content || /\bTODO\b|\bTBD\b|待填写/i.test(content)) throw new Error(`Complete changelog: ${file}`);
-    sections.push(`## ${heading}\n\n${content}`);
+    sections.push(content);
   }
-  return sections.join('\n\n');
+  return bilingualNotes(...sections);
+}
+
+export async function withReleaseComparison(api, repository, release, notes) {
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('Invalid GitHub repository.');
+  const current = release.version.split('.').map(Number);
+  const compare = (left, right) => {
+    for (let index = 0; index < 3; index++) {
+      if (left[index] !== right[index]) return left[index] - right[index];
+    }
+    return 0;
+  };
+  let previous;
+  // Compare against the preceding stable release, even when Nightly builds or backports were published later.
+  for (let page = 1; ; page++) {
+    const releases = await api('GET', `/repos/${repository}/releases?per_page=100&page=${page}`);
+    for (const item of releases) {
+      const match = /^v((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$/.exec(item.tag_name);
+      if (item.draft || item.prerelease || !match) continue;
+      const version = match[1].split('.').map(Number);
+      if (compare(version, current) < 0 && (!previous || compare(version, previous.version) > 0)) {
+        previous = { tag: item.tag_name, version };
+      }
+    }
+    if (releases.length < 100) break;
+  }
+  if (!previous) return notes;
+  const url = `https://github.com/${repository}/compare/${previous.tag}...${release.tag}`;
+  return `${notes}\n\n**Full changelog:** [${previous.tag} → ${release.tag}](${url})`;
 }
 
 export function githubClient(token) {
@@ -167,13 +196,14 @@ async function main() {
       })),
     );
     if (!assets[0].data.equals(apk)) throw new Error('Named release APK differs from the verified APK.');
+    const api = githubClient(process.env.GITHUB_TOKEN ?? process.env.GITHUB_RELEASE_TOKEN);
     const result = await publish(
-      githubClient(process.env.GITHUB_TOKEN ?? process.env.GITHUB_RELEASE_TOKEN),
+      api,
       repository,
       release,
       commit,
       assets,
-      notes,
+      await withReleaseComparison(api, repository, release, notes),
     );
     console.log(`Published ${result.html_url}`);
     return;

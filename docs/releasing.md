@@ -20,13 +20,13 @@ Android SDK 安装统一由构建脚本负责。SDK 目录优先使用执行器�
 
 ## 应用版本
 
-| 用途     | EAS 配置      | APK 包名                         | 使用方式             |
-| -------- | ------------- | -------------------------------- | -------------------- |
-| 正式发布 | `release`     | `com.lunarain_079.lunar`         | 安装后独立运行       |
-| 每日测试 | `nightly`     | `com.lunarain_079.lunar.nightly` | 安装后独立运行       |
-| Develop  | `development` | `com.lunarain_079.lunar.dev`     | 连接 Expo 开发服务器 |
+| 用途     | EAS 配置      | APK 包名                     | 使用方式             |
+| -------- | ------------- | ---------------------------- | -------------------- |
+| 正式发布 | `release`     | `com.lunarain_079.lunar`     | 安装后独立运行       |
+| 每日测试 | `nightly`     | `com.lunarain_079.lunar`     | 覆盖正式版后独立运行 |
+| Develop  | `development` | `com.lunarain_079.lunar.dev` | 连接 Expo 开发服务器 |
 
-三种应用可以同时安装，各自保存书库与设置。`nightly` 继承 `release` 的 APK 编译和签名配置，使用 `APP_VARIANT=nightly` 与 Expo `preview` 环境。`development` 保留 Expo 开发客户端。`production` 继续用于 AAB 构建。[Expo 应用变体](https://docs.expo.dev/build-reference/variants/) · [Expo SDK 57 开发客户端](https://docs.expo.dev/versions/v57.0.0/sdk/dev-client/)
+Nightly 与正式版共用包名，覆盖安装后沿用书库、阅读进度和设置。Develop 使用独立包名和存储，可以与正式版或 Nightly 同时安装。`nightly` 继承 `release` 的 APK 编译和签名配置，使用 `APP_VARIANT=nightly` 与 Expo `preview` 环境。`development` 保留 Expo 开发客户端。`production` 继续用于 AAB 构建。[Expo 应用变体](https://docs.expo.dev/build-reference/variants/) · [Expo SDK 57 开发客户端](https://docs.expo.dev/versions/v57.0.0/sdk/dev-client/)
 
 应用显示名称分别为 `lunar`、`lunar Nightly` 与 `lunar Dev`。链接协议分别为 `lunar`、`lunar-nightly` 与 `lunar-dev`，开发客户端自动协议仅由 Develop 注册。
 
@@ -34,7 +34,7 @@ Android SDK 安装统一由构建脚本负责。SDK 目录优先使用执行器�
 
 在 GitHub 仓库的 `Settings → Secrets and variables → Actions` 添加 `EXPO_TOKEN`。对应 Expo 账号应具有项目 `523fd44d-54f4-4bde-9561-e75955b19f4d` 的访问权限。Release 上传使用任务生成的 `GITHUB_TOKEN`。
 
-首次运行前为 `release` 和 `nightly` 两个配置准备 EAS 托管的 Android 签名凭证。Nightly 的独立包名需要对应凭证；交互式凭证初始化在本地完成，Actions 构建使用非交互模式。
+首次运行前确认 `release` 和 `nightly` 两个配置对共用包名使用相同的 EAS 托管 Android 签名凭证。交互式凭证初始化在本地完成，Actions 构建使用非交互模式。
 
 ```sh
 pnpm dlx eas-cli@21.8.0 credentials --platform android
@@ -61,7 +61,7 @@ changelog/
 
 单个 `CHANGELOG.md` 适合较短的单语言记录。项目采用版本目录，便于分别维护翻译、精确读取标签对应记录，后续也能增加其他语言。
 
-两份文件随发布代码提交。脚本读取标签所指提交中的内容，按中文、英文顺序生成 Release 正文。缺少文件、内容为空或包含占位文字时，检查终止。候选版本也使用完整标签目录，正式版目录可根据最终功能重新整理。
+两份文件随发布代码提交。脚本读取标签所指提交中的内容，按中文、英文顺序生成 Release 正文。中文放在默认折叠的 `<details>` 区域内，英文保持展开。缺少文件、内容为空或包含占位文字时，检查终止。候选版本也使用完整标签目录，正式版目录可根据最终功能重新整理。
 
 `changelog/v0.1.1/` 提供当前版本的首版发布说明，应在创建标签前核对内容。
 
@@ -85,6 +85,8 @@ git push origin v0.1.1
 
 公开附件为 `lunar-v0.1.1-android-arm64-v8a.apk`、`SHA256SUMS.txt` 与 `release.json`。正式版本按照版本号规则参与 Latest 选择；候选版本标记为 Prerelease。
 
+发布正文末尾提供 `Full changelog` 比较链接，展示上一正式版本至当前标签的所有提交。脚本分页读取 GitHub Release，以版本号选择低于当前版本的最高正式版本，跳过草稿、Nightly 和候选版本。首次正式发布时省略比较链接；候选版本也与上一正式版本比较。
+
 Android `versionCode` 由 EAS 远程管理，release 与 nightly 构建自动递增，重试可能消耗新的编号。实际编号记录在发布元数据中。[EAS 版本管理](https://docs.expo.dev/build-reference/app-versions/)
 
 ## Nightly 与 Develop
@@ -99,6 +101,8 @@ Nightly 内置 JavaScript，可用于日常测试。Develop 需要检出对应�
 $env:APP_VARIANT = 'development'
 pnpm start --dev-client
 ```
+
+Nightly 发布说明的中文默认折叠，英文保持展开，均包含预发布注意事项及两个 APK 的用途。Nightly 用于提前体验最新功能，安装前请备份重要书籍和数据。覆盖安装要求签名一致且 `versionCode` 满足更新条件；恢复使用正式版时，需要构建编号更高且数据格式兼容的正式版本。此前使用 `.nightly` 独立包名的安装保留原有独立数据，切换前需另行备份和迁移。
 
 本地切换应用变体时，先重新生成原生工程：
 
@@ -116,4 +120,4 @@ pnpm android
 
 同一提交、同一标签的自动草稿支持恢复。公开 Release 和人工草稿受到保护，后续修改使用新标签发布。Nightly 重试沿用该次运行的标签，标签提交发生变化时发布检查终止。
 
-`pnpm run test:release` 验证版本、双语 changelog、APK 元数据、双 APK 提交和摘要一致性、草稿恢复及上传失败处理。完整 APK 编译需要 Linux 或 macOS 环境与 Expo 凭证。首次 GitHub 构建后还需验证三个应用的设备安装、共存和启动。
+`pnpm run test:release` 验证版本、双语 changelog、比较链接、APK 元数据、双 APK 提交和摘要一致性、草稿恢复及上传失败处理。完整 APK 编译需要 Linux 或 macOS 环境与 Expo 凭证。首次 GitHub 构建后还需验证 Nightly 与正式版的覆盖安装、数据保留，以及 Develop 的共存和启动。

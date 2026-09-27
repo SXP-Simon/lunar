@@ -81,7 +81,7 @@ jobs:
           pattern: nightly-*-${{ github.run_id }}
           path: artifacts/
           merge-multiple: true
-      - name: Publish both APKs as one prerelease
+      - name: Publish both APKs with bilingual prerelease notes
         env:
           GITHUB_TOKEN: ${{ github.token }}
           LUNAR_GITHUB_REPOSITORY: ${{ github.repository }}

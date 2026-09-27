@@ -3,11 +3,35 @@ import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { githubClient, publish, validateApk, validateVersion } from './release.mjs';
+import { bilingualNotes, githubClient, publish, validateApk, validateVersion } from './release.mjs';
 
 export function nightlyRelease(tag) {
   if (!/^nightly-\d{8}-[1-9]\d*$/.test(tag ?? '')) throw new Error('Invalid nightly tag.');
   return { tag, prerelease: true, name: `Lunar ${tag}` };
+}
+
+export function nightlyNotes() {
+  const chinese = [
+    '### 注意事项',
+    'Nightly 是预发布版本，用于提前体验最新功能。功能仍在开发与测试中，可能出现错误或兼容性问题，安装前请备份重要书籍和数据。',
+    'Nightly 与正式版使用相同包名，覆盖安装后沿用书库、阅读进度和设置。覆盖安装要求签名一致且构建编号满足更新条件；恢复使用正式版时，请安装构建编号更高且数据格式兼容的正式版本。',
+    '此前使用独立包名的 Nightly 保留独立数据，切换到本版本前请另行备份和迁移。',
+    '### 下载说明',
+    '本次发布包含同一提交编译的两个 Android arm64 APK。',
+    '**`lunar-nightly.apk`**：内置应用代码，安装后可独立运行，适合体验最新功能。',
+    '**`lunar-develop.apk`**：使用独立包名的 Expo 开发客户端，可与正式版或 Nightly 同时安装，需要从同一提交启动 Metro 开发服务器。',
+  ].join('\n\n');
+  const english = [
+    '### Important notes',
+    'Nightly is a prerelease for trying the latest features. Features are still being developed and tested, so bugs or compatibility issues may occur. Back up important books and data before installing.',
+    'Nightly uses the same package name as the stable app. Installing it as an update preserves your library, reading progress, and settings. Updates require the same signing certificate and a compatible version code. To return to stable, install a stable build with a higher version code and a compatible data format.',
+    'Older Nightly builds with a separate package name retain their own data. Back up and migrate that data separately before switching to this build.',
+    '### Downloads',
+    'Both Android arm64 APKs are built from the same commit.',
+    '**`lunar-nightly.apk`**: standalone app with bundled JavaScript for trying the latest features.',
+    '**`lunar-develop.apk`**: Expo development client with a separate package name; can coexist with stable or Nightly. Requires Metro running from the same source commit.',
+  ].join('\n\n');
+  return `${bilingualNotes(chinese, english)}\n\n### Develop\n\n\`\`\`sh\nAPP_VARIANT=development pnpm start --dev-client\n\`\`\``;
 }
 
 export async function nightlyAssets(root, commit, version, packageName) {
@@ -18,7 +42,7 @@ export async function nightlyAssets(root, commit, version, packageName) {
     const data = await readFile(resolve(root, file));
     const metadata = JSON.parse(await readFile(resolve(root, `${profile}.json`), 'utf8'));
     const sha256 = createHash('sha256').update(data).digest('hex');
-    const expectedPackage = `${packageName}.${profile === 'nightly' ? 'nightly' : 'dev'}`;
+    const expectedPackage = profile === 'development' ? `${packageName}.dev` : packageName;
     if (
       !data.length ||
       metadata.profile !== profile ||
@@ -62,7 +86,7 @@ async function main() {
       ['dump', 'badging', apk],
       { encoding: 'utf8' },
     );
-    const packageName = `${expo.android.package}.${profile === 'nightly' ? 'nightly' : 'dev'}`;
+    const packageName = profile === 'development' ? `${expo.android.package}.dev` : expo.android.package;
     const android = validateApk(badging, pkg.version, packageName, { allowDebuggable: profile === 'development' });
     const sha256 = createHash('sha256')
       .update(await readFile(apk))
@@ -84,18 +108,7 @@ async function main() {
   if (!refs.some((ref) => ref.ref === `refs/tags/${release.tag}`)) {
     await api('POST', `/repos/${repository}/git/refs`, { ref: `refs/tags/${release.tag}`, sha: commit });
   }
-  const notes = [
-    '## 中文',
-    '此预发布包含同一提交编译的两个 Android arm64 APK。',
-    '`lunar-nightly.apk`：内置应用代码，安装后可独立运行，使用独立的 Nightly 应用存储。',
-    '`lunar-develop.apk`：Expo 开发客户端，需要从同一提交启动 Metro 开发服务器。',
-    '## English',
-    'Both Android arm64 APKs are built from the same commit.',
-    '`lunar-nightly.apk`: standalone app with bundled JavaScript and separate Nightly storage.',
-    '`lunar-develop.apk`: Expo development client; requires Metro running from this source commit.',
-    '```sh\nAPP_VARIANT=development pnpm start --dev-client\n```',
-  ].join('\n\n');
-  const result = await publish(api, repository, release, commit, assets, notes);
+  const result = await publish(api, repository, release, commit, assets, nightlyNotes());
   console.log(`Published ${result.html_url}`);
 }
 

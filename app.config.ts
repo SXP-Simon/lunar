@@ -1,8 +1,6 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-const SUPPORTED_ANDROID_ABIS = new Set([
-  'arm64-v8a',
-]);
+const SUPPORTED_ANDROID_ABIS = new Set(['arm64-v8a']);
 
 function getAndroidAbis(value: string | undefined): string[] | undefined {
   const abis = value
@@ -18,10 +16,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const isNightly = process.env.APP_VARIANT === 'nightly';
   const name = config.name ?? 'lunar';
   const androidPackage = config.android?.package ?? 'com.lunarain_079.lunar';
-  const compactAndroidDevBuild =
-    process.env.LUNAR_ANDROID_COMPACT_DEV_BUILD === 'true';
-  const compactAndroidApk =
-    compactAndroidDevBuild || process.env.LUNAR_ANDROID_COMPACT_APK === 'true';
+  const compactAndroidDevBuild = process.env.LUNAR_ANDROID_COMPACT_DEV_BUILD === 'true';
+  const compactAndroidApk = compactAndroidDevBuild || process.env.LUNAR_ANDROID_COMPACT_APK === 'true';
   const buildArchs = getAndroidAbis(process.env.LUNAR_ANDROID_ABIS);
 
   return {
@@ -31,7 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: isDevelopment ? 'lunar-dev' : isNightly ? 'lunar-nightly' : config.scheme,
     android: {
       ...config.android,
-      package: isDevelopment ? `${androidPackage}.dev` : isNightly ? `${androidPackage}.nightly` : androidPackage,
+      package: isDevelopment ? `${androidPackage}.dev` : androidPackage,
     },
     plugins: [
       ...(config.plugins ?? []),
