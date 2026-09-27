@@ -28,6 +28,49 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     android: {
       ...config.android,
       package: isDevelopment ? `${androidPackage}.dev` : androidPackage,
+      intentFilters: [
+        ...(config.android?.intentFilters ?? []),
+        {
+          action: 'VIEW',
+          category: ['DEFAULT', 'BROWSABLE'],
+          data: [
+            { scheme: 'content', mimeType: 'application/epub+zip' },
+            { scheme: 'file', mimeType: 'application/epub+zip' },
+          ],
+        },
+        ...['SEND', 'SEND_MULTIPLE'].map((action) => ({
+          action,
+          category: ['DEFAULT'],
+          data: [{ mimeType: 'application/epub+zip' }],
+        })),
+      ],
+    },
+    ios: {
+      ...config.ios,
+      infoPlist: {
+        ...config.ios?.infoPlist,
+        CFBundleDocumentTypes: [
+          ...(config.ios?.infoPlist?.CFBundleDocumentTypes ?? []),
+          {
+            CFBundleTypeName: 'EPUB',
+            CFBundleTypeRole: 'Viewer',
+            LSHandlerRank: 'Alternate',
+            LSItemContentTypes: ['org.idpf.epub-container'],
+          },
+        ],
+        UTImportedTypeDeclarations: [
+          ...(config.ios?.infoPlist?.UTImportedTypeDeclarations ?? []),
+          {
+            UTTypeIdentifier: 'org.idpf.epub-container',
+            UTTypeDescription: 'EPUB document',
+            UTTypeConformsTo: ['public.data'],
+            UTTypeTagSpecification: {
+              'public.filename-extension': ['epub'],
+              'public.mime-type': 'application/epub+zip',
+            },
+          },
+        ],
+      },
     },
     plugins: [
       ...(config.plugins ?? []),

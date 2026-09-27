@@ -73,6 +73,7 @@ export const zhCN = {
     loadFailed: '书架加载失败',
     importCompleted: 'EPUB 导入完成',
     importFailed: 'EPUB 导入失败',
+    externalImportUnavailable: '导入请求已结束，请重新打开 EPUB 文件。',
     cannotSelectEpub: '无法选择 EPUB',
     booksDeleted: '已删除 {{count}} 本书',
     fileCleanupFailed: '部分书籍文件清理失败',

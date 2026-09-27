@@ -75,6 +75,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     loadFailed: 'Could not load library',
     importCompleted: 'EPUB imported',
     importFailed: 'Could not import EPUB',
+    externalImportUnavailable: 'This import request has ended. Open the EPUB file again.',
     cannotSelectEpub: 'Could not select EPUB',
     booksDeleted: '{{count}} books deleted',
     fileCleanupFailed: 'Some book files could not be cleaned up',

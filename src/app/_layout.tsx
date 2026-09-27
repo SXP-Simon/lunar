@@ -9,6 +9,7 @@ import { AppState } from 'react-native';
 import { Uniwind, useUniwind } from 'uniwind';
 
 import { AppProviders } from '@/components/providers/app-providers';
+import { ExternalEpubShareListener } from '@/features/library';
 import { applyLanguagePreference } from '@/i18n';
 import { useApplicationLaunchStore, useApplicationSettingsStore } from '@/stores';
 
@@ -54,10 +55,12 @@ export default function RootLayout() {
       <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <NavigationBar hidden={false} style={isDark ? 'dark' : 'light'} />
+        <ExternalEpubShareListener />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="reader/[bookId]" />
+          <Stack.Screen name="import-epub" />
         </Stack>
       </ThemeProvider>
     </AppProviders>
