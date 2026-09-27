@@ -41,6 +41,28 @@ done
 
 export LUNAR_BUILD_COMMIT="$(git rev-parse HEAD)"
 
+# Expo prebuild applies these limits through with-android-build-memory.
+# Defaults target the CNB runner with 16 CPUs and 32 GiB of memory.
+# Reserve memory for Kotlin, Metro, native compilers and the operating system.
+export LUNAR_ANDROID_GRADLE_HEAP_MB="${LUNAR_ANDROID_GRADLE_HEAP_MB:-8192}"
+export LUNAR_ANDROID_KOTLIN_HEAP_MB="${LUNAR_ANDROID_KOTLIN_HEAP_MB:-2048}"
+export LUNAR_ANDROID_GRADLE_WORKERS="${LUNAR_ANDROID_GRADLE_WORKERS:-4}"
+for memory_setting in LUNAR_ANDROID_GRADLE_HEAP_MB LUNAR_ANDROID_KOTLIN_HEAP_MB LUNAR_ANDROID_GRADLE_WORKERS; do
+  if [[ ! "${!memory_setting}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "$memory_setting must be a positive integer." >&2
+    exit 1
+  fi
+done
+echo "Android build memory: Gradle heap ${LUNAR_ANDROID_GRADLE_HEAP_MB} MiB, Kotlin heap ${LUNAR_ANDROID_KOTLIN_HEAP_MB} MiB, Gradle workers ${LUNAR_ANDROID_GRADLE_WORKERS}, project parallelism enabled"
+for memory_limit_file in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do
+  if [[ -r "$memory_limit_file" ]]; then
+    echo "Container memory limit ($memory_limit_file, bytes or max): $(cat "$memory_limit_file")"
+  fi
+done
+if command -v free >/dev/null 2>&1; then
+  free -m
+fi
+
 JAVAC_BIN="$(command -v javac)"
 export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$JAVAC_BIN")")")"
 

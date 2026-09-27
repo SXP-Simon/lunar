@@ -121,6 +121,18 @@ pnpm android
 
 `prebuild --clean` 会替换生成的 Android 目录，原生定制应保存在配置插件中。
 
+## R8 编译内存
+
+`Java heap space` 表示 Java 堆耗尽。针对 CNB 的 16 核、32 GiB 容器，`scripts/build-android.sh` 默认设置 Gradle 堆上限为 8192 MiB、Metaspace 上限为 1024 MiB，Kotlin 独立堆上限为 2048 MiB、Metaspace 上限为 512 MiB。Gradle worker 上限为 4，项目并行执行开启，兼顾编译速度和内存余量。worker 数量仅约束 Gradle 任务调度，R8 内部仍可使用多线程。R8 压缩和资源裁剪继续启用。
+
+构建脚本将参数传递给 `plugins/with-android-build-memory.js`，由 Expo prebuild 保存到生成的 `android/gradle.properties`。本地开发在省略这些环境变量时沿用 Expo 默认设置。CNB 的开发、Nightly 和正式构建共用此脚本。[Expo 配置插件](https://docs.expo.dev/config-plugins/plugins/) · [Android 构建内存配置](https://developer.android.com/build/optimize-your-build#increase-the-jvm-heap-size)
+
+构建日志输出 cgroup 内存限制和 `free -m`。容器内存预算应以 cgroup 限制为准，`free` 可能展示宿主机内存。8 GiB 是 Gradle JVM 的堆上限，整个构建还需要 Java 堆之外的内存、Kotlin、Metro 和原生编译器内存；实际峰值仍需通过构建观测。确认构建成功且容器内存有充足余量后，可通过 `LUNAR_ANDROID_GRADLE_WORKERS=6` 比较构建耗时。
+
+如果 8 GiB 堆仍然耗尽，确认容器余量后，可在 CNB 环境中设置 `LUNAR_ANDROID_GRADLE_HEAP_MB=12288`。`LUNAR_ANDROID_KOTLIN_HEAP_MB` 单独控制 Kotlin 堆上限。进程被系统终止或出现退出码 137 时，应检查容器总内存消耗，优先通过 `LUNAR_ANDROID_GRADLE_WORKERS=2` 降低并发或增加容器内存。
+
+如果需要分析 R8 的具体对象占用，可临时在插件的 `org.gradle.jvmargs` 中增加 `-XX:+HeapDumpOnOutOfMemoryError`，并保留 EAS 临时构建目录。堆转储可能占用数 GiB 磁盘，常规构建省略该选项。Gradle 弃用提示应另行处理，本次堆耗尽应优先调整 JVM 内存。
+
 ## 失败处理与验证
 
 CNB 构建失败或被取消时，GitHub 构建任务失败，发布任务跳过执行。等待上限为 160 分钟，超时后尝试停止 CNB 构建。GitHub 取消信号也会触发停止处理。任务结束后删除临时 CNB 分支；强制终止导致清理未完成时，可根据任务摘要中的构建链接和日志中的分支名称手动处理。

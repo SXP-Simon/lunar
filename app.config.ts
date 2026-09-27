@@ -99,6 +99,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           },
         },
       ],
+      './plugins/with-android-build-memory',
       'expo-asset',
     ],
   };
