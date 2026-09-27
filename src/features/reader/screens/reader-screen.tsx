@@ -311,11 +311,7 @@ export default function ReaderScreen() {
   );
 
   const readingGesture = useMemo(
-    () =>
-      Gesture.Simultaneous(
-        imageDoubleTapGesture,
-        Gesture.Exclusive(selectionGesture, Gesture.Race(bookmarkPull.gesture, pageTurnGesture)),
-      ),
+    () => Gesture.Simultaneous(imageDoubleTapGesture, pageTurnGesture, bookmarkPull.gesture, selectionGesture),
     [bookmarkPull.gesture, imageDoubleTapGesture, pageTurnGesture, selectionGesture],
   );
 

@@ -500,12 +500,12 @@ class NavigationToken {
 }
 
 function nativeError(result: RitoNativeCallResult, operation: string): RitoNativeError {
+  const detail = typeof result.error === 'string' && result.error.trim().length > 0
+    ? result.error
+    : `Rito native operation ${operation} failed with status ${String(result.status)}.`;
   const numericStatus = Number(result.status);
   const status = Number.isInteger(numericStatus) && numericStatus >= 0 && numericStatus <= 255
     ? numericStatus as RitoNativeStatus
     : 255;
-  const detail = typeof result.error === 'string' && result.error.trim().length > 0
-    ? result.error
-    : `Rito native operation ${operation} failed with status ${String(result.status)}.`;
   return new RitoNativeError(status, detail, operation);
 }
