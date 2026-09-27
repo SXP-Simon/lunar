@@ -21,6 +21,9 @@ patchedDependencies:
   'html-entities@2.5.3': patches/html-entities@2.5.3.patch
 
 overrides:
+  # Markdown consumers share the app's React; Expensify pins legacy web dependencies.
+  'expensify-common@2.0.207>react': 19.2.3
+  'expensify-common@2.0.207>react-dom': 19.2.3
   # Preserve Expensify's exact fork without permitting arbitrary Git subdependencies.
   'expensify-common@2.0.207>simply-deferred': file:vendor/simply-deferred-77a08a9.tgz
 
