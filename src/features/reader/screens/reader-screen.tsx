@@ -4,8 +4,7 @@ import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import { BlurTargetView } from 'expo-blur';
 import { Spinner } from 'heroui-native/spinner';
-import { useToast } from 'heroui-native/toast';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { BackHandler, Pressable, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useCSSVariable, useResolveClassNames, useUniwind, withUniwind } from 'uniwind';
@@ -43,6 +42,7 @@ import { useReaderVolumeKeys } from '../hooks/controls/use-reader-volume-keys';
 import { useReaderSession } from '../hooks/session/use-reader-session';
 import { useReaderHitEntries } from '../hooks/session/use-reader-hit-entries';
 import { useReadingTime } from '../hooks/session/use-reading-time';
+import { useReaderErrorToast } from '../hooks/session/use-reader-error-toast';
 
 const ReaderBlurTarget = withUniwind(BlurTargetView);
 
@@ -51,7 +51,6 @@ export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
   const isFocused = useIsFocused();
-  const { toast } = useToast();
   const {
     viewport,
     reservedInsets,
@@ -82,7 +81,6 @@ export default function ReaderScreen() {
   );
   const absoluteFillStyle = useResolveClassNames('absolute inset-0');
   const noteBlurTarget = useRef<View>(null);
-  const errorToastKey = useRef<string | undefined>(undefined);
   const readerTheme = theme === 'dark' ? 'dark' : 'light';
   const animationStyle = useReaderStore((state) => state.animationStyle);
   const keepScreenAwake = useReaderStore((state) => state.keepScreenAwake);
@@ -269,36 +267,27 @@ export default function ReaderScreen() {
   const canvasBackground = isReady ? session.runtime.getBackgroundColor() : initialPaperColor;
   const readerChromeVisible =
     !activeImageViewer && (panels.controlsVisible || Boolean(panels.activePanel) || Boolean(session.errorMessage));
-  useEffect(() => {
-    if (highlightsError) toast.show({ variant: 'danger', label: t('reader.highlightLoadFailed') });
-  }, [highlightsError, t, toast]);
-
-  useEffect(() => {
-    if (bookmarksError) toast.show({ variant: 'danger', label: t('reader.bookmarkLoadFailed') });
-  }, [bookmarksError, t, toast]);
-
-  useEffect(() => {
-    if (readingTime.error) toast.show({ variant: 'danger', label: t('reader.readingTimeSaveFailed') });
-  }, [readingTime.error, t, toast]);
-
-  useEffect(() => {
-    if (!session.errorMessage) {
-      errorToastKey.current = undefined;
-      return;
-    }
-
-    const nextErrorToastKey = `${bookId ?? ''}:${session.errorMessage}`;
-    if (errorToastKey.current === nextErrorToastKey) {
-      return;
-    }
-
-    errorToastKey.current = nextErrorToastKey;
-    toast.show({
-      variant: 'danger',
-      label: t('reader.loadingFailed'),
-      description: session.errorMessage,
-    });
-  }, [bookId, session.errorMessage, t, toast]);
+  useReaderErrorToast({
+    bookId: bookId ?? '',
+    error: highlightsError,
+    label: t('reader.highlightLoadFailed'),
+  });
+  useReaderErrorToast({
+    bookId: bookId ?? '',
+    error: bookmarksError,
+    label: t('reader.bookmarkLoadFailed'),
+  });
+  useReaderErrorToast({
+    bookId: bookId ?? '',
+    error: readingTime.error,
+    label: t('reader.readingTimeSaveFailed'),
+  });
+  useReaderErrorToast({
+    bookId: bookId ?? '',
+    error: session.errorMessage,
+    label: t('reader.loadingFailed'),
+    description: session.errorMessage,
+  });
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
