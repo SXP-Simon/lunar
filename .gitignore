@@ -59,3 +59,5 @@ example
 target/
 reports/
 .vscode/
+
+/.pnpm-patches/
