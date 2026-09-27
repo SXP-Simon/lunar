@@ -2,8 +2,8 @@ import { randomUUID } from 'expo-crypto';
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
-import type { ReadingSession } from '../domain/reading-time';
-import { startReadingSession, updateReadingSessionEnd } from '../services/reading-time-service';
+import type { ReadingSession } from '../../domain/reading-time';
+import { startReadingSession, updateReadingSessionEnd } from '../../services/reading-time-service';
 
 const CheckpointIntervalMs = 10_000;
 

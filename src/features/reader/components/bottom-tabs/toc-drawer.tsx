@@ -11,7 +11,7 @@ import type { ReaderSnapshot, ReaderTocEntry } from '@/reader';
 import type { LunarReaderRuntime } from '@/reader/native';
 import { useTranslation } from '@/i18n';
 import { getReaderBottomTabBarInset } from './constants';
-import { useDrawerNavigation } from '../../hooks/use-drawer-navigation';
+import { useDrawerNavigation } from '../../hooks/controls/use-drawer-navigation';
 
 interface TocDrawerProps {
   readonly isOpen: boolean;
@@ -54,13 +54,9 @@ function TocDrawerContent({ isOpen, onOpenChange, runtime, toc, snapshot }: TocD
           snapPoints={['62%', '88%']}>
           <View className="flex-row items-center justify-between px-5 pb-3">
             <View className="min-w-0 flex-1 gap-1 pr-3">
-              <BottomSheet.Title className="text-xl text-foreground">
-                {t('reader.toc')}
-              </BottomSheet.Title>
+              <BottomSheet.Title className="text-xl text-foreground">{t('reader.toc')}</BottomSheet.Title>
               <BottomSheet.Description className="text-sm text-muted">
-                {entries.length > 0
-                  ? t('reader.tocCount', { count: entries.length })
-                  : t('reader.noToc')}
+                {entries.length > 0 ? t('reader.tocCount', { count: entries.length }) : t('reader.noToc')}
               </BottomSheet.Description>
             </View>
           </View>
@@ -91,9 +87,7 @@ function TocDrawerContent({ isOpen, onOpenChange, runtime, toc, snapshot }: TocD
                 </Button>
               );
             }}
-            ListEmptyComponent={(
-              <Text className="px-4 py-8 text-center text-muted">{t('reader.noToc')}。</Text>
-            )}
+            ListEmptyComponent={<Text className="px-4 py-8 text-center text-muted">{t('reader.noToc')}。</Text>}
           />
         </BottomSheet.Content>
       </BottomSheet.Portal>
@@ -101,9 +95,7 @@ function TocDrawerContent({ isOpen, onOpenChange, runtime, toc, snapshot }: TocD
   );
 }
 
-function isCurrentTocEntry(
-  entry: ReaderTocEntry, manifestHref?: string, currentAnchorId?: string,
-): boolean {
+function isCurrentTocEntry(entry: ReaderTocEntry, manifestHref?: string, currentAnchorId?: string): boolean {
   if (!manifestHref) return false;
   const [href, anchorId] = entry.href.split('#', 2);
   return href === manifestHref && anchorId === currentAnchorId;
@@ -112,7 +104,10 @@ function isCurrentTocEntry(
 function flattenToc(entries: readonly ReaderTocEntry[], depth = 0): FlatTocEntry[] {
   const flattened: FlatTocEntry[] = [];
   const visited = new Set<ReaderTocEntry>();
-  const stack = entries.slice().reverse().map((entry) => ({ entry, depth }));
+  const stack = entries
+    .slice()
+    .reverse()
+    .map((entry) => ({ entry, depth }));
   while (stack.length > 0) {
     const current = stack.pop();
     if (!current || visited.has(current.entry)) continue;
@@ -126,8 +121,12 @@ function flattenToc(entries: readonly ReaderTocEntry[], depth = 0): FlatTocEntry
 }
 
 /** Keep the closing view mounted while settled-page updates stay outside it. */
-export const TocDrawer = memo(TocDrawerContent, (previous, next) =>
-  previous.isOpen === next.isOpen
-  && previous.runtime === next.runtime
-  && previous.onOpenChange === next.onOpenChange && previous.toc === next.toc
-  && (!next.isOpen || previous.snapshot === next.snapshot));
+export const TocDrawer = memo(
+  TocDrawerContent,
+  (previous, next) =>
+    previous.isOpen === next.isOpen &&
+    previous.runtime === next.runtime &&
+    previous.onOpenChange === next.onOpenChange &&
+    previous.toc === next.toc &&
+    (!next.isOpen || previous.snapshot === next.snapshot),
+);

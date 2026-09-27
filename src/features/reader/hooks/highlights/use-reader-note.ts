@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from '@/i18n';
 import type { ReaderRuntime, ReaderSourceRange, ReaderTextSelection } from '@/reader';
-import type { ReaderHighlight, ReaderNote } from '../domain/reader-highlight';
-import { createReaderNote, type CreateReaderHighlightInput } from '../services/highlight-service';
-import { resolveReaderSelectionSourceRange } from '../services/highlight-overlay-service';
+import type { ReaderHighlight, ReaderNote } from '../../domain/reader-highlight';
+import { createReaderNote, type CreateReaderHighlightInput } from '../../services/highlight-service';
+import { resolveReaderSelectionSourceRange } from '../../services/highlight-overlay-service';
 
 interface NoteTarget {
   readonly key: number;

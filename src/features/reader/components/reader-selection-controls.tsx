@@ -5,9 +5,9 @@ import { Fragment, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useCSSVariable } from 'uniwind';
-import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeOut, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import type { ReaderSelectionDragController } from '../hooks/use-reader-selection-drag';
+import type { ReaderSelectionDragController } from '../hooks/selection/use-reader-selection-drag';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 
 import type { ReaderRect } from '@/reader';
@@ -20,8 +20,6 @@ import {
 export const ReaderSelectionToolbarWidth = 320;
 export const ReaderSelectionToolbarHeight = 108;
 
-const SelectionHoldDuration = 400;
-const SelectionMovementTolerance = 4;
 const ToolbarGap = 12;
 const ViewportPadding = 12;
 const ToolbarFadeInDuration = 180;
@@ -38,15 +36,6 @@ const HighlightColorClasses: Record<ReaderHighlightColor, string> = {
   blue: 'bg-reader-highlight-blue',
   green: 'bg-reader-highlight-green',
 };
-
-export function configureReaderSelectionGesture(gesture: PanGesture): PanGesture {
-  return gesture
-    .minDistance(SelectionMovementTolerance * 2)
-    .failOffsetX([-SelectionMovementTolerance, SelectionMovementTolerance])
-    .failOffsetY([-SelectionMovementTolerance, SelectionMovementTolerance])
-    .maxPointers(1)
-    .activateAfterLongPress(SelectionHoldDuration);
-}
 
 export interface ReaderSelectionControlsLayout {
   readonly toolbar: {

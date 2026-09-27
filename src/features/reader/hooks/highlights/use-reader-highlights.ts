@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { ReaderHighlight, ReaderNote } from '../domain/reader-highlight';
+import type { ReaderHighlight, ReaderNote } from '../../domain/reader-highlight';
 import {
   listReaderHighlights,
   prepareReaderHighlight,
@@ -8,7 +8,7 @@ import {
   saveReaderHighlight,
   updateReaderHighlightNotes,
   type CreateReaderHighlightInput,
-} from '../services/highlight-service';
+} from '../../services/highlight-service';
 
 const EmptyHighlights: readonly ReaderHighlight[] = [];
 

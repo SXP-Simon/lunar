@@ -17,7 +17,7 @@ import type { ReaderLocator, ReaderRuntime, ReaderTocEntry } from '@/reader';
 import type { ReaderBookmark } from '../../domain/reader-bookmark';
 import type { ReaderHighlight } from '../../domain/reader-highlight';
 import { getReaderBottomTabBarInset } from './constants';
-import { useDrawerNavigation } from '../../hooks/use-drawer-navigation';
+import { useDrawerNavigation } from '../../hooks/controls/use-drawer-navigation';
 
 const MarkPressable = withUniwind(Pressable);
 

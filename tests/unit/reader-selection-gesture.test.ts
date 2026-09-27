@@ -1,22 +1,7 @@
 import type { PanGesture } from 'react-native-gesture-handler';
 import { describe, expect, it, vi } from 'vitest';
 
-import { configureReaderSelectionGesture } from '../../src/features/reader/components/reader-selection-controls';
-
-// These tests exercise gesture configuration without rendering native controls.
-vi.mock('react-native-reanimated', () => ({
-  default: { View: 'AnimatedView' },
-  useAnimatedStyle: vi.fn(),
-  FadeIn: { duration: vi.fn().mockReturnValue({}) },
-  FadeOut: { duration: vi.fn().mockReturnValue({}) },
-}));
-vi.mock('react-native', () => ({ View: 'View' }));
-vi.mock('react-native-gesture-handler', () => ({ Gesture: {}, GestureDetector: 'GestureDetector' }));
-vi.mock('expo-symbols', () => ({ SymbolView: 'SymbolView' }));
-vi.mock('heroui-native/button', () => ({ Button: 'Button' }));
-vi.mock('heroui-native/hooks', () => ({ useThemeColor: vi.fn() }));
-vi.mock('uniwind', () => ({ useCSSVariable: vi.fn() }));
-vi.mock('react-native-svg', () => ({ default: 'Svg', Path: 'Path' }));
+import { configureReaderSelectionGesture } from '../../src/features/reader/hooks/selection/selection-gesture';
 
 function configuredGesture() {
   const gesture = {

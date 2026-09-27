@@ -2,92 +2,65 @@ import { type Href, useFocusEffect, useIsFocused, useLocalSearchParams, useRoute
 import { useKeepAwake } from 'expo-keep-awake';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
-import * as Clipboard from 'expo-clipboard';
-import * as Linking from 'expo-linking';
+import { BlurTargetView } from 'expo-blur';
 import { Spinner } from 'heroui-native/spinner';
 import { useToast } from 'heroui-native/toast';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, PixelRatio, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { BackHandler, Pressable, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { scheduleOnRN } from 'react-native-worklets';
-import { useReaderSelectionDrag } from '../hooks/use-reader-selection-drag';
 import { useCSSVariable, useResolveClassNames, useUniwind, withUniwind } from 'uniwind';
-import {
-  SafeAreaListener,
-  useSafeAreaInsets,
-  type EdgeInsets,
-  type SafeAreaListenerProps,
-} from 'react-native-safe-area-context';
+import { SafeAreaListener } from 'react-native-safe-area-context';
 
-import { IconTabBar } from '../components/icon-tab-bar';
-import { createReaderImageFile, deleteReaderImageFile } from '../infrastructure/reader-image-file';
 import { ImageViewer } from '@/components/ui/image-viewer';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
-import {
-  createReaderWordSelectionAtPoint,
-  createReaderTextSelectionFromRange,
-  type ReaderTextSelectionRange,
-  type ReaderSelectionPoint,
-  createReaderTextSelectionFromSourceRange,
-  findReaderHitIndex,
-  updateReaderTextSelectionAtPoint,
-  type ReaderFootnote,
-  type ReaderRenderFrame,
-  type ReaderSnapshot,
-  type ReaderTextSelection,
-  type ReaderViewport,
-} from '@/reader';
-import { ReaderSurface, useReaderPageTurn, type ReaderSurfaceTransform } from '@/reader/native';
+import { findReaderHitIndex } from '@/reader';
+import { ReaderSurface, useReaderPageTurn } from '@/reader/native';
 import { useReaderStore } from '@/stores';
+import { IconTabBar } from '../components/icon-tab-bar';
 import { ProgressDrawer } from '../components/bottom-tabs/progress-drawer';
 import { MarksDrawer } from '../components/bottom-tabs/marks-drawer';
-import { useReaderBookmarks } from '../hooks/use-reader-bookmarks';
-import { useBookmarkPull } from '../hooks/use-bookmark-pull';
-import { BookmarkPullThreshold } from '../domain/bookmark-pull';
-import { hasBookmarkOnRenderedPage, isBookmarkOnPage, type ReaderBookmark } from '../domain/reader-bookmark';
 import { TocDrawer } from '../components/bottom-tabs/toc-drawer';
 import { TypographyDrawer } from '../components/bottom-tabs/typography-drawer';
 import { ReaderControls } from '../components/reader-controls';
 import { FootnoteDrawer } from '../components/footnote-drawer';
-import { configureReaderSelectionGesture, ReaderSelectionControls } from '../components/reader-selection-controls';
-import { useReaderHighlights } from '../hooks/use-reader-highlights';
-import { useReaderNote } from '../hooks/use-reader-note';
+import { ReaderSelectionControls } from '../components/reader-selection-controls';
 import { ReaderNotesOverlay } from '../components/reader-notes-overlay';
-import { BlurTargetView } from 'expo-blur';
-import { useReaderSession } from '../hooks/use-reader-session';
-import { useReadingTime } from '../hooks/use-reading-time';
-import { useReaderVolumeKeys } from '../hooks/use-reader-volume-keys';
-import { containsHighlightRange } from '../domain/highlight-ranges';
-import type { ReaderHighlight, ReaderHighlightColor, ReaderHighlightStyle } from '../domain/reader-highlight';
-import {
-  createReaderHighlightOverlayResolver,
-  createReaderHighlightRegions,
-  resolveReaderSelectionSourceRange,
-} from '../services/highlight-overlay-service';
+import { BookmarkPullThreshold } from '../domain/bookmark-pull';
+import { createReaderHighlightOverlayResolver } from '../services/highlight-overlay-service';
+import { useReaderBookmarks } from '../hooks/bookmarks/use-reader-bookmarks';
+import { useReaderBookmarkActions } from '../hooks/bookmarks/use-reader-bookmark-actions';
+import { useBookmarkPull } from '../hooks/bookmarks/use-bookmark-pull';
+import { useReaderHighlights } from '../hooks/highlights/use-reader-highlights';
+import { useReaderHighlightActions } from '../hooks/highlights/use-reader-highlight-actions';
+import { useReaderNote } from '../hooks/highlights/use-reader-note';
+import { useReaderSelection } from '../hooks/selection/use-reader-selection';
+import { useReaderContentActions } from '../hooks/content/use-reader-content-actions';
+import { useReaderPanels } from '../hooks/controls/use-reader-panels';
+import { useReaderViewport } from '../hooks/controls/use-reader-viewport';
+import { useReaderVolumeKeys } from '../hooks/controls/use-reader-volume-keys';
+import { useReaderSession } from '../hooks/session/use-reader-session';
+import { useReadingTime } from '../hooks/session/use-reading-time';
 
-// The canvas covers the window; these values only keep page content away from its edges.
-const ReaderSurfaceTopSpacing = 4;
-const ReaderSurfaceBottomSpacing = 4;
 const EmptyReaderHitEntries = [] as const;
 const ReaderBlurTarget = withUniwind(BlurTargetView);
-
-interface OwnedReaderTextSelection extends ReaderTextSelection {
-  readonly kind: 'text' | 'highlight';
-  readonly revisionId: number;
-  readonly spreadIndex: number;
-  readonly renderId?: number;
-}
 
 export default function ReaderScreen() {
   const { t } = useTranslation();
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
   const isFocused = useIsFocused();
-  const insets = useSafeAreaInsets();
   const { toast } = useToast();
-  const [reservedInsets, setReservedInsets] = useState(insets);
+  const {
+    viewport,
+    reservedInsets,
+    contentInsets,
+    surfaceTransform,
+    handleLayout,
+    handleSurfaceTransform,
+    handleSafeAreaChange,
+  } = useReaderViewport();
   const { theme } = useUniwind();
   const selectionHandleColor = useCSSVariable('--color-reader-selection') as string;
   const pageBackgroundColor = useCSSVariable('--color-background') as string;
@@ -108,46 +81,7 @@ export default function ReaderScreen() {
     [highlightFillColor, highlightPink, highlightPurple, highlightBlue, highlightGreen],
   );
   const absoluteFillStyle = useResolveClassNames('absolute inset-0');
-  const [viewport, setViewport] = useState<ReaderViewport>();
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const [isTocOpen, setIsTocOpen] = useState(false);
-  const [isProgressOpen, setIsProgressOpen] = useState(false);
-  const [isTypographyOpen, setIsTypographyOpen] = useState(false);
-  const [isMarksOpen, setIsMarksOpen] = useState(false);
-  const bookmarkPullOrigin = useRef<
-    | {
-        snapshot: ReaderSnapshot;
-        input: Omit<ReaderBookmark, 'id' | 'bookId' | 'createdAt'>;
-        bookmarkId?: string;
-      }
-    | undefined
-  >(undefined);
-  const bookmarkUpdating = useRef(false);
-  const [bookmarkVisualOverride, setBookmarkVisualOverride] = useState<{
-    bookId?: string;
-    revisionId: number;
-    spreadIndex: number;
-    renderId?: number;
-    bookmarked: boolean;
-  }>();
-  const [footnote, setFootnote] = useState<ReaderFootnote>();
-  const [isFootnoteOpen, setIsFootnoteOpen] = useState(false);
-  const [imageViewer, setImageViewer] = useState<{
-    uri: string;
-    description: string;
-    origin: { x: number; y: number; width: number; height: number };
-    revisionId: number;
-    renderId?: number;
-  }>();
-  const pendingImageLinkPress = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [selectionState, setSelection] = useState<OwnedReaderTextSelection>();
-  const [isHighlighting, setIsHighlighting] = useState(false);
-  const [highlightToDelete, setHighlightToDelete] = useState<ReaderHighlight>();
-  const selectionRef = useRef<ReaderTextSelection | undefined>(undefined);
   const noteBlurTarget = useRef<View>(null);
-  const isHighlightingRef = useRef(false);
-  const [surfaceTransform, setSurfaceTransform] = useState<ReaderSurfaceTransform>();
-  const footnoteRequestRef = useRef(0);
   const errorToastKey = useRef<string | undefined>(undefined);
   const readerTheme = theme === 'dark' ? 'dark' : 'light';
   const animationStyle = useReaderStore((state) => state.animationStyle);
@@ -155,15 +89,6 @@ export default function ReaderScreen() {
   const showSystemStatusBar = useReaderStore((state) => state.showSystemStatusBar);
   const volumeKeysTurnPages = useReaderStore((state) => state.volumeKeysTurnPages);
   const spreadMode = useReaderStore((state) => state.typography.spreadMode);
-  const contentInsets = useMemo(
-    () => ({
-      top: reservedInsets.top + ReaderSurfaceTopSpacing,
-      right: reservedInsets.right,
-      bottom: reservedInsets.bottom + ReaderSurfaceBottomSpacing,
-      left: reservedInsets.left,
-    }),
-    [reservedInsets],
-  );
   const session = useReaderSession({
     bookId: bookId ?? '',
     viewport,
@@ -198,20 +123,6 @@ export default function ReaderScreen() {
       removeReady: t('reader.releaseToRemoveBookmark'),
     }),
     [t],
-  );
-  const resolvePageBookmark = useCallback(
-    (pageSnapshot: ReaderSnapshot, pageFrame: ReaderRenderFrame) => {
-      if (
-        bookmarkVisualOverride &&
-        bookmarkVisualOverride.bookId === pageSnapshot.bookId &&
-        bookmarkVisualOverride.revisionId === pageSnapshot.revisionId &&
-        bookmarkVisualOverride.spreadIndex === pageSnapshot.spreadIndex &&
-        bookmarkVisualOverride.renderId === pageSnapshot.renderId
-      )
-        return bookmarkVisualOverride.bookmarked;
-      return hasBookmarkOnRenderedPage(bookmarks, pageSnapshot, pageFrame);
-    },
-    [bookmarkVisualOverride, bookmarks],
   );
   const resolvePageHighlights = useMemo(
     () => createReaderHighlightOverlayResolver(highlights, highlightColors),
@@ -249,25 +160,70 @@ export default function ReaderScreen() {
   const currentHitEntries = isReady
     ? (session.runtime.getCurrentHitMap()?.entries ?? EmptyReaderHitEntries)
     : EmptyReaderHitEntries;
-  const selection =
-    selectionState?.revisionId === session.snapshot.revisionId &&
-    selectionState.spreadIndex === session.snapshot.spreadIndex &&
-    selectionState.renderId === session.snapshot.renderId
-      ? selectionState
-      : undefined;
-  const textSelection = selection?.kind === 'text' ? selection : undefined;
+  const panels = useReaderPanels(isReady);
+  const { toggleControls, setPanelOpen } = panels;
+  const {
+    selection,
+    textSelection,
+    activeHighlight,
+    selectionDrag,
+    selectionGesture,
+    selectionViewportRects,
+    clearSelection,
+    copySelection,
+    selectHighlightAtPoint,
+    getSelection,
+    replaceSelection,
+  } = useReaderSelection({
+    runtime: session.runtime,
+    snapshot: session.snapshot,
+    currentHitEntries,
+    highlights,
+    surfaceTransform,
+    enabled: isReady && !isSettling,
+    onSelectionStart: panels.hideControls,
+  });
+  const { isHighlighting, highlightToDelete, setHighlightToDelete, highlightSelection, deleteHighlight } =
+    useReaderHighlightActions({
+      bookId: bookId ?? '',
+      runtime: session.runtime,
+      snapshot: session.snapshot,
+      currentHitEntries,
+      selection,
+      activeHighlight,
+      clearSelection,
+      getSelection,
+      replaceSelection,
+      addHighlight,
+      removeHighlights,
+    });
+  const {
+    footnote,
+    isFootnoteOpen,
+    handleFootnoteOpenChange,
+    activeImageViewer,
+    hasImageViewer,
+    imageDoubleTapGesture,
+    openContentHit,
+    openFootnote,
+    openHyperlink,
+    closeImageViewer,
+    handleImageError,
+  } = useReaderContentActions({
+    runtime: session.runtime,
+    snapshot: session.snapshot,
+    surfaceTransform,
+    imageInteractionEnabled: isReady && !isSettling && !automaticNavigationActive && !selection,
+  });
   const canTurnWithVolumeKeys =
     isReady &&
     !isSettling &&
     !automaticNavigationActive &&
     !selection &&
-    !isTocOpen &&
-    !isProgressOpen &&
-    !isTypographyOpen &&
-    !isMarksOpen &&
+    !panels.activePanel &&
     !isFootnoteOpen &&
     !note.isOpen &&
-    !imageViewer;
+    !hasImageViewer;
   const handleVolumeKeyPress = useCallback(
     (direction: 'next' | 'previous') => {
       if (!canTurnWithVolumeKeys) return;
@@ -278,106 +234,18 @@ export default function ReaderScreen() {
   // Keep consuming volume keys while navigation is temporarily unavailable.
   useReaderVolumeKeys(volumeKeysTurnPages, handleVolumeKeyPress);
   const chapterHref = session.snapshot.position?.locator?.manifestHref ?? '';
-  const highlightRegions = useMemo(
-    () => createReaderHighlightRegions(currentHitEntries, highlights, chapterHref),
-    [chapterHref, currentHitEntries, highlights],
-  );
-  const activeHighlight = selection?.sourceRange
-    ? highlights.find(
-        (highlight) =>
-          highlight.href === chapterHref && containsHighlightRange(highlight.sourceRange, selection.sourceRange!),
-      )
-    : undefined;
-  const expandHighlightSelection = useCallback(
-    (value: ReaderTextSelection): ReaderTextSelection => {
-      const range = value.sourceRange;
-      if (!range) return value;
-      const highlight = highlights.find(
-        (item) => item.href === chapterHref && containsHighlightRange(item.sourceRange, range),
-      );
-      if (!highlight) return value;
-      const expanded = createReaderTextSelectionFromSourceRange(currentHitEntries, highlight.sourceRange);
-      return expanded ? { ...expanded, text: highlight.text, sourceRange: highlight.sourceRange } : value;
-    },
-    [chapterHref, currentHitEntries, highlights],
-  );
   const chapterTitle =
     session.snapshot.chapterTitle ?? session.metadata?.title ?? session.book?.title ?? t('reader.loadingChapter');
-  const currentLocator = session.snapshot.position?.locator;
-  const currentBookmark = currentLocator
-    ? bookmarks.find((bookmark) => isBookmarkOnPage(bookmark, currentLocator, currentHitEntries))
-    : undefined;
-  const beginBookmarkPull = useCallback(() => {
-    bookmarkPullOrigin.current = undefined;
-    if (bookmarkUpdating.current) return;
-    const snapshot = session.runtime.getSnapshot();
-    const locator = snapshot.position?.locator;
-    if (snapshot.phase !== 'ready' || !locator) return;
-    const entries = session.runtime.getCurrentHitMap()?.entries ?? [];
-    bookmarkPullOrigin.current = {
-      snapshot,
-      input: {
-        locator: {
-          ...locator,
-          sourceRange: undefined,
-          sourcePoint:
-            entries.find((entry) => entry.sourcePoint)?.sourcePoint ??
-            locator.sourcePoint ??
-            locator.sourceRange?.start,
-        },
-        label: snapshot.chapterTitle ?? chapterTitle,
-        text: entries
-          .map((entry) => entry.text)
-          .join('')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 180),
-      },
-      bookmarkId: bookmarks.find((bookmark) => isBookmarkOnPage(bookmark, locator, entries))?.id,
-    };
-    setControlsVisible(false);
-  }, [bookmarks, chapterTitle, session.runtime]);
-  const commitBookmarkPull = useCallback(async () => {
-    const origin = bookmarkPullOrigin.current;
-    bookmarkPullOrigin.current = undefined;
-    const latest = session.runtime.getSnapshot();
-    if (
-      !origin ||
-      bookmarkUpdating.current ||
-      latest.phase !== 'ready' ||
-      latest.bookId !== origin.snapshot.bookId ||
-      latest.revisionId !== origin.snapshot.revisionId ||
-      latest.spreadIndex !== origin.snapshot.spreadIndex ||
-      latest.renderId !== origin.snapshot.renderId
-    )
-      return;
-    bookmarkUpdating.current = true;
-    setBookmarkVisualOverride({
-      bookId: origin.snapshot.bookId,
-      revisionId: origin.snapshot.revisionId,
-      spreadIndex: origin.snapshot.spreadIndex,
-      renderId: origin.snapshot.renderId,
-      bookmarked: !origin.bookmarkId,
-    });
-    try {
-      if (origin.bookmarkId) {
-        await removeBookmark(origin.bookmarkId);
-        toast.show({ variant: 'success', label: t('reader.bookmarkRemoved') });
-      } else {
-        await addBookmark(origin.input);
-        toast.show({ variant: 'success', label: t('reader.bookmarkSaved') });
-      }
-      setBookmarkVisualOverride(undefined);
-    } catch {
-      setBookmarkVisualOverride(undefined);
-      toast.show({
-        variant: 'danger',
-        label: t(origin.bookmarkId ? 'reader.bookmarkRemoveFailed' : 'reader.bookmarkSaveFailed'),
-      });
-    } finally {
-      bookmarkUpdating.current = false;
-    }
-  }, [addBookmark, removeBookmark, session.runtime, t, toast]);
+  const { currentBookmark, resolvePageBookmark, beginBookmarkPull, commitBookmarkPull } = useReaderBookmarkActions({
+    runtime: session.runtime,
+    snapshot: session.snapshot,
+    currentHitEntries,
+    chapterTitle,
+    bookmarks,
+    addBookmark,
+    removeBookmark,
+    onPullStart: panels.hideControls,
+  });
   const bookmarkPull = useBookmarkPull({
     enabled:
       isReady &&
@@ -385,10 +253,7 @@ export default function ReaderScreen() {
       !isSettling &&
       !automaticNavigationActive &&
       !selection &&
-      !isTocOpen &&
-      !isProgressOpen &&
-      !isTypographyOpen &&
-      !isMarksOpen &&
+      !panels.activePanel &&
       !isFootnoteOpen &&
       !note.isOpen,
     bookmarked: Boolean(currentBookmark),
@@ -404,22 +269,8 @@ export default function ReaderScreen() {
     totalSpreads === undefined ? undefined : Math.round((currentSpread / Math.max(totalSpreads - 1, 1)) * 100);
   const initialPaperColor = pageBackgroundColor;
   const canvasBackground = isReady ? session.runtime.getBackgroundColor() : initialPaperColor;
-  const activeImageViewer =
-    imageViewer?.revisionId === session.snapshot.revisionId && imageViewer.renderId === session.snapshot.renderId
-      ? imageViewer
-      : undefined;
   const readerChromeVisible =
-    !activeImageViewer &&
-    (controlsVisible ||
-      isTocOpen ||
-      isProgressOpen ||
-      isTypographyOpen ||
-      isMarksOpen ||
-      Boolean(session.errorMessage));
-  const handleSafeAreaChange = useCallback<SafeAreaListenerProps['onChange']>(({ insets: nextInsets }) => {
-    setReservedInsets((current) => preserveLargestInsets(current, nextInsets));
-  }, []);
-
+    !activeImageViewer && (panels.controlsVisible || Boolean(panels.activePanel) || Boolean(session.errorMessage));
   useEffect(() => {
     if (highlightsError) toast.show({ variant: 'danger', label: t('reader.highlightLoadFailed') });
   }, [highlightsError, t, toast]);
@@ -431,20 +282,6 @@ export default function ReaderScreen() {
   useEffect(() => {
     if (readingTime.error) toast.show({ variant: 'danger', label: t('reader.readingTimeSaveFailed') });
   }, [readingTime.error, t, toast]);
-
-  useEffect(
-    () => () => {
-      if (activeImageViewer) deleteReaderImageFile(activeImageViewer.uri);
-    },
-    [activeImageViewer],
-  );
-
-  useEffect(
-    () => () => {
-      if (pendingImageLinkPress.current) clearTimeout(pendingImageLinkPress.current);
-    },
-    [],
-  );
 
   useEffect(() => {
     if (!session.errorMessage) {
@@ -464,22 +301,6 @@ export default function ReaderScreen() {
       description: session.errorMessage,
     });
   }, [bookId, session.errorMessage, t, toast]);
-
-  const handleLayout = useCallback((event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    setViewport((current) => {
-      const nextViewport = {
-        width: Math.round(width),
-        height: Math.round(height),
-        pixelRatio: PixelRatio.get(),
-      };
-      return current?.width === nextViewport.width && current.height === nextViewport.height ? current : nextViewport;
-    });
-  }, []);
-
-  const handleSurfaceTransform = useCallback((transform: ReaderSurfaceTransform) => {
-    setSurfaceTransform(transform);
-  }, []);
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
@@ -502,218 +323,6 @@ export default function ReaderScreen() {
     }, [router]),
   );
 
-  const clearSelection = useCallback(() => {
-    selectionRef.current = undefined;
-    setSelection(undefined);
-  }, []);
-
-  const displayPoint = useCallback(
-    (x: number, y: number) => {
-      return surfaceTransform?.toDisplayPoint(x, y) ?? { x, y };
-    },
-    [surfaceTransform],
-  );
-
-  const refineSelectionGeometry = useCallback(async () => {
-    const currentSelection = selectionRef.current;
-    if (!currentSelection) return;
-    const requestedSelection = expandHighlightSelection(currentSelection);
-    const revisionId = session.snapshot.revisionId;
-    const spreadIndex = session.snapshot.spreadIndex;
-    const renderId = session.snapshot.renderId;
-    selectionRef.current = requestedSelection;
-    setSelection({ ...requestedSelection, kind: 'text', revisionId, spreadIndex, renderId });
-    if (requestedSelection.geometryRequests.length === 0) return;
-    const groups = await Promise.all(
-      requestedSelection.geometryRequests.map((request) =>
-        session.runtime.resolveTextRangeGeometry(request).catch(() => []),
-      ),
-    );
-    if (
-      selectionRef.current !== requestedSelection ||
-      session.runtime.getSnapshot().revisionId !== revisionId ||
-      session.runtime.getSnapshot().spreadIndex !== spreadIndex ||
-      session.runtime.getSnapshot().renderId !== renderId
-    )
-      return;
-    const bounds = groups.flat().map((rect) => rect.bounds);
-    if (bounds.length === 0) return;
-    const refinedSelection = { ...requestedSelection, bounds };
-    selectionRef.current = refinedSelection;
-    setSelection({ ...refinedSelection, kind: 'text', revisionId, spreadIndex, renderId });
-  }, [
-    expandHighlightSelection,
-    session.runtime,
-    session.snapshot.renderId,
-    session.snapshot.revisionId,
-    session.snapshot.spreadIndex,
-  ]);
-
-  const selectionPageKey = `${session.snapshot.revisionId}:${session.snapshot.spreadIndex}:${session.snapshot.renderId}`;
-  const commitSelectionDrag = useCallback(
-    (range: ReaderTextSelectionRange | undefined, point: ReaderSelectionPoint, owner: string) => {
-      const snapshot = session.runtime.getSnapshot();
-      if (owner !== `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId}`) return;
-      const entries = session.runtime.getCurrentHitMap()?.entries;
-      const current = selectionRef.current;
-      if (!entries) return;
-      const display = displayPoint(point.x, point.y);
-      const next = range
-        ? createReaderTextSelectionFromRange(entries, range)
-        : current
-          ? updateReaderTextSelectionAtPoint(entries, current, display.x, display.y)
-          : undefined;
-      if (!next) {
-        clearSelection();
-        return;
-      }
-      selectionRef.current = next;
-      void refineSelectionGeometry();
-    },
-    [clearSelection, displayPoint, refineSelectionGeometry, session.runtime],
-  );
-  const selectionDrag = useReaderSelectionDrag({
-    entries: currentHitEntries,
-    transform: surfaceTransform,
-    selection: textSelection,
-    pageKey: selectionPageKey,
-    onCommit: commitSelectionDrag,
-  });
-  const {
-    begin: beginSelectionDrag,
-    move: moveSelectionDrag,
-    finish: finishSelectionDrag,
-    initialize: initializeSelectionDrag,
-  } = selectionDrag;
-  const hasSelection = Boolean(selection);
-  useEffect(() => {
-    if (hasSelection) return session.runtime.suspendBackgroundPagination();
-  }, [hasSelection, session.runtime]);
-
-  const beginSelection = useCallback(
-    (x: number, y: number) => {
-      const hitMap = session.runtime.getCurrentHitMap();
-      if (!hitMap) return;
-      const point = displayPoint(x, y);
-      const wordSelection = createReaderWordSelectionAtPoint(hitMap.entries, point.x, point.y);
-      if (!wordSelection) return;
-      const nextSelection = expandHighlightSelection(wordSelection);
-      initializeSelectionDrag(nextSelection);
-      selectionRef.current = nextSelection;
-      setSelection({
-        ...nextSelection,
-        kind: 'text',
-        revisionId: session.snapshot.revisionId,
-        spreadIndex: session.snapshot.spreadIndex,
-        renderId: session.snapshot.renderId,
-      });
-      setControlsVisible(false);
-    },
-    [
-      displayPoint,
-      expandHighlightSelection,
-      initializeSelectionDrag,
-      session.runtime,
-      session.snapshot.renderId,
-      session.snapshot.revisionId,
-      session.snapshot.spreadIndex,
-    ],
-  );
-
-  /* eslint-disable react-hooks/refs -- Gesture callbacks execute on events, outside React rendering. */
-  const selectionGesture = useMemo(
-    () =>
-      configureReaderSelectionGesture(Gesture.Pan())
-        .enabled(isReady && !isSettling)
-        .averageTouches(true)
-        .cancelsTouchesInView(true)
-        .onStart((event) => {
-          'worklet';
-          beginSelectionDrag('extend', event.x, event.y);
-          scheduleOnRN(beginSelection, event.x, event.y);
-        })
-        .onUpdate((event) => {
-          'worklet';
-          moveSelectionDrag('extend', event.x, event.y);
-        })
-        .onEnd((event, success) => {
-          'worklet';
-          moveSelectionDrag('extend', event.x, event.y);
-          finishSelectionDrag(!success);
-        })
-        .onFinalize((_event, success) => {
-          'worklet';
-          if (!success) finishSelectionDrag(true);
-        }),
-    [beginSelection, beginSelectionDrag, finishSelectionDrag, isReady, isSettling, moveSelectionDrag],
-  );
-  /* eslint-enable react-hooks/refs */
-  const handleReadingDoubleTap = useCallback(
-    (x: number, y: number) => {
-      if (!isReady || isSettling || automaticNavigationActive || selection) return;
-      const hitMap = session.runtime.getCurrentHitMap();
-      const point = displayPoint(x, y);
-      const hitIndex = hitMap ? findReaderHitIndex(hitMap.entries, point.x, point.y) : undefined;
-      const hit = hitIndex === undefined ? undefined : hitMap?.entries[hitIndex];
-      if (!hit?.imageSource) return;
-      if (pendingImageLinkPress.current) {
-        clearTimeout(pendingImageLinkPress.current);
-        pendingImageLinkPress.current = undefined;
-      }
-      const bytes = session.runtime.getCurrentImageBytes(hit.imageSource);
-      if (!bytes) {
-        toast.show({ variant: 'danger', label: t('reader.imageUnavailable') });
-        return;
-      }
-      try {
-        const origin = surfaceTransform?.toViewportPoint(hit.bounds.x, hit.bounds.y) ?? {
-          x: hit.bounds.x,
-          y: hit.bounds.y,
-        };
-        setImageViewer({
-          uri: createReaderImageFile(hit.imageSource, bytes),
-          description: hit.imageAlt || t('reader.imageViewer'),
-          origin: {
-            x: origin.x,
-            y: origin.y,
-            width: hit.bounds.width * (surfaceTransform?.scale ?? 1),
-            height: hit.bounds.height * (surfaceTransform?.scale ?? 1),
-          },
-          revisionId: session.snapshot.revisionId,
-          renderId: session.snapshot.renderId,
-        });
-      } catch {
-        toast.show({ variant: 'danger', label: t('reader.imageUnavailable') });
-      }
-    },
-    [
-      automaticNavigationActive,
-      displayPoint,
-      isReady,
-      isSettling,
-      selection,
-      session.runtime,
-      session.snapshot.renderId,
-      session.snapshot.revisionId,
-      surfaceTransform,
-      t,
-      toast,
-    ],
-  );
-  /* eslint-disable react-hooks/refs */
-  const imageDoubleTapGesture = useMemo(
-    () =>
-      Gesture.Tap()
-        .enabled(isReady && !isSettling && !automaticNavigationActive && !selection)
-        .numberOfTaps(2)
-        .maxDistance(24)
-        .runOnJS(true)
-        .onEnd((event, success) => {
-          if (success) handleReadingDoubleTap(event.x, event.y);
-        }),
-    [automaticNavigationActive, handleReadingDoubleTap, isReady, isSettling, selection],
-  );
-  /* eslint-enable react-hooks/refs */
   const readingGesture = useMemo(
     () =>
       Gesture.Simultaneous(
@@ -723,65 +332,6 @@ export default function ReaderScreen() {
     [bookmarkPull.gesture, imageDoubleTapGesture, pageTurnGesture, selectionGesture],
   );
 
-  const openFootnote = useCallback(
-    async (key: string, pending = false) => {
-      const request = footnoteRequestRef.current + 1;
-      footnoteRequestRef.current = request;
-      setFootnote(undefined);
-      setIsFootnoteOpen(true);
-      let lastError: unknown;
-      try {
-        const attempts = pending ? 8 : 1;
-        for (let attempt = 0; attempt < attempts; attempt += 1) {
-          try {
-            const nextFootnote = await session.runtime.readFootnote(key);
-            if (nextFootnote) {
-              if (footnoteRequestRef.current === request) setFootnote(nextFootnote);
-              return;
-            }
-          } catch (error) {
-            lastError = error;
-          }
-          if (attempt + 1 < attempts) await delay(160);
-        }
-        throw lastError ?? new Error(t('reader.footnoteUnavailable'));
-      } catch (error) {
-        if (footnoteRequestRef.current !== request) return;
-        setIsFootnoteOpen(false);
-        toast.show({
-          variant: 'danger',
-          label: t('reader.footnoteUnavailable'),
-          description: error instanceof Error ? error.message : undefined,
-        });
-      }
-    },
-    [session.runtime, t, toast],
-  );
-
-  const openHyperlink = useCallback(
-    async (href: string) => {
-      try {
-        if (isExternalHref(href)) {
-          const externalUrl = href.startsWith('//') ? `https:${href}` : href;
-          const scheme = externalUrl.slice(0, externalUrl.indexOf(':')).toLowerCase();
-          if (!AllowedExternalLinkSchemes.has(scheme) || !(await Linking.canOpenURL(externalUrl))) {
-            throw new Error(t('reader.linkSchemeUnsupported'));
-          }
-          await Linking.openURL(externalUrl);
-        } else {
-          await session.runtime.goToToc(href);
-        }
-      } catch (error) {
-        toast.show({
-          variant: 'danger',
-          label: t('reader.linkOpenFailed'),
-          description: error instanceof Error ? error.message : undefined,
-        });
-      }
-    },
-    [session.runtime, t, toast],
-  );
-
   const handleReadingPress = useCallback(
     (x: number, y: number) => {
       if (!viewport || !isReady || isSettling || bookmarkPull.distance.get() > 0) return;
@@ -789,259 +339,46 @@ export default function ReaderScreen() {
         clearSelection();
         return;
       }
+      if (selectHighlightAtPoint(x, y)) return;
       const hitMap = session.runtime.getCurrentHitMap();
-      const point = displayPoint(x, y);
-      const region = highlightRegions.find(({ selection: highlightedSelection }) =>
-        highlightedSelection.bounds.some(
-          (bounds) =>
-            point.x >= bounds.x &&
-            point.x <= bounds.x + bounds.width &&
-            point.y >= bounds.y &&
-            point.y <= bounds.y + bounds.height,
-        ),
-      );
-      if (region) {
-        const nextSelection = {
-          ...region.selection,
-          sourceRange: region.highlight.sourceRange,
-          text: region.highlight.text,
-        };
-        selectionRef.current = nextSelection;
-        setSelection({
-          ...nextSelection,
-          kind: 'highlight',
-          revisionId: session.snapshot.revisionId,
-          spreadIndex: session.snapshot.spreadIndex,
-          renderId: session.snapshot.renderId,
-        });
-        setControlsVisible(false);
-        return;
-      }
+      const point = surfaceTransform?.toDisplayPoint(x, y) ?? { x, y };
       const hitIndex = hitMap ? findReaderHitIndex(hitMap.entries, point.x, point.y) : undefined;
       const hit = hitIndex === undefined ? undefined : hitMap?.entries[hitIndex];
-      if (hit?.footnoteKey) {
-        void openFootnote(hit.footnoteKey, hit.footnotePending);
-        return;
-      }
-      if (hit?.imageSource) {
-        if (hit.href) {
-          if (pendingImageLinkPress.current) clearTimeout(pendingImageLinkPress.current);
-          pendingImageLinkPress.current = setTimeout(() => {
-            pendingImageLinkPress.current = undefined;
-            void openHyperlink(hit.href!);
-          }, 300);
-        }
-        return;
-      }
-      if (hit?.href) {
-        void openHyperlink(hit.href);
-        return;
-      }
-      if (x < viewport.width * 0.3) {
-        void previous();
-      } else if (x > viewport.width * 0.7) {
-        void next();
-      } else {
-        setControlsVisible((value) => !value);
-      }
+      if (openContentHit(hit)) return;
+      if (x < viewport.width * 0.3) void previous();
+      else if (x > viewport.width * 0.7) void next();
+      else toggleControls();
     },
     [
-      bookmarkPull.distance,
-      clearSelection,
-      displayPoint,
-      highlightRegions,
+      viewport,
       isReady,
       isSettling,
-      next,
-      openFootnote,
-      openHyperlink,
-      previous,
+      bookmarkPull.distance,
       selection,
-      session.runtime,
-      session.snapshot,
-      viewport,
-    ],
-  );
-
-  const copySelection = useCallback(async () => {
-    if (!selection?.text) return;
-    await Clipboard.setStringAsync(selection.text);
-    toast.show({ variant: 'success', label: t('reader.selectionCopied') });
-    clearSelection();
-  }, [clearSelection, selection, t, toast]);
-
-  const highlightSelection = useCallback(
-    async (color?: ReaderHighlightColor, style?: ReaderHighlightStyle) => {
-      const href = session.snapshot.position?.locator?.manifestHref;
-      if (isHighlightingRef.current) return;
-      if (!selection || !href || !bookId) {
-        toast.show({ variant: 'danger', label: t('reader.highlightUnavailable') });
-        return;
-      }
-      isHighlightingRef.current = true;
-      setIsHighlighting(true);
-      try {
-        const sourceRange = await resolveReaderSelectionSourceRange(session.runtime, selection, href);
-        if (!sourceRange) {
-          toast.show({ variant: 'danger', label: t('reader.highlightUnavailable') });
-          return;
-        }
-        const selected = selectionRef.current;
-        const operation = addHighlight({
-          href,
-          sourceRange,
-          text: selection.text,
-          color: color ?? activeHighlight?.color ?? 'yellow',
-          style: style ?? activeHighlight?.style ?? 'highlight',
-        });
-        const saved = await operation;
-        if (!color && !style && selectionRef.current === selected) clearSelection();
-        const latest = session.runtime.getSnapshot();
-        if (
-          (color || style) &&
-          selectionRef.current === selected &&
-          latest.revisionId === selection.revisionId &&
-          latest.spreadIndex === selection.spreadIndex &&
-          latest.renderId === selection.renderId
-        ) {
-          const expanded = createReaderTextSelectionFromSourceRange(currentHitEntries, saved.sourceRange);
-          if (expanded) {
-            const updated = { ...selection, ...expanded, sourceRange: saved.sourceRange, text: saved.text };
-            selectionRef.current = updated;
-            setSelection(updated);
-          }
-        }
-      } catch (error) {
-        toast.show({
-          variant: 'danger',
-          label: t('reader.highlightSaveFailed'),
-          description: error instanceof Error ? error.message : undefined,
-        });
-      } finally {
-        isHighlightingRef.current = false;
-        setIsHighlighting(false);
-      }
-    },
-    [
-      activeHighlight,
-      addHighlight,
-      bookId,
       clearSelection,
-      currentHitEntries,
-      selection,
+      selectHighlightAtPoint,
       session.runtime,
-      session.snapshot.position?.locator?.manifestHref,
-      t,
-      toast,
+      surfaceTransform,
+      openContentHit,
+      previous,
+      next,
+      toggleControls,
     ],
   );
 
-  const deleteHighlight = useCallback(
-    async (highlight = activeHighlight) => {
-      if (!highlight || isHighlightingRef.current) return;
-      isHighlightingRef.current = true;
-      setIsHighlighting(true);
-      // Close the transient controls in the same update as the optimistic removal.
-      clearSelection();
-      try {
-        await removeHighlights([highlight.id]);
-        setHighlightToDelete(undefined);
-        toast.show({ variant: 'success', label: t('reader.highlightRemoved') });
-      } catch (error) {
-        toast.show({
-          variant: 'danger',
-          label: t('reader.highlightSaveFailed'),
-          description: error instanceof Error ? error.message : undefined,
-        });
-      } finally {
-        isHighlightingRef.current = false;
-        setIsHighlighting(false);
-      }
-    },
-    [activeHighlight, clearSelection, removeHighlights, t, toast],
-  );
-
-  const selectionViewportRects = useMemo(() => {
-    if (!selection || !surfaceTransform) return [];
-    return selection.bounds.map((bounds) => {
-      const origin = surfaceTransform.toViewportPoint(bounds.x, bounds.y);
-      return {
-        x: origin.x,
-        y: origin.y,
-        width: bounds.width * surfaceTransform.scale,
-        height: bounds.height * surfaceTransform.scale,
-      };
-    });
-  }, [selection, surfaceTransform]);
   const interactiveHits = useMemo(
     () => (isReady && !selection ? currentHitEntries.filter((entry) => entry.footnoteKey || entry.href) : []),
     [currentHitEntries, isReady, selection],
   );
 
-  const handleFootnoteOpenChange = useCallback((value: boolean) => {
-    setIsFootnoteOpen(value);
-    if (!value) footnoteRequestRef.current += 1;
-  }, []);
-
   const handleTabSelect = useCallback(
     (key: string) => {
-      setIsMarksOpen(key === 'marks');
-      if (key === 'marks') {
-        setIsTocOpen(false);
-        setIsProgressOpen(false);
-        setIsTypographyOpen(false);
-        clearSelection();
-        return;
-      }
-      if (key === 'toc') {
-        setIsProgressOpen(false);
-        setIsTypographyOpen(false);
-        setIsTocOpen(true);
-        return;
-      }
-      if (key === 'progress') {
-        setIsTocOpen(false);
-        setIsTypographyOpen(false);
-        setIsProgressOpen(true);
-        return;
-      }
-      if (key === 'typography') {
-        setIsTocOpen(false);
-        setIsProgressOpen(false);
-        setIsTypographyOpen(true);
+      if (key === 'toc' || key === 'marks' || key === 'progress' || key === 'typography') {
+        setPanelOpen(key, true);
+        if (key === 'marks') clearSelection();
       }
     },
-    [clearSelection],
-  );
-
-  const tabItems = useMemo(
-    () =>
-      [
-        {
-          key: 'toc',
-          accessibilityLabel: t('reader.openToc'),
-          name: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'list' },
-          isDisabled: !isReady,
-        },
-        {
-          key: 'marks',
-          accessibilityLabel: t('reader.openMarks'),
-          name: { ios: 'bookmark', android: 'bookmarks', web: 'bookmarks' },
-          isDisabled: !isReady,
-        },
-        {
-          key: 'progress',
-          accessibilityLabel: t('reader.openProgress'),
-          name: { ios: 'chart.bar', android: 'timeline', web: 'timeline' },
-          isDisabled: !isReady,
-        },
-        {
-          key: 'typography',
-          accessibilityLabel: t('reader.openTypography'),
-          name: { ios: 'textformat.size', android: 'format_size', web: 'format_size' },
-        },
-      ] as const,
-    [isReady, t],
+    [clearSelection, setPanelOpen],
   );
 
   const statusText = useMemo(() => {
@@ -1255,18 +592,8 @@ export default function ReaderScreen() {
 
       {readerChromeVisible && (
         <IconTabBar
-          activeKey={
-            isTocOpen
-              ? 'toc'
-              : isProgressOpen
-                ? 'progress'
-                : isTypographyOpen
-                  ? 'typography'
-                  : isMarksOpen
-                    ? 'marks'
-                    : undefined
-          }
-          items={tabItems}
+          activeKey={panels.activePanel}
+          items={panels.tabItems}
           onSelect={handleTabSelect}
           safeAreaInsets={reservedInsets}
         />
@@ -1280,15 +607,15 @@ export default function ReaderScreen() {
       )}
 
       <TocDrawer
-        isOpen={isTocOpen}
-        onOpenChange={setIsTocOpen}
+        isOpen={panels.activePanel === 'toc'}
+        onOpenChange={(open) => panels.setPanelOpen('toc', open)}
         runtime={session.runtime}
         snapshot={session.snapshot}
         toc={session.toc}
       />
       <MarksDrawer
-        isOpen={isMarksOpen}
-        onOpenChange={setIsMarksOpen}
+        isOpen={panels.activePanel === 'marks'}
+        onOpenChange={(open) => panels.setPanelOpen('marks', open)}
         runtime={session.runtime}
         toc={session.toc}
         bookmarks={bookmarks}
@@ -1304,12 +631,15 @@ export default function ReaderScreen() {
       />
       <ProgressDrawer
         bookId={bookId ?? ''}
-        isOpen={isProgressOpen}
-        onOpenChange={setIsProgressOpen}
+        isOpen={panels.activePanel === 'progress'}
+        onOpenChange={(open) => panels.setPanelOpen('progress', open)}
         runtime={session.runtime}
         snapshot={session.snapshot}
       />
-      <TypographyDrawer isOpen={isTypographyOpen} onOpenChange={setIsTypographyOpen} />
+      <TypographyDrawer
+        isOpen={panels.activePanel === 'typography'}
+        onOpenChange={(open) => panels.setPanelOpen('typography', open)}
+      />
       <FootnoteDrawer footnote={footnote} isOpen={isFootnoteOpen} onOpenChange={handleFootnoteOpenChange} />
       {activeImageViewer && viewport && (
         <ImageViewer
@@ -1319,11 +649,8 @@ export default function ReaderScreen() {
           viewport={viewport}
           description={activeImageViewer.description}
           closeLabel={t('reader.closeImageViewer')}
-          onClose={() => setImageViewer(undefined)}
-          onError={() => {
-            setImageViewer(undefined);
-            toast.show({ variant: 'danger', label: t('reader.imageUnavailable') });
-          }}
+          onClose={closeImageViewer}
+          onError={handleImageError}
         />
       )}
     </View>
@@ -1333,32 +660,4 @@ export default function ReaderScreen() {
 function ReaderKeepAwake() {
   useKeepAwake();
   return null;
-}
-
-function isExternalHref(href: string): boolean {
-  if (href.startsWith('//')) return true;
-  const pathEnd = Math.min(...[href.indexOf('?'), href.indexOf('#')].filter((index) => index >= 0), href.length);
-  const colon = href.slice(0, pathEnd).indexOf(':');
-  return colon > 0 && /^[A-Za-z][A-Za-z0-9+.-]*$/.test(href.slice(0, colon));
-}
-
-const AllowedExternalLinkSchemes = new Set(['http', 'https', 'mailto', 'tel', 'sms']);
-
-function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-
-function preserveLargestInsets(current: EdgeInsets, next: EdgeInsets): EdgeInsets {
-  const preserved = {
-    top: Math.max(current.top, next.top),
-    right: Math.max(current.right, next.right),
-    bottom: Math.max(current.bottom, next.bottom),
-    left: Math.max(current.left, next.left),
-  };
-  return preserved.top === current.top &&
-    preserved.right === current.right &&
-    preserved.bottom === current.bottom &&
-    preserved.left === current.left
-    ? current
-    : preserved;
 }

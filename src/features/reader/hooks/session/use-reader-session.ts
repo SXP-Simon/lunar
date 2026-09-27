@@ -17,15 +17,15 @@ import {
 } from '@/reader/native';
 import { useFontStore, useReaderStore } from '@/stores';
 import { i18n } from '@/i18n';
-import { readReaderBook } from '../infrastructure/expo-reader-book-loader';
-import { readStoredFontBytes } from '../infrastructure/expo-reader-font-storage';
+import { readReaderBook } from '../../infrastructure/expo-reader-book-loader';
+import { readStoredFontBytes } from '../../infrastructure/expo-reader-font-storage';
 import {
   repairDanglingReaderFonts,
   resolveReaderFontFace,
   resolveReaderFontFaces,
-} from '../domain/reader-font-face';
-import type { ReaderReadingState } from '../domain/reader-reading-state';
-import { findReaderReadingState, saveReaderReadingState } from '../services/reading-state-service';
+} from '../../domain/reader-font-face';
+import type { ReaderReadingState } from '../../domain/reader-reading-state';
+import { findReaderReadingState, saveReaderReadingState } from '../../services/reading-state-service';
 
 export interface ReaderSessionOptions {
   readonly bookId: string;
@@ -38,11 +38,7 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
   const typography = useReaderStore((state) => state.typography);
   const chromeFont = typography.fonts.chrome;
   const fonts = useFontStore((state) => state.fonts);
-  const runtime = useMemo(
-    () =>
-      createReaderRuntime(),
-    [],
-  );
+  const runtime = useMemo(() => createReaderRuntime(), []);
   const [book, setBook] = useState<LibraryBookRecord>();
   const [openResult, setOpenResult] = useState<{
     bookId: string;
@@ -59,43 +55,44 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
   const layoutQueue = useRef(Promise.resolve());
   const sessionMounted = useRef(false);
   const saveQueue = useRef(Promise.resolve());
-  const subscribe = useCallback(
-    (listener: () => void) => runtime.subscribe(listener),
-    [runtime],
-  );
+  const subscribe = useCallback((listener: () => void) => runtime.subscribe(listener), [runtime]);
   const getSnapshot = useCallback(() => runtime.getSnapshot(), [runtime]);
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const currentBook = book?.id === bookId ? book : undefined;
   const currentOpenResult = openResult?.bookId === bookId ? openResult.result : undefined;
-  const persistSnapshot = useCallback((currentSnapshot: ReaderSnapshot) => {
-    if (
-      !currentBook ||
-      currentSnapshot.bookId !== currentBook.id ||
-      currentSnapshot.phase !== 'ready' ||
-      !currentSnapshot.position
-    ) {
-      return;
-    }
-    const state: ReaderReadingState = {
-      bookId: currentBook.id,
-      position: currentSnapshot.position,
-      totalSpreads: currentSnapshot.totalSpreads,
-      typography,
-      theme,
-      updatedAt: Date.now(),
-    };
-    const queuedAt = readerPerformanceStart();
-    saveQueue.current = saveQueue.current
-      .then(async () => {
-        if (queuedAt !== undefined) readerPerformanceActivity('reading-state.queue', performance.now() - queuedAt);
-        const startedAt = readerPerformanceStart();
-        try { await saveReaderReadingState(state); }
-        finally {
-          if (startedAt !== undefined) readerPerformanceActivity('reading-state.save', performance.now() - startedAt);
-        }
-      })
-      .catch(() => undefined);
-  }, [currentBook, saveQueue, theme, typography]);
+  const persistSnapshot = useCallback(
+    (currentSnapshot: ReaderSnapshot) => {
+      if (
+        !currentBook ||
+        currentSnapshot.bookId !== currentBook.id ||
+        currentSnapshot.phase !== 'ready' ||
+        !currentSnapshot.position
+      ) {
+        return;
+      }
+      const state: ReaderReadingState = {
+        bookId: currentBook.id,
+        position: currentSnapshot.position,
+        totalSpreads: currentSnapshot.totalSpreads,
+        typography,
+        theme,
+        updatedAt: Date.now(),
+      };
+      const queuedAt = readerPerformanceStart();
+      saveQueue.current = saveQueue.current
+        .then(async () => {
+          if (queuedAt !== undefined) readerPerformanceActivity('reading-state.queue', performance.now() - queuedAt);
+          const startedAt = readerPerformanceStart();
+          try {
+            await saveReaderReadingState(state);
+          } finally {
+            if (startedAt !== undefined) readerPerformanceActivity('reading-state.save', performance.now() - startedAt);
+          }
+        })
+        .catch(() => undefined);
+    },
+    [currentBook, saveQueue, theme, typography],
+  );
 
   useEffect(() => {
     let active = true;
@@ -135,13 +132,7 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
   }, [bookId]);
 
   useEffect(() => {
-    if (
-      !currentBook ||
-      readingState?.bookId !== bookId ||
-      !viewport ||
-      viewport.width < 1 ||
-      viewport.height < 1
-    ) {
+    if (!currentBook || readingState?.bookId !== bookId || !viewport || viewport.width < 1 || viewport.height < 1) {
       return;
     }
     const nextLayoutKey = [
@@ -166,8 +157,7 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
         if (cancelled || layoutKey.current === nextLayoutKey) {
           return;
         }
-        const fontFaces = await resolveReaderFontFaces(typography, fonts, readStoredFontBytes)
-          .catch(() => undefined);
+        const fontFaces = await resolveReaderFontFaces(typography, fonts, readStoredFontBytes).catch(() => undefined);
         if (cancelled) {
           return;
         }
@@ -279,8 +269,5 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme }: Rea
 }
 
 function createReaderRuntime(): LunarReaderRuntime {
-  return new LunarReaderRuntime(
-    (request) => readReaderBook(request.fileUri),
-    new RitoNativePaginationBackend(),
-  );
+  return new LunarReaderRuntime((request) => readReaderBook(request.fileUri), new RitoNativePaginationBackend());
 }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useReaderVolumeKeys } from '../../src/features/reader/hooks/use-reader-volume-keys';
+import { useReaderVolumeKeys } from '../../src/features/reader/hooks/controls/use-reader-volume-keys';
 import { subscribeToReaderVolumeKeys } from '../../src/features/reader/infrastructure/reader-volume-keys';
 
 type Direction = 'next' | 'previous';
