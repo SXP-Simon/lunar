@@ -2,6 +2,7 @@ import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
 import { unzipSync, zipSync } from 'fflate';
 
+import { sanitizeEpubBytes } from '@/reader/rito/epub-sanitizer';
 import type {
   BookFileService,
   BookImportProgressHandler,
@@ -29,18 +30,15 @@ export class ExpoBookFileService implements BookFileService {
       throw new Error('The selected EPUB file cannot be read.');
     }
 
-    const data = await source.arrayBuffer();
+    const rawData = await source.arrayBuffer();
+    const data = sanitizeEpubBytes(rawData);
     onProgress?.(0.18);
     const fileSize = data.byteLength;
     if (fileSize > MAX_EPUB_ARCHIVE_BYTES) {
-      throw new RangeError(
-        `The selected EPUB exceeds the ${MAX_EPUB_ARCHIVE_BYTES} byte limit.`,
-      );
+      throw new RangeError(`The selected EPUB exceeds the ${MAX_EPUB_ARCHIVE_BYTES} byte limit.`);
     }
 
-    const sha256 = bytesToHex(
-      await digest(CryptoDigestAlgorithm.SHA256, new Uint8Array(data)),
-    );
+    const sha256 = bytesToHex(await digest(CryptoDigestAlgorithm.SHA256, new Uint8Array(data)));
     onProgress?.(0.28);
     const bookId = sha256;
     const booksDirectory = new Directory(Paths.document, 'books');
@@ -79,7 +77,9 @@ export class ExpoBookFileService implements BookFileService {
     const archiveEntries = Object.fromEntries(
       entries
         .slice()
-        .sort((left, right) => (left.path === 'mimetype' ? -1 : right.path === 'mimetype' ? 1 : left.path.localeCompare(right.path)))
+        .sort((left, right) =>
+          left.path === 'mimetype' ? -1 : right.path === 'mimetype' ? 1 : left.path.localeCompare(right.path),
+        )
         .map((entry) => [entry.path, entry.bytes]),
     );
     target.write(zipSync(archiveEntries, { level: 0 }));
@@ -125,11 +125,11 @@ export class ExpoBookFileService implements BookFileService {
 }
 
 async function extractEntries(
-  data: ArrayBuffer,
+  data: ArrayBuffer | Uint8Array,
   entriesDirectory: Directory,
   onProgress?: BookImportProgressHandler,
 ): Promise<readonly { path: string; uri: string; bytes: Uint8Array; sha256: string }[]> {
-  const archive = unzipSync(new Uint8Array(data));
+  const archive = unzipSync(data instanceof Uint8Array ? data : new Uint8Array(data));
   const archiveEntries = Object.entries(archive);
   const names = archiveEntries.map(([path]) => path);
   if (names.length > MAX_ENTRIES) throw new Error('The EPUB archive contains too many entries.');
@@ -191,7 +191,5 @@ function bytesToHex(value: ArrayBuffer): string {
 
 function sanitizeCoverExtension(extension: string): string {
   const normalized = extension.toLocaleLowerCase().replace(/[^a-z\d]/g, '');
-  return /^(?:avif|bmp|gif|ico|img|jpg|png|svg|tif|tiff|webp)$/.test(normalized)
-    ? normalized
-    : 'img';
+  return /^(?:avif|bmp|gif|ico|img|jpg|png|svg|tif|tiff|webp)$/.test(normalized) ? normalized : 'img';
 }
