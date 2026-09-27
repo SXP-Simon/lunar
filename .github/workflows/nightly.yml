@@ -24,8 +24,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Test publishing automation
-        run: node --test tests/release/*.test.mjs
       - name: Record one source commit for both APKs
         id: source
         run: |

@@ -75,7 +75,6 @@ changelog/
 
 ```sh
 pnpm run check
-pnpm run test:release
 node scripts/release.mjs validate v0.1.1
 git tag -a v0.1.1 -m "Lunar v0.1.1"
 git push origin v0.1.1

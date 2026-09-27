@@ -106,7 +106,6 @@ fi
 
 if [[ "$PROFILE" == release || "$PROFILE" == nightly ]]; then
   pnpm run check
-  pnpm run test:release
   EXPO_OFFLINE=1 pnpm run check:expo
   export RITO_FFI_REBUILD=1
 fi

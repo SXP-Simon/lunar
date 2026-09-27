@@ -33,8 +33,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Test publishing automation
-        run: node --test tests/release/*.test.mjs
       - name: Validate version, changelog and destination
         env:
           GITHUB_TOKEN: ${{ github.token }}

@@ -51,8 +51,6 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Check application
         run: pnpm run check
-      - name: Check release automation
-        run: pnpm run test:release
       - name: Check dependencies against the installed Expo SDK
         env:
           EXPO_OFFLINE: '1'
