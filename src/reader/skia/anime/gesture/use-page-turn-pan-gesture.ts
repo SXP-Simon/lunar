@@ -151,8 +151,9 @@ export function usePageTurnPanGesture({
   const gesture = useMemo(
     () => Gesture.Pan()
       .activeOffsetX([-6, 6])
-      .failOffsetY([-12, 12])
+      .failOffsetY([-36, 36])
       .maxPointers(1)
+      .cancelsTouchesInView(true)
       .onStart((event) => {
         'worklet';
         if (gestureBlocked) {

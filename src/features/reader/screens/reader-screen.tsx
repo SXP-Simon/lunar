@@ -314,7 +314,9 @@ export default function ReaderScreen() {
     () =>
       Gesture.Simultaneous(
         imageDoubleTapGesture,
-        Gesture.Exclusive(selectionGesture, Gesture.Race(bookmarkPull.gesture, pageTurnGesture)),
+        pageTurnGesture,
+        bookmarkPull.gesture,
+        selectionGesture,
       ),
     [bookmarkPull.gesture, imageDoubleTapGesture, pageTurnGesture, selectionGesture],
   );
