@@ -410,6 +410,9 @@ class RitoNativePublication implements LoadedReaderPublication {
           () =>
             `direction=${direction} visibleIndex=${this.visibleIndex} artifact=${describeArtifact(current)} error=${describeError(error)}`,
         );
+        if (this.closed || String(error).includes('session') || String(error).includes('disposed')) {
+          return;
+        }
         throw error;
       }
       const nextIndex = this.visibleIndex + (direction === 'next' ? 1 : -1);
@@ -569,6 +572,9 @@ class RitoNativePublication implements LoadedReaderPublication {
         if (candidate) await this.session.releaseArtifact(candidate.artifactId).catch(() => undefined);
         if (sourceSpreadIndex !== currentSpreadIndex) this.rebaseVisibleSpreadIndex(currentSpreadIndex);
         readerDiagnostic('turn.backend.prepare.error', () => `direction=${direction} error=${describeError(error)}`);
+        if (this.closed || String(error).includes('session') || String(error).includes('disposed')) {
+          return undefined;
+        }
         throw error;
       }
     });
@@ -715,24 +721,35 @@ class RitoNativePublication implements LoadedReaderPublication {
     const source = this.currentArtifact;
     if (!source) return undefined;
     const resolvedHref = resolvePublicationHref(source.locator.href, href, this.spine);
-    const base = resolvedHref.split('#', 1)[0];
-    const target = findTocTarget(this.tocValue, resolvedHref, base);
-    const targetBase = target?.split('#', 1)[0] ?? base;
-    const navigationHref = target ?? resolvedHref;
-    const targetAnchor = navigationHref.includes('#')
-      ? navigationHref.slice(navigationHref.indexOf('#') + 1)
+    const targetBase = resolvedHref.split('#', 1)[0];
+    const rawAnchor = resolvedHref.includes('#')
+      ? resolvedHref.slice(resolvedHref.indexOf('#') + 1)
       : undefined;
+    let targetAnchor = rawAnchor ? safeDecode(rawAnchor) : undefined;
+
+    if (targetAnchor === undefined) {
+      const tocTarget = findTocTarget(this.tocValue, resolvedHref, targetBase);
+      if (tocTarget?.includes('#')) {
+        targetAnchor = safeDecode(tocTarget.slice(tocTarget.indexOf('#') + 1));
+      }
+    }
+
     const existing = this.findArtifactForTocTarget(targetBase, resolvedHref, targetAnchor);
     if (existing !== undefined && existing === this.visibleIndex) return existing;
 
-    const targetSpineIndex = this.spine.findIndex((item) => item.href === targetBase);
+    const targetSpineIndex = this.spine.findIndex(
+      (item) => item.href === targetBase || safeDecode(item.href) === safeDecode(targetBase),
+    );
     if (targetSpineIndex < 0 || this.session.currentVisibleArtifactId === undefined) return undefined;
+    const canonicalTargetBase = this.spine[targetSpineIndex]!.href;
+
     const targetIndex = this.visibleIndex;
+    const sourceSlot = this.slots.get(targetIndex);
     const artifact = await this.session.requestArtifact({
       ...this.artifactRequest,
       requestId: this.session.nextRequestId,
       locator: {
-        href: targetBase,
+        href: canonicalTargetBase,
         anchorId: targetAnchor,
       },
     });
@@ -740,12 +757,22 @@ class RitoNativePublication implements LoadedReaderPublication {
       'toc.candidate',
       () => `href=${href} targetSpread=${targetIndex} artifact=${describeArtifact(artifact)}`,
     );
-    await this.prepare(artifact, targetIndex, true);
-    await this.session.adoptForeground({
-      sessionId: artifact.sessionId,
-      expectedVisibleArtifactId: source.artifactId,
-      candidateArtifactId: artifact.artifactId,
-    });
+    try {
+      await this.prepare(artifact, targetIndex, true);
+      const preparedSlot = this.slots.get(targetIndex);
+      if (sourceSlot) this.slots.set(targetIndex, sourceSlot);
+      await this.session.adoptForeground({
+        sessionId: artifact.sessionId,
+        expectedVisibleArtifactId: source.artifactId,
+        candidateArtifactId: artifact.artifactId,
+      });
+      if (preparedSlot) this.slots.set(targetIndex, preparedSlot);
+    } catch (error) {
+      if (sourceSlot) this.slots.set(targetIndex, sourceSlot);
+      else this.slots.delete(targetIndex);
+      await this.session.releaseArtifact(artifact.artifactId).catch(() => undefined);
+      throw error;
+    }
     this.assignArtifact(targetIndex, artifact);
     this.totalSpreadsValue =
       artifact.bookPageCount === undefined
@@ -1462,6 +1489,14 @@ function toReaderHitEntries(
   });
 }
 
+function safeDecode(val: string): string {
+  try {
+    return decodeURIComponent(val);
+  } catch {
+    return val;
+  }
+}
+
 export function resolvePublicationHref(
   sourceHref: string,
   href: string,
@@ -1474,17 +1509,46 @@ export function resolvePublicationHref(
     fragmentIndex >= 0 ? fragmentIndex : href.length,
     queryIndex >= 0 ? queryIndex : href.length,
   );
-  const path = href.slice(0, pathEnd).replace(/^\/+/, '');
-  if (!path) return `${sourceHref.split('#', 1)[0]}${fragment}`;
-  if (spine.some((item) => item.href === path)) return `${path}${fragment}`;
-  const sourceDirectory = sourceHref.includes('/') ? sourceHref.slice(0, sourceHref.lastIndexOf('/') + 1) : '';
+  const rawPath = href.slice(0, pathEnd).replace(/^\/+/, '');
+  const path = safeDecode(rawPath);
+  const sourceClean = sourceHref.split('#', 1)[0].split('?', 1)[0];
+
+  if (!path) return `${sourceClean}${fragment}`;
+
+  // 1. Direct match in spine
+  const directMatch = spine.find(
+    (item) => item.href === path || safeDecode(item.href) === path || item.href === rawPath,
+  );
+  if (directMatch) return `${directMatch.href}${fragment}`;
+
+  // 2. Resolve relative to source directory
+  const sourceDirectory = sourceClean.includes('/') ? sourceClean.slice(0, sourceClean.lastIndexOf('/') + 1) : '';
   const parts: string[] = [];
   for (const part of `${sourceDirectory}${path}`.split('/')) {
     if (!part || part === '.') continue;
     if (part === '..') parts.pop();
     else parts.push(part);
   }
-  return `${parts.join('/')}${fragment}`;
+  const relativeResolved = parts.join('/');
+  const relativeMatch = spine.find(
+    (item) => item.href === relativeResolved || safeDecode(item.href) === relativeResolved,
+  );
+  if (relativeMatch) return `${relativeMatch.href}${fragment}`;
+
+  // 3. Basename / Suffix match fallback (e.g. "Text/chapter1.xhtml" vs "chapter1.xhtml")
+  const pathFileName = path.includes('/') ? path.slice(path.lastIndexOf('/') + 1) : path;
+  const suffixMatch = spine.find((item) => {
+    const itemFileName = item.href.includes('/') ? item.href.slice(item.href.lastIndexOf('/') + 1) : item.href;
+    return (
+      item.href.endsWith(`/${path}`) ||
+      path.endsWith(`/${item.href}`) ||
+      itemFileName === pathFileName ||
+      safeDecode(itemFileName) === safeDecode(pathFileName)
+    );
+  });
+  if (suffixMatch) return `${suffixMatch.href}${fragment}`;
+
+  return `${relativeResolved}${fragment}`;
 }
 
 function resolveLayoutMargins(

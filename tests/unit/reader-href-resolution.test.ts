@@ -23,4 +23,20 @@ describe('reader publication href resolution', () => {
     expect(resolvePublicationHref('OEBPS/Text/chapter-1.xhtml', 'OEBPS/Text/chapter-2.xhtml', spine))
       .toBe('OEBPS/Text/chapter-2.xhtml');
   });
+
+  it('resolves URL encoded hrefs and anchors', () => {
+    const unicodeSpine = [{ href: 'OEBPS/Text/第一章.xhtml' }];
+    expect(
+      resolvePublicationHref(
+        'OEBPS/Text/intro.xhtml',
+        '%E7%AC%AC%E4%B8%80%E7%AB%A0.xhtml#%E6%A0%87%E9%A2%98',
+        unicodeSpine,
+      ),
+    ).toBe('OEBPS/Text/第一章.xhtml#%E6%A0%87%E9%A2%98');
+  });
+
+  it('resolves hrefs when TOC has filename only but spine has subfolder path', () => {
+    expect(resolvePublicationHref('OEBPS/Text/chapter-1.xhtml', 'chapter-2.xhtml#part1', spine))
+      .toBe('OEBPS/Text/chapter-2.xhtml#part1');
+  });
 });
