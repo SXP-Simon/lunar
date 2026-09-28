@@ -26,6 +26,19 @@ export interface ReaderPrimitiveRenderOptions {
   readonly colorOverride?: SkiaColorOverride;
 }
 
+function safeDispose(resource: unknown): void {
+  if (typeof resource === 'object' && resource !== null && 'dispose' in resource) {
+    const dispose = (resource as { dispose?: unknown }).dispose;
+    if (typeof dispose === 'function') {
+      try {
+        dispose.call(resource);
+      } catch {
+        // Ignored
+      }
+    }
+  }
+}
+
 export function renderResolvedPrimitives(
   canvas: SkCanvas,
   list: ReaderResolvedPrimitiveList,
@@ -67,7 +80,7 @@ export function renderResolvedPrimitives(
         case 'clip-path': {
           const path = makeResolvedPrimitivePath(command.path);
           canvas.clipPath(path, ClipOp.Intersect, true);
-          path.dispose();
+          safeDispose(path);
           break;
         }
         case 'fill-rect':
@@ -87,9 +100,9 @@ export function renderResolvedPrimitives(
           else {
             const path = makeResolvedPrimitivePath(command.path, command.rule);
             canvas.drawPath(path, paint);
-            path.dispose();
+            safeDispose(path);
           }
-          paint.dispose();
+          safeDispose(paint);
           break;
         }
         case 'stroke-path': {
@@ -101,7 +114,7 @@ export function renderResolvedPrimitives(
           const effect = command.dash ? Skia.PathEffect.MakeDash([command.dash.on, command.dash.off]) : undefined;
           if (effect) paint.setPathEffect(effect);
           canvas.drawPath(path, paint);
-          effect?.dispose(); paint.dispose(); path.dispose();
+          safeDispose(effect); safeDispose(paint); safeDispose(path);
           break;
         }
         case 'shadow': {
@@ -113,12 +126,12 @@ export function renderResolvedPrimitives(
           if (command.clipOut) {
             const clip = makeResolvedPrimitivePath(command.clipOut);
             canvas.clipPath(clip, ClipOp.Difference, true);
-            clip.dispose();
+            safeDispose(clip);
           }
           canvas.translate(command.offset.x, command.offset.y);
           canvas.drawPath(path, paint);
           canvas.restore();
-          filter?.dispose(); paint.dispose(); path.dispose();
+          safeDispose(filter); safeDispose(paint); safeDispose(path);
           break;
         }
         case 'draw-image':
@@ -163,7 +176,7 @@ function drawImage(
       }
     }
   }
-  paint.dispose();
+  safeDispose(paint);
 }
 
 function resolvedPrimitiveRect(value: ReaderResolvedRect) {
@@ -193,7 +206,7 @@ export function makeResolvedPrimitivePath(
     }
     return builder.build();
   } finally {
-    builder.dispose();
+    safeDispose(builder);
   }
 }
 
