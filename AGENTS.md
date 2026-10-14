@@ -28,6 +28,7 @@
 | HeroUI Native、自定义原子组件          | [界面组件约束](docs/ui.md)           |
 | 业务界面、业务组件、Hooks 与设置持久化 | [业务包约束](docs/features.md)       |
 | Rito、Skia、分页与阅读会话             | [阅读内核约束](docs/reader.md)       |
+| Rito 内核 fork、rito-rn 与版本升级     | [Rito 协作约束](docs/rito.md)        |
 | 浅色主题、深色主题与语义颜色           | [主题约束](docs/theme.md)            |
 
 ## 阅读顺序
