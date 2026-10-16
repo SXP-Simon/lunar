@@ -44,7 +44,7 @@ vi.mock('react-native', () => ({
   View: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
   ScrollView: ({ children }: { children: ReactNode }) => <section>{children}</section>,
-  useWindowDimensions: () => ({ width: 411, height: 914 }),
+  useWindowDimensions: () => ({ width: 411, height: 914, fontScale: 1 }),
   ActivityIndicator: () => <span>loading</span>,
   BackHandler: { addEventListener: () => ({ remove: vi.fn() }) },
   AppState: {
@@ -154,6 +154,7 @@ beforeEach(() => {
   state.cursor = 0;
   state.locale = 'en';
   vi.clearAllMocks();
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-16T12:00:00Z'));
   state.load.mockResolvedValue(data);
 });
 
@@ -202,7 +203,10 @@ describe('statistics mobile screen interactions', () => {
     await settle();
     render();
     state.locale = 'zh-CN';
-    expect(render()).toContain('周日');
+    const markup = render();
+    expect(markup).toContain('周日');
+    expect(markup).not.toContain('>7月<');
+    for (const month of ['8月', '9月', '10月']) expect(markup).toContain(`>${month}<`);
     const day = [...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'))!;
     state.actions.get(day)!();
     expect(render()).toContain('2026年10月15日星期四');

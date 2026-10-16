@@ -13,6 +13,7 @@ import { loadStatistics } from '../repositories/statistics-repository';
 
 import { BookReadingRow } from '../components/book-reading-row';
 import { DailyReadingSheet } from '../components/daily-reading-sheet';
+import { HeatmapMonthLabels } from '../components/heatmap-month-labels';
 const levels = [
   'bg-default',
   'bg-navigation-active/20',
@@ -25,7 +26,7 @@ export function StatisticsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, fontScale } = useWindowDimensions();
   const cellSize = Math.max(
     12,
     Math.min(24, Math.floor((Math.min(width - insets.left - insets.right - 32, 800) - 128) / 13)),
@@ -118,7 +119,7 @@ export function StatisticsScreen() {
                   <Text className="text-xs text-muted">{t('statistics.weeks')}</Text>
                 </View>
                 <View className="flex-row gap-2">
-                  <View className="w-8 gap-1 pt-6">
+                  <View className="w-8 gap-1" style={{ paddingTop: Math.ceil(20 * fontScale) + 4 }}>
                     {Array.from({ length: 7 }, (_, day) => (
                       <Text
                         key={day}
@@ -128,32 +129,37 @@ export function StatisticsScreen() {
                       </Text>
                     ))}
                   </View>
-                  <View className="flex-row gap-1">
-                    {weeks.map((week, index) => (
-                      <View key={week[0].date} className="gap-1">
-                        <Text className="h-5 text-[10px] text-muted">
-                          {index === 0 || week.some((day) => day.date.endsWith('-01'))
-                            ? months[
-                                Number((week.find((day) => day.date.endsWith('-01')) ?? week[0]).date.slice(5, 7)) - 1
-                              ]
-                            : ''}
-                        </Text>
-                        {week.map((day) => (
-                          <PressableFeedback
-                            key={day.date}
-                            hitSlop={8}
-                            isDisabled={day.future}
-                            accessibilityRole="button"
-                            accessibilityLabel={`${day.date}, ${duration(day.milliseconds)}`}
-                            accessibilityState={{ selected: selected === day.date, disabled: day.future }}
-                            onPress={() => setSelected(day.date)}
-                            onLongPress={() => setSelected(day.date)}
-                            style={{ width: cellSize, height: cellSize }}
-                            className={`items-center justify-center rounded-md ${day.future ? 'opacity-0' : levels[day.level]} ${selected === day.date ? 'border-2 border-navigation-active' : ''}`}
-                          />
-                        ))}
-                      </View>
-                    ))}
+                  <View className="gap-1">
+                    <HeatmapMonthLabels
+                      cellSize={cellSize}
+                      fontScale={fontScale}
+                      starts={weeks.flatMap((week, column) => {
+                        const start = week.find((day) => day.date.endsWith('-01') && !day.future);
+                        return start
+                          ? [{ date: start.date, column, text: months[Number(start.date.slice(5, 7)) - 1] }]
+                          : [];
+                      })}
+                    />
+                    <View className="flex-row gap-1">
+                      {weeks.map((week) => (
+                        <View key={week[0].date} className="gap-1">
+                          {week.map((day) => (
+                            <PressableFeedback
+                              key={day.date}
+                              hitSlop={8}
+                              isDisabled={day.future}
+                              accessibilityRole="button"
+                              accessibilityLabel={`${day.date}, ${duration(day.milliseconds)}`}
+                              accessibilityState={{ selected: selected === day.date, disabled: day.future }}
+                              onPress={() => setSelected(day.date)}
+                              onLongPress={() => setSelected(day.date)}
+                              style={{ width: cellSize, height: cellSize }}
+                              className={`items-center justify-center rounded-md ${day.future ? 'opacity-0' : levels[day.level]} ${selected === day.date ? 'border-2 border-navigation-active' : ''}`}
+                            />
+                          ))}
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 </View>
                 <View className="flex-row items-center justify-end gap-1.5">
