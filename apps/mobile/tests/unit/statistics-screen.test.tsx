@@ -1,11 +1,14 @@
 import React, { type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { en } from '../../src/i18n/translations/en';
+import { zhCN } from '../../src/i18n/translations/zh-CN';
 import { StatisticsScreen } from '../../src/features/statistics/screens/statistics-screen';
 
 const state = vi.hoisted(() => ({
   cells: [] as unknown[],
   cursor: 0,
+  locale: 'en',
   focus: undefined as undefined | (() => () => void),
   appState: undefined as undefined | ((state: string) => void),
   actions: new Map<string, () => void>(),
@@ -62,7 +65,17 @@ vi.mock('../../src/features/statistics/repositories/statistics-repository', () =
 vi.mock('@/i18n', () => ({
   useTranslation: () => ({
     i18n: { language: 'en' },
-    t: (key: string, values?: Record<string, unknown>) => `${key}${values ? JSON.stringify(values) : ''}`,
+    t: (key: string, values?: Record<string, unknown>) => {
+      const calendarKeys = ['monthsShort', 'monthsLong', 'weekdaysShort', 'weekdaysLong', 'fullDate'];
+      const name = key.replace('statistics.', '');
+      if (calendarKeys.includes(name)) {
+        const calendar = state.locale === 'zh-CN' ? zhCN.statistics : en.statistics;
+        return String(calendar[name as keyof typeof calendar]).replace(/{{(\w+)}}/g, (_, field: string) =>
+          String(values?.[field] ?? ''),
+        );
+      }
+      return `${key}${values ? JSON.stringify(values) : ''}`;
+    },
   }),
 }));
 vi.mock('heroui-native/toast', () => ({ useToast: () => ({ toast: { show: state.toast } }) }));
@@ -139,6 +152,7 @@ async function settle() {
 beforeEach(() => {
   state.cells = [];
   state.cursor = 0;
+  state.locale = 'en';
   vi.clearAllMocks();
   state.load.mockResolvedValue(data);
 });
@@ -180,6 +194,18 @@ describe('statistics mobile screen interactions', () => {
     state.actions.get(day)!();
     expect(render()).toContain('statistics.dayEmpty');
     expect(render()).toContain('statistics.daySummary{&quot;count&quot;:0}');
+    cleanup();
+  });
+  it('updates calendar and date detail language without restarting the screen', async () => {
+    render();
+    const cleanup = state.focus!();
+    await settle();
+    render();
+    state.locale = 'zh-CN';
+    expect(render()).toContain('周日');
+    const day = [...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'))!;
+    state.actions.get(day)!();
+    expect(render()).toContain('2026年10月15日星期四');
     cleanup();
   });
   it('refreshes after foregrounding and ignores results after leaving the screen', async () => {

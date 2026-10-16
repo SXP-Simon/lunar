@@ -22,7 +22,7 @@ const levels = [
 ] as const;
 
 export function StatisticsScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -83,7 +83,8 @@ export function StatisticsScreen() {
   };
   const openBook = (bookId: string) => router.push({ pathname: '/reader/[bookId]', params: { bookId } });
   const closeDay = useCallback(() => setSelected(undefined), []);
-  const dateFormatter = new Intl.DateTimeFormat(i18n.language, { month: 'short', timeZone: 'UTC' });
+  const months = t('statistics.monthsShort').split(',');
+  const weekdays = t('statistics.weekdaysShort').split(',');
   return (
     <View
       className="flex-1 bg-background"
@@ -123,9 +124,7 @@ export function StatisticsScreen() {
                         key={day}
                         className="text-[10px] text-muted"
                         style={{ height: cellSize, lineHeight: cellSize }}>
-                        {new Intl.DateTimeFormat(i18n.language, { weekday: 'short', timeZone: 'UTC' }).format(
-                          new Date(Date.UTC(2026, 9, 11 + day)),
-                        )}
+                        {weekdays[day]}
                       </Text>
                     ))}
                   </View>
@@ -134,9 +133,9 @@ export function StatisticsScreen() {
                       <View key={week[0].date} className="gap-1">
                         <Text className="h-5 text-[10px] text-muted">
                           {index === 0 || week.some((day) => day.date.endsWith('-01'))
-                            ? dateFormatter.format(
-                                new Date(`${(week.find((day) => day.date.endsWith('-01')) ?? week[0]).date}T00:00:00Z`),
-                              )
+                            ? months[
+                                Number((week.find((day) => day.date.endsWith('-01')) ?? week[0]).date.slice(5, 7)) - 1
+                              ]
                             : ''}
                         </Text>
                         {week.map((day) => (

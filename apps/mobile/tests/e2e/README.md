@@ -11,7 +11,7 @@ adb -s emulator-5554 reverse tcp:8081 tcp:8081
 python apps/mobile/tests/e2e/reading-statistics.py --serial emulator-5554
 ```
 
-脚本打印测试结果和临时证据目录；该目录包含原生截图、数据库快照和结果 JSON。测试使用 1080×2400 的模拟器视口执行纵向滚动。深浅主题、字体缩放、横屏、日期色块点按/长按、详情关闭及书籍跳转另通过设备交互检查；跨午夜、夏令时、聚合与删除级联由 `statistics.test.ts` 和 `reading-time.test.ts` 覆盖。
+脚本打印测试结果和临时证据目录；该目录包含原生截图、数据库快照和结果 JSON。测试使用 1080×2400 的模拟器视口执行纵向滚动。深浅主题、字体缩放、竖屏滚动、日期色块点按/长按、详情关闭及书籍跳转另通过设备交互检查；跨午夜、夏令时、聚合与删除级联由 `statistics.test.ts` 和 `reading-time.test.ts` 覆盖。
 
 阅读器持续产生可访问性更新时，Android 内置 `uiautomator dump` 可能无法等待空闲。可在独立 Python 环境安装 `uiautomator2`，使用无空闲等待的原生测试服务：
 

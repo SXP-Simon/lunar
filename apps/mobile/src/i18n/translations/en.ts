@@ -2,6 +2,12 @@ import { type TranslationSchema, zhCN } from './zh-CN';
 
 export const en: TranslationSchema<typeof zhCN> = {
   statistics: {
+    monthsShort: 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec',
+    monthsLong: 'January,February,March,April,May,June,July,August,September,October,November,December',
+    weekdaysShort: 'Sun,Mon,Tue,Wed,Thu,Fri,Sat',
+    weekdaysLong: 'Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday',
+    fullDate: '{{weekday}}, {{month}} {{day}}, {{year}}',
+
     dayHint: 'Tap or hold a day to see your reading.',
     daySummary: '{{count}} books read',
     daySummary_one: '{{count}} book read',

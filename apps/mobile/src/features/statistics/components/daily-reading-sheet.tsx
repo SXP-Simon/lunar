@@ -21,7 +21,7 @@ export function DailyReadingSheet({
   onClose: () => void;
   onOpenBook: (id: string) => void;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   useEffect(() => {
     if (!date) return;
@@ -32,14 +32,14 @@ export function DailyReadingSheet({
     return () => subscription.remove();
   }, [date, onClose]);
   const parts = durationParts(books.reduce((sum, book) => sum + book.milliseconds, 0));
-  const title = date
-    ? new Intl.DateTimeFormat(i18n.language, {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        weekday: 'long',
-        timeZone: 'UTC',
-      }).format(new Date(`${date}T00:00:00Z`))
+  const calendarDate = date ? new Date(`${date}T00:00:00Z`) : undefined;
+  const title = calendarDate
+    ? t('statistics.fullDate', {
+        year: calendarDate.getUTCFullYear(),
+        month: t('statistics.monthsLong').split(',')[calendarDate.getUTCMonth()],
+        day: calendarDate.getUTCDate(),
+        weekday: t('statistics.weekdaysLong').split(',')[calendarDate.getUTCDay()],
+      })
     : '';
   return (
     <BottomSheet
