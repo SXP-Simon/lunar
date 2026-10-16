@@ -150,7 +150,7 @@ export function StatisticsScreen() {
                             onPress={() => setSelected(day.date)}
                             onLongPress={() => setSelected(day.date)}
                             style={{ width: cellSize, height: cellSize }}
-                            className={`items-center justify-center rounded-md ${day.future ? 'opacity-0' : levels[day.level]} ${selected === day.date ? 'border-2 border-foreground' : ''}`}
+                            className={`items-center justify-center rounded-md ${day.future ? 'opacity-0' : levels[day.level]} ${selected === day.date ? 'border-2 border-navigation-active' : ''}`}
                           />
                         ))}
                       </View>

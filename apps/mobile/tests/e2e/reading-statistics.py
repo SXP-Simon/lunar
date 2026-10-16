@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--serial', required=True)
 parser.add_argument('--uiautomator2', action='store_true', help='Use uiautomator2 for readers with continuous accessibility updates')
 parser.add_argument('--book-title', default='')
+parser.add_argument('--development-url', default='lunar-dev://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081')
 parser.add_argument('--package', default='com.lunarain_079.lunar.dev')
 args = parser.parse_args()
 output = pathlib.Path(tempfile.mkdtemp(prefix='lunar-statistics-e2e-'))
@@ -97,7 +98,7 @@ def statistics():
     time.sleep(1)
     for _ in range(3):
         adb('shell', 'input', 'swipe', '20', '500', '20', '2000', '400')
-    wait_for(lambda node: node.get('text') == 'Reading activity')
+    wait_for(lambda node: node.get('text') in ('Reading activity', 'Total reading time', 'By book'))
 
 
 print('Checking statistics and opening a real book', flush=True)
@@ -164,10 +165,10 @@ formatted = (f'{seconds // 3600} hr {(seconds // 60) % 60} min' if seconds >= 36
 assert any(node.get('text') == formatted for node in ui()), 'Overview differs from saved reading time'
 screenshot('overview-after')
 adb('shell', 'am', 'force-stop', args.package)
-print('Resuming application', flush=True)
-adb('shell', 'am', 'start', '-n', args.package + '/.MainActivity')
+print('Restarting development client with its Metro URL', flush=True)
+adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', args.development_url)
 wait_for(lambda node: node.get('content-desc') in ('Library', 'Back to library')
-         or node.get('content-desc', '').startswith('Reading page, '))
+         or node.get('content-desc', '').startswith('Reading page, '), timeout=120)
 assert set(map(tuple, after)).issubset(set(map(tuple, database()))), 'Reading records did not survive process restart'
 library()
 statistics()

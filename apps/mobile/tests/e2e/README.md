@@ -7,6 +7,7 @@
 从仓库根目录执行：
 
 ```powershell
+adb -s emulator-5554 reverse tcp:8081 tcp:8081
 python apps/mobile/tests/e2e/reading-statistics.py --serial emulator-5554
 ```
 
@@ -20,3 +21,5 @@ python apps/mobile/tests/e2e/reading-statistics.py --serial emulator-5554 --uiau
 ```
 
 `--book-title` 可指定已导入书籍的标题片段，默认选择第一本。前台计时验收等待实际 SQLite 检查点；后台验收会先等待退出时的最终写入完成，再检查至少一个完整计时间隔内记录不再变化。
+
+开发客户端冷启动通过 `--development-url` 重新连接 Metro，默认端口为 8081；自定义开发服务器地址时同步传入该参数。
