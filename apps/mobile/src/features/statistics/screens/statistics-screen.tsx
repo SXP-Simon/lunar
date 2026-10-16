@@ -9,6 +9,7 @@ import { readingDateKey } from '@/features/reader';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
 import { buildHeatmap, durationParts } from '../domain/statistics';
+import { heatmapDimensions } from '../domain/month-labels';
 import { loadStatistics } from '../repositories/statistics-repository';
 
 import { BookReadingRow } from '../components/book-reading-row';
@@ -27,9 +28,9 @@ export function StatisticsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
-  const cellSize = Math.max(
-    12,
-    Math.min(24, Math.floor((Math.min(width - insets.left - insets.right - 32, 800) - 128) / 13)),
+  const { weekdayWidth, cellSize, rowHeight } = heatmapDimensions(
+    Math.min(width - insets.left - insets.right - 32, 800),
+    fontScale,
   );
   const { toast } = useToast();
   const [data, setData] = useState<Awaited<ReturnType<typeof loadStatistics>>>();
@@ -119,14 +120,11 @@ export function StatisticsScreen() {
                   <Text className="text-xs text-muted">{t('statistics.weeks')}</Text>
                 </View>
                 <View className="flex-row gap-2">
-                  <View className="w-8 gap-1" style={{ paddingTop: Math.ceil(20 * fontScale) + 4 }}>
+                  <View className="gap-1" style={{ width: weekdayWidth, paddingTop: Math.ceil(20 * fontScale) + 4 }}>
                     {Array.from({ length: 7 }, (_, day) => (
-                      <Text
-                        key={day}
-                        className="text-[10px] text-muted"
-                        style={{ height: cellSize, lineHeight: cellSize }}>
-                        {weekdays[day]}
-                      </Text>
+                      <View key={day} className="justify-center" style={{ height: rowHeight }}>
+                        <Text className="text-[10px] text-muted">{weekdays[day]}</Text>
+                      </View>
                     ))}
                   </View>
                   <View className="gap-1">
@@ -144,18 +142,19 @@ export function StatisticsScreen() {
                       {weeks.map((week) => (
                         <View key={week[0].date} className="gap-1">
                           {week.map((day) => (
-                            <PressableFeedback
-                              key={day.date}
-                              hitSlop={8}
-                              isDisabled={day.future}
-                              accessibilityRole="button"
-                              accessibilityLabel={`${day.date}, ${duration(day.milliseconds)}`}
-                              accessibilityState={{ selected: selected === day.date, disabled: day.future }}
-                              onPress={() => setSelected(day.date)}
-                              onLongPress={() => setSelected(day.date)}
-                              style={{ width: cellSize, height: cellSize }}
-                              className={`items-center justify-center rounded-md ${day.future ? 'opacity-0' : levels[day.level]} ${selected === day.date ? 'border-2 border-navigation-active' : ''}`}
-                            />
+                            <View key={day.date} className="justify-center" style={{ height: rowHeight }}>
+                              <PressableFeedback
+                                hitSlop={8}
+                                isDisabled={day.future}
+                                accessibilityRole="button"
+                                accessibilityLabel={`${day.date}, ${duration(day.milliseconds)}`}
+                                accessibilityState={{ selected: selected === day.date, disabled: day.future }}
+                                onPress={() => setSelected(day.date)}
+                                onLongPress={() => setSelected(day.date)}
+                                style={{ width: cellSize, height: cellSize }}
+                                className={`items-center justify-center rounded-md ${day.future ? 'opacity-0' : levels[day.level]} ${selected === day.date ? 'border-2 border-navigation-active' : ''}`}
+                              />
+                            </View>
                           ))}
                         </View>
                       ))}

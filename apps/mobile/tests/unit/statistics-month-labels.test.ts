@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { layoutMonthLabels } from '../../src/features/statistics/domain/month-labels';
+import { heatmapDimensions, layoutMonthLabels } from '../../src/features/statistics/domain/month-labels';
 
 describe('heatmap month label spacing', () => {
+  it('reserves enough row height and weekday width when system fonts grow on narrow screens', () => {
+    for (const width of [320, 360, 411])
+      for (const scale of [1, 1.3, 2]) {
+        const { weekdayWidth, cellSize, rowHeight } = heatmapDimensions(width - 32, scale);
+        expect(rowHeight).toBeGreaterThanOrEqual(20 * scale);
+        expect(weekdayWidth).toBeGreaterThanOrEqual(24 * scale);
+        expect(weekdayWidth + 8 + 13 * cellSize + 48 + 40).toBeLessThanOrEqual(width - 32);
+      }
+  });
   it('keeps calendar week anchors without overlapping at normal and narrow widths', () => {
     for (const cell of [12, 19, 24]) {
       const labels = layoutMonthLabels(

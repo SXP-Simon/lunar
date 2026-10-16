@@ -17,3 +17,8 @@ export function layoutMonthLabels(
     })
     .toReversed();
 }
+export function heatmapDimensions(cardWidth: number, fontScale: number) {
+  const weekdayWidth = Math.max(32, Math.ceil(24 * fontScale));
+  const cellSize = Math.max(8, Math.min(24, Math.floor((cardWidth - 96 - weekdayWidth) / 13)));
+  return { weekdayWidth, cellSize, rowHeight: Math.max(cellSize, Math.ceil(20 * fontScale)) };
+}
