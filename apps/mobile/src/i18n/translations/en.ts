@@ -1,6 +1,38 @@
 import { type TranslationSchema, zhCN } from './zh-CN';
 
 export const en: TranslationSchema<typeof zhCN> = {
+  statistics: {
+    dayHint: 'Tap or hold a day to see your reading.',
+    daySummary: '{{count}} books read',
+    daySummary_one: '{{count}} book read',
+    daySummary_other: '{{count}} books read',
+    dayEmpty: 'No reading recorded on this day.',
+
+    title: 'Reading statistics',
+    subtitle: 'Time well spent, one page at a time',
+    activity: 'Reading activity',
+    weeks: 'Last 13 weeks',
+    less: 'Less',
+    more: 'More',
+    books: 'Books',
+    completed: 'Finished books',
+    total: 'Total reading time',
+    average: 'Daily average',
+    count: '{{count}} books',
+    count_one: '{{count}} book',
+    count_other: '{{count}} books',
+    hours: '{{hours}} hr {{minutes}} min',
+    minutes: '{{minutes}} min {{seconds}} sec',
+    definition:
+      'Average is per day with recorded reading. Books at 100% progress count as finished. Deleting a book removes its statistics.',
+    byBook: 'By book',
+    empty: 'Open a book from your library to begin your reading journey.',
+    openBook: 'Continue reading {{title}}',
+    finished: 'Finished',
+    error: 'Unable to load reading statistics',
+    retry: 'Retry',
+    loading: 'Loading reading statistics',
+  },
   markdown: {
     bold: 'Bold',
     italic: 'Italic',
@@ -21,6 +53,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     confirm: 'Done',
   },
   tabs: {
+    statistics: 'Statistics',
     library: 'Library',
     settings: 'Settings',
   },
