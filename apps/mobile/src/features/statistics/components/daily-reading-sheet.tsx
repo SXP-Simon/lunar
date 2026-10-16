@@ -12,11 +12,13 @@ const DayScrollView = withUniwind(BottomSheetScrollView);
 
 export function DailyReadingSheet({
   date,
+  isOpen = Boolean(date),
   books,
   onClose,
   onOpenBook,
 }: {
   date?: string;
+  isOpen?: boolean;
   books: readonly StatisticsBook[];
   onClose: () => void;
   onOpenBook: (id: string) => void;
@@ -24,13 +26,13 @@ export function DailyReadingSheet({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   useEffect(() => {
-    if (!date) return;
+    if (!isOpen) return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       onClose();
       return true;
     });
     return () => subscription.remove();
-  }, [date, onClose]);
+  }, [isOpen, onClose]);
   const parts = durationParts(books.reduce((sum, book) => sum + book.milliseconds, 0));
   const calendarDate = date ? new Date(`${date}T00:00:00Z`) : undefined;
   const title = calendarDate
@@ -43,7 +45,7 @@ export function DailyReadingSheet({
     : '';
   return (
     <BottomSheet
-      isOpen={Boolean(date)}
+      isOpen={isOpen}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}>

@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   actions: new Map<string, () => void>(),
   longActions: new Map<string, () => void>(),
   dayChildren: [] as ReactNode[],
+  sheetChildren: undefined as ReactNode,
   load: vi.fn(),
   push: vi.fn(),
   navigate: vi.fn(),
@@ -112,8 +113,10 @@ vi.mock('@gorhom/bottom-sheet', () => ({
 }));
 vi.mock('heroui-native/bottom-sheet', () => {
   const Part = ({ children }: { children: ReactNode }) => <div>{children}</div>;
-  const Root = ({ isOpen, children }: { isOpen: boolean; children: ReactNode }) =>
-    isOpen ? <div>{children}</div> : null;
+  const Root = ({ isOpen, children }: { isOpen: boolean; children: ReactNode }) => {
+    state.sheetChildren = children;
+    return isOpen ? <div>{children}</div> : null;
+  };
   return {
     BottomSheet: Object.assign(Root, {
       Portal: Part,
@@ -184,6 +187,10 @@ describe('statistics mobile screen interactions', () => {
     expect(render()).toContain('cover');
     state.actions.get('action.close')!();
     expect(render()).not.toContain('Thursday, October 15, 2026');
+    const closingContent = renderToStaticMarkup(<>{state.sheetChildren}</>);
+    expect(closingContent).toContain('Thursday, October 15, 2026');
+    expect(closingContent).toContain('statistics.daySummary{&quot;count&quot;:1}');
+    expect(closingContent).toContain('Lunar book');
     cleanup();
   });
   it('shows a daily empty state without inventing books', async () => {

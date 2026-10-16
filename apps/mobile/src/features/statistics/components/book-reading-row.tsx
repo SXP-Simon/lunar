@@ -22,7 +22,8 @@ export function BookReadingRow({
       accessibilityRole="button"
       accessibilityLabel={t('statistics.openBook', { title: book.title })}
       onPress={onPress}
-      className="flex-row gap-4 rounded-3xl bg-surface p-4">
+      animation={{ scale: { value: 0.99, timingConfig: { duration: 160 } } }}
+      className="flex-row gap-4 overflow-hidden rounded-3xl bg-surface p-4 active:bg-surface-secondary dark:active:bg-surface-tertiary">
       {book.coverUri ? (
         <Image accessible={false} source={book.coverUri} contentFit="cover" className="h-28 w-20 rounded-lg" />
       ) : (

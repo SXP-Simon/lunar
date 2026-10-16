@@ -37,6 +37,7 @@ export function StatisticsScreen() {
   const [error, setError] = useState(false);
   const [revision, setRevision] = useState(0);
   const [selected, setSelected] = useState<string>();
+  const [dayOpen, setDayOpen] = useState(false);
   const [today, setToday] = useState(() =>
     readingDateKey(Date.now(), Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'),
   );
@@ -72,7 +73,7 @@ export function StatisticsScreen() {
       const timer = setInterval(() => void refresh(), 60_000);
       return () => {
         active = false;
-        setSelected(undefined);
+        setDayOpen(false);
         subscription.remove();
         clearInterval(timer);
       };
@@ -84,7 +85,12 @@ export function StatisticsScreen() {
     return parts.hours ? t('statistics.hours', parts) : t('statistics.minutes', parts);
   };
   const openBook = (bookId: string) => router.push({ pathname: '/reader/[bookId]', params: { bookId } });
-  const closeDay = useCallback(() => setSelected(undefined), []);
+  // Keep the selected day's content mounted throughout the sheet's closing animation.
+  const closeDay = useCallback(() => setDayOpen(false), []);
+  const openDay = (date: string) => {
+    setSelected(date);
+    setDayOpen(true);
+  };
   const months = t('statistics.monthsShort').split(',');
   const weekdays = t('statistics.weekdaysShort').split(',');
   return (
@@ -144,15 +150,21 @@ export function StatisticsScreen() {
                           {week.map((day) => (
                             <View key={day.date} className="justify-center" style={{ height: rowHeight }}>
                               <PressableFeedback
+                                animation={{
+                                  scale: { value: 0.96, ignoreScaleCoefficient: true, timingConfig: { duration: 120 } },
+                                }}
                                 hitSlop={8}
                                 isDisabled={day.future}
                                 accessibilityRole="button"
                                 accessibilityLabel={`${day.date}, ${duration(day.milliseconds)}`}
-                                accessibilityState={{ selected: selected === day.date, disabled: day.future }}
-                                onPress={() => setSelected(day.date)}
-                                onLongPress={() => setSelected(day.date)}
+                                accessibilityState={{
+                                  selected: dayOpen && selected === day.date,
+                                  disabled: day.future,
+                                }}
+                                onPress={() => openDay(day.date)}
+                                onLongPress={() => openDay(day.date)}
                                 style={{ width: cellSize, height: cellSize }}
-                                className={`items-center justify-center rounded-md ${day.future ? 'opacity-0' : levels[day.level]} ${selected === day.date ? 'border-2 border-navigation-active' : ''}`}
+                                className={`items-center justify-center rounded-md ${day.future ? 'opacity-0' : levels[day.level]} ${dayOpen && selected === day.date ? 'border-2 border-navigation-active' : ''}`}
                               />
                             </View>
                           ))}
@@ -204,6 +216,7 @@ export function StatisticsScreen() {
       </ScrollView>
       <DailyReadingSheet
         date={selected}
+        isOpen={dayOpen}
         books={selected ? (data?.dayBooks[selected] ?? []) : []}
         onClose={closeDay}
         onOpenBook={openBook}
