@@ -2,7 +2,14 @@ import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DATABASE_MIGRATIONS } from '../../src/db/migrations';
-import { buildHeatmap, buildStatistics, durationParts } from '../../src/features/statistics/domain/statistics';
+import {
+  buildHeatmap,
+  buildStatistics,
+  durationParts,
+  heatLevel,
+  selectPeriod,
+  shiftDate,
+} from '../../src/features/statistics/domain/statistics';
 import { readStatistics } from '../../src/features/statistics/repositories/statistics-repository';
 import { SQLiteReadingSessionRepository } from '../../src/features/reader/repositories/sqlite-reading-session-repository';
 
@@ -97,22 +104,26 @@ describe('reading statistics', () => {
     expect(removed.completed).toBe(0);
     expect(removed.books).toHaveLength(2);
   });
-  it('covers 13 Sunday-first weeks over year and leap-day boundaries and hides future dates', () => {
-    const weeks = buildHeatmap('2024-03-01', [{ date: '2024-02-29', milliseconds: 600_000 }]);
-    expect(weeks).toHaveLength(13);
-    expect(weeks.flat()).toHaveLength(91);
-    expect(weeks[0][0].date).toBe('2023-12-03');
-    expect(weeks[12][4]).toMatchObject({ date: '2024-02-29', level: 2, future: false });
-    expect(weeks[12][6]).toMatchObject({ date: '2024-03-02', future: true });
-    expect(new Set(weeks.flat().map((day) => day.date)).size).toBe(91);
+  it('covers a rolling year in Sunday-first weeks over year and leap-day boundaries and hides future dates', () => {
+    const weeks = buildHeatmap('2024-03-01', [{ date: '2024-02-29', milliseconds: 1_800_000 }]);
+    expect(weeks).toHaveLength(53);
+    expect(weeks.flat()).toHaveLength(371);
+    expect(weeks[0][0].date).toBe('2023-02-26');
+    expect(weeks[52][4]).toMatchObject({ date: '2024-02-29', level: 2, future: false });
+    expect(weeks[52][6]).toMatchObject({ date: '2024-03-02', future: true });
+    expect(new Set(weeks.flat().map((day) => day.date)).size).toBe(371);
   });
   it('keeps Sunday and Saturday in the correct column and uses meaningful intensity levels', () => {
-    const daily = [0, 1, 600_000, 1_800_000, 3_600_000].map((milliseconds, index) => ({
+    const daily = [0, 1, 1_800_000, 3_600_000, 7_200_000].map((milliseconds, index) => ({
       date: `2026-10-${11 + index}`,
       milliseconds,
     }));
-    expect(buildHeatmap('2026-10-17', daily)[12].map((day) => day.level)).toEqual([0, 1, 2, 3, 4, 0, 0]);
-    expect(buildHeatmap('2026-10-11', [])[12][0].date).toBe('2026-10-11');
+    expect(
+      buildHeatmap('2026-10-17', daily)
+        .at(-1)!
+        .map((day) => day.level),
+    ).toEqual([0, 1, 2, 3, 4, 0, 0]);
+    expect(buildHeatmap('2026-10-11', []).at(-1)![0].date).toBe('2026-10-11');
   });
   it('formats seconds, minutes and hours without rounding into a false completion', () => {
     expect(durationParts(0)).toEqual({ hours: 0, minutes: 0, seconds: 0 });
@@ -121,5 +132,111 @@ describe('reading statistics', () => {
       buildStatistics([{ id: 'b', title: 'b', author: null, coverUri: null, progress: 0.9999, milliseconds: 0 }], [])
         .completed,
     ).toBe(0);
+  });
+});
+
+describe('period statistics consistency', () => {
+  const book = (id: string) => ({ id, title: id, author: null, coverUri: null, progress: 0, milliseconds: 99_999_999 });
+  it('keeps history outside the heatmap year available to custom date ranges', () => {
+    const startedAt = Date.parse('2020-02-29T12:00:00Z');
+    const data = buildStatistics(
+      [book('archive')],
+      [
+        {
+          id: 'old',
+          bookId: 'archive',
+          startedAt,
+          endedAt: startedAt + 600_000,
+          timeZone: 'UTC',
+        },
+      ],
+    );
+    expect(
+      buildHeatmap('2026-10-17', data.daily)
+        .flat()
+        .every((day) => day.milliseconds === 0),
+    ).toBe(true);
+    const archived = selectPeriod(data, { start: '2020-02-01', end: '2020-03-01' });
+    expect(archived.daily).toHaveLength(30);
+    expect(archived.total).toBe(600_000);
+    expect(archived.books.map((row) => row.id)).toEqual(['archive']);
+    expect(data.daily).toEqual([{ date: '2020-02-29', milliseconds: 600_000 }]);
+  });
+  it('uses inclusive dates, splits midnight and excludes lifetime and outside-period time everywhere', () => {
+    const data = buildStatistics(
+      [book('a'), book('b')],
+      [
+        {
+          id: 'cross',
+          bookId: 'a',
+          startedAt: Date.parse('2025-12-31T23:50:00Z'),
+          endedAt: Date.parse('2026-01-01T00:10:00Z'),
+          timeZone: 'UTC',
+        },
+        {
+          id: 'later',
+          bookId: 'b',
+          startedAt: Date.parse('2026-01-02T12:00:00Z'),
+          endedAt: Date.parse('2026-01-02T12:30:00Z'),
+          timeZone: 'UTC',
+        },
+      ],
+    );
+    const period = selectPeriod(data, { start: '2026-01-01', end: '2026-01-03' });
+    expect(period.daily.map((day) => day.milliseconds)).toEqual([600_000, 1_800_000, 0]);
+    expect(period.total).toBe(2_400_000);
+    expect(period.average).toBe(800_000);
+    expect(period.readingDays).toBe(2);
+    expect(period.books.map((b) => [b.id, b.milliseconds])).toEqual([
+      ['b', 1_800_000],
+      ['a', 600_000],
+    ]);
+    expect(period.ranking.map((b) => b.share)).toEqual([0.75, 0.25]);
+    expect(period.daily.reduce((sum, day) => sum + day.milliseconds, 0)).toBe(
+      period.books.reduce((sum, b) => sum + b.milliseconds, 0),
+    );
+    const earlier = selectPeriod(data, { start: '2025-12-31', end: '2025-12-31' });
+    expect(earlier.total).toBe(600_000);
+    expect(earlier.books.map((b) => b.id)).toEqual(['a']);
+    expect(period.total).toBe(2_400_000); // Switching ranges never mutates prior results.
+  });
+  it('retains all books in the strip while ranking only ten, with shares based on all books', () => {
+    const books = Array.from({ length: 12 }, (_, i) => book(String(i)));
+    const start = Date.parse('2026-10-10T00:00:00Z');
+    const data = buildStatistics(
+      books,
+      books.map((b, i) => ({
+        id: b.id,
+        bookId: b.id,
+        startedAt: start,
+        endedAt: start + (i + 1) * 60_000,
+        timeZone: 'UTC',
+      })),
+    );
+    const period = selectPeriod(data, { start: '2026-10-10', end: '2026-10-10' });
+    expect(period.books).toHaveLength(12);
+    expect(period.ranking).toHaveLength(10);
+    expect(period.ranking[0].share).toBe(12 / 78);
+    expect(period.remaining).toBe(3 * 60_000);
+    expect(period.ranking.reduce((sum, b) => sum + b.milliseconds, period.remaining)).toBe(period.total);
+    expect(selectPeriod(data, { start: '2026-10-11', end: '2026-10-17' })).toMatchObject({
+      books: [],
+      ranking: [],
+      total: 0,
+      average: 0,
+      readingDays: 0,
+    });
+  });
+  it('preserves older history and uses exact half-hour, hour and two-hour boundaries', () => {
+    expect([0, 1, 1_799_999, 1_800_000, 3_599_999, 3_600_000, 7_199_999, 7_200_000].map(heatLevel)).toEqual([
+      0, 1, 1, 2, 2, 3, 3, 4,
+    ]);
+    expect(shiftDate('2024-03-01', -1)).toBe('2024-02-29');
+    expect(() => selectPeriod(buildStatistics([], []), { start: '2026-10-17', end: '2026-10-16' })).toThrow();
+    const cells = buildHeatmap('2024-03-01', [])
+      .flat()
+      .filter((d) => !d.future);
+    expect(cells).toHaveLength(365);
+    expect(cells.at(-1)?.date).toBe('2024-03-01');
   });
 });

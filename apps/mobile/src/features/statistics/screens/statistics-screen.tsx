@@ -3,35 +3,23 @@ import { Button } from 'heroui-native/button';
 import { PressableFeedback } from 'heroui-native/pressable-feedback';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react';
-import { ActivityIndicator, AppState, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, AppState, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { readingDateKey } from '@/features/reader';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
-import { buildHeatmap, durationParts } from '../domain/statistics';
-import { heatmapDimensions } from '../domain/month-labels';
+import { durationParts, selectPeriod, shiftDate, type DateRange } from '../domain/statistics';
 import { loadStatistics } from '../repositories/statistics-repository';
-
-import { BookReadingRow } from '../components/book-reading-row';
 import { DailyReadingSheet } from '../components/daily-reading-sheet';
-import { HeatmapMonthLabels } from '../components/heatmap-month-labels';
-const levels = [
-  'bg-default',
-  'bg-navigation-active/20',
-  'bg-navigation-active/40',
-  'bg-navigation-active/70',
-  'bg-navigation-active',
-] as const;
+import { YearHeatmap } from '../components/year-heatmap';
+import { ReadingTrend } from '../components/reading-trend';
+import { PeriodBooks } from '../components/period-books';
+import { DateRangeSheet } from '../components/date-range-sheet';
 
 export function StatisticsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width, fontScale } = useWindowDimensions();
-  const { weekdayWidth, cellSize, rowHeight } = heatmapDimensions(
-    Math.min(width - insets.left - insets.right - 32, 800),
-    fontScale,
-  );
   const { toast } = useToast();
   const [data, setData] = useState<Awaited<ReturnType<typeof loadStatistics>>>();
   const [error, setError] = useState(false);
@@ -79,7 +67,20 @@ export function StatisticsScreen() {
       };
     }, [revision]),
   );
-  const weeks = useMemo(() => buildHeatmap(today, data?.daily ?? []), [today, data]);
+  const [mode, setMode] = useState<'activity' | 'period'>('activity');
+  const [preset, setPreset] = useState<number | undefined>(30);
+  const [custom, setCustom] = useState<DateRange>({ start: shiftDate(today, -29), end: today });
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const range = useMemo(
+    () => (preset ? { start: shiftDate(today, 1 - preset), end: today } : custom),
+    [preset, today, custom],
+  );
+  const period = useMemo(() => (data ? selectPeriod(data, range) : undefined), [data, range]);
+  const year = useMemo(
+    () => (data ? selectPeriod(data, { start: shiftDate(today, -364), end: today }) : undefined),
+    [data, today],
+  );
+  const closeRange = useCallback(() => setRangeOpen(false), []);
   const duration = (milliseconds: number) => {
     const parts = durationParts(milliseconds);
     return parts.hours ? t('statistics.hours', parts) : t('statistics.minutes', parts);
@@ -87,25 +88,39 @@ export function StatisticsScreen() {
   const openBook = (bookId: string) => router.push({ pathname: '/reader/[bookId]', params: { bookId } });
   // Keep the selected day's content mounted throughout the sheet's closing animation.
   const closeDay = useCallback(() => setDayOpen(false), []);
-  const openDay = (date: string) => {
+  const openDay = useCallback((date: string) => {
     setSelected(date);
     setDayOpen(true);
-  };
-  const months = t('statistics.monthsShort').split(',');
-  const weekdays = t('statistics.weekdaysShort').split(',');
+  }, []);
+  const summary = mode === 'activity' ? year : period;
   return (
     <View
       className="flex-1 bg-background"
       style={{ paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
       <ScrollView
         contentContainerClassName="grow px-4 pt-5"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 90 }}>
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
         <View className="w-full max-w-[800px] self-center gap-5">
           <View className="gap-1">
             <Text accessibilityRole="header" className="text-3xl font-semibold text-foreground">
               {t('statistics.title')}
             </Text>
             <Text className="text-sm text-muted">{t('statistics.subtitle')}</Text>
+          </View>
+          <View className="flex-row gap-1 rounded-2xl bg-default p-1">
+            {(['activity', 'period'] as const).map((item) => (
+              <PressableFeedback
+                key={item}
+                accessibilityRole="tab"
+                accessibilityLabel={t(`statistics.${item}`)}
+                accessibilityState={{ selected: mode === item }}
+                onPress={() => setMode(item)}
+                className={`min-h-11 min-w-0 flex-1 items-center justify-center rounded-xl px-2 py-3 ${mode === item ? 'bg-surface' : ''}`}>
+                <Text className={mode === item ? 'text-sm font-semibold text-navigation-active' : 'text-sm text-muted'}>
+                  {t(`statistics.${item}`)}
+                </Text>
+              </PressableFeedback>
+            ))}
           </View>
           {error ? (
             <View className="gap-3 rounded-3xl bg-surface p-5">
@@ -116,100 +131,82 @@ export function StatisticsScreen() {
             </View>
           ) : null}
           {!data && !error ? <ActivityIndicator accessibilityLabel={t('statistics.loading')} /> : null}
-          {data ? (
+          {data && summary ? (
             <>
-              <View className="gap-4 rounded-3xl bg-surface p-5">
-                <View className="flex-row flex-wrap items-center justify-between gap-2">
-                  <Text accessibilityRole="header" className="text-base font-semibold text-foreground">
-                    {t('statistics.activity')}
-                  </Text>
-                  <Text className="text-xs text-muted">{t('statistics.weeks')}</Text>
-                </View>
-                <View className="flex-row gap-2">
-                  <View className="gap-1" style={{ width: weekdayWidth, paddingTop: Math.ceil(20 * fontScale) + 4 }}>
-                    {Array.from({ length: 7 }, (_, day) => (
-                      <View key={day} className="justify-center" style={{ height: rowHeight }}>
-                        <Text className="text-[10px] text-muted">{weekdays[day]}</Text>
-                      </View>
+              {mode === 'activity' ? (
+                <YearHeatmap
+                  today={today}
+                  daily={data.daily}
+                  selected={dayOpen ? selected : undefined}
+                  onSelect={openDay}
+                />
+              ) : (
+                <View className="gap-3 rounded-3xl bg-surface p-5">
+                  <Text className="text-base font-semibold text-foreground">{t('statistics.dateRange')}</Text>
+                  <View className="flex-row gap-1">
+                    {[7, 30, 90, 365].map((days) => (
+                      <Button
+                        key={days}
+                        size="sm"
+                        className="min-w-0 flex-1 px-1"
+                        variant={preset === days ? 'secondary' : 'ghost'}
+                        accessibilityLabel={t('statistics.lastDays', { count: days })}
+                        accessibilityState={{ selected: preset === days }}
+                        onPress={() => setPreset(days)}>
+                        <Button.Label
+                          className={preset === days ? 'text-xs text-navigation-active' : 'text-xs text-muted'}>
+                          {days === 365 ? t('statistics.oneYear') : t('statistics.shortDays', { count: days })}
+                        </Button.Label>
+                      </Button>
                     ))}
                   </View>
-                  <View className="gap-1">
-                    <HeatmapMonthLabels
-                      cellSize={cellSize}
-                      fontScale={fontScale}
-                      starts={weeks.flatMap((week, column) => {
-                        const start = week.find((day) => day.date.endsWith('-01') && !day.future);
-                        return start
-                          ? [{ date: start.date, column, text: months[Number(start.date.slice(5, 7)) - 1] }]
-                          : [];
-                      })}
-                    />
-                    <View className="flex-row gap-1">
-                      {weeks.map((week) => (
-                        <View key={week[0].date} className="gap-1">
-                          {week.map((day) => (
-                            <View key={day.date} className="justify-center" style={{ height: rowHeight }}>
-                              <PressableFeedback
-                                animation={{
-                                  scale: { value: 0.96, ignoreScaleCoefficient: true, timingConfig: { duration: 120 } },
-                                }}
-                                hitSlop={8}
-                                isDisabled={day.future}
-                                accessibilityRole="button"
-                                accessibilityLabel={`${day.date}, ${duration(day.milliseconds)}`}
-                                accessibilityState={{
-                                  selected: dayOpen && selected === day.date,
-                                  disabled: day.future,
-                                }}
-                                onPress={() => openDay(day.date)}
-                                onLongPress={() => openDay(day.date)}
-                                style={{ width: cellSize, height: cellSize }}
-                                className={`items-center justify-center rounded-md ${day.future ? 'opacity-0' : levels[day.level]} ${dayOpen && selected === day.date ? 'border-2 border-navigation-active' : ''}`}
-                              />
-                            </View>
-                          ))}
-                        </View>
-                      ))}
+                  <PressableFeedback
+                    accessibilityRole="button"
+                    accessibilityLabel={t('statistics.customRange')}
+                    className="gap-1 rounded-2xl bg-background p-3 dark:bg-surface-secondary"
+                    onPress={() => {
+                      setRangeOpen(true);
+                    }}>
+                    <Text className="text-xs text-muted">{t('statistics.customRange')}</Text>
+                    <Text className="text-sm font-medium text-foreground">
+                      {range.start} → {range.end}
+                    </Text>
+                  </PressableFeedback>
+                </View>
+              )}
+              <View className="gap-3">
+                <Text className="text-xs text-muted">
+                  {mode === 'activity' ? t('statistics.yearSummary') : t('statistics.periodSummary')} ·{' '}
+                  {summary.range.start} — {summary.range.end}
+                </Text>
+                <View className="flex-row flex-wrap gap-3">
+                  {[
+                    [t('statistics.total'), duration(summary.total)],
+                    [t('statistics.average'), duration(summary.average)],
+                    [t('statistics.books'), t('statistics.count', { count: summary.books.length })],
+                    [t('statistics.readingDays'), t('statistics.daysCount', { count: summary.readingDays })],
+                  ].map(([label, value]) => (
+                    <View key={label} className="min-w-[120px] flex-1 basis-[45%] gap-3 rounded-3xl bg-surface p-4">
+                      <Text className="text-xs text-muted">{label}</Text>
+                      <Text className="text-lg font-semibold text-foreground">{value}</Text>
                     </View>
-                  </View>
-                </View>
-                <View className="flex-row items-center justify-end gap-1.5">
-                  <Text className="text-xs text-muted">{t('statistics.less')}</Text>
-                  {levels.map((level) => (
-                    <View key={level} className={`h-3 w-3 rounded-sm ${level}`} />
                   ))}
-                  <Text className="text-xs text-muted">{t('statistics.more')}</Text>
                 </View>
-                <Text className="text-xs text-muted">{t('statistics.dayHint')}</Text>
               </View>
-              <View className="flex-row flex-wrap gap-3">
-                {[
-                  [t('statistics.books'), t('statistics.count', { count: data.books.length })],
-                  [t('statistics.completed'), t('statistics.count', { count: data.completed })],
-                  [t('statistics.total'), duration(data.total)],
-                  [t('statistics.average'), duration(data.average)],
-                ].map(([label, value]) => (
-                  <View key={label} className="min-w-[140px] flex-1 basis-[45%] gap-4 rounded-3xl bg-surface p-5">
-                    <Text className="text-sm text-muted">{label}</Text>
-                    <Text className="text-xl font-semibold text-foreground">{value}</Text>
-                  </View>
-                ))}
-              </View>
-              <Text className="text-xs text-muted">{t('statistics.definition')}</Text>
-              <Text accessibilityRole="header" className="text-lg font-semibold text-foreground">
-                {t('statistics.byBook')}
-              </Text>
-              {data.books.length === 0 ? (
-                <View className="gap-3 rounded-3xl bg-surface p-6">
-                  <Text className="text-foreground">{t('statistics.empty')}</Text>
+              {mode === 'period' && period ? (
+                <>
+                  <ReadingTrend key={`${range.start}:${range.end}`} daily={period.daily} onSelect={openDay} />
+                  <PeriodBooks period={period} onOpenBook={openBook} />
+                </>
+              ) : null}
+              {!data.books.length ? (
+                <View className="gap-3 rounded-3xl bg-surface p-5">
+                  <Text className="text-sm text-muted">{t('statistics.empty')}</Text>
                   <Button variant="secondary" onPress={() => router.navigate('/library')}>
                     {t('tabs.library')}
                   </Button>
                 </View>
               ) : null}
-              {data.books.map((book) => (
-                <BookReadingRow key={book.id} book={book} onPress={() => openBook(book.id)} />
-              ))}
             </>
           ) : null}
         </View>
@@ -220,6 +217,17 @@ export function StatisticsScreen() {
         books={selected ? (data?.dayBooks[selected] ?? []) : []}
         onClose={closeDay}
         onOpenBook={openBook}
+      />
+      <DateRangeSheet
+        range={range}
+        today={today}
+        isOpen={rangeOpen}
+        onClose={closeRange}
+        onApply={(next) => {
+          setCustom(next);
+          setPreset(undefined);
+          setRangeOpen(false);
+        }}
       />
     </View>
   );

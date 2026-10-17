@@ -19,6 +19,23 @@ const state = vi.hoisted(() => ({
   push: vi.fn(),
   navigate: vi.fn(),
   toast: vi.fn(),
+  period: undefined as unknown,
+  applyRange: undefined as undefined | ((range: { start: string; end: string }) => void),
+}));
+vi.mock('../../src/features/statistics/components/reading-trend', () => ({
+  ReadingTrend: ({ daily }: { daily: unknown }) => <div>{JSON.stringify(daily)}</div>,
+}));
+vi.mock('../../src/features/statistics/components/period-books', () => ({
+  PeriodBooks: ({ period }: { period: unknown }) => {
+    state.period = period;
+    return <div>{JSON.stringify(period)}</div>;
+  },
+}));
+vi.mock('../../src/features/statistics/components/date-range-sheet', () => ({
+  DateRangeSheet: ({ onApply }: { onApply: typeof state.applyRange }) => {
+    state.applyRange = onApply;
+    return null;
+  },
 }));
 vi.mock('react', async (original) => ({
   ...(await original<typeof import('react')>()),
@@ -41,11 +58,23 @@ vi.mock('expo-router', () => ({
     state.focus = callback;
   },
 }));
+vi.mock('react-native-reanimated', async () => {
+  const { useRef } = await import('react');
+  const { ScrollView, Text } = await import('react-native');
+  return {
+    default: { ScrollView, Text },
+    useAnimatedRef: () => useRef(null),
+    useScrollOffset: () => ({ value: 0 }),
+    useSharedValue: (value: number) => ({ value }),
+    useAnimatedStyle: (factory: () => unknown) => factory(),
+  };
+});
 vi.mock('react-native', () => ({
   View: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
   ScrollView: ({ children }: { children: ReactNode }) => <section>{children}</section>,
   useWindowDimensions: () => ({ width: 411, height: 914, fontScale: 1 }),
+  PanResponder: { create: () => ({ panHandlers: {} }) },
   ActivityIndicator: () => <span>loading</span>,
   BackHandler: { addEventListener: () => ({ remove: vi.fn() }) },
   AppState: {
@@ -56,7 +85,14 @@ vi.mock('react-native', () => ({
   },
 }));
 vi.mock('expo-image', () => ({ Image: () => <span>cover</span> }));
-vi.mock('uniwind', () => ({ withUniwind: (component: unknown) => component }));
+vi.mock('uniwind', () => ({
+  withUniwind: (component: unknown) => component,
+  useResolveClassNames: () => ({ color: 'blue' }),
+}));
+vi.mock('react-native-svg', () => {
+  const Part = ({ children }: { children: ReactNode }) => <div>{children}</div>;
+  return { default: Part, Circle: Part, Line: Part, Path: Part };
+});
 vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 24, bottom: 34, left: 0, right: 0 }),
 }));
@@ -67,7 +103,7 @@ vi.mock('@/i18n', () => ({
   useTranslation: () => ({
     i18n: { language: 'en' },
     t: (key: string, values?: Record<string, unknown>) => {
-      const calendarKeys = ['monthsShort', 'monthsLong', 'weekdaysShort', 'weekdaysLong', 'fullDate'];
+      const calendarKeys = ['monthsShort', 'monthsLong', 'weekdaysShort', 'weekdaysLong', 'fullDate', 'dateTitle'];
       const name = key.replace('statistics.', '');
       if (calendarKeys.includes(name)) {
         const calendar = state.locale === 'zh-CN' ? zhCN.statistics : en.statistics;
@@ -102,7 +138,9 @@ vi.mock('heroui-native/button', () => {
     }
     return <button disabled={isDisabled}>{children}</button>;
   };
-  return { Button: Control };
+  return {
+    Button: Object.assign(Control, { Label: ({ children }: { children: ReactNode }) => <span>{children}</span> }),
+  };
 });
 vi.mock('heroui-native/pressable-feedback', async () => {
   const { Button } = await import('heroui-native/button');
@@ -114,7 +152,13 @@ vi.mock('@gorhom/bottom-sheet', () => ({
 vi.mock('heroui-native/bottom-sheet', () => {
   const Part = ({ children }: { children: ReactNode }) => <div>{children}</div>;
   const Root = ({ isOpen, children }: { isOpen: boolean; children: ReactNode }) => {
-    state.sheetChildren = children;
+    const isDay = (node: ReactNode): boolean =>
+      React.Children.toArray(node).some((child) =>
+        typeof child === 'string'
+          ? child.includes('statistics.daySummary')
+          : React.isValidElement<{ children: ReactNode }>(child) && isDay(child.props.children),
+      );
+    if (isDay(children)) state.sheetChildren = children;
     return isOpen ? <div>{children}</div> : null;
   };
   return {
@@ -162,15 +206,46 @@ beforeEach(() => {
 });
 
 describe('statistics mobile screen interactions', () => {
+  it('updates summary, curve, books and ranking together across presets and custom ranges', async () => {
+    render();
+    const cleanup = state.focus!();
+    await settle();
+    render();
+    state.actions.get('statistics.period')!();
+    let markup = render();
+    expect(markup).toContain('statistics.periodSummary');
+    expect(state.period).toMatchObject({
+      total: 60_000,
+      readingDays: 1,
+      books: [{ id: 'book', milliseconds: 60_000 }],
+      ranking: [{ share: 1 }],
+    });
+    state.applyRange!({ start: '2026-10-01', end: '2026-10-14' });
+    markup = render();
+    expect(state.period).toMatchObject({ total: 0, average: 0, books: [], ranking: [] });
+    expect(markup).not.toContain('Lunar book');
+    expect(markup).toContain('2026-10-14');
+    state.applyRange!({ start: '2026-10-15', end: '2026-10-15' });
+    render();
+    expect(state.period).toMatchObject({
+      total: 60_000,
+      average: 60_000,
+      daily: [{ date: '2026-10-15', milliseconds: 60_000 }],
+    });
+    state.actions.get('statistics.lastDays{"count":7}')!();
+    render();
+    expect(state.period).toMatchObject({ total: 60_000, average: 60_000 / 7 });
+    cleanup();
+  });
   it('loads on focus, selects a date and opens the correct book route', async () => {
     expect(render()).toContain('loading');
     const cleanup = state.focus!();
     await settle();
-    expect(render()).toContain('Lunar book');
+    expect(render()).toContain('statistics.yearSummary');
     const day = [...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'));
     expect(day).toBeDefined();
     state.actions.get(day!)!();
-    expect(render()).toContain('Thursday, October 15, 2026');
+    expect(render()).toContain('October 15, 2026');
     expect(state.dayChildren.every((child) => child === undefined)).toBe(true);
     state.actions.get('statistics.openBook{"title":"Lunar book"}')!();
     expect(state.push).toHaveBeenCalledWith({ pathname: '/reader/[bookId]', params: { bookId: 'book' } });
@@ -186,9 +261,9 @@ describe('statistics mobile screen interactions', () => {
     expect(render()).toContain('statistics.daySummary{&quot;count&quot;:1}');
     expect(render()).toContain('cover');
     state.actions.get('action.close')!();
-    expect(render()).not.toContain('Thursday, October 15, 2026');
+    expect(render()).not.toContain('October 15, 2026');
     const closingContent = renderToStaticMarkup(<>{state.sheetChildren}</>);
-    expect(closingContent).toContain('Thursday, October 15, 2026');
+    expect(closingContent).toContain('October 15, 2026');
     expect(closingContent).toContain('statistics.daySummary{&quot;count&quot;:1}');
     expect(closingContent).toContain('Lunar book');
     cleanup();
@@ -212,11 +287,11 @@ describe('statistics mobile screen interactions', () => {
     state.locale = 'zh-CN';
     const markup = render();
     expect(markup).toContain('周日');
-    expect(markup).not.toContain('>7月<');
+    expect(markup).toContain('>7月<');
     for (const month of ['8月', '9月', '10月']) expect(markup).toContain(`>${month}<`);
     const day = [...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'))!;
     state.actions.get(day)!();
-    expect(render()).toContain('2026年10月15日星期四');
+    expect(render()).toContain('2026年10月15日');
     cleanup();
   });
   it('refreshes after foregrounding and ignores results after leaving the screen', async () => {
@@ -253,12 +328,12 @@ describe('statistics mobile screen interactions', () => {
     render();
     cleanup = state.focus!();
     await settle();
-    expect(render()).toContain('Lunar book');
+    expect(render()).toContain('statistics.yearSummary');
     expect(state.cells[1]).toBe(false);
     cleanup();
   });
   it('takes an empty library back to the library tab', async () => {
-    state.load.mockResolvedValue({ books: [], daily: [], total: 0, average: 0, completed: 0 });
+    state.load.mockResolvedValue({ books: [], daily: [], dayBooks: {}, total: 0, average: 0, completed: 0 });
     render();
     const cleanup = state.focus!();
     await settle();

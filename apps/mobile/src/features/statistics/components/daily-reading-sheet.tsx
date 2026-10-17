@@ -9,6 +9,7 @@ import { useTranslation } from '@/i18n';
 import { durationParts, type StatisticsBook } from '../domain/statistics';
 import { BookReadingRow } from './book-reading-row';
 const DayScrollView = withUniwind(BottomSheetScrollView);
+const daySnapPoints = ['60%', '85%'];
 
 export function DailyReadingSheet({
   date,
@@ -54,14 +55,25 @@ export function DailyReadingSheet({
         <BottomSheet.Content
           backgroundClassName="rounded-t-3xl bg-background dark:bg-surface"
           contentContainerClassName="h-full px-5"
-          snapPoints={['60%', '85%']}
+          snapPoints={daySnapPoints}
           enableDynamicSizing={false}
           enableOverDrag={false}>
           <View className="gap-3 pb-4">
             <View className="flex-row items-center justify-between gap-3">
-              <BottomSheet.Title className="min-w-0 flex-1 text-xl font-semibold text-foreground">
-                {title}
-              </BottomSheet.Title>
+              <View className="min-w-0 flex-1 gap-1">
+                <BottomSheet.Title accessibilityLabel={title} className="text-xl font-semibold text-foreground">
+                  {calendarDate
+                    ? t('statistics.dateTitle', {
+                        year: calendarDate.getUTCFullYear(),
+                        month: t('statistics.monthsLong').split(',')[calendarDate.getUTCMonth()],
+                        day: calendarDate.getUTCDate(),
+                      })
+                    : ''}
+                </BottomSheet.Title>
+                <Text className="text-xs text-muted">
+                  {calendarDate ? t('statistics.weekdaysLong').split(',')[calendarDate.getUTCDay()] : ''}
+                </Text>
+              </View>
               <Button variant="ghost" size="sm" onPress={onClose} accessibilityLabel={t('action.close')}>
                 {t('action.close')}
               </Button>
