@@ -195,6 +195,14 @@ export function StatisticsScreen() {
               </View>
               {mode === 'period' && period ? (
                 <>
+                  <Button
+                    variant="secondary"
+                    isDisabled={!period.books.length}
+                    onPress={() =>
+                      router.push({ pathname: '/statistics-poster', params: { start: range.start, end: range.end } })
+                    }>
+                    {t('statistics.posterEntry')}
+                  </Button>
                   <ReadingTrend key={`${range.start}:${range.end}`} daily={period.daily} onSelect={openDay} />
                   <PeriodBooks period={period} onOpenBook={openBook} />
                 </>

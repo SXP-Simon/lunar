@@ -232,6 +232,11 @@ describe('statistics mobile screen interactions', () => {
       average: 60_000,
       daily: [{ date: '2026-10-15', milliseconds: 60_000 }],
     });
+    state.actions.get('statistics.posterEntry')!();
+    expect(state.push).toHaveBeenCalledWith({
+      pathname: '/statistics-poster',
+      params: { start: '2026-10-15', end: '2026-10-15' },
+    });
     state.actions.get('statistics.lastDays{"count":7}')!();
     render();
     expect(state.period).toMatchObject({ total: 60_000, average: 60_000 / 7 });
