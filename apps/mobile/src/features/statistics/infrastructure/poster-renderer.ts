@@ -1,4 +1,6 @@
 import { Skia, TileMode, ClipOp, BlendMode, BlurStyle, PaintStyle, type SkTypeface } from '@shopify/react-native-skia';
+import { drawAmbientBackground } from './poster-background';
+import { posterCoverSource } from '../domain/poster-crop';
 import { Asset } from 'expo-asset';
 import { loadPosterBrand } from './poster-brand';
 import {
@@ -29,16 +31,18 @@ export function preparePosterTypeface() {
 }
 
 /** CPU raster surface: draw and release each cover before decoding the next one.
+ * The editor's transparent overlay reuses the exact exported captions and shading.
  * Never depend on Fresco's evictable SVG cache for a full-year, hundred-cover export. */
 export async function renderPoster(
   page: PosterPage,
   labels: PosterLabels,
   signal: { aborted: boolean },
   typeface?: SkTypeface,
+  coverOverlay = false,
 ) {
   const face = typeface ?? (await preparePosterTypeface());
-  const brand = await loadPosterBrand();
-  const scale = page.height === 1440 ? 3 : page.height <= 2000 ? 2 : 1;
+  const brand = coverOverlay ? null : await loadPosterBrand();
+  const scale = page.height === 1440 ? (coverOverlay ? 2 : 3) : page.height <= 2000 ? 2 : 1;
   const surface = Skia.Surface.Make(page.width * scale, page.height * scale);
   if (!surface) throw Error('Poster bitmap allocation failed');
   const canvas = surface.getCanvas();
@@ -91,20 +95,23 @@ export async function renderPoster(
     canvas.drawText(value, x - offset, y, paint, font);
   };
   try {
-    canvas.clear(Skia.Color(paper));
-    line(64, 47, 1016, 47);
-    if (labels.page) text(labels.page, 1016, 82, 16, muted, true);
-    text(wrapPosterText(labels.title, 20, 1)[0] || '', 64, 147, 44, ink, false, true);
-    text(labels.range, 64, 190, 19, muted);
-    text(labels.total, 1016, 190, 20, muted, true);
-    // Draw the three soft halos behind the entire mosaic, keeping small-cover gutters dark.
-    glowPaint.setStyle(PaintStyle.Stroke);
-    glowPaint.setStrokeWidth(2);
-    glowPaint.setColor(Skia.Color('#ffffff65'));
-    glowPaint.setMaskFilter(coverGlow);
-    for (const tile of page.tiles) {
-      if (featured.has(tile.book.id))
-        canvas.drawRect(Skia.XYWHRect(tile.x, tile.y, tile.width, tile.height), glowPaint);
+    canvas.clear(Skia.Color(coverOverlay ? '#00000000' : paper));
+    if (!coverOverlay) {
+      await drawAmbientBackground(canvas, page, signal);
+      line(64, 47, 1016, 47);
+      if (labels.page) text(labels.page, 1016, 82, 16, muted, true);
+      text(wrapPosterText(labels.title, 20, 1)[0] || '', 64, 147, 44, ink, false, true);
+      text(labels.range, 64, 190, 19, muted);
+      text(labels.total, 1016, 190, 20, muted, true);
+      // Draw the three soft halos behind the entire mosaic, keeping small-cover gutters dark.
+      glowPaint.setStyle(PaintStyle.Stroke);
+      glowPaint.setStrokeWidth(2);
+      glowPaint.setColor(Skia.Color('#ffffff65'));
+      glowPaint.setMaskFilter(coverGlow);
+      for (const tile of page.tiles) {
+        if (featured.has(tile.book.id))
+          canvas.drawRect(Skia.XYWHRect(tile.x, tile.y, tile.width, tile.height), glowPaint);
+      }
     }
     for (const tile of page.tiles) {
       if (signal.aborted) throw Error('Poster cancelled');
@@ -114,34 +121,33 @@ export async function renderPoster(
       const tint = ['#284358', '#6e5563', '#587267', '#a48058', '#4a5c73', '#9d9380'][
         Array.from(book.id).reduce((s, c) => s + c.charCodeAt(0), 0) % 6
       ];
-      rect(x, y, w, h, tint);
-      if (book.coverUri) {
-        const data = await Skia.Data.fromURI(book.coverUri);
-        try {
-          const image = Skia.Image.MakeImageFromEncoded(data);
-          if (!image) throw Error('Cover decode failed');
+      if (!coverOverlay) {
+        rect(x, y, w, h, tint);
+        if (book.coverUri) {
+          const data = await Skia.Data.fromURI(book.coverUri);
           try {
-            // A centered crop preserves the cover's aspect ratio.
-            const fit = Math.max(w / image.width(), h / image.height());
-            const sw = w / fit,
-              sh = h / fit;
-            color('#ffffff');
-            canvas.drawImageRectCubic(
-              image,
-              Skia.XYWHRect((image.width() - sw) / 2, (image.height() - sh) / 2, sw, sh),
-              Skia.XYWHRect(x, y, w, h),
-              1 / 3,
-              1 / 3,
-              paint,
-            );
+            const image = Skia.Image.MakeImageFromEncoded(data);
+            if (!image) throw Error('Cover decode failed');
+            try {
+              const source = posterCoverSource(image.width(), image.height(), w, h, book.crop);
+              color('#ffffff');
+              canvas.drawImageRectCubic(
+                image,
+                Skia.XYWHRect(source.x, source.y, source.width, source.height),
+                Skia.XYWHRect(x, y, w, h),
+                1 / 3,
+                1 / 3,
+                paint,
+              );
+            } finally {
+              image.dispose();
+            }
           } finally {
-            image.dispose();
+            data.dispose();
           }
-        } finally {
-          data.dispose();
+        } else {
+          circle(x + w * 0.72, y + h * 0.27, Math.min(w, h) * 0.16, '#9b8ba3');
         }
-      } else {
-        circle(x + w * 0.72, y + h * 0.27, Math.min(w, h) * 0.16, '#9b8ba3');
       }
       rect(x, y, w, h, '#0000000c');
       color('#ffffff');
@@ -188,50 +194,56 @@ export async function renderPoster(
       // Yield between covers so cancellation and progress remain responsive.
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
-    const note = posterQuoteLayout(page, labels.quote);
-    if (note) {
-      const { box, x, top, size, heading, lineHeight, lines } = note;
-      canvas.save();
-      canvas.clipRect(Skia.XYWHRect(box.x, box.y, box.width, box.height), ClipOp.Intersect, false);
-      const radius = size * 0.3;
-      circle(x + radius, top + radius, radius, accent);
-      circle(x + radius * 1.5, top + radius * 0.65, radius * 0.85, paper);
-      line(x + size, top + radius, box.x + box.width - (x - box.x), top + radius);
-      lines.forEach((value, i) => text(value, x, top + heading + size + i * lineHeight, size, accent, false, true));
-      canvas.restore();
-    }
-    if (brand) {
-      color('#ffffff');
-      const tint = Skia.ColorFilter.MakeBlend(Skia.Color('#ffffff'), BlendMode.SrcIn);
-      try {
-        paint.setColorFilter(tint);
-        glowPaint.setStyle(PaintStyle.Fill);
-        glowPaint.setColor(Skia.Color('#ffffff55'));
-        glowPaint.setMaskFilter(softGlow);
-        glowPaint.setColorFilter(tint);
-        canvas.drawImageRectCubic(
-          brand,
-          Skia.XYWHRect(180, 190, 660, 640),
-          Skia.XYWHRect(64, page.height - 66, 48, 48),
-          1 / 3,
-          1 / 3,
-          glowPaint,
-        );
-        glowPaint.setColorFilter(null);
-        canvas.drawImageRectCubic(
-          brand,
-          Skia.XYWHRect(180, 190, 660, 640),
-          Skia.XYWHRect(64, page.height - 66, 48, 48),
-          1 / 3,
-          1 / 3,
-          paint,
-        );
-      } finally {
-        paint.setColorFilter(null);
-        tint.dispose();
+    if (!coverOverlay) {
+      const note = posterQuoteLayout(page, labels.quote);
+      if (note) {
+        const { box, x, top, size, heading, lineHeight, lines } = note;
+        canvas.save();
+        canvas.clipRect(Skia.XYWHRect(box.x, box.y, box.width, box.height), ClipOp.Intersect, false);
+        const radius = size * 0.3;
+        const cutout = Skia.Path.Circle(x + radius * 1.5, top + radius * 0.65, radius * 0.85);
+        canvas.save();
+        canvas.clipPath(cutout, ClipOp.Difference, true);
+        circle(x + radius, top + radius, radius, accent);
+        canvas.restore();
+        cutout.dispose();
+        line(x + size, top + radius, box.x + box.width - (x - box.x), top + radius);
+        lines.forEach((value, i) => text(value, x, top + heading + size + i * lineHeight, size, accent, false, true));
+        canvas.restore();
       }
+      if (brand) {
+        color('#ffffff');
+        const tint = Skia.ColorFilter.MakeBlend(Skia.Color('#ffffff'), BlendMode.SrcIn);
+        try {
+          paint.setColorFilter(tint);
+          glowPaint.setStyle(PaintStyle.Fill);
+          glowPaint.setColor(Skia.Color('#ffffff55'));
+          glowPaint.setMaskFilter(softGlow);
+          glowPaint.setColorFilter(tint);
+          canvas.drawImageRectCubic(
+            brand,
+            Skia.XYWHRect(180, 190, 660, 640),
+            Skia.XYWHRect(64, page.height - 66, 48, 48),
+            1 / 3,
+            1 / 3,
+            glowPaint,
+          );
+          glowPaint.setColorFilter(null);
+          canvas.drawImageRectCubic(
+            brand,
+            Skia.XYWHRect(180, 190, 660, 640),
+            Skia.XYWHRect(64, page.height - 66, 48, 48),
+            1 / 3,
+            1 / 3,
+            paint,
+          );
+        } finally {
+          paint.setColorFilter(null);
+          tint.dispose();
+        }
+      }
+      text('Lunar', 124, page.height - 29, 19, ink, false, true);
     }
-    text('Lunar', 124, page.height - 29, 19, ink, false, true);
     if (signal.aborted) throw Error('Poster cancelled');
     surface.flush();
     const image = surface.makeImageSnapshot();

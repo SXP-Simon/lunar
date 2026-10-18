@@ -1,5 +1,14 @@
 export const zhCN = {
   statistics: {
+    posterCropTitle: '编辑海报',
+    posterCropSelect: '点选书封，调整画面',
+    posterCropReset: '重置书封',
+    posterCropApply: '完成',
+    posterCropGesture: '拖动或缩放书封，周围区域移动海报',
+    posterCropCanvas: '海报编辑画布',
+    posterCropBrowse: '点选书封 · 双指放大海报',
+    posterCropOverview: '查看全图',
+
     posterEntry: '导出阅读海报',
     posterEditor: '阅读海报',
     posterBack: '返回统计',

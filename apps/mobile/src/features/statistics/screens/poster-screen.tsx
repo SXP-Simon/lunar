@@ -28,7 +28,16 @@ import { ImageViewer } from '@/components/ui/image-viewer';
 import { readingDateKey } from '@/features/reader';
 import { DateRangeSheet } from '../components/date-range-sheet';
 import { PosterCanvas, type PosterCanvasHandle } from '../components/poster-canvas';
-import { buildPoster, posterPreset, posterInitialRange, type PosterBook, type PosterOutput } from '../domain/poster';
+import { PosterCoverEditor } from '../components/poster-cover-editor';
+import type { PosterCrop } from '../domain/poster-crop';
+import {
+  buildPoster,
+  posterPreset,
+  posterInitialRange,
+  type PosterBook,
+  type PosterLabels,
+  type PosterOutput,
+} from '../domain/poster';
 import { exportPosterPages } from '../domain/poster-export';
 import { durationParts, selectPeriod, type DateRange } from '../domain/statistics';
 import { loadStatistics } from '../repositories/statistics-repository';
@@ -67,6 +76,9 @@ export function PosterScreen() {
     [seed, setSeed] = useState(1),
     [output, setOutput] = useState<PosterOutput>('single'),
     [page, setPage] = useState(0);
+  const [readyPreview, setReadyPreview] = useState('');
+  const [crops, setCrops] = useState<Record<string, PosterCrop>>({});
+  const [cropEditor, setCropEditor] = useState<{ uri: string; labels: PosterLabels; initialId?: string }>();
   const [excluded, setExcluded] = useState<Set<string>>(() => new Set()),
     [selection, setSelection] = useState<Set<string>>(() => new Set()),
     [choosing, setChoosing] = useState(false);
@@ -173,14 +185,15 @@ export function PosterScreen() {
   const preparing = !selected || preparation?.source !== selected;
   const prepareFailed = !!selected && preparation?.source === selected && !prepared;
   const hasQuote = !!quote.trim();
+  const posterBooks = useMemo(() => prepared?.map((book) => ({ ...book, crop: crops[book.id] })), [prepared, crops]);
   const document = useMemo(
-    () => (prepared ? buildPoster(prepared, seed, output, hasQuote) : undefined),
-    [prepared, seed, output, hasQuote],
+    () => (posterBooks ? buildPoster(posterBooks, seed, output, hasQuote) : undefined),
+    [posterBooks, seed, output, hasQuote],
   );
   const actualPage = Math.min(page, (document?.pages.length ?? 1) - 1);
   const job = useMemo(
-    () => JSON.stringify([range, title, quote, seed, output, prepared]),
-    [range, title, quote, seed, output, prepared],
+    () => JSON.stringify([range, title, quote, seed, output, posterBooks]),
+    [range, title, quote, seed, output, posterBooks],
   );
   const [savedJob, setSavedJob] = useState(job);
   if (savedJob !== job) {
@@ -466,8 +479,32 @@ export function PosterScreen() {
                 onOpen={(uri, origin) => {
                   if (!saving.current) setPreview({ uri, origin });
                 }}
+                onReady={(ready) => setReadyPreview(ready ? `${job}:${actualPage}` : '')}
+                onEdit={(uri, labels, tile) => {
+                  if (!saving.current) setCropEditor({ uri, labels, initialId: tile?.book.id });
+                }}
               />
             </ScrollView>
+            <View className="flex-row gap-2">
+              <Button
+                className="min-w-0 flex-1"
+                variant="ghost"
+                isDisabled={busy || readyPreview !== `${job}:${actualPage}`}
+                onPress={() => canvas.current?.open()}>
+                {t('statistics.posterPreview')}
+              </Button>
+              <Button
+                className="min-w-0 flex-1"
+                variant="secondary"
+                isDisabled={
+                  busy ||
+                  readyPreview !== `${job}:${actualPage}` ||
+                  !document.pages[actualPage].tiles.some((tile) => tile.book.coverUri)
+                }
+                onPress={() => canvas.current?.edit()}>
+                {t('statistics.posterCropTitle')}
+              </Button>
+            </View>
             {document.pages.length > 1 && (
               <View className="flex-row items-center justify-between gap-2">
                 <Button
@@ -595,6 +632,18 @@ export function PosterScreen() {
         </View>
       </ScrollView>
       {!keyboardVisible && footer}
+      {cropEditor && document && (
+        <PosterCoverEditor
+          page={document.pages[actualPage]}
+          {...cropEditor}
+          crops={crops}
+          onCancel={() => setCropEditor(undefined)}
+          onApply={(next) => {
+            setCrops(next);
+            setCropEditor(undefined);
+          }}
+        />
+      )}
       {preview && (
         <ImageViewer
           uri={preview.uri}

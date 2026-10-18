@@ -1,7 +1,10 @@
 import type { DateRange, StatisticsBook } from './statistics';
+import type { PosterCrop } from './poster-crop';
 
 export type PosterOutput = 'single' | 'pages' | 'long';
-export type PosterBook = Pick<StatisticsBook, 'id' | 'title' | 'author' | 'coverUri' | 'milliseconds'>;
+export type PosterBook = Pick<StatisticsBook, 'id' | 'title' | 'author' | 'coverUri' | 'milliseconds'> & {
+  crop?: PosterCrop;
+};
 export interface PosterTile {
   book: PosterBook;
   x: number;

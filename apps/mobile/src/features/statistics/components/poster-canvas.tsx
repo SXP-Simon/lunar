@@ -5,13 +5,15 @@ import { useToast } from 'heroui-native/toast';
 import { Button } from 'heroui-native/button';
 import { PressableFeedback } from 'heroui-native/pressable-feedback';
 import { useTranslation } from '@/i18n';
-import type { PosterDocument, PosterLabels } from '../domain/poster';
+import type { PosterDocument, PosterLabels, PosterTile } from '../domain/poster';
 import { renderPoster } from '../infrastructure/poster-renderer';
 import { removePosterImage, writePosterImage } from '../infrastructure/poster-image';
 export type { PosterLabels } from '../domain/poster';
 export interface PosterCanvasHandle {
   page: number;
   snapshot: () => Promise<string>;
+  open: () => void;
+  edit: () => void;
 }
 export const PosterCanvas = forwardRef<
   PosterCanvasHandle,
@@ -20,9 +22,11 @@ export const PosterCanvas = forwardRef<
     page: number;
     width: number;
     labels: PosterLabels;
+    onReady?: (ready: boolean) => void;
+    onEdit?: (uri: string, labels: PosterLabels, tile?: PosterTile) => void;
     onOpen: (uri: string, origin: { x: number; y: number; width: number; height: number }) => void;
   }
->(function PosterCanvas({ document, page: pageIndex, width, labels, onOpen }, ref) {
+>(function PosterCanvas({ document, page: pageIndex, width, labels, onOpen, onEdit, onReady }, ref) {
   const page = document.pages[pageIndex],
     labelKey = JSON.stringify(labels);
   const [result, setResult] = useState<{ uri?: string; error?: boolean }>({});
@@ -31,10 +35,12 @@ export const PosterCanvas = forwardRef<
   const view = useRef<View>(null);
   const { t } = useTranslation();
   const { toast } = useToast();
+  const notifyReady = useEffectEvent((ready: boolean) => onReady?.(ready));
   const notifyError = useEffectEvent(() =>
     toast.show({ variant: 'danger', label: t('statistics.posterRenderFailed') }),
   );
   useEffect(() => {
+    notifyReady(false);
     const signal = { aborted: false };
     let uri: string | undefined;
     const task = async () => {
@@ -47,6 +53,7 @@ export const PosterCanvas = forwardRef<
           throw Error('Poster cancelled');
         }
         setResult({ uri });
+        notifyReady(true);
         return base64;
       } catch (error) {
         if (!signal.aborted) {
@@ -67,12 +74,19 @@ export const PosterCanvas = forwardRef<
     ref,
     () => ({
       page: pageIndex,
+      edit: () => {
+        if (result.uri) onEdit?.(result.uri, labels);
+      },
+      open: () => {
+        const uri = result.uri;
+        if (uri) view.current?.measureInWindow((x, y, width, height) => onOpen(uri, { x, y, width, height }));
+      },
       snapshot: async () => {
         if (!rendering.current) throw Error('Poster is not ready');
         return rendering.current;
       },
     }),
-    [pageIndex],
+    [pageIndex, result.uri, onOpen, onEdit, labels],
   );
   return (
     <View
@@ -83,8 +97,15 @@ export const PosterCanvas = forwardRef<
       {result.uri ? (
         <PressableFeedback
           accessibilityRole="button"
-          accessibilityLabel={t('statistics.posterPreview')}
-          onPress={() => {
+          accessibilityLabel={t(onEdit ? 'statistics.posterCropSelect' : 'statistics.posterPreview')}
+          onPress={(event) => {
+            const x = (event.nativeEvent.locationX * page.width) / width;
+            const y = (event.nativeEvent.locationY * page.width) / width;
+            const tile = page.tiles.find((v) => x >= v.x && x < v.x + v.width && y >= v.y && y < v.y + v.height);
+            if (tile?.book.coverUri && onEdit) {
+              onEdit(result.uri!, labels, tile);
+              return;
+            }
             const uri = result.uri;
             if (uri) view.current?.measureInWindow((x, y, width, height) => onOpen(uri, { x, y, width, height }));
           }}>

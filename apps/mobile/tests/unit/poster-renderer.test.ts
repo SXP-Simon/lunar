@@ -15,11 +15,13 @@ const state = vi.hoisted(() => ({
   texts: [] as string[],
   disposableFilters: false,
   filtersDisposed: 0,
+  sources: [] as { x: number; y: number; width: number; height: number }[],
 }));
 vi.mock('../../src/features/statistics/infrastructure/poster-brand', () => ({
   loadPosterBrand: async () => (state.brand ? { brand: true } : null),
 }));
 vi.mock('expo-asset', () => ({ Asset: { fromModule: vi.fn() } }));
+vi.mock('../../src/features/statistics/infrastructure/poster-background', () => ({ drawAmbientBackground: vi.fn() }));
 vi.mock('@shopify/react-native-skia', () => {
   const noop = () => {};
   const paint = () => ({
@@ -36,18 +38,23 @@ vi.mock('@shopify/react-native-skia', () => {
     scale: noop,
     save: noop,
     clipRect: noop,
+    clipPath: noop,
     restore: noop,
     clear: noop,
     drawRect: noop,
     drawLine: noop,
     drawCircle: noop,
     drawText: (value: string) => state.texts.push(value),
-    drawImageRectCubic: (image: { brand?: boolean }) => {
+    drawImageRectCubic: (
+      image: { brand?: boolean },
+      source: { x: number; y: number; width: number; height: number },
+    ) => {
       if (image.brand) {
         state.brands++;
         return;
       }
       state.drawn++;
+      state.sources.push(source);
     },
   };
   return {
@@ -58,8 +65,9 @@ vi.mock('@shopify/react-native-skia', () => {
     ClipOp: { Intersect: 0 },
     Skia: {
       Color: (s: string) => s,
-      XYWHRect: noop,
+      XYWHRect: (x: number, y: number, width: number, height: number) => ({ x, y, width, height }),
       Paint: paint,
+      Path: { Circle: () => ({ dispose: noop }) },
       Font: () => ({ setSize: noop, getGlyphIDs: () => [], getGlyphWidths: () => [], dispose: noop }),
       MaskFilter: {
         MakeBlur: () => (state.disposableFilters ? { dispose: () => state.filtersDisposed++ } : {}),
@@ -114,6 +122,27 @@ const labels: PosterLabels = {
   unknownAuthor: '佚名',
   page: '1 / 1',
 };
+it('exports each selected crop instead of reverting to the original centered cover', async () => {
+  Object.assign(state, { failAt: -1, sources: [] });
+  const book = { ...source[0], crop: { x: 0, y: 1, zoom: 2 } };
+  const page = buildPoster([book], 1, 'single').pages[0];
+  await renderPoster(page, labels, { aborted: false }, {} as SkTypeface);
+  const tile = page.tiles[0];
+  const fit = Math.max(tile.width / 400, tile.height / 600) * 2;
+  expect(state.sources).toEqual([
+    { x: 0, y: 600 - tile.height / fit, width: tile.width / fit, height: tile.height / fit },
+  ]);
+});
+it('draws the live editor overlay with the same captions, without decoding covers again', async () => {
+  Object.assign(state, { failAt: -1, drawn: 0, decoded: 0, texts: [], brand: false });
+  const page = buildPoster(source.slice(0, 6), 1, 'single').pages[0];
+  await renderPoster(page, labels, { aborted: false }, {} as SkTypeface, true);
+  expect(state.drawn).toBe(0);
+  expect(state.decoded).toBe(0);
+  for (const book of source.slice(0, 6)) expect(state.texts).toContain(book.title);
+  expect(state.texts).not.toContain(labels.title);
+  expect(state.texts).not.toContain('Lunar');
+});
 it('draws all 120 real covers sequentially before encoding, without an evictable image cache', async () => {
   Object.assign(state, { live: 0, maxLive: 0, drawn: 0, decoded: 0, snapshots: 0, surfaceDisposed: 0, failAt: -1 });
   const page = buildPoster(source, 1, 'long').pages[0];
