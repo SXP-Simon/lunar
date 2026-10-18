@@ -1,7 +1,7 @@
-# Lunar reading poster UI
+# Lunar reading posters
 
-Android API 36 / 320dp. Real light-novel metadata and covers; simulated reading sessions. Poster images are native app exports. Editor screenshots show direct manipulation within the poster composition.
+Current 6 / 20 / 60 / 120 book exports from the production TypeScript layout and Skia renderer, rendered using CanvasKit. All originals are 3240 x 4320 PNGs. The four images are pixel-identical to the approved local samples with the Lunar signature at bottom right.
 
-Code: 3014eb36104c1f160b1a34424d01b04a1da030cc
+Real KADOKAWA light-novel metadata and covers; reading durations are synthetic fixtures, not user history. See SOURCES.md. These assets are documentation only and are not bundled with the app.
 
-See SOURCES.md for the 120 unique volume ISBNs and official publisher links.
+The remaining Android editor screenshots in this branch are earlier interaction-validation captures, not screenshots of this updated composition.
