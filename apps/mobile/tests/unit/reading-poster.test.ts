@@ -38,7 +38,7 @@ describe('reading poster output contract', () => {
       expect(buildPoster(source, seed, 'pages').pages.length).toBeLessThanOrEqual(minimumPages + 1);
     }
   });
-  for (const count of [1, 6, 20, 50, 120, 500])
+  for (const count of [1, 6, 20, 50, 60, 120, 500])
     for (const output of ['single', 'pages', 'long'] as const) {
       it(`${count} books / ${output}: complete, bounded, non-overlapping`, () => {
         const source = books(count);
@@ -149,6 +149,45 @@ it('keeps closing punctuation attached, including consecutive marks', () => {
 });
 
 describe('centre-first cover composition', () => {
+  it('normalizes sparse inputs, keeps ties equal, and can reshuffle without losing crops', () => {
+    const source = books(6).map((book) => ({ ...book, crop: { x: 0.2, y: 0.7, zoom: 1.5 } }));
+    const clean = buildPoster(source, 1, 'single', true);
+    expect(
+      buildPoster([...source, source[0], { ...source[0], id: 'empty', milliseconds: 0 }], 1, 'single', true),
+    ).toEqual(clean);
+    const shuffled = buildPoster(source, 2, 'single', true);
+    expect(shuffled.pages[0].tiles).not.toEqual(clean.pages[0].tiles);
+    for (const tile of shuffled.pages[0].tiles) expect(tile.book.crop).toEqual(source[0].crop);
+    const tied = buildPoster(
+      source.map((book) => ({ ...book, milliseconds: 60000 })),
+      1,
+      'single',
+    );
+    const areas = tied.pages[0].tiles.map((tile) => Math.round(tile.width * tile.height));
+    expect(new Set(areas).size).toBe(1);
+  });
+  it('balances the whole composition and keeps the centred note below all covers', () => {
+    for (const count of [6, 20, 60, 120]) {
+      const page = buildPoster(books(count), 1, 'single', true).pages[0];
+      const area = page.tiles.reduce((sum, tile) => sum + tile.width * tile.height, 0);
+      const cx = page.tiles.reduce((sum, tile) => sum + (tile.x + tile.width / 2) * tile.width * tile.height, 0) / area;
+      expect(Math.abs(cx - page.width / 2)).toBeLessThan(50);
+      const note = page.decorations[0];
+      expect(note.align).toBe('center');
+      for (const tile of page.tiles) expect(tile.y + tile.height).toBeLessThan(note.y);
+    }
+  });
+  it('assigns each cover to a separate lighting block on long and paged exports', () => {
+    for (const output of ['single', 'pages', 'long'] as const) {
+      for (const page of buildPoster(books(120), 1, output, true).pages) {
+        for (const tile of page.tiles) {
+          const blocks = page.lighting.filter((region) => tile.y >= region.y && tile.y < region.y + region.height);
+          expect(blocks).toHaveLength(1);
+          expect(tile.y + tile.height).toBeLessThanOrEqual(blocks[0].y + blocks[0].height + 0.01);
+        }
+      }
+    }
+  });
   it('preserves a visible podium at high density, without inventing ranks for ties', () => {
     const weights = posterSizeClasses(books(120));
     expect(weights.slice(0, 3).map((b) => b.units)).toEqual([12, 9, 6]);
@@ -158,7 +197,7 @@ describe('centre-first cover composition', () => {
     ).toBe(1);
   });
   it('fills the middle before sending smaller covers to the outside', () => {
-    for (const count of [6, 20, 50, 120, 500])
+    for (const count of [6, 20, 50, 60, 120, 500])
       for (const seed of [1, 2, 13]) {
         const page = buildPoster(books(count), seed, 'single', true).pages[0];
         // Sample the central area with tolerance for the intentional narrow gutters.

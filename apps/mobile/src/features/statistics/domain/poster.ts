@@ -18,12 +18,15 @@ export interface PosterDecoration {
   y: number;
   width: number;
   height: number;
+  align?: 'center';
 }
 export interface PosterPage {
   width: number;
   height: number;
   tiles: PosterTile[];
   decorations: PosterDecoration[];
+  /** Cover-block bounds; independent of the quote position and image pagination. */
+  lighting: PosterDecoration[];
 }
 export interface PosterDocument {
   pages: PosterPage[];
@@ -120,13 +123,50 @@ export function buildPoster(
   output: PosterOutput,
   includeQuote = false,
 ): PosterDocument {
-  if (output !== 'single') return buildLayout(books, seed, output, undefined, includeQuote);
-  const classified = posterSizeClasses([...new Map(books.map((b) => [b.id, b])).values()]);
+  const unique = [...new Map(books.map((book) => [book.id, book])).values()];
+  const classified = posterSizeClasses(unique);
+  // A sparse six-cover composition needs broad, readable focal covers. Equal
+  // durations use the general packing path so no artificial podium is introduced.
+  if (
+    output === 'single' &&
+    classified.length === 6 &&
+    new Set(classified.map((item) => item.book.milliseconds)).size === 6
+  ) {
+    const ordered = classified;
+    const frames = [
+      [382, 477, 316, 456],
+      [104, 525, 272, 360],
+      [704, 525, 272, 360],
+      [382, 311, 316, 160],
+      [263, 939, 272, 160],
+      [541, 939, 272, 160],
+    ];
+    return {
+      pages: [
+        {
+          width: 1080,
+          height: 1440,
+          tiles: ordered.map((item, i) => ({
+            ...item,
+            x: seed % 2 === 0 ? POSTER_WIDTH - frames[i][0] - frames[i][2] : frames[i][0],
+            y: frames[i][1],
+            width: frames[i][2],
+            height: frames[i][3],
+          })),
+          decorations: [{ x: 64, y: 1214, width: 952, height: 106, align: 'center' }],
+          lighting: [{ x: 64, y: 252, width: 952, height: 930 }],
+        },
+      ],
+      total: ordered.reduce((sum, item) => sum + item.book.milliseconds, 0),
+      bookCount: 6,
+    };
+  }
+  if (output !== 'single') return buildLayout(unique, seed, output, undefined, includeQuote);
   const cells = classified.reduce((sum, b) => sum + b.units * 4, 8);
-  let columns = Math.max(8, Math.ceil(Math.sqrt((cells * 952) / 1100) / 2) * 2);
+  let columns = Math.max(8, Math.ceil(Math.sqrt((cells * 952) / 930) / 2) * 2);
   // Increase density until every book fits one normal 3:4 composition.
   for (;;) {
-    const result = buildLayout(books, seed, output, columns, includeQuote);
+    const result = buildLayout(unique, seed, output, columns, includeQuote);
     if (result.pages.length === 1) return result;
     columns += 2;
   }
@@ -144,13 +184,25 @@ function buildLayout(
   const gap = compactColumns ? (classified.length > 80 ? 3 : classified.length > 24 ? 5 : 8) : GAP;
   const effectiveGap = compactColumns ? Math.min(gap, 952 / (cols * 5)) : gap;
   const cell = (952 - (cols - 1) * effectiveGap) / cols;
-  const rows = compactColumns ? Math.max(6, Math.floor((1100 + effectiveGap) / (cell + effectiveGap) / 2) * 2) : 12;
+  const rows = compactColumns ? Math.max(6, Math.floor((930 + effectiveGap) / (cell + effectiveGap) / 2) * 2) : 12;
   const blocks: Block[] = [];
   function next() {
     const w = includeQuote ? Math.max(4, Math.ceil((cols * 0.25) / 2) * 2) : 4;
     const h = includeQuote ? Math.max(2, Math.ceil((rows * 0.15) / 2) * 2) : 2;
-    const decor = { x: hash(seed, blocks.length, 'decor') > 0.5 ? cols - w : 0, y: rows - h, w, h };
+    const decor = compactColumns
+      ? { x: 0, y: rows, w: 0, h: 0 }
+      : { x: hash(seed, blocks.length, 'decor') > 0.5 ? cols - w : 0, y: rows - h, w, h };
     const grid = Array<boolean>(cols * rows).fill(false);
+    // A balanced envelope, not mirrored tiles or a traced geometric border.
+    if (compactColumns && classified.length > 6) {
+      for (let y = 0; y < rows; y += 2)
+        for (let x = 0; x < cols; x += 2) {
+          const nx = Math.abs(((x + 1) / cols - 0.5) * 2);
+          const ny = Math.abs(((y + 1) / rows - 0.5) * 2);
+          if (nx ** 1.5 + ny ** 1.5 > 1.28)
+            for (let a = y; a < y + 2; a++) for (let b = x; b < x + 2; b++) grid[a * cols + b] = true;
+        }
+    }
     for (let y = decor.y; y < rows; y++) for (let x = decor.x; x < decor.x + decor.w; x++) grid[y * cols + x] = true;
     const block: Block = { items: [], grid, decor };
     blocks.push(block);
@@ -158,8 +210,8 @@ function buildLayout(
   }
   function place(block: Block, item: (typeof classified)[number]): CellTile | undefined {
     const page = blocks.length - 1,
-      tx = 0.47 + hash(seed, page, 'x') * 0.06,
-      ty = 0.45 + hash(seed, page, 'y') * 0.06;
+      tx = 0.5,
+      ty = 0.5;
     let best: CellTile | undefined,
       score = Infinity;
     for (let y = 0; y < rows; y += 2)
@@ -221,7 +273,8 @@ function buildLayout(
   for (let index = 0; index < blocks.length; index += perImage) {
     const batch = blocks.slice(index, index + perImage),
       tiles: PosterTile[] = [],
-      decorations: PosterDecoration[] = [];
+      decorations: PosterDecoration[] = [],
+      lighting: PosterDecoration[] = [];
     batch.forEach((part, i) => {
       const y = TOP + i * stride;
       part.items.forEach((t) =>
@@ -234,18 +287,24 @@ function buildLayout(
           height: t.h * cell + (t.h - 1) * effectiveGap,
         }),
       );
-      decorations.push({
-        x: 64 + part.decor.x * (cell + effectiveGap),
-        y: y + part.decor.y * (cell + effectiveGap),
-        width: part.decor.w * cell + (part.decor.w - 1) * effectiveGap,
-        height: part.decor.h * cell + (part.decor.h - 1) * effectiveGap,
-      });
+      lighting.push({ x: 64, y, width: 952, height: compactColumns ? 930 : gridHeight });
+      decorations.push(
+        compactColumns
+          ? { x: 64, y: 1214, width: 952, height: 106, align: 'center' }
+          : {
+              x: 64 + part.decor.x * (cell + effectiveGap),
+              y: y + part.decor.y * (cell + effectiveGap),
+              width: part.decor.w * cell + (part.decor.w - 1) * effectiveGap,
+              height: part.decor.h * cell + (part.decor.h - 1) * effectiveGap,
+            },
+      );
     });
     pages.push({
       width: POSTER_WIDTH,
       height: output === 'single' ? 1440 : Math.ceil(TOP + batch.length * stride + 20),
       tiles,
       decorations,
+      lighting,
     });
   }
   return { pages, total: classified.reduce((sum, b) => sum + b.book.milliseconds, 0), bookCount: classified.length };

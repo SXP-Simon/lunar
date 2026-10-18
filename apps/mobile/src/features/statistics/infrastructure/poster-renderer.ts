@@ -165,6 +165,32 @@ export async function renderPoster(
         paint.setShader(null);
         shade.dispose();
       }
+      // A clear central plateau and a gentle outer falloff. Clip to covers only;
+      // captions are drawn afterwards, and the editor uses this same overlay.
+      const block = page.lighting.find((region) => y >= region.y && y < region.y + region.height)!;
+      const aspect = block.height / block.width;
+      const count = page.tiles.filter((item) => item.y >= block.y && item.y < block.y + block.height).length;
+      const opacity = count <= 6 ? 0.56 : count <= 20 ? 0.67 : 0.76;
+      const edgeShade = Skia.Shader.MakeRadialGradient(
+        { x: block.x + block.width / 2, y: (block.y + block.height * 0.5) / aspect },
+        (block.width / 2) * 1.06,
+        [Skia.Color('#00000000'), Skia.Color('#00000000'), Skia.Color('#000000')],
+        [0, 0.38 / 1.06, 1],
+        TileMode.Clamp,
+      );
+      try {
+        canvas.save();
+        canvas.scale(1, aspect);
+        color('#ffffff');
+        paint.setAlphaf(opacity);
+        paint.setShader(edgeShade);
+        canvas.drawRect(Skia.XYWHRect(x, y / aspect, w, h / aspect), paint);
+      } finally {
+        canvas.restore();
+        paint.setShader(null);
+        paint.setAlphaf(1);
+        edgeShade.dispose();
+      }
       const pad = Math.min(18, w * 0.08);
       const baseSize = Math.min(42, Math.max(8, Math.min(w / 7, h / 7)));
       const caption = posterBookTitle(book.title, w - pad * 2, h * 0.48, baseSize, tile.units >= 6, (value, size) => {
@@ -200,17 +226,32 @@ export async function renderPoster(
         const { box, x, top, size, heading, lineHeight, lines } = note;
         canvas.save();
         canvas.clipRect(Skia.XYWHRect(box.x, box.y, box.width, box.height), ClipOp.Intersect, false);
+        const centered = box.align === 'center';
         const radius = size * 0.3;
-        const cutout = Skia.Path.Circle(x + radius * 1.5, top + radius * 0.65, radius * 0.85);
+        const cx = centered ? box.x + box.width / 2 : x + radius;
+        const cutout = Skia.Path.Circle(cx + radius * 0.5, top + radius * 0.65, radius * 0.85);
         canvas.save();
         canvas.clipPath(cutout, ClipOp.Difference, true);
-        circle(x + radius, top + radius, radius, accent);
+        circle(cx, top + radius, radius, accent);
         canvas.restore();
         cutout.dispose();
-        line(x + size, top + radius, box.x + box.width - (x - box.x), top + radius);
-        lines.forEach((value, i) => text(value, x, top + heading + size + i * lineHeight, size, accent, false, true));
+        if (centered) {
+          line(cx - 116, top + radius, cx - 24, top + radius);
+          line(cx + 24, top + radius, cx + 116, top + radius);
+        } else {
+          line(x + size, top + radius, box.x + box.width - (x - box.x), top + radius);
+        }
+        lines.forEach((value, i) => {
+          font.setSize(size);
+          const width = font.getGlyphWidths(font.getGlyphIDs(value)).reduce((a, b) => a + b, 0);
+          text(value, centered ? cx - width / 2 : x, top + heading + size + i * lineHeight, size, '#d8d8dd');
+        });
         canvas.restore();
       }
+
+      font.setSize(19);
+      const brandWidth = font.getGlyphWidths(font.getGlyphIDs('Lunar')).reduce((a, b) => a + b, 0);
+      const brandX = page.width - 64 - brandWidth - 60;
       if (brand) {
         color('#ffffff');
         const tint = Skia.ColorFilter.MakeBlend(Skia.Color('#ffffff'), BlendMode.SrcIn);
@@ -223,7 +264,7 @@ export async function renderPoster(
           canvas.drawImageRectCubic(
             brand,
             Skia.XYWHRect(180, 190, 660, 640),
-            Skia.XYWHRect(64, page.height - 66, 48, 48),
+            Skia.XYWHRect(brandX, page.height - 66, 48, 48),
             1 / 3,
             1 / 3,
             glowPaint,
@@ -232,7 +273,7 @@ export async function renderPoster(
           canvas.drawImageRectCubic(
             brand,
             Skia.XYWHRect(180, 190, 660, 640),
-            Skia.XYWHRect(64, page.height - 66, 48, 48),
+            Skia.XYWHRect(brandX, page.height - 66, 48, 48),
             1 / 3,
             1 / 3,
             paint,
@@ -242,7 +283,7 @@ export async function renderPoster(
           tint.dispose();
         }
       }
-      text('Lunar', 124, page.height - 29, 19, ink, false, true);
+      text('Lunar', page.width - 64, page.height - 29, 19, ink, true, true);
     }
     if (signal.aborted) throw Error('Poster cancelled');
     surface.flush();

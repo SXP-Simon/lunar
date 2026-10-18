@@ -16,6 +16,8 @@ const state = vi.hoisted(() => ({
   disposableFilters: false,
   filtersDisposed: 0,
   sources: [] as { x: number; y: number; width: number; height: number }[],
+  radialGradients: [] as unknown[][],
+  alpha: [] as number[],
 }));
 vi.mock('../../src/features/statistics/infrastructure/poster-brand', () => ({
   loadPosterBrand: async () => (state.brand ? { brand: true } : null),
@@ -28,6 +30,7 @@ vi.mock('@shopify/react-native-skia', () => {
     setAntiAlias: noop,
     setShader: noop,
     setColor: noop,
+    setAlphaf: (alpha: number) => state.alpha.push(alpha),
     setStrokeWidth: noop,
     setColorFilter: noop,
     setMaskFilter: noop,
@@ -73,7 +76,13 @@ vi.mock('@shopify/react-native-skia', () => {
         MakeBlur: () => (state.disposableFilters ? { dispose: () => state.filtersDisposed++ } : {}),
       },
       ColorFilter: { MakeBlend: () => ({ dispose: noop }) },
-      Shader: { MakeLinearGradient: () => ({ dispose: noop }) },
+      Shader: {
+        MakeLinearGradient: () => ({ dispose: noop }),
+        MakeRadialGradient: (...args: unknown[]) => {
+          state.radialGradients.push(args);
+          return { dispose: noop };
+        },
+      },
       Data: { fromURI: async () => ({ dispose: noop }) },
       Image: {
         MakeImageFromEncoded: () => {
@@ -198,4 +207,27 @@ it('uses one restrained brand signature without template labels or decorative pr
   expect(state.texts).toContain('Lunar');
   expect(state.texts.some((t) => /READING MOSAIC|阅读切片|翻过的页|慢慢成为风景|1 \/ 1/.test(t))).toBe(false);
   state.brand = false;
+});
+
+it('keeps edge shading identical in the editor and export, with a clear central plateau', async () => {
+  for (const count of [6, 20, 60, 120]) {
+    const page = buildPoster(source.slice(0, count), 1, 'single', true).pages[0];
+    Object.assign(state, { failAt: -1, radialGradients: [], alpha: [] });
+    await renderPoster(page, labels, { aborted: false }, {} as SkTypeface);
+    const gradients = [...state.radialGradients];
+    const alpha = [...state.alpha];
+    expect(gradients).toHaveLength(count);
+    for (const gradient of gradients) {
+      expect(gradient[2]).toEqual(['#00000000', '#00000000', '#000000']);
+      const stops = gradient[3] as number[];
+      expect(stops[1]).toBeGreaterThan(0.3);
+      expect(stops.at(-1)).toBe(1);
+    }
+    expect(alpha.filter((n) => n !== 1).every((n) => n > 0 && n < 0.8)).toBe(true);
+    expect(alpha.at(-1)).toBe(1);
+    Object.assign(state, { radialGradients: [], alpha: [] });
+    await renderPoster(page, labels, { aborted: false }, {} as SkTypeface, true);
+    expect(state.radialGradients).toEqual(gradients);
+    expect(state.alpha).toEqual(alpha);
+  }
 });

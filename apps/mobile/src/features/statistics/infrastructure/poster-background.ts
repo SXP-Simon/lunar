@@ -69,7 +69,7 @@ export async function drawAmbientBackground(canvas: SkCanvas, page: PosterPage, 
       softened.flush();
       image = softened.makeImageSnapshot();
       paint.setImageFilter(null);
-      paint.setAlphaf(0.23);
+      paint.setAlphaf(0.16);
       canvas.drawImageRectCubic(
         image,
         Skia.XYWHRect(0, 0, width, height),
