@@ -1,5 +1,8 @@
 export const zhCN = {
   statistics: {
+    posterBookDetails: '书名与作者',
+    posterHideBookDetails: '隐藏书名与作者',
+    posterShowBookDetails: '显示书名与作者',
     posterCropTitle: '编辑海报',
     posterCropSelect: '点选书封，调整画面',
     posterCropReset: '重置书封',

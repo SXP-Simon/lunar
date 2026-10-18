@@ -175,6 +175,33 @@ it('draws all 120 real covers sequentially before encoding, without an evictable
   expect(await renderPoster(page, labels, { aborted: false }, {} as SkTypeface)).toBe('PNG');
   expect(state).toMatchObject({ drawn: 120, decoded: 120, maxLive: 1, live: 0, snapshots: 1, surfaceDisposed: 1 });
 });
+it('hides book captions consistently in exports and live overlays while preserving poster text and missing-cover labels', async () => {
+  const books = source.slice(0, 3).map((book, index) => ({
+    ...book,
+    author: `作者 ${index}`,
+    coverUri: index === 2 ? null : book.coverUri,
+  }));
+  const page = buildPoster(books, 1, 'single', true).pages[0];
+  for (const overlay of [false, true]) {
+    Object.assign(state, { failAt: -1, texts: [], brand: false });
+    await renderPoster(page, { ...labels, showBookDetails: false }, { aborted: false }, {} as SkTypeface, overlay);
+    expect(state.texts).not.toContain(books[0].title);
+    expect(state.texts).not.toContain(books[1].title);
+    expect(state.texts).not.toContain(books[0].author);
+    expect(state.texts).not.toContain(books[1].author);
+    expect(state.texts).toContain(books[2].title);
+    if (!overlay) {
+      expect(state.texts).toContain(labels.title);
+      expect(state.texts).toContain(labels.quote);
+    }
+  }
+  Object.assign(state, { texts: [] });
+  await renderPoster(page, { ...labels, showBookDetails: true }, { aborted: false }, {} as SkTypeface);
+  for (const book of books) {
+    expect(state.texts).toContain(book.title);
+    expect(state.texts).toContain(book.author);
+  }
+});
 it('keeps foreground covers above an edited background and avoids decoding the live target', async () => {
   const page = buildPoster(
     source.slice(0, 6).map((book, i) => ({ ...book, milliseconds: (6 - i) * 60000 })),

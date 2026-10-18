@@ -202,19 +202,22 @@ export async function renderPoster(
       }
       rect(x, y, w, h, '#0000000c');
       color('#ffffff');
-      const shade = Skia.Shader.MakeLinearGradient(
-        { x, y },
-        { x, y: y + h },
-        [Skia.Color('#00000000'), Skia.Color('#00000008'), Skia.Color('#000000ee')],
-        [0, 0.38, 1],
-        TileMode.Clamp,
-      );
-      try {
-        paint.setShader(shade);
-        canvas.drawRect(Skia.XYWHRect(x, y, w, h), paint);
-      } finally {
-        paint.setShader(null);
-        shade.dispose();
+      const showDetails = labels.showBookDetails !== false || !book.coverUri;
+      if (showDetails) {
+        const shade = Skia.Shader.MakeLinearGradient(
+          { x, y },
+          { x, y: y + h },
+          [Skia.Color('#00000000'), Skia.Color('#00000008'), Skia.Color('#000000ee')],
+          [0, 0.38, 1],
+          TileMode.Clamp,
+        );
+        try {
+          paint.setShader(shade);
+          canvas.drawRect(Skia.XYWHRect(x, y, w, h), paint);
+        } finally {
+          paint.setShader(null);
+          shade.dispose();
+        }
       }
       // A clear central plateau and a gentle outer falloff. Clip to covers only;
       // captions are drawn afterwards, and the editor uses this same overlay.
@@ -243,26 +246,28 @@ export async function renderPoster(
         paint.setAlphaf(1);
         edgeShade.dispose();
       }
-      const pad = Math.min(18, w * 0.08);
-      const baseSize = Math.min(42, Math.max(8, Math.min(w / 7, h / 7)));
-      const caption = posterBookTitle(book.title, w - pad * 2, h * 0.48, baseSize, tile.units >= 6, (value, size) => {
-        font.setSize(size);
-        return font.getGlyphWidths(font.getGlyphIDs(value)).reduce((sum, advance) => sum + advance, 0);
-      });
-      const { size, lines, lineHeight } = caption;
-      const authorSize = Math.max(6, Math.min(19, size * 0.6));
-      const authorY = y + h - Math.min(20, h * 0.07),
-        titleY = authorY - authorSize - Math.min(15, h * 0.05) - (lines.length - 1) * lineHeight;
-      lines.forEach((value, i) =>
-        text(value, x + pad, titleY + i * lineHeight, size, ink, false, featured.has(book.id)),
-      );
-      text(
-        wrapPosterText(book.author || labels.unknownAuthor, (w - pad * 2) / authorSize, 1)[0] || '',
-        x + pad,
-        authorY,
-        authorSize,
-        '#d8d8dd',
-      );
+      if (showDetails) {
+        const pad = Math.min(18, w * 0.08);
+        const baseSize = Math.min(42, Math.max(8, Math.min(w / 7, h / 7)));
+        const caption = posterBookTitle(book.title, w - pad * 2, h * 0.48, baseSize, tile.units >= 6, (value, size) => {
+          font.setSize(size);
+          return font.getGlyphWidths(font.getGlyphIDs(value)).reduce((sum, advance) => sum + advance, 0);
+        });
+        const { size, lines, lineHeight } = caption;
+        const authorSize = Math.max(6, Math.min(19, size * 0.6));
+        const authorY = y + h - Math.min(20, h * 0.07),
+          titleY = authorY - authorSize - Math.min(15, h * 0.05) - (lines.length - 1) * lineHeight;
+        lines.forEach((value, i) =>
+          text(value, x + pad, titleY + i * lineHeight, size, ink, false, featured.has(book.id)),
+        );
+        text(
+          wrapPosterText(book.author || labels.unknownAuthor, (w - pad * 2) / authorSize, 1)[0] || '',
+          x + pad,
+          authorY,
+          authorSize,
+          '#d8d8dd',
+        );
+      }
       color(featured.has(book.id) ? '#ffffff65' : '#ffffff18');
       paint.setStyle(PaintStyle.Stroke);
       paint.setStrokeWidth(featured.has(book.id) ? 1 : 0.5);

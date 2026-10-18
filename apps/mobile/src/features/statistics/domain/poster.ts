@@ -369,6 +369,8 @@ export function posterInitialRange(start: string | undefined, end: string | unde
 }
 
 export interface PosterLabels {
+  /** Draft option shared by the preview, crop editor and every exported page. */
+  showBookDetails?: boolean;
   title: string;
   quote: string;
   range: string;

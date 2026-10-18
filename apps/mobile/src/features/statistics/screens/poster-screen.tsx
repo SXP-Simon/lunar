@@ -73,6 +73,7 @@ export function PosterScreen() {
     [revision, setRevision] = useState(0);
   const [title, setTitle] = useState(''),
     [quote, setQuote] = useState(''),
+    [showBookDetails, setShowBookDetails] = useState(true),
     [seed, setSeed] = useState(1),
     [output, setOutput] = useState<PosterOutput>('single'),
     [page, setPage] = useState(0);
@@ -192,8 +193,8 @@ export function PosterScreen() {
   );
   const actualPage = Math.min(page, (document?.pages.length ?? 1) - 1);
   const job = useMemo(
-    () => JSON.stringify([range, title, quote, seed, output, posterBooks]),
-    [range, title, quote, seed, output, posterBooks],
+    () => JSON.stringify([range, title, quote, showBookDetails, seed, output, posterBooks]),
+    [range, title, quote, showBookDetails, seed, output, posterBooks],
   );
   const [savedJob, setSavedJob] = useState(job);
   if (savedJob !== job) {
@@ -469,6 +470,7 @@ export function PosterScreen() {
                 page={actualPage}
                 width={Math.min(width - insets.left - insets.right - 32, 600)}
                 labels={{
+                  showBookDetails,
                   title: title.trim() || defaultTitle,
                   quote,
                   range: `${range.start} — ${range.end}`,
@@ -575,6 +577,15 @@ export function PosterScreen() {
             {t('statistics.posterShuffle')}
           </Button>
           <Text className="text-xs text-muted">{t('statistics.posterHint')}</Text>
+          <Button
+            variant="secondary"
+            accessibilityRole="switch"
+            accessibilityLabel={t('statistics.posterBookDetails')}
+            accessibilityState={{ checked: showBookDetails, disabled: busy }}
+            isDisabled={busy}
+            onPress={() => setShowBookDetails((value) => !value)}>
+            {t(showBookDetails ? 'statistics.posterHideBookDetails' : 'statistics.posterShowBookDetails')}
+          </Button>
         </View>
         <View className="gap-3 rounded-3xl bg-surface p-4">
           <Text className="text-sm font-semibold text-foreground">{t('statistics.dateRange')}</Text>

@@ -2,6 +2,9 @@ import { type TranslationSchema, zhCN } from './zh-CN';
 
 export const en: TranslationSchema<typeof zhCN> = {
   statistics: {
+    posterBookDetails: 'Book titles and authors',
+    posterHideBookDetails: 'Hide titles and authors',
+    posterShowBookDetails: 'Show titles and authors',
     posterCropTitle: 'Edit poster',
     posterCropSelect: 'Tap a cover to adjust it',
     posterCropReset: 'Reset cover',
