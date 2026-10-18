@@ -13,6 +13,8 @@ const state = vi.hoisted(() => ({
   brand: false,
   brands: 0,
   texts: [] as string[],
+  disposableFilters: false,
+  filtersDisposed: 0,
 }));
 vi.mock('../../src/features/statistics/infrastructure/poster-brand', () => ({
   loadPosterBrand: async () => (state.brand ? { brand: true } : null),
@@ -26,6 +28,8 @@ vi.mock('@shopify/react-native-skia', () => {
     setColor: noop,
     setStrokeWidth: noop,
     setColorFilter: noop,
+    setMaskFilter: noop,
+    setStyle: noop,
     dispose: noop,
   });
   const canvas = {
@@ -48,6 +52,8 @@ vi.mock('@shopify/react-native-skia', () => {
   };
   return {
     BlendMode: { SrcIn: 1 },
+    BlurStyle: { Normal: 0 },
+    PaintStyle: { Fill: 0, Stroke: 1 },
     TileMode: { Clamp: 0 },
     ClipOp: { Intersect: 0 },
     Skia: {
@@ -55,6 +61,9 @@ vi.mock('@shopify/react-native-skia', () => {
       XYWHRect: noop,
       Paint: paint,
       Font: () => ({ setSize: noop, getGlyphIDs: () => [], getGlyphWidths: () => [], dispose: noop }),
+      MaskFilter: {
+        MakeBlur: () => (state.disposableFilters ? { dispose: () => state.filtersDisposed++ } : {}),
+      },
       ColorFilter: { MakeBlend: () => ({ dispose: noop }) },
       Shader: { MakeLinearGradient: () => ({ dispose: noop }) },
       Data: { fromURI: async () => ({ dispose: noop }) },
@@ -120,6 +129,23 @@ it('fails visibly instead of encoding a silently missing cover and releases the 
   expect(state).toMatchObject({ drawn: 2, live: 0, snapshots: 0, surfaceDisposed: 1 });
 });
 
+it('releases CanvasKit blur filters when supported, while native filters need no dispose method', async () => {
+  Object.assign(state, { disposableFilters: true, filtersDisposed: 0, failAt: -1 });
+  try {
+    expect(
+      await renderPoster(
+        buildPoster(source.slice(0, 1), 1, 'single').pages[0],
+        labels,
+        { aborted: false },
+        {} as SkTypeface,
+      ),
+    ).toBe('PNG');
+    expect(state.filtersDisposed).toBe(2);
+  } finally {
+    state.disposableFilters = false;
+  }
+});
+
 it('uses one restrained brand signature without template labels or decorative prose', async () => {
   Object.assign(state, {
     live: 0,
@@ -139,7 +165,7 @@ it('uses one restrained brand signature without template labels or decorative pr
     { aborted: false },
     {} as SkTypeface,
   );
-  expect(state.brands).toBe(1);
+  expect(state.brands).toBe(2); // Soft halo plus the crisp signature, at the same position.
   expect(state.texts).toContain('Lunar');
   expect(state.texts.some((t) => /READING MOSAIC|阅读切片|翻过的页|慢慢成为风景|1 \/ 1/.test(t))).toBe(false);
   state.brand = false;

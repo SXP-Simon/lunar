@@ -40,10 +40,16 @@ function hash(seed: number, ...values: (string | number)[]) {
   return (value >>> 0) / 4294967296;
 }
 export function posterSizeClasses(books: readonly PosterBook[]) {
-  const positive = books.filter((b) => Number.isFinite(b.milliseconds) && b.milliseconds > 0);
+  const positive = books
+    .filter((b) => Number.isFinite(b.milliseconds) && b.milliseconds > 0)
+    .sort((a, b) => b.milliseconds - a.milliseconds || a.id.localeCompare(b.id));
+  const firstRank = new Map<number, number>();
+  positive.forEach((book, index) => {
+    if (!firstRank.has(book.milliseconds)) firstRank.set(book.milliseconds, index);
+  });
   const minimum = Math.min(...positive.map((b) => b.milliseconds));
   const maximum = Math.max(...positive.map((b) => b.milliseconds));
-  const limit = positive.length <= 6 ? 6 : positive.length <= 24 ? 4 : 2;
+  const limit = positive.length <= 6 ? 6 : positive.length <= 24 ? 4 : 3;
   return positive
     .map((book) => {
       const relative =
@@ -58,7 +64,13 @@ export function posterSizeClasses(books: readonly PosterBook[]) {
               ? 2
               : 1
           : 1 + (limit - 1) * Math.pow(relative, 1.15);
-      const units = target >= 4.7 ? 6 : target >= 2.8 ? 4 : target >= 1.5 ? 2 : 1;
+      const durationUnits = target >= 4.7 ? 6 : target >= 2.8 ? 4 : target >= 1.5 ? 2 : 1;
+      const rank = firstRank.get(book.milliseconds)!;
+      // Keep the leading books visible even in a hundred-cover composition.
+      // Equal durations retain equal visual weight instead of inventing a ranking.
+      const podium = positive.length <= 6 ? [6, 4, 2] : positive.length <= 24 ? [9, 6, 4] : [12, 9, 6];
+      const emphasis = maximum === minimum ? 1 : (podium[rank] ?? 1);
+      const units = Math.max(durationUnits, emphasis);
       return { book, units };
     })
     .sort(
@@ -66,19 +78,26 @@ export function posterSizeClasses(books: readonly PosterBook[]) {
     );
 }
 const shapes = (units: number): [number, number][] =>
-  units === 6
+  units === 12
     ? [
-        [6, 4],
-        [4, 6],
+        [6, 8],
+        [8, 6],
       ]
-    : units === 4
-      ? [[4, 4]]
-      : units === 2
+    : units === 9
+      ? [[6, 6]]
+      : units === 6
         ? [
-            [2, 4],
-            [4, 2],
+            [6, 4],
+            [4, 6],
           ]
-        : [[2, 2]];
+        : units === 4
+          ? [[4, 4]]
+          : units === 2
+            ? [
+                [2, 4],
+                [4, 2],
+              ]
+            : [[2, 2]];
 interface CellTile {
   x: number;
   y: number;
@@ -136,8 +155,8 @@ function buildLayout(
   }
   function place(block: Block, item: (typeof classified)[number]): CellTile | undefined {
     const page = blocks.length - 1,
-      tx = 0.46 + hash(seed, page, 'x') * 0.1,
-      ty = 0.43 + hash(seed, page, 'y') * 0.12;
+      tx = 0.47 + hash(seed, page, 'x') * 0.06,
+      ty = 0.45 + hash(seed, page, 'y') * 0.06;
     let best: CellTile | undefined,
       score = Infinity;
     for (let y = 0; y < rows; y += 2)
@@ -153,10 +172,25 @@ function buildLayout(
               }
           if (!free) continue;
           const distance = ((x + w / 2) / cols - tx) ** 2 + ((y + h / 2) / rows - ty) ** 2;
-          const focus = item.units >= 4 ? distance * 15 : item.units === 2 ? distance * 4 : -distance * 3.2;
+          // All sizes fill from the centre outward. Penalise the whole rectangle's
+          // spread as well as its centre; small tiles then close inner pockets first.
+          const spread = (w / cols) ** 2 + (h / rows) ** 2;
+          let contact = 0;
+          for (let a = x; a < x + w; a++) {
+            if (y > 0 && block.grid[(y - 1) * cols + a]) contact++;
+            if (y + h < rows && block.grid[(y + h) * cols + a]) contact++;
+          }
+          for (let a = y; a < y + h; a++) {
+            if (x > 0 && block.grid[a * cols + x - 1]) contact++;
+            if (x + w < cols && block.grid[a * cols + x + w]) contact++;
+          }
+          const portrait = w > h && item.units >= 6 ? 0.12 : 0;
           const value =
-            focus +
-            hash(seed, page, item.book.id, x, y, w, h) * (item.units >= 4 ? 0.12 : item.units === 2 ? 0.28 : 0.66);
+            distance * 12 +
+            spread * 0.5 +
+            portrait -
+            (contact / (2 * (w + h))) * 0.16 +
+            hash(seed, page, item.book.id, x, y, w, h) * (item.units === 2 ? 0.16 : 0.035);
           if (value < score) {
             score = value;
             best = { x, y, w, h, ...item };
@@ -311,4 +345,55 @@ export function posterQuoteLayout(page: PosterPage, value: string) {
     }
   }
   return undefined;
+}
+
+/** Measured wrapping for book captions; punctuation travels with the adjacent character. */
+export function posterBookTitle(
+  title: string,
+  width: number,
+  height: number,
+  baseSize: number,
+  prominent: boolean,
+  measure: (text: string, size: number) => number,
+) {
+  const tokens: string[] = [];
+  let opening = '';
+  for (const character of title.replace(/\s+/gu, ' ').trim()) {
+    if (/[（《「『【“‘(\[]/u.test(character)) {
+      opening += character;
+    } else if (/[，。！？、；：）》」』】”’…,.!?;:)\]]/u.test(character) && tokens.length && !opening) {
+      tokens[tokens.length - 1] += character;
+    } else {
+      tokens.push(opening + character);
+      opening = '';
+    }
+  }
+  if (opening) tokens.push(opening);
+  const minimum = Math.max(Math.min(10, baseSize), baseSize * 0.68);
+  let size = baseSize;
+  let lines: string[] = [];
+  let limit = 1;
+  for (;;) {
+    limit = Math.max(1, Math.min(prominent ? 3 : 2, Math.floor(height / (size * 1.22))));
+    lines = [];
+    let line = '';
+    for (const token of tokens) {
+      if (line && measure(line + token, size) > width) {
+        lines.push(line);
+        line = '';
+      }
+      line += token;
+    }
+    if (line) lines.push(line);
+    if (lines.length <= limit && lines.every((line) => measure(line, size) <= width))
+      return { size, lines, lineHeight: size * 1.22, truncated: false };
+    if (size <= minimum) break;
+    size = Math.max(minimum, size - 0.5);
+  }
+  const visible = lines.slice(0, limit);
+  const last = Array.from(visible.at(-1) || '');
+  while (last.length && measure(last.join('') + '…', size) > width) last.pop();
+  while (last.length && /[（《「『【“‘(\[]/u.test(last.at(-1)!)) last.pop();
+  visible[visible.length - 1] = last.join('') + '…';
+  return { size, lines: visible, lineHeight: size * 1.22, truncated: true };
 }

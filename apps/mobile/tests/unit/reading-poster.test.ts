@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildPoster,
   posterQuoteLayout,
+  posterSizeClasses,
+  posterBookTitle,
   posterInitialRange,
   posterPreset,
   wrapPosterText,
@@ -29,7 +31,11 @@ describe('reading poster output contract', () => {
   it('does not waste pages on narrow, unusable gaps', () => {
     for (const seed of [1, 2, 13, 42]) {
       expect(buildPoster(books(20), seed, 'pages').pages.length).toBeLessThanOrEqual(2);
-      expect(buildPoster(books(120), seed, 'pages').pages.length).toBeLessThanOrEqual(6);
+      const source = books(120);
+      const requiredCells = posterSizeClasses(source).reduce((sum, book) => sum + book.units * 4, 0);
+      // Each page has 10 × 12 cells, with eight reserved for breathing room.
+      const minimumPages = Math.ceil(requiredCells / (120 - 8));
+      expect(buildPoster(source, seed, 'pages').pages.length).toBeLessThanOrEqual(minimumPages + 1);
     }
   });
   for (const count of [1, 6, 20, 50, 120, 500])
@@ -140,4 +146,70 @@ it('keeps closing punctuation attached, including consecutive marks', () => {
       for (const line of note.lines) expect(line).not.toMatch(/^[，。！？、；：）》」』”’…,.!?;:]/u);
     }
   }
+});
+
+describe('centre-first cover composition', () => {
+  it('preserves a visible podium at high density, without inventing ranks for ties', () => {
+    const weights = posterSizeClasses(books(120));
+    expect(weights.slice(0, 3).map((b) => b.units)).toEqual([12, 9, 6]);
+    expect(weights[0].units).toBeGreaterThanOrEqual(weights.at(-1)!.units * 6);
+    expect(
+      new Set(posterSizeClasses(books(120).map((b) => ({ ...b, milliseconds: 60000 }))).map((b) => b.units)).size,
+    ).toBe(1);
+  });
+  it('fills the middle before sending smaller covers to the outside', () => {
+    for (const count of [6, 20, 50, 120, 500])
+      for (const seed of [1, 2, 13]) {
+        const page = buildPoster(books(count), seed, 'single', true).pages[0];
+        // Sample the central area with tolerance for the intentional narrow gutters.
+        let occupied = 0;
+        for (let y = 650; y <= 850; y += 20)
+          for (let x = 440; x <= 640; x += 20) {
+            if (
+              page.tiles.some(
+                (tile) =>
+                  x >= tile.x - 4 && x <= tile.x + tile.width + 4 && y >= tile.y - 4 && y <= tile.y + tile.height + 4,
+              )
+            )
+              occupied++;
+          }
+        expect(occupied / 121).toBeGreaterThan(0.95);
+      }
+  });
+});
+
+describe('long light-novel captions', () => {
+  const measure = (text: string, size: number) =>
+    Array.from(text).reduce((sum, c) => sum + (c.charCodeAt(0) > 255 ? 1 : 0.6) * size, 0);
+  const title = '末日时在做什么？有没有空？可以来拯救吗？';
+  it('shows a full sentence title in a focal cover, without punctuation at line starts', () => {
+    const result = posterBookTitle(title, 220, 145, 32, true, measure);
+    expect(result.truncated).toBe(false);
+    expect(result.lines.join('')).toBe(title);
+    expect(result.lines.length).toBeLessThanOrEqual(3);
+    for (const line of result.lines) {
+      expect(measure(line, result.size)).toBeLessThanOrEqual(220);
+      expect(line).not.toMatch(/^[，。！？）》」』]/u);
+    }
+  });
+  it('keeps tiny cover captions legible and honestly ellipsizes instead of overflowing', () => {
+    const result = posterBookTitle(title.repeat(3), 50, 28, 8, false, measure);
+    expect(result.size).toBe(8);
+    expect(result.truncated).toBe(true);
+    expect(result.lines.length).toBeLessThanOrEqual(2);
+    expect(result.lines.at(-1)).toMatch(/…$/u);
+    for (const line of result.lines) expect(measure(line, result.size)).toBeLessThanOrEqual(50);
+  });
+  it('keeps opening brackets with their text and fits wide Latin glyph measurements', () => {
+    for (const title of [
+      '我读过《某个很长的故事》，然后开始了新的旅程。',
+      'WWWWW IIIII A Very Long Light Novel Name',
+    ]) {
+      const result = posterBookTitle(title, 160, 105, 22, true, (text, size) =>
+        Array.from(text).reduce((sum, c) => sum + (c === 'W' ? 1.2 : 1) * size, 0),
+      );
+      for (const line of result.lines) expect(line).not.toMatch(/[《（「]$/u);
+      expect(result.lines.length * result.lineHeight).toBeLessThanOrEqual(105);
+    }
+  });
 });
