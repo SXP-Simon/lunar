@@ -1,13 +1,29 @@
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Modal, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Modal, Text, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  cancelAnimation,
+  Easing,
+  ReduceMotion,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { withUniwind } from 'uniwind';
 import { Button } from 'heroui-native/button';
 import { useTranslation } from '@/i18n';
-import type { PosterLabels, PosterPage, PosterTile } from '../domain/poster';
+import type { PosterLabels, PosterPage } from '../domain/poster';
+import {
+  posterLayers,
+  posterLayerAt,
+  posterLayerContains,
+  posterLayerPoint,
+  posterLayerDelta,
+  type PosterLayer,
+} from '../domain/poster-depth';
 import {
   DEFAULT_POSTER_CROP,
   panPosterCrop,
@@ -20,21 +36,13 @@ import { renderPoster } from '../infrastructure/poster-renderer';
 import { removePosterImage, writePosterImage } from '../infrastructure/poster-image';
 
 const StyledGestureRoot = withUniwind(GestureHandlerRootView);
-type Cover = { tile: PosterTile; width: number; height: number };
+type Cover = { tile: PosterLayer; width: number; height: number; overlay: string };
+const CAMERA_TRANSITION = { duration: 240, easing: Easing.inOut(Easing.cubic), reduceMotion: ReduceMotion.System };
+const SELECTION_TRANSITION = { duration: 120, reduceMotion: ReduceMotion.System };
 
 // The live cover replaces only its own rectangle. Its gradient, title and author
 // are drawn by the export renderer, so the editor shows the actual composition.
-function LiveCover({
-  cover,
-  page,
-  overlay,
-  edits,
-}: {
-  cover: Cover;
-  page: PosterPage;
-  overlay: string;
-  edits: SharedValue<Record<string, PosterCrop>>;
-}) {
+function LiveCover({ cover, edits }: { cover: Cover; edits: SharedValue<Record<string, PosterCrop>> }) {
   const { tile, width, height } = cover;
   const style = useAnimatedStyle(() => {
     const frame = posterCoverFrame(width, height, tile.width, tile.height, edits.get()[tile.book.id]);
@@ -44,7 +52,13 @@ function LiveCover({
     <View
       pointerEvents="none"
       className="absolute overflow-hidden"
-      style={{ left: tile.x, top: tile.y, width: tile.width, height: tile.height }}>
+      style={{
+        left: tile.x,
+        top: tile.y,
+        width: tile.width,
+        height: tile.height,
+        transform: [{ rotate: `${tile.rotation}deg` }],
+      }}>
       <Animated.View className="absolute" style={style}>
         <Image
           source={{ uri: tile.book.coverUri! }}
@@ -54,11 +68,10 @@ function LiveCover({
         />
       </Animated.View>
       <Image
-        source={{ uri: overlay }}
-        className="absolute"
+        source={{ uri: cover.overlay }}
+        className="absolute h-full w-full"
         resizeMode="stretch"
         resizeMethod="scale"
-        style={{ width: page.width, height: page.height, left: -tile.x, top: -tile.y }}
       />
     </View>
   );
@@ -86,62 +99,95 @@ function PosterScene({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const { fontScale } = useWindowDimensions();
+  const desired = useRef(initialId);
   const [height, setHeight] = useState(initialHeight);
-  const [overlay, setOverlay] = useState<string>();
+  const layers = useMemo(() => posterLayers(page), [page]);
   const [failed, setFailed] = useState(false);
-  const [revision, setRevision] = useState(0);
+
   const [covers, setCovers] = useState<Cover[]>([]);
   const [active, setActive] = useState<Cover>();
   const [loading, setLoading] = useState(false);
-  const request = useRef({ version: 0 });
+  const request = useRef({
+    version: 0,
+    alive: true,
+    signal: { aborted: false },
+    files: new Set<string>(),
+    cache: new Map<string, Cover>(),
+  });
+  const [showLoading, setShowLoading] = useState(false);
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => setShowLoading(true), 120);
+    return () => clearTimeout(timer);
+  }, [loading]);
   const edits = useSharedValue<Record<string, PosterCrop>>({ ...crops });
   const selected = useSharedValue<Cover | null>(null);
+  const outline = useSharedValue<PosterLayer | null>(null);
+  const outlineOpacity = useSharedValue(0);
   const camera = useSharedValue(fitPosterCamera(page.width, page.height, width, height));
   const owner = useSharedValue<'idle' | 'pan' | 'pinch'>('idle');
   const target = useSharedValue<'cover' | 'page'>('page');
   const previous = useSharedValue({ x: 0, y: 0, scale: 1, pointers: 0 });
   useEffect(() => {
-    camera.set(fitPosterCamera(page.width, page.height, width, height));
+    camera.set(withTiming(fitPosterCamera(page.width, page.height, width, height), CAMERA_TRANSITION));
   }, [camera, page.width, page.height, width, height]);
   useEffect(() => {
-    const pending = request.current;
-    pending.version++;
+    const state = request.current;
+    state.alive = true;
+    return () => {
+      state.alive = false;
+      state.version++;
+      state.signal.aborted = true;
+      for (const file of state.files) void removePosterImage(file).catch(() => {});
+    };
+  }, []);
+  const cancelPending = () => {
+    request.current.version++;
+    request.current.signal.aborted = true;
+    setLoading(false);
+  };
+  const select = async (id: string, focus: boolean) => {
+    const tile = layers.find((v) => v.book.id === id && v.book.coverUri);
+    if (!tile) return;
+    const state = request.current;
+    desired.current = id;
+    state.signal.aborted = true;
     const signal = { aborted: false };
-    let result: string | undefined;
-    void renderPoster(page, labels, signal, undefined, true)
-      .then(async (png) => {
-        if (signal.aborted) return;
-        result = await writePosterImage(png, 0);
-        await Image.prefetch(result);
-        if (signal.aborted) {
-          await removePosterImage(result);
+    state.signal = signal;
+    const version = ++state.version;
+    setShowLoading(false);
+    setLoading(true);
+    setFailed(false);
+    try {
+      let cover = state.cache.get(id);
+      if (!cover) {
+        const dimensions = await Image.getSize(tile.book.coverUri!);
+        await Image.prefetch(tile.book.coverUri!);
+        if (signal.aborted || !state.alive) return;
+        const png = await renderPoster(page, labels, signal, undefined, true, id);
+        if (signal.aborted || !state.alive) return;
+        const overlay = await writePosterImage(png, 0);
+        if (signal.aborted || !state.alive) {
+          await removePosterImage(overlay);
           return;
         }
-        setOverlay(result);
-      })
-      .catch(() => {
-        if (!signal.aborted) setFailed(true);
-      });
-    return () => {
-      signal.aborted = true;
-      pending.version++;
-      if (result) void removePosterImage(result).catch(() => {});
-    };
-  }, [page, labels, revision]);
-
-  const select = async (id: string, focus: boolean) => {
-    const tile = page.tiles.find((v) => v.book.id === id && v.book.coverUri);
-    if (!tile) return;
-    const version = ++request.current.version;
-    setLoading(true);
-    try {
-      const cached = covers.find((v) => v.tile.book.id === id);
-      const cover = cached ?? { tile, ...(await Image.getSize(tile.book.coverUri!)) };
-      if (version !== request.current.version) return;
-      // Previously edited covers stay visible while another cover is selected.
-      setCovers((items) => (items.some((v) => v.tile.book.id === id) ? items : [...items, cover]));
+        state.files.add(overlay);
+        await Image.prefetch(overlay);
+        if (signal.aborted || !state.alive) return;
+        cover = { tile, ...dimensions, overlay };
+        state.cache.set(id, cover);
+      }
+      if (version !== state.version || !state.alive) return;
+      const ready = cover;
+      setCovers((items) =>
+        items.some((v) => v.tile.book.id === id) ? items : [...items, ready].sort((a, b) => a.tile.lift - b.tile.lift),
+      );
       if (!edits.get()[id]) edits.set({ ...edits.get(), [id]: tile.book.crop ?? { ...DEFAULT_POSTER_CROP } });
       selected.set(cover);
+      outlineOpacity.set(0);
+      outline.set(tile);
+      outlineOpacity.set(withTiming(1, SELECTION_TRANSITION));
       setActive(cover);
       if (focus) {
         const fit = fitPosterCamera(page.width, page.height, width, height);
@@ -157,27 +203,26 @@ function PosterScene({
           width,
           height,
         );
-        camera.set(withTiming(next, { duration: 180 }));
+        camera.set(withTiming(next, CAMERA_TRANSITION));
       }
     } catch {
-      if (version === request.current.version) setFailed(true);
+      if (version === state.version && state.alive && !signal.aborted) setFailed(true);
     } finally {
-      if (version === request.current.version) setLoading(false);
+      if (version === state.version && state.alive) setLoading(false);
     }
   };
   const initialSelection = useRef(false);
   useEffect(() => {
-    if (!initialId || !overlay || initialSelection.current) return;
+    if (!initialId || initialSelection.current) return;
     initialSelection.current = true;
     // Selecting is asynchronous, just like tapping a cover once the overlay is ready.
     void select(initialId, false);
   });
   const selectAt = (x: number, y: number) => {
-    if (!overlay) return;
     const c = camera.get();
     const px = (x - c.x) / c.scale,
       py = (y - c.y) / c.scale;
-    const tile = page.tiles.find((v) => px >= v.x && px < v.x + v.width && py >= v.y && py < v.y + v.height);
+    const tile = posterLayerAt(layers, px, py);
     if (tile?.book.coverUri) void select(tile.book.id, true);
   };
   const isCover = (x: number, y: number) => {
@@ -188,14 +233,18 @@ function PosterScene({
     const px = (x - c.x) / c.scale,
       py = (y - c.y) / c.scale;
     const tile = cover.tile;
-    return px >= tile.x && px < tile.x + tile.width && py >= tile.y && py < tile.y + tile.height;
+    return posterLayerAt(layers, px, py)?.book.id === tile.book.id && posterLayerContains(tile, px, py);
   };
   const pan = Gesture.Pan()
-    .enabled(!!overlay)
+    .enabled(true)
     .maxPointers(1)
     .minDistance(3)
+    // Registered gesture callback runs on touch, not during render.
+    // eslint-disable-next-line react-hooks/refs
     .onStart((e) => {
       if (owner.get() === 'pinch') return;
+      cancelAnimation(camera);
+      scheduleOnRN(cancelPending);
       owner.set('pan');
       target.set(isCover(e.x, e.y) ? 'cover' : 'page');
       previous.set({ x: e.translationX, y: e.translationY, scale: 1, pointers: 1 });
@@ -208,12 +257,13 @@ function PosterScene({
         cover = selected.get();
       if (target.get() === 'cover' && cover) {
         const id = cover.tile.book.id;
+        const delta = posterLayerDelta(cover.tile, dx / c.scale, dy / c.scale);
         edits.set({
           ...edits.get(),
           [id]: panPosterCrop(
             edits.get()[id],
-            dx / c.scale,
-            dy / c.scale,
+            delta.x,
+            delta.y,
             cover.width,
             cover.height,
             cover.tile.width,
@@ -227,8 +277,12 @@ function PosterScene({
       if (owner.get() === 'pan') owner.set('idle');
     });
   const pinch = Gesture.Pinch()
-    .enabled(!!overlay)
+    .enabled(true)
+    // Registered gesture callback runs on touch, not during render.
+    // eslint-disable-next-line react-hooks/refs
     .onStart((e) => {
+      cancelAnimation(camera);
+      scheduleOnRN(cancelPending);
       owner.set('pinch');
       target.set(isCover(e.focalX, e.focalY) ? 'cover' : 'page');
       previous.set({ x: e.focalX, y: e.focalY, scale: e.scale, pointers: e.numberOfPointers });
@@ -244,19 +298,21 @@ function PosterScene({
           const tile = cover.tile,
             id = tile.book.id,
             crop = edits.get()[id];
+          const before = posterLayerPoint(tile, (p.x - c.x) / c.scale, (p.y - c.y) / c.scale);
+          const after = posterLayerPoint(tile, (e.focalX - c.x) / c.scale, (e.focalY - c.y) / c.scale);
           edits.set({
             ...edits.get(),
             [id]: zoomPosterCrop(
               crop,
               crop.zoom * ratio,
-              (p.x - c.x) / c.scale - tile.x,
-              (p.y - c.y) / c.scale - tile.y,
+              before.x,
+              before.y,
               cover.width,
               cover.height,
               tile.width,
               tile.height,
-              (e.focalX - c.x) / c.scale - tile.x,
-              (e.focalY - c.y) / c.scale - tile.y,
+              after.x,
+              after.y,
             ),
           });
         } else {
@@ -284,6 +340,9 @@ function PosterScene({
       if (owner.get() === 'pinch') owner.set('idle');
     });
   const tap = Gesture.Tap()
+    .onBegin(() => {
+      cancelAnimation(camera);
+    })
     .maxDistance(8)
     // Gesture callbacks execute on touch events, outside React rendering.
     // eslint-disable-next-line react-hooks/refs
@@ -295,9 +354,10 @@ function PosterScene({
     transform: [{ translateX: camera.get().x }, { translateY: camera.get().y }, { scale: camera.get().scale }],
   }));
   const borderStyle = useAnimatedStyle(() => {
-    const tile = selected.get()?.tile;
+    const tile = outline.get();
     return {
-      opacity: tile ? 1 : 0,
+      opacity: outlineOpacity.get(),
+      transform: [{ rotate: `${tile?.rotation ?? 0}deg` }],
       left: tile?.x ?? 0,
       top: tile?.y ?? 0,
       width: tile?.width ?? 0,
@@ -312,11 +372,16 @@ function PosterScene({
           {t('action.cancel')}
         </Button>
         <Text className="text-base font-semibold text-foreground">{t('statistics.posterCropTitle')}</Text>
-        <Button size="sm" variant="ghost" isDisabled={!overlay || loading} onPress={() => onApply({ ...edits.get() })}>
+        <Button size="sm" variant="ghost" isDisabled={loading} onPress={() => onApply({ ...edits.get() })}>
           {t('statistics.posterCropApply')}
         </Button>
       </View>
-      <View className="flex-1" onLayout={(event) => setHeight(event.nativeEvent.layout.height)}>
+      <View
+        className="flex-1"
+        onLayout={(event) => {
+          const next = event.nativeEvent.layout.height;
+          setHeight((old) => (Math.abs(old - next) > 1 ? next : old));
+        }}>
         <GestureDetector gesture={Gesture.Simultaneous(pan, pinch, tap)}>
           <View
             collapsable={false}
@@ -325,13 +390,12 @@ function PosterScene({
             accessibilityLabel={t('statistics.posterCropCanvas')}>
             <Animated.View className="absolute" style={[{ width: page.width, height: page.height }, sceneStyle]}>
               <Image source={{ uri }} className="h-full w-full" resizeMode="stretch" resizeMethod="scale" />
-              {overlay &&
-                covers.map((cover) => (
-                  <LiveCover key={cover.tile.book.id} cover={cover} page={page} overlay={overlay} edits={edits} />
-                ))}
+              {covers.map((cover) => (
+                <LiveCover key={cover.tile.book.id} cover={cover} edits={edits} />
+              ))}
               <Animated.View pointerEvents="none" className="absolute border-navigation-active" style={borderStyle} />
             </Animated.View>
-            {(!overlay || loading) && (
+            {loading && showLoading && (
               <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
                 <ActivityIndicator />
               </View>
@@ -340,10 +404,13 @@ function PosterScene({
         </GestureDetector>
       </View>
       <View className="gap-2 px-4 py-3">
-        <Text numberOfLines={1} className="text-center text-sm font-medium text-foreground">
+        <Text
+          numberOfLines={1}
+          className="text-center text-sm font-medium text-foreground"
+          style={{ minHeight: 24 * fontScale }}>
           {active?.tile.book.title ?? t('statistics.posterCropSelect')}
         </Text>
-        <Text className="text-center text-xs text-muted">
+        <Text numberOfLines={2} className="text-center text-xs text-muted" style={{ minHeight: 32 * fontScale }}>
           {t(active ? 'statistics.posterCropGesture' : 'statistics.posterCropBrowse')}
         </Text>
         <View className="flex-row gap-3">
@@ -353,9 +420,9 @@ function PosterScene({
             onPress={() => {
               selected.set(null);
               setActive(undefined);
-              request.current.version++;
-              setLoading(false);
-              camera.set(withTiming(fitPosterCamera(page.width, page.height, width, height), { duration: 180 }));
+              cancelPending();
+              outlineOpacity.set(withTiming(0, SELECTION_TRANSITION));
+              camera.set(withTiming(fitPosterCamera(page.width, page.height, width, height), CAMERA_TRANSITION));
             }}>
             {t('statistics.posterCropOverview')}
           </Button>
@@ -374,7 +441,7 @@ function PosterScene({
             variant="ghost"
             onPress={() => {
               setFailed(false);
-              setRevision((v) => v + 1);
+              if (desired.current) void select(desired.current, false);
             }}>
             {t('statistics.retry')}
           </Button>

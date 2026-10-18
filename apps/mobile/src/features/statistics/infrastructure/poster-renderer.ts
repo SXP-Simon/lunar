@@ -1,3 +1,4 @@
+import { posterLayers } from '../domain/poster-depth';
 import { Skia, TileMode, ClipOp, BlendMode, BlurStyle, PaintStyle, type SkTypeface } from '@shopify/react-native-skia';
 import { drawAmbientBackground } from './poster-background';
 import { posterCoverSource } from '../domain/poster-crop';
@@ -39,14 +40,21 @@ export async function renderPoster(
   signal: { aborted: boolean },
   typeface?: SkTypeface,
   coverOverlay = false,
+  editTileId?: string,
 ) {
   const face = typeface ?? (await preparePosterTypeface());
   const brand = coverOverlay ? null : await loadPosterBrand();
+  const layers = posterLayers(page);
+  const editTarget = editTileId ? layers.find((tile) => tile.book.id === editTileId) : undefined;
   const scale = page.height === 1440 ? (coverOverlay ? 2 : 3) : page.height <= 2000 ? 2 : 1;
-  const surface = Skia.Surface.Make(page.width * scale, page.height * scale);
+  const surface = Skia.Surface.Make(
+    Math.ceil((editTarget?.width ?? page.width) * scale),
+    Math.ceil((editTarget?.height ?? page.height) * scale),
+  );
   if (!surface) throw Error('Poster bitmap allocation failed');
   const canvas = surface.getCanvas();
   canvas.scale(scale, scale);
+  if (editTarget) canvas.translate(-editTarget.x, -editTarget.y);
   const paint = Skia.Paint();
   paint.setAntiAlias(true);
   const font = Skia.Font(face, 20);
@@ -58,6 +66,10 @@ export async function renderPoster(
   glowPaint.setAntiAlias(true);
   const softGlow = Skia.MaskFilter.MakeBlur(BlurStyle.Normal, 2, true);
   const coverGlow = Skia.MaskFilter.MakeBlur(BlurStyle.Normal, 8, true);
+  const depthBlur = Skia.MaskFilter.MakeBlur(BlurStyle.Normal, 14, true);
+  const drawLayers = editTarget
+    ? layers.filter((tile) => tile.book.id === editTarget.book.id || tile.lift > editTarget.lift)
+    : layers;
   const featured = new Set(
     [...page.tiles]
       .sort((a, b) => b.book.milliseconds - a.book.milliseconds || a.book.id.localeCompare(b.book.id))
@@ -96,6 +108,8 @@ export async function renderPoster(
   };
   try {
     canvas.clear(Skia.Color(coverOverlay ? '#00000000' : paper));
+    if (editTarget)
+      canvas.rotate(-editTarget.rotation, editTarget.x + editTarget.width / 2, editTarget.y + editTarget.height / 2);
     if (!coverOverlay) {
       await drawAmbientBackground(canvas, page, signal);
       line(64, 47, 1016, 47);
@@ -113,15 +127,52 @@ export async function renderPoster(
           canvas.drawRect(Skia.XYWHRect(tile.x, tile.y, tile.width, tile.height), glowPaint);
       }
     }
-    for (const tile of page.tiles) {
+    for (const tile of drawLayers) {
       if (signal.aborted) throw Error('Poster cancelled');
-      const { book, x, y, width: w, height: h } = tile;
+      const { book, x, y, width: w, height: h, lift } = tile;
+      const occluder = !!editTarget && book.id !== editTarget.book.id;
+      canvas.save();
+      if (lift) canvas.rotate(tile.rotation, x + w / 2, y + h / 2);
+      if (lift && (!coverOverlay || occluder)) {
+        glowPaint.setStyle(PaintStyle.Fill);
+        glowPaint.setMaskFilter(depthBlur);
+        glowPaint.setColor(Skia.Color('#000000d9'));
+        canvas.drawRect(Skia.XYWHRect(x + 7 * lift, y + 21 * lift, w, h), glowPaint);
+        // A tight contact shadow anchors the card; broad shadow alone looks like glow.
+        glowPaint.setMaskFilter(softGlow);
+        glowPaint.setColor(Skia.Color('#000000c9'));
+        canvas.drawRect(Skia.XYWHRect(x + 3 * lift, y + 7 * lift, w, h), glowPaint);
+        const sideBuilder = Skia.PathBuilder.Make();
+        sideBuilder
+          .moveTo(x + w, y)
+          .lineTo(x + w + 5 * lift, y + 8 * lift)
+          .lineTo(x + w + 5 * lift, y + h + 8 * lift)
+          .lineTo(x + w, y + h)
+          .close();
+        const side = sideBuilder.detach();
+        color('#333b46');
+        canvas.drawPath(side, paint);
+        side.dispose();
+        sideBuilder.dispose();
+        const footBuilder = Skia.PathBuilder.Make();
+        footBuilder
+          .moveTo(x, y + h)
+          .lineTo(x + 5 * lift, y + h + 8 * lift)
+          .lineTo(x + w + 5 * lift, y + h + 8 * lift)
+          .lineTo(x + w, y + h)
+          .close();
+        const foot = footBuilder.detach();
+        color('#20252d');
+        canvas.drawPath(foot, paint);
+        foot.dispose();
+        footBuilder.dispose();
+      }
       canvas.save();
       canvas.clipRect(Skia.XYWHRect(x, y, w, h), ClipOp.Intersect, false);
       const tint = ['#284358', '#6e5563', '#587267', '#a48058', '#4a5c73', '#9d9380'][
         Array.from(book.id).reduce((s, c) => s + c.charCodeAt(0), 0) % 6
       ];
-      if (!coverOverlay) {
+      if (!coverOverlay || occluder) {
         rect(x, y, w, h, tint);
         if (book.coverUri) {
           const data = await Skia.Data.fromURI(book.coverUri);
@@ -167,7 +218,8 @@ export async function renderPoster(
       }
       // A clear central plateau and a gentle outer falloff. Clip to covers only;
       // captions are drawn afterwards, and the editor uses this same overlay.
-      const block = page.lighting.find((region) => y >= region.y && y < region.y + region.height)!;
+      const sourceY = page.tiles.find((item) => item.book.id === book.id)!.y;
+      const block = page.lighting.find((region) => sourceY >= region.y && sourceY < region.y + region.height)!;
       const aspect = block.height / block.width;
       const count = page.tiles.filter((item) => item.y >= block.y && item.y < block.y + block.height).length;
       const opacity = count <= 6 ? 0.56 : count <= 20 ? 0.67 : 0.76;
@@ -216,6 +268,11 @@ export async function renderPoster(
       paint.setStrokeWidth(featured.has(book.id) ? 1 : 0.5);
       canvas.drawRect(Skia.XYWHRect(x + 0.5, y + 0.5, w - 1, h - 1), paint);
       paint.setStyle(PaintStyle.Fill);
+      canvas.restore();
+      if (lift) {
+        line(x + 0.5, y + 0.5, x + w - 0.5, y + 0.5, '#ffffffa0');
+        line(x + 0.5, y + 0.5, x + 0.5, y + h - 0.5, '#ffffff55');
+      }
       canvas.restore();
       // Yield between covers so cancellation and progress remain responsive.
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -299,6 +356,7 @@ export async function renderPoster(
     // Native MaskFilter host objects rely on GC; CanvasKit also exposes dispose.
     softGlow.dispose?.();
     coverGlow.dispose?.();
+    depthBlur.dispose?.();
     paint.dispose();
     surface.dispose();
   }

@@ -7,6 +7,7 @@ import { PressableFeedback } from 'heroui-native/pressable-feedback';
 import { useTranslation } from '@/i18n';
 import type { PosterDocument, PosterLabels, PosterTile } from '../domain/poster';
 import { renderPoster } from '../infrastructure/poster-renderer';
+import { posterLayerAt, posterLayers } from '../domain/poster-depth';
 import { removePosterImage, writePosterImage } from '../infrastructure/poster-image';
 export type { PosterLabels } from '../domain/poster';
 export interface PosterCanvasHandle {
@@ -101,7 +102,7 @@ export const PosterCanvas = forwardRef<
           onPress={(event) => {
             const x = (event.nativeEvent.locationX * page.width) / width;
             const y = (event.nativeEvent.locationY * page.width) / width;
-            const tile = page.tiles.find((v) => x >= v.x && x < v.x + v.width && y >= v.y && y < v.y + v.height);
+            const tile = posterLayerAt(posterLayers(page), x, y);
             if (tile?.book.coverUri && onEdit) {
               onEdit(result.uri!, labels, tile);
               return;

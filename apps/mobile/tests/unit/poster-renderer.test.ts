@@ -2,6 +2,7 @@ import { expect, it, vi } from 'vitest';
 import type { SkTypeface } from '@shopify/react-native-skia';
 import { renderPoster } from '../../src/features/statistics/infrastructure/poster-renderer';
 import { buildPoster, type PosterLabels } from '../../src/features/statistics/domain/poster';
+import { posterLayers } from '../../src/features/statistics/domain/poster-depth';
 const state = vi.hoisted(() => ({
   live: 0,
   maxLive: 0,
@@ -39,6 +40,9 @@ vi.mock('@shopify/react-native-skia', () => {
   });
   const canvas = {
     scale: noop,
+    translate: noop,
+    rotate: noop,
+    drawPath: noop,
     save: noop,
     clipRect: noop,
     clipPath: noop,
@@ -71,6 +75,18 @@ vi.mock('@shopify/react-native-skia', () => {
       XYWHRect: (x: number, y: number, width: number, height: number) => ({ x, y, width, height }),
       Paint: paint,
       Path: { Circle: () => ({ dispose: noop }) },
+      PathBuilder: {
+        Make: () => {
+          const builder = {
+            moveTo: () => builder,
+            lineTo: () => builder,
+            close: () => builder,
+            detach: () => ({ dispose: noop }),
+            dispose: noop,
+          };
+          return builder;
+        },
+      },
       Font: () => ({ setSize: noop, getGlyphIDs: () => [], getGlyphWidths: () => [], dispose: noop }),
       MaskFilter: {
         MakeBlur: () => (state.disposableFilters ? { dispose: () => state.filtersDisposed++ } : {}),
@@ -136,7 +152,7 @@ it('exports each selected crop instead of reverting to the original centered cov
   const book = { ...source[0], crop: { x: 0, y: 1, zoom: 2 } };
   const page = buildPoster([book], 1, 'single').pages[0];
   await renderPoster(page, labels, { aborted: false }, {} as SkTypeface);
-  const tile = page.tiles[0];
+  const tile = posterLayers(page)[0];
   const fit = Math.max(tile.width / 400, tile.height / 600) * 2;
   expect(state.sources).toEqual([
     { x: 0, y: 600 - tile.height / fit, width: tile.width / fit, height: tile.height / fit },
@@ -159,6 +175,24 @@ it('draws all 120 real covers sequentially before encoding, without an evictable
   expect(await renderPoster(page, labels, { aborted: false }, {} as SkTypeface)).toBe('PNG');
   expect(state).toMatchObject({ drawn: 120, decoded: 120, maxLive: 1, live: 0, snapshots: 1, surfaceDisposed: 1 });
 });
+it('keeps foreground covers above an edited background and avoids decoding the live target', async () => {
+  const page = buildPoster(
+    source.slice(0, 6).map((book, i) => ({ ...book, milliseconds: (6 - i) * 60000 })),
+    1,
+    'single',
+  ).pages[0];
+  const layers = posterLayers(page);
+  for (const target of [layers[0], layers.at(-2)!, layers.at(-1)!]) {
+    Object.assign(state, { failAt: -1, drawn: 0, decoded: 0, texts: [], brand: false });
+    await renderPoster(page, labels, { aborted: false }, {} as SkTypeface, true, target.book.id);
+    const above = layers.filter((layer) => layer.lift > target.lift);
+    expect(state.decoded).toBe(above.length);
+    expect(state.drawn).toBe(above.length);
+    expect(state.texts).toContain(target.book.title);
+    for (const layer of above) expect(state.texts).toContain(layer.book.title);
+    expect(state.live).toBe(0);
+  }
+});
 it('fails visibly instead of encoding a silently missing cover and releases the raster surface', async () => {
   Object.assign(state, { live: 0, maxLive: 0, drawn: 0, decoded: 0, snapshots: 0, surfaceDisposed: 0, failAt: 3 });
   await expect(
@@ -178,7 +212,7 @@ it('releases CanvasKit blur filters when supported, while native filters need no
         {} as SkTypeface,
       ),
     ).toBe('PNG');
-    expect(state.filtersDisposed).toBe(2);
+    expect(state.filtersDisposed).toBe(3);
   } finally {
     state.disposableFilters = false;
   }
