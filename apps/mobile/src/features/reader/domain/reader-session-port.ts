@@ -23,6 +23,7 @@ export interface ReaderSessionState {
   readonly book?: ReaderSessionBook;
   readonly location?: ReaderSessionLocation;
   readonly interaction: ReaderInteractionMode;
+  readonly hasSelection: boolean;
 }
 
 /** Text painted on the visible frame, with the identity needed to place marks on it again. */

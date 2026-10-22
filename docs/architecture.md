@@ -8,6 +8,8 @@
 
 [MUST] 根目录 `plugins` 承载独立构建的阅读器插件。插件通过 SDK 的公开契约访问宿主能力；Expo 构建配置插件归属 `apps/mobile/plugins`。
 
+[MUST] `packages/plugin-sdk` 只提供类型、清单与包格式工具；SDK 的运行时实现由宿主注入。插件与 SDK 包禁止依赖 `apps/mobile`。
+
 [MUST] 工作区包分别声明运行依赖与开发依赖，仓库根目录管理共享锁文件、依赖策略、补丁和仓库工具。
 
 [SHOULD] 各包使用自身的类型检查、测试与构建命令；根目录命令负责调用各包任务。

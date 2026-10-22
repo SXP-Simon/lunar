@@ -20,6 +20,7 @@ export interface ReaderSessionPortOptions {
   readonly book?: ReaderSessionBook;
   readonly toc: readonly ReaderTocEntry[];
   readonly interaction: ReaderInteraction;
+  readonly hasSelection: boolean;
   /** Animated page turns owned by the reader's page-turn controller. */
   readonly next: () => Promise<unknown>;
   readonly previous: () => Promise<unknown>;
@@ -36,7 +37,7 @@ export function useReaderSessionPortContext(): ReaderSessionPort | undefined {
 export function useReaderSessionPort(options: ReaderSessionPortOptions): ReaderSessionPort {
   const latest = useRef(options);
   const listeners = useRef(new Set<() => void>());
-  const { book, interaction, lifecycle, snapshot } = options;
+  const { book, hasSelection, interaction, lifecycle, snapshot } = options;
   const state = useMemo<ReaderSessionState>(
     () => ({
       lifecycle,
@@ -44,8 +45,9 @@ export function useReaderSessionPort(options: ReaderSessionPortOptions): ReaderS
       book,
       location: lifecycle === 'open' ? createReaderSessionLocation(snapshot) : undefined,
       interaction: interaction.mode,
+      hasSelection,
     }),
-    [book, interaction.mode, lifecycle, snapshot],
+    [book, hasSelection, interaction.mode, lifecycle, snapshot],
   );
   const stateRef = useRef(state);
 
@@ -106,7 +108,8 @@ function readVisibleText(runtime: LunarReaderRuntime, snapshot: ReaderSnapshot):
     return undefined;
   }
   const frame = runtime.getCurrentFrame(snapshot.spreadIndex);
-  const entries = runtime.getCurrentHitMap(snapshot.spreadIndex)?.entries ?? frame?.hits ?? [];
+  // Overlay resolvers read `frame.hits`; ranges must index into the same entries.
+  const entries = frame?.hits ?? runtime.getCurrentHitMap(snapshot.spreadIndex)?.entries ?? [];
   return {
     revisionId: snapshot.revisionId,
     frameKey: frame?.renderKey ?? frame?.sourceKey,

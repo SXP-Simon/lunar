@@ -45,7 +45,9 @@ export function useBuiltinReaderPanels(isReady: boolean): readonly ReaderPanelDe
 }
 
 export function useReaderPanels(panels: readonly ReaderPanelDescriptor[]) {
-  const [activePanel, setActivePanel] = useState<string>();
+  const [requestedPanel, setActivePanel] = useState<string>();
+  // A panel whose extension was removed while open must not keep blocking the page.
+  const activePanel = panels.some((panel) => panel.key === requestedPanel) ? requestedPanel : undefined;
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideControls = useCallback(() => setControlsVisible(false), []);
   const toggleControls = useCallback(() => setControlsVisible((value) => !value), []);

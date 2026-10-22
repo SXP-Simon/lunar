@@ -44,6 +44,9 @@ importers:
       '@gorhom/bottom-sheet':
         specifier: 5.2.9
         version: 5.2.9(af062ce359bd6fb1dbaf14cff47ccac2)
+      '@lunar/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
       '@shopify/react-native-skia':
         specifier: 2.6.2
         version: 2.6.2(patch_hash=c75cb8f8f32dbe095408f3cbb9fb41fd27ad9eac7e4a3bdac5c407ac93873044)(react-native-reanimated@4.5.1(react-native-worklets@0.10.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
@@ -252,6 +255,68 @@ importers:
       vite:
         specifier: 7.2.4
         version: 7.2.4(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.50.0)(yaml@2.9.0)
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.33.0)(supports-color@8.1.1)(terser@5.50.0)(yaml@2.9.0)
+
+  packages/plugin-cli:
+    dependencies:
+      '@lunar/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
+      esbuild:
+        specifier: 0.25.12
+        version: 0.25.12
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.2
+        version: 22.20.2
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.33.0)(supports-color@8.1.1)(terser@5.50.0)(yaml@2.9.0)
+
+  packages/plugin-sdk:
+    dependencies:
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/react':
+        specifier: ~19.2.2
+        version: 19.2.18
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      react-native:
+        specifier: 0.86.3
+        version: 0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.33.0)(supports-color@8.1.1)(terser@5.50.0)(yaml@2.9.0)
+
+  plugins/reading-stats:
+    devDependencies:
+      '@lunar/plugin-cli':
+        specifier: workspace:*
+        version: link:../../packages/plugin-cli
+      '@lunar/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
+      '@types/react':
+        specifier: ~19.2.2
+        version: 19.2.18
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.33.0)(supports-color@8.1.1)(terser@5.50.0)(yaml@2.9.0)

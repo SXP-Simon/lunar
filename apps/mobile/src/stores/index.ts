@@ -5,3 +5,4 @@ export * from './library-store';
 export * from './reader-store';
 export * from './reader-appearance-preferences';
 export * from './reader-excerpt-preferences';
+export * from './plugin-store';

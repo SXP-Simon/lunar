@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { BlurTargetView } from 'expo-blur';
 import { Portal } from 'heroui-native/portal';
 import { Spinner } from 'heroui-native/spinner';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Pressable, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useCSSVariable, useResolveClassNames, useUniwind, withUniwind } from 'uniwind';
@@ -31,6 +31,7 @@ import { Typography } from '../components/panels/typography';
 import { Appearance } from '../components/panels/appearance';
 import { Controls } from '../components/navigation/controls';
 import { Footnote } from '../components/panels/footnote';
+import { ExtensionPanel } from '../components/panels/extension';
 import { SelectionControls, type ReaderSelectionAction } from '../components/controls/selection';
 import { ExcerptSheet } from '../components/annotations/excerpt-sheet';
 import type { ReaderExcerpt } from '../domain/reader-excerpt';
@@ -56,6 +57,11 @@ import { useReaderHitEntries } from '../hooks/session/use-reader-hit-entries';
 import { useReadingTime } from '../hooks/session/use-reading-time';
 import { useReaderErrorToast } from '../hooks/session/use-reader-error-toast';
 import { useScreenBrightness } from '../hooks/use-screen-brightness';
+import { useReaderExtensions, type ReaderExtensionSelection } from '../extensions/reader-extensions';
+import {
+  createReaderExtensionDecorationResolver,
+  type ReaderExtensionDecorationColors,
+} from '../services/extension-decoration-overlays';
 
 const ReaderBlurTarget = withUniwind(BlurTargetView);
 
@@ -91,6 +97,27 @@ export default function ReaderScreen() {
     }),
     [highlightFillColor, highlightPink, highlightPurple, highlightBlue, highlightGreen],
   );
+  const navigationActiveColor = useCSSVariable('--color-navigation-active') as string;
+  const decorationColors = useMemo<ReaderExtensionDecorationColors>(
+    () => ({
+      yellow: { fill: highlightFillColor, ink: highlightFillColor },
+      pink: { fill: highlightPink, ink: highlightPink },
+      purple: { fill: highlightPurple, ink: highlightPurple },
+      blue: { fill: highlightBlue, ink: highlightBlue },
+      green: { fill: highlightGreen, ink: highlightGreen },
+      accent: { fill: selectionFillColor, ink: navigationActiveColor },
+    }),
+    [
+      highlightFillColor,
+      highlightPink,
+      highlightPurple,
+      highlightBlue,
+      highlightGreen,
+      selectionFillColor,
+      navigationActiveColor,
+    ],
+  );
+  const { host: extensionHost, contributions: extensions } = useReaderExtensions();
   const absoluteFillStyle = useResolveClassNames('absolute inset-0');
   const noteBlurTarget = useRef<View>(null);
   const paperColor = useReaderStore((state) => state.paperColors[readerTheme]);
@@ -228,8 +255,12 @@ export default function ReaderScreen() {
     };
   }, [highlightOverlayRequest]);
   const builtinPanels = useBuiltinReaderPanels(isReady);
-  const panels = useReaderPanels(builtinPanels);
-  const { toggleControls, selectPanel } = panels;
+  const panelDescriptors = useMemo(
+    () => (extensions.panels.length === 0 ? builtinPanels : [...builtinPanels, ...extensions.panels]),
+    [builtinPanels, extensions.panels],
+  );
+  const panels = useReaderPanels(panelDescriptors);
+  const { toggleControls, selectPanel, setPanelOpen } = panels;
   const {
     selection,
     textSelection,
@@ -423,9 +454,16 @@ export default function ReaderScreen() {
     },
     [clearSelection, selectPanel],
   );
+  const resolvePageDecorations = useMemo(
+    () => createReaderExtensionDecorationResolver(extensions.decorations, decorationColors),
+    [decorationColors, extensions.decorations],
+  );
   const overlaySources = useMemo<readonly ReaderOverlaySource[]>(
-    () => [{ key: 'highlights', resolvePage: resolvePageHighlights, current: resolvedHighlightOverlays }],
-    [resolvePageHighlights, resolvedHighlightOverlays],
+    () => [
+      { key: 'highlights', resolvePage: resolvePageHighlights, current: resolvedHighlightOverlays },
+      { key: 'extensions', resolvePage: resolvePageDecorations },
+    ],
+    [resolvePageDecorations, resolvePageHighlights, resolvedHighlightOverlays],
   );
   const sessionBook = useMemo(
     () =>
@@ -447,10 +485,49 @@ export default function ReaderScreen() {
     book: sessionBook,
     toc: session.toc,
     interaction,
+    hasSelection: Boolean(selection),
     next,
     previous,
   });
-  const selectionActions: readonly ReaderSelectionAction[] = selection
+  // Extensions keep stable controls; the latest panel callbacks are read through refs.
+  const panelControls = useRef({ selectPanel, setPanelOpen, activePanel: panels.activePanel });
+  useEffect(() => {
+    panelControls.current = { selectPanel, setPanelOpen, activePanel: panels.activePanel };
+  });
+  useEffect(
+    () =>
+      extensionHost.attachSession(sessionPort, {
+        openPanel: (key) => panelControls.current.selectPanel(key),
+        closePanel: (key) => {
+          const target = key ?? panelControls.current.activePanel;
+          if (target) panelControls.current.setPanelOpen(target, false);
+        },
+      }),
+    [extensionHost, sessionPort],
+  );
+  const extensionSelection = useMemo<ReaderExtensionSelection | undefined>(
+    () =>
+      selection
+        ? {
+            text: selection.text,
+            href: chapterHref || undefined,
+            chapterTitle,
+            range: selection.range,
+            sourceRange: selection.sourceRange,
+            revisionId: selection.revisionId,
+            frameKey:
+              session.runtime.getCurrentFrame(selection.spreadIndex)?.renderKey ??
+              session.runtime.getCurrentFrame(selection.spreadIndex)?.sourceKey,
+          }
+        : undefined,
+    [chapterHref, chapterTitle, selection, session.runtime],
+  );
+  const bookAuthor = session.book?.author;
+  const openExcerpt = useCallback(
+    (text: string) => setExcerpt({ text, bookTitle, author: bookAuthor, chapterTitle, createdAt: Date.now() }),
+    [bookAuthor, bookTitle, chapterTitle],
+  );
+  const builtinSelectionActions: readonly ReaderSelectionAction[] = selection
     ? [
         {
           key: 'copy',
@@ -462,14 +539,7 @@ export default function ReaderScreen() {
           key: 'excerpt',
           label: t('reader.excerptTitle'),
           name: { ios: 'quote.bubble', android: 'format_quote', web: 'format_quote' },
-          onPress: () =>
-            setExcerpt({
-              text: selection.text,
-              bookTitle,
-              author: session.book?.author,
-              chapterTitle,
-              createdAt: Date.now(),
-            }),
+          onPress: () => openExcerpt(selection.text),
         },
         {
           key: 'highlight',
@@ -492,6 +562,9 @@ export default function ReaderScreen() {
         },
       ]
     : [];
+  const selectionActions = extensionSelection
+    ? extensionHost.resolveSelectionActions(builtinSelectionActions, extensionSelection)
+    : builtinSelectionActions;
 
   const statusText = useMemo(() => {
     switch (session.snapshot.phase) {
@@ -637,6 +710,14 @@ export default function ReaderScreen() {
           </GestureDetector>
         </ReaderBlurTarget>
 
+        {extensions.overlays.length > 0 && !activeImageViewer && (
+          <View pointerEvents="box-none" className="absolute inset-0">
+            {extensions.overlays.map((overlay) => (
+              <Fragment key={overlay.key}>{overlay.render()}</Fragment>
+            ))}
+          </View>
+        )}
+
         {selection && viewport && !note.isOpen && !excerpt && (
           <SelectionControls
             actions={selectionActions}
@@ -748,9 +829,22 @@ export default function ReaderScreen() {
           isOpen={panels.activePanel === 'appearance'}
           onOpenChange={(open) => panels.setPanelOpen('appearance', open)}
         />
+        {extensions.panels.map((panel) => (
+          <ExtensionPanel
+            key={panel.key}
+            panel={panel}
+            isOpen={panels.activePanel === panel.key}
+            onOpenChange={(open) => panels.setPanelOpen(panel.key, open)}
+          />
+        ))}
         {readerChromeVisible && (
           <Portal name="reader-chrome">
-            <Controls onBack={handleBack} safeAreaInsets={reservedInsets} bookTitle={bookTitle} />
+            <Controls
+              onBack={handleBack}
+              actions={extensions.toolbarActions}
+              safeAreaInsets={reservedInsets}
+              bookTitle={bookTitle}
+            />
             <TabBar
               activeKey={panels.activePanel}
               items={panels.tabItems}

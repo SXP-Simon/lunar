@@ -129,4 +129,31 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       'ALTER TABLE reader_highlights DROP COLUMN note',
     ],
   },
+  {
+    version: 10,
+    name: 'create_plugins',
+    statements: [
+      `CREATE TABLE IF NOT EXISTS plugins (
+        id TEXT PRIMARY KEY NOT NULL,
+        version TEXT NOT NULL,
+        source TEXT NOT NULL,
+        manifest_json TEXT NOT NULL,
+        locales_json TEXT NOT NULL DEFAULT '{}',
+        package_sha256 TEXT NOT NULL,
+        entry_sha256 TEXT NOT NULL,
+        directory_uri TEXT NOT NULL,
+        installed_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )`,
+      // Development plugins have no installation record, so storage is keyed by id alone.
+      `CREATE TABLE IF NOT EXISTS plugin_storage (
+        plugin_id TEXT NOT NULL,
+        key TEXT NOT NULL,
+        value_json TEXT NOT NULL,
+        byte_size INTEGER NOT NULL CHECK (byte_size >= 0),
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (plugin_id, key)
+      )`,
+    ],
+  },
 ];

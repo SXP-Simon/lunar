@@ -34,3 +34,16 @@ export type { ReaderInteractionMode } from './domain/reader-interaction';
 export type { ReaderPanelDescriptor } from './hooks/controls/use-reader-panels';
 export type { ReaderToolbarAction } from './components/navigation/controls';
 export type { ReaderSelectionAction } from './components/controls/selection';
+export {
+  NoReaderExtensions,
+  ReaderExtensionProvider,
+  type ReaderExtensionContributions,
+  type ReaderExtensionDecoration,
+  type ReaderExtensionDecorationColor,
+  type ReaderExtensionDecorationStyle,
+  type ReaderExtensionHost,
+  type ReaderExtensionOverlay,
+  type ReaderExtensionPanel,
+  type ReaderExtensionSelection,
+  type ReaderExtensionSessionControls,
+} from './extensions/reader-extensions';

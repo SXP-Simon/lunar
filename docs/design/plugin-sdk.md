@@ -149,7 +149,7 @@ Rito 当前没有章节全文接口，阅读内核只能取得已分页帧的文
 阅读与书库业务需要渲染插件内容，插件业务需要调用阅读与书库能力。为避免业务包循环依赖，扩展点契约由提供扩展位置的业务域定义，插件业务实现该契约，应用层完成装配。
 
 ```text
-features/reader   定义 ReaderExtensionHost 契约与 <ReaderExtensionSlot>
+features/reader   定义 ReaderExtensionHost 契约与 ReaderExtensionProvider
        ▲                         ▲
        │ 公开入口                │ 实现契约
 features/plugins  ───────────────┘  依赖 reader、library 公开入口构建插件 API
@@ -206,17 +206,16 @@ features/plugins  ───────────────┘  依赖 reade
 
 ### 5.4 激活事件
 
-插件在清单中声明激活事件，宿主在事件发生时加载插件代码。未被触发的插件只登记清单中的静态入口，不执行代码。
+未被激活的插件只登记清单中的静态入口，不执行代码。用户使用插件贡献的任一入口时，宿主隐式激活该插件：调用命令、打开面板或整页、阅读器渲染插件浮层、打开插件设置页。清单中的激活事件只声明需要提前执行的场景。
 
-| 激活事件         | 触发时机                             |
-| ---------------- | ------------------------------------ |
-| `onStartup`      | 应用完成首屏渲染之后                 |
-| `onReaderOpen`   | 任意书籍进入 `opening` 阶段          |
-| `onCommand:<id>` | 用户调用该插件声明的命令             |
-| `onSlot:<slot>`  | 宿主首次渲染该插件在指定插槽中的入口 |
-| `onRoute:<page>` | 用户打开该插件的整页路由             |
+| 激活事件       | 触发时机                    |
+| -------------- | --------------------------- |
+| `onStartup`    | 应用完成插件记录加载之后    |
+| `onReaderOpen` | 任意书籍进入 `opening` 阶段 |
 
-[SHOULD] 插件优先使用 `onCommand` 与 `onSlot`。`onStartup` 计入启动预算，管理界面展示各插件的激活耗时。
+[SHOULD] 插件优先依赖隐式激活，仅在需要观察完整阅读会话时声明 `onReaderOpen`。`onStartup` 计入启动预算，管理界面展示各插件的激活耗时。
+
+[MUST] 插件在阅读会话开始之后才激活时，宿主向该插件补发当前会话的 `open` 与 `ready` 事件。
 
 ### 5.5 停用与重载
 
@@ -241,7 +240,7 @@ features/plugins  ───────────────┘  依赖 reade
 
 [MUST] 宿主记录插件执行期间的启动标记。上次启动在插件激活阶段异常退出时，应用以安全模式启动，所有插件保持停用，并由用户逐个恢复。
 
-[MUST] 用户可以在启动画面通过固定手势进入安全模式。
+[MUST] 插件管理页提供“下次启动时进入安全模式”的入口。启动画面由原生层绘制，手势入口待启动画面支持交互后补充。
 
 ## 6. 插件包与发布身份
 
@@ -278,7 +277,7 @@ reading-helper.lunar-plugin
   "platforms": ["android"],
   "main": "main.js",
   "publisherKeyId": "ed25519:example-key",
-  "activationEvents": ["onReaderOpen", "onCommand:open-stats"],
+  "activationEvents": ["onReaderOpen"],
   "permissions": [
     { "name": "reader.content.read", "reason": "统计当前章节字数" },
     { "name": "reader.decorations", "reason": "标记长句" }
@@ -320,6 +319,8 @@ reading-helper.lunar-plugin
 首次安装展示作者声明、来源、指纹、执行层级和请求权限。签名证明包的完整性及发布身份连续性，无法证明插件行为安全。
 
 开发构建允许本地未签名插件，并在管理界面标记开发来源。正式版本的本地安装要求包签名，首次信任由用户确认。
+
+[MUST] 签名验证实现之前，本地插件包只能在开发者模式下安装，所有本地包按第三方来源处理，安装界面说明包未经签名验证。
 
 ## 7. SDK 基础契约
 
@@ -601,31 +602,31 @@ interface UIAPI {
 
 宿主使用 Uniwind，类名在应用构建时扫描生成。插件代码不参与宿主构建，任意类名在运行时不会产生样式。
 
-| 方式         | 说明                                                        |
-| ------------ | ----------------------------------------------------------- |
-| 界面组件属性 | 推荐方式，覆盖主题、间距与状态                              |
-| 公开工具类   | 宿主以 `@source inline` 登记的有限类名集合，随 SDK 版本发布 |
-| `style` 属性 | 插件自定义布局，颜色通过 `useTheme()` 取得语义值            |
+| 方式         | 说明                                                                            |
+| ------------ | ------------------------------------------------------------------------------- |
+| 界面组件属性 | 推荐方式，覆盖主题、间距与状态                                                  |
+| 公开工具类   | 宿主以 `@source inline` 登记的有限类名集合，随 SDK 版本发布；SDK 0.1 的集合为空 |
+| `style` 属性 | 插件自定义布局，颜色通过 `useTheme()` 取得语义值                                |
 
 [MUST] 公开工具类集合属于 SDK 契约。删除或改变已公开类名的含义需要增加 SDK 主版本。
 
-[MUST] 构建工具对未公开的 `className` 字面量给出错误，避免插件在运行时静默失去样式。
+[MUST] 构建工具对未公开的 `className` 字面量给出错误，避免插件在运行时静默失去样式。SDK 0.1 未公开工具类，构建工具拒绝插件源码中的全部 `className`。
 
 宿主代码继续遵守禁止调用 `StyleSheet.create` 的约束；插件代码的样式方式由本节规定。
 
 ### 9.4 React Hooks
 
-| Hook                    | 返回内容                                 |
-| ----------------------- | ---------------------------------------- |
-| `usePlugin()`           | 当前插件上下文                           |
-| `useReader()`           | 当前阅读会话、章节、进度与阶段，按需订阅 |
-| `useReaderEvent(e, fn)` | 在组件生命周期内订阅阅读事件             |
-| `useSetting(key)`       | 设置值与更新函数                         |
-| `useStorage(key)`       | 插件存储值、加载状态与更新函数           |
-| `useTheme()`            | 语义颜色、间距、字号与当前颜色模式       |
-| `useT()`                | 插件文本翻译函数                         |
+| Hook                    | 返回内容                                     |
+| ----------------------- | -------------------------------------------- |
+| `usePlugin()`           | 当前插件上下文                               |
+| `useReader(selector?)`  | 当前阅读会话、章节、进度与阶段，按选择器订阅 |
+| `useReaderEvent(e, fn)` | 在组件生命周期内订阅阅读事件                 |
+| `useSetting(key)`       | 设置值与更新函数                             |
+| `useStorage(key)`       | 插件存储值、加载状态与更新函数               |
+| `useTheme()`            | 语义颜色、间距、字号与当前颜色模式           |
+| `useT()`                | 插件文本翻译函数                             |
 
-[MUST] `useReader()` 按插件读取的字段订阅变化，未读取的字段变化不触发插件组件重新渲染。
+[MUST] `useReader(selector)` 只在选择器结果变化时重新渲染插件组件；选择器返回浅比较相等的对象时保持原有引用。
 
 ### 9.5 路由与底部导航
 
@@ -704,7 +705,7 @@ interface NetworkAPI {
 
 `ctx.network` 提供来源授权检查、凭据注入、插件独立 Cookie 存储、日志脱敏与流式响应。`full` 插件可以直接使用全局 `fetch`，此时这些能力不可用，插件管理页标记该插件存在未经代理的网络访问能力。
 
-[MUST] 来源授权按协议、主机与端口识别，首期仅开放 HTTPS。每次重定向重新检查目的地址；跨来源跳转移除凭据和敏感请求头。首次版本拒绝内网、回环、保留本地地址及云元数据地址，自托管服务通过单独权限开放。
+[MUST] 来源授权按协议、主机与端口识别，首期仅开放 HTTPS。React Native 的网络层自行跟随重定向，宿主检查最终响应地址，跨来源重定向的响应不交给插件；请求不携带 Cookie 与平台凭据。首次版本拒绝内网、回环、保留本地地址及云元数据地址，自托管服务通过单独权限开放。
 
 [MUST] 凭据注入只通过 `ctx.network` 生效。
 
@@ -761,7 +762,7 @@ AI 流式响应、书籍下载和音频结果通过有界流或宿主管理任�
 
 听书插件负责朗读界面、断句策略、语音服务选择与跟读高亮；宿主负责播放会话、后台执行与媒体控制。
 
-1. 插件通过 `getChapterText` 取得带来源范围的文本片段，按句切分。
+1. 插件通过 `getChapterText` 取得带来源范围的文本片段，按句切分。该能力就绪之前，听书只能逐页使用 `getVisibleText`。
 2. 插件调用 `services.speech` 或网络语音服务合成音频，并将片段提交给 `services.audio` 播放队列。
 3. 播放进度事件携带片段标识，插件据此更新 `reader.decorations` 中的跟读图层。
 4. 片段跨页时，插件调用 `reader.session.goTo` 跟随翻页。
@@ -917,61 +918,44 @@ SDK 将错误表现为带固定代码的异常对象。错误消息适合展示�
 
 ## 16. 完整插件样例
 
-此样例与第 6.2 节清单配套，展示生命周期事件、工具栏命令、自定义面板与页面装饰的组合。
+官方插件 [阅读统计](../../plugins/reading-stats) 是 SDK 0.1 的验收样例，覆盖生命周期事件、工具栏命令、自定义面板、选区菜单拦截、页面装饰、插件设置与插件存储。章节全文能力就绪之前，样例逐页读取可见文本。
 
 ```tsx
-import { definePlugin, useReader, useSetting, useStorage, useT } from '@lunar/plugin-sdk';
-import { Button, List, ListItem, PanelHeader, Stack, Text } from '@lunar/plugin-sdk/ui';
-
 export default definePlugin({
   activate(ctx) {
     const longSentences = ctx.reader.decorations.create('long-sentences');
 
-    ctx.reader.on('chapterChange', async ({ chapterRef }) => {
-      const segments = await ctx.reader.session.getChapterText(chapterRef);
+    const measure = async (location: ReaderLocation) => {
+      const segments = await ctx.reader.session.getVisibleText();
       const limit = ctx.settings.get<number>('longSentence');
       longSentences.set(
         segments
-          .filter((segment) => Array.from(segment.text).length > limit)
-          .map((segment) => ({ range: segment.range, style: 'wavy', color: 'attention' })),
+          .filter((segment) => countCharacters(segment.text) > limit)
+          .map((segment) => ({ range: segment.range, style: 'wavy', color: 'accent' })),
       );
+      // 按页面定位符累计本书字数，写入插件存储。
+    };
+    ctx.reader.on('locationChange', ({ location }) => void measure(location));
+    ctx.reader.on('layoutChange', ({ location }) => void measure(location));
 
-      const chars = segments.reduce((sum, segment) => sum + Array.from(segment.text).length, 0);
-      const stats = (await ctx.storage.get<Record<string, number>>('chapterChars')) ?? {};
-      await ctx.storage.set('chapterChars', { ...stats, [chapterRef]: chars });
-    });
-
-    ctx.reader.on('close', () => longSentences.clear());
+    ctx.reader.intercept('selectionMenu', (items) => [
+      ...items,
+      {
+        id: 'count',
+        title: ctx.i18n.t('selection.count'),
+        icon: 'text',
+        onPress: (selection) =>
+          ctx.ui.toast(ctx.i18n.t('selection.result', { count: countCharacters(selection.text) })),
+      },
+    ]);
 
     ctx.commands.register('open-stats', () => ctx.ui.openPanel('stats'));
     ctx.ui.registerSlot('reader.panel', 'stats', StatsPanel);
   },
 });
-
-function StatsPanel() {
-  const t = useT();
-  const { chapter } = useReader();
-  const [limit, setLimit] = useSetting<number>('longSentence');
-  const [stats] = useStorage<Record<string, number>>('chapterChars');
-  const chars = chapter ? stats?.[chapter.ref] : undefined;
-
-  return (
-    <Stack gap="medium">
-      <PanelHeader title={t('panel.stats')} />
-      <List>
-        <ListItem title={t('stats.chapter')} detail={chapter?.title ?? '—'} />
-        <ListItem title={t('stats.chars')} detail={chars === undefined ? '—' : String(chars)} />
-      </List>
-      <Text tone="muted">{t('stats.limit', { limit })}</Text>
-      <Button variant="secondary" onPress={() => setLimit(limit + 20)}>
-        {t('stats.raiseLimit')}
-      </Button>
-    </Stack>
-  );
-}
 ```
 
-用户打开书籍后，宿主按 `onReaderOpen` 激活插件。每次章节变化时，插件读取章节正文，统计码点数量，并以波浪线标记超过阈值的句段。点击工具栏按钮后，宿主在阅读抽屉中打开插件面板。组合字符和 emoji 序列可能包含多个码点，界面文案应标注统计单位。
+用户打开书籍后，宿主按 `onReaderOpen` 激活插件。每次翻页或重排时，插件读取当前页正文，统计码点数量，并以波浪线标记超过阈值的句子。用户点击选区菜单中的“字数统计”时，宿主冻结选区并把快照交给插件。组合字符和 emoji 序列可能包含多个码点，面板文案标注了统计单位。
 
 插件停用后，宿主关闭面板、清除装饰层并撤销全部注册。插件存储中的统计数据按用户的卸载选择保留或删除。
 
@@ -1028,10 +1012,23 @@ function StatsPanel() {
 
 A 阶段决定执行方案能否成立，应在其他阶段之前完成。B 至 D 阶段持续使用 `0.x` 试验版本。
 
+截至 2026-10-22，A 至 C 阶段的代码已实现并通过单元测试与 JavaScript 打包，尚未完成真机验收；D 至 F 阶段尚未开始。
+
+| 模块                               | 内容                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| `packages/plugin-sdk`              | 公开类型、清单 Schema、包格式与完整性工具、Hooks 与界面组件声明          |
+| `packages/plugin-cli`              | `init`、`build`、`validate`、`pack`、`dev`                               |
+| `apps/mobile/src/features/plugins` | 加载器、模块注册表、宿主、阅读桥接、安装器、开发连接、插槽渲染与管理界面 |
+| `apps/mobile/src/features/reader`  | 会话事件、会话端口、交互状态、扩展点契约、扩展面板与装饰叠加层           |
+| `plugins/reading-stats`            | 官方阅读统计插件                                                         |
+
+SDK 0.1 尚未提供 `getChapterText`、`library` 接口、凭据服务、语音与音频服务、签名验证与官方目录；宿主通过 `host.capabilities` 报告已实现的能力。
+
 ### 18.1 尚待验证的事项
 
 | 事项                             | 验证方式                                                                        |
 | -------------------------------- | ------------------------------------------------------------------------------- |
+| 构建产物语法                     | 验证 esbuild `es2020` 输出在宿主 Hermes 上的支持范围，必要时降低目标或增加转换  |
 | Release 构建 Hermes 动态执行源码 | RN 0.86 与 Expo SDK 57 Release 构建真机执行 `Function` 包装入口，测量冷启动开销 |
 | 动态执行不可用时的替代方案       | 评估由 CLI 生成与宿主 Hermes 版本绑定的字节码及其版本失效处理                   |
 | Uniwind 公开工具类               | 验证 `@source inline` 在 Uniwind 中生成运行时可用的样式                         |

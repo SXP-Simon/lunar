@@ -1,0 +1,40 @@
+import type { PluginSource } from '@lunar/plugin-sdk';
+import type { PluginManifest } from '@lunar/plugin-sdk/manifest';
+
+export type PluginLocales = Readonly<Record<string, Readonly<Record<string, string>>>>;
+
+/** A plugin the host can run: an installed package or a live development build. */
+export interface InstalledPlugin {
+  readonly id: string;
+  readonly version: string;
+  readonly source: PluginSource;
+  readonly manifest: PluginManifest;
+  readonly locales: PluginLocales;
+  readonly installedAt: number;
+  readonly updatedAt: number;
+  /** Installed packages only. */
+  readonly directoryUri?: string;
+  readonly packageSha256?: string;
+  readonly entrySha256?: string;
+  /** Development builds keep their entry in memory instead of on disk. */
+  readonly inlineEntry?: string;
+}
+
+export type PluginRunState = 'idle' | 'activating' | 'active' | 'failed';
+
+export interface PluginStatus {
+  readonly plugin: InstalledPlugin;
+  readonly enabled: boolean;
+  readonly state: PluginRunState;
+  readonly generation: number;
+  readonly error?: string;
+  readonly activationMs?: number;
+  /** A newer version was installed while this one had already run; it applies after a restart. */
+  readonly pendingVersion?: string;
+}
+
+export interface PluginLogEntry {
+  readonly level: 'info' | 'warn' | 'error';
+  readonly message: string;
+  readonly at: number;
+}
