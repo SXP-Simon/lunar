@@ -105,4 +105,25 @@ describe('plugin dev server', () => {
       await server.close();
     }
   });
+
+  it('prints log entries the app sends back', async () => {
+    const lines: string[] = [];
+    const server = await startDevServer(directory, { port: 0, host: '127.0.0.1', onLog: (line) => lines.push(line) });
+    try {
+      const base = new URL(server.urls[0]);
+      const post = (token: string, body: string) =>
+        fetch(`${base.origin}/logs?token=${token}`, { method: 'POST', body });
+      expect((await post('wrong', '{"entries":[]}')).status).toBe(403);
+      expect((await post(server.token, 'not json')).status).toBe(400);
+      const at = new Date(2026, 9, 22, 10, 37, 5).getTime();
+      const response = await post(
+        server.token,
+        JSON.stringify({ entries: [{ level: 'warn', message: 'measure failed', at }, { level: 'info' }] }),
+      );
+      expect(response.status).toBe(204);
+      expect(lines).toEqual(['10:37:05 WARN  measure failed']);
+    } finally {
+      await server.close();
+    }
+  });
 });

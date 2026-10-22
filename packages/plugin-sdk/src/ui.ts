@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
-import type { IconSpec } from './manifest';
+import type { IconSpec } from './manifest.js';
 
 // Lunar supplies these components when it executes a plugin; plugin bundles
 // keep `@lunar/plugin-sdk/ui` external. Every prop is semantic so that the

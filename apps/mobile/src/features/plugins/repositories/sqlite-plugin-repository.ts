@@ -16,6 +16,7 @@ interface PluginRow {
   readonly directory_uri: string;
   readonly installed_at: number;
   readonly updated_at: number;
+  readonly previous_json: string | null;
 }
 
 export class SQLitePluginRecordRepository implements PluginRecordRepository {
@@ -25,34 +26,22 @@ export class SQLitePluginRecordRepository implements PluginRecordRepository {
     const rows = await this.database.getAllAsync<PluginRow>('SELECT * FROM plugins ORDER BY id');
     return rows.flatMap((row) => {
       // A record whose manifest no longer validates stays out of the runtime.
-      const parsed = parseJson(row.manifest_json);
-      const manifest = parsed === undefined ? undefined : parsePluginManifest(parsed);
-      if (!manifest?.ok || manifest.manifest.id !== row.id) return [];
-      return [
-        {
-          id: row.id,
-          version: row.version,
-          source: (row.source === 'official' ? 'official' : 'community') as PluginSource,
-          manifest: manifest.manifest,
-          locales: (parseJson(row.locales_json) ?? {}) as PluginLocales,
-          packageSha256: row.package_sha256,
-          entrySha256: row.entry_sha256,
-          directoryUri: row.directory_uri,
-          installedAt: row.installed_at,
-          updatedAt: row.updated_at,
-        },
-      ];
+      const plugin = toInstalledPlugin(row);
+      if (!plugin) return [];
+      const previous = row.previous_json ? parseJson(row.previous_json) : undefined;
+      const previousPlugin =
+        previous && typeof previous === 'object' ? toInstalledPlugin(previous as PluginRow) : undefined;
+      return [previousPlugin?.id === plugin.id ? { ...plugin, previous: previousPlugin } : plugin];
     });
   }
 
   async save(plugin: InstalledPlugin): Promise<void> {
-    if (!plugin.directoryUri || !plugin.packageSha256 || !plugin.entrySha256) {
-      throw new Error('Only installed packages can be saved');
-    }
+    const row = toRow(plugin);
+    const previous = plugin.previous ? toRow(plugin.previous) : undefined;
     await this.database.runAsync(
       `INSERT INTO plugins (id, version, source, manifest_json, locales_json, package_sha256, entry_sha256,
-         directory_uri, installed_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         directory_uri, installed_at, updated_at, previous_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          version = excluded.version,
          source = excluded.source,
@@ -61,17 +50,19 @@ export class SQLitePluginRecordRepository implements PluginRecordRepository {
          package_sha256 = excluded.package_sha256,
          entry_sha256 = excluded.entry_sha256,
          directory_uri = excluded.directory_uri,
-         updated_at = excluded.updated_at`,
-      plugin.id,
-      plugin.version,
-      plugin.source,
-      JSON.stringify(plugin.manifest),
-      JSON.stringify(plugin.locales),
-      plugin.packageSha256,
-      plugin.entrySha256,
-      plugin.directoryUri,
-      plugin.installedAt,
-      plugin.updatedAt,
+         updated_at = excluded.updated_at,
+         previous_json = excluded.previous_json`,
+      row.id,
+      row.version,
+      row.source,
+      row.manifest_json,
+      row.locales_json,
+      row.package_sha256,
+      row.entry_sha256,
+      row.directory_uri,
+      row.installed_at,
+      row.updated_at,
+      previous ? JSON.stringify(previous) : null,
     );
   }
 
@@ -133,11 +124,117 @@ export class SQLitePluginStorageRepository implements PluginStorageRepository {
   }
 
   async clear(pluginId: string): Promise<void> {
-    await this.database.runAsync('DELETE FROM plugin_storage WHERE plugin_id = ?', pluginId);
+    await this.database.withExclusiveTransactionAsync(async (transaction) => {
+      await transaction.runAsync('DELETE FROM plugin_storage WHERE plugin_id = ?', pluginId);
+      await transaction.runAsync('DELETE FROM plugin_storage_backups WHERE plugin_id = ?', pluginId);
+      await transaction.runAsync('DELETE FROM plugin_data WHERE plugin_id = ?', pluginId);
+    });
+  }
+
+  async getDataVersion(pluginId: string): Promise<number | undefined> {
+    const row = await this.database.getFirstAsync<{ data_version: number }>(
+      'SELECT data_version FROM plugin_data WHERE plugin_id = ?',
+      pluginId,
+    );
+    return row?.data_version;
+  }
+
+  async setDataVersion(pluginId: string, version: number): Promise<void> {
+    await this.database.runAsync(
+      `INSERT INTO plugin_data (plugin_id, data_version) VALUES (?, ?)
+       ON CONFLICT(plugin_id) DO UPDATE SET data_version = excluded.data_version`,
+      pluginId,
+      version,
+    );
+  }
+
+  async snapshot(pluginId: string): Promise<void> {
+    await this.database.withExclusiveTransactionAsync(async (transaction) => {
+      await transaction.runAsync('DELETE FROM plugin_storage_backups WHERE plugin_id = ?', pluginId);
+      await transaction.runAsync(
+        `INSERT INTO plugin_storage_backups (plugin_id, key, value_json, byte_size, updated_at)
+         SELECT plugin_id, key, value_json, byte_size, updated_at FROM plugin_storage WHERE plugin_id = ?`,
+        pluginId,
+      );
+      // Data without a recorded version predates data versions and counts as version 1.
+      await transaction.runAsync(
+        `INSERT INTO plugin_data (plugin_id, data_version, backup_data_version) VALUES (?, 1, 1)
+         ON CONFLICT(plugin_id) DO UPDATE SET backup_data_version = data_version`,
+        pluginId,
+      );
+    });
+  }
+
+  async restoreSnapshot(pluginId: string): Promise<boolean> {
+    let restored = false;
+    await this.database.withExclusiveTransactionAsync(async (transaction) => {
+      const row = await transaction.getFirstAsync<{ backup_data_version: number | null }>(
+        'SELECT backup_data_version FROM plugin_data WHERE plugin_id = ?',
+        pluginId,
+      );
+      if (row?.backup_data_version == null) return;
+      await transaction.runAsync('DELETE FROM plugin_storage WHERE plugin_id = ?', pluginId);
+      await transaction.runAsync(
+        `INSERT INTO plugin_storage (plugin_id, key, value_json, byte_size, updated_at)
+         SELECT plugin_id, key, value_json, byte_size, updated_at FROM plugin_storage_backups WHERE plugin_id = ?`,
+        pluginId,
+      );
+      await transaction.runAsync('DELETE FROM plugin_storage_backups WHERE plugin_id = ?', pluginId);
+      await transaction.runAsync(
+        'UPDATE plugin_data SET data_version = backup_data_version, backup_data_version = NULL WHERE plugin_id = ?',
+        pluginId,
+      );
+      restored = true;
+    });
+    return restored;
+  }
+
+  async dropSnapshot(pluginId: string): Promise<void> {
+    await this.database.withExclusiveTransactionAsync(async (transaction) => {
+      await transaction.runAsync('DELETE FROM plugin_storage_backups WHERE plugin_id = ?', pluginId);
+      await transaction.runAsync('UPDATE plugin_data SET backup_data_version = NULL WHERE plugin_id = ?', pluginId);
+    });
   }
 }
 
+function toInstalledPlugin(row: PluginRow): InstalledPlugin | undefined {
+  const parsed = typeof row.manifest_json === 'string' ? parseJson(row.manifest_json) : undefined;
+  const manifest = parsed === undefined ? undefined : parsePluginManifest(parsed);
+  if (!manifest?.ok || manifest.manifest.id !== row.id) return undefined;
+  return {
+    id: row.id,
+    version: row.version,
+    source: (row.source === 'official' ? 'official' : 'community') as PluginSource,
+    manifest: manifest.manifest,
+    locales: (parseJson(row.locales_json) ?? {}) as PluginLocales,
+    packageSha256: row.package_sha256,
+    entrySha256: row.entry_sha256,
+    directoryUri: row.directory_uri,
+    installedAt: row.installed_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toRow(plugin: InstalledPlugin): Omit<PluginRow, 'previous_json'> {
+  if (!plugin.directoryUri || !plugin.packageSha256 || !plugin.entrySha256) {
+    throw new Error('Only installed packages can be saved');
+  }
+  return {
+    id: plugin.id,
+    version: plugin.version,
+    source: plugin.source,
+    manifest_json: JSON.stringify(plugin.manifest),
+    locales_json: JSON.stringify(plugin.locales),
+    package_sha256: plugin.packageSha256,
+    entry_sha256: plugin.entrySha256,
+    directory_uri: plugin.directoryUri,
+    installed_at: plugin.installedAt,
+    updated_at: plugin.updatedAt,
+  };
+}
+
 function parseJson(text: string): unknown {
+  if (typeof text !== 'string') return undefined;
   try {
     return JSON.parse(text);
   } catch {

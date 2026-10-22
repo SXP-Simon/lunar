@@ -9,6 +9,8 @@ export interface DevServerOptions {
   readonly port: number;
   readonly host: string;
   readonly onEvent?: (message: string) => void;
+  /** Receives formatted log lines of the plugin running in the app. */
+  readonly onLog?: (line: string) => void;
 }
 
 export interface DevServer {
@@ -59,7 +61,8 @@ export async function startDevServer(directory: string, options: DevServerOption
   });
   await context.watch();
 
-  const server = createServer((request, response) => handle(request, response, state, token));
+  const appLog = options.onLog ?? (() => undefined);
+  const server = createServer((request, response) => handle(request, response, state, token, appLog));
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject);
     server.listen(options.port, options.host, resolve);
@@ -77,10 +80,19 @@ export async function startDevServer(directory: string, options: DevServerOption
   };
 }
 
-function handle(request: IncomingMessage, response: ServerResponse, state: DevState, token: string) {
+const MaxLogBodyBytes = 256 * 1024;
+
+function handle(
+  request: IncomingMessage,
+  response: ServerResponse,
+  state: DevState,
+  token: string,
+  log: (message: string) => void,
+) {
   const url = new URL(request.url ?? '/', 'http://localhost');
-  if (request.method !== 'GET') return send(response, 405, 'text/plain', 'Method not allowed');
   if (url.searchParams.get('token') !== token) return send(response, 403, 'text/plain', 'Invalid pairing token');
+  if (request.method === 'POST' && url.pathname === '/logs') return receiveLogs(request, response, log);
+  if (request.method !== 'GET') return send(response, 405, 'text/plain', 'Method not allowed');
 
   if (url.pathname === '/version') {
     return send(response, 200, 'application/json', JSON.stringify({ revision: state.revision, error: state.error }));
@@ -98,6 +110,45 @@ function handle(request: IncomingMessage, response: ServerResponse, state: DevSt
       : send(response, 404, 'text/plain', 'No such locale');
   }
   return send(response, 404, 'text/plain', 'Not found');
+}
+
+/** Prints log entries the app sends from the running development plugin. */
+function receiveLogs(request: IncomingMessage, response: ServerResponse, log: (message: string) => void) {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  request.on('data', (chunk: Buffer) => {
+    size += chunk.length;
+    if (size > MaxLogBodyBytes) {
+      send(response, 413, 'text/plain', 'Too many log entries');
+      request.destroy();
+      return;
+    }
+    chunks.push(chunk);
+  });
+  request.on('end', () => {
+    if (response.writableEnded) return;
+    let entries: unknown;
+    try {
+      entries = (JSON.parse(Buffer.concat(chunks).toString('utf8')) as { entries?: unknown }).entries;
+    } catch {
+      return send(response, 400, 'text/plain', 'Invalid log batch');
+    }
+    if (!Array.isArray(entries)) return send(response, 400, 'text/plain', 'Invalid log batch');
+    for (const entry of entries) {
+      const line = formatLogEntry(entry);
+      if (line) log(line);
+    }
+    send(response, 204, 'text/plain', '');
+  });
+}
+
+export function formatLogEntry(entry: unknown): string | undefined {
+  if (typeof entry !== 'object' || entry === null) return undefined;
+  const { level, message, at } = entry as { level?: unknown; message?: unknown; at?: unknown };
+  if (typeof message !== 'string') return undefined;
+  const label = level === 'error' ? 'ERROR' : level === 'warn' ? 'WARN ' : 'INFO ';
+  const time = typeof at === 'number' ? new Date(at).toTimeString().slice(0, 8) : '--:--:--';
+  return `${time} ${label} ${message}`;
 }
 
 function send(response: ServerResponse, status: number, type: string, body: string | Uint8Array) {

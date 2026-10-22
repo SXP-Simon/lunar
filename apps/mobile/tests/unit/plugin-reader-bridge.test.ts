@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { ReaderSessionPort, ReaderSessionState } from '../../src/features/reader';
 import { ReaderSessionEventBus } from '../../src/features/reader/services/reader-session-event-bus';
-import { decodeRangeRef, encodeLocatorRef, encodeRangeRef } from '../../src/features/plugins/domain/plugin-refs';
+import {
+  createTextSegmentKey,
+  decodeRangeRef,
+  encodeLocatorRef,
+  encodeRangeRef,
+} from '../../src/features/plugins/domain/plugin-refs';
 import { assertRequestAllowed } from '../../src/features/plugins/services/plugin-network';
 import { parseDevServerUrl } from '../../src/features/plugins/services/plugin-dev-session';
 import { createTestHost, manifest, plugin } from './plugin-test-support';
@@ -32,7 +37,12 @@ function fakePort() {
       frameKey: 'frame-1',
       href: 'c1.xhtml',
       segments: [
-        { text: '第一句。', range: { start: { entryIndex: 0, charIndex: 0 }, end: { entryIndex: 0, charIndex: 4 } } },
+        {
+          text: '第一句。',
+          range: { start: { entryIndex: 0, charIndex: 0 }, end: { entryIndex: 0, charIndex: 4 } },
+          sourceRange: { start: { nodePath: [0, 1], textOffset: 0 }, end: { nodePath: [0, 1], textOffset: 4 } },
+        },
+        { text: '无来源。', range: { start: { entryIndex: 1, charIndex: 0 }, end: { entryIndex: 1, charIndex: 4 } } },
       ],
     }),
     search: vi.fn(async () => ({ query: 'x', truncated: false, results: [] }) as never),
@@ -112,6 +122,20 @@ describe('plugin reader bridge', () => {
     expect(() => ctx.reader.on('open', () => undefined)).toThrow('reader.events');
     await expect(ctx.reader.session.getVisibleText()).rejects.toThrow('reader.content.read');
     expect(() => ctx.reader.decorations.create('marks')).toThrow('reader.decorations');
+  });
+
+  it('keys visible text by book and source range, independent of the layout', async () => {
+    const { ctx, open } = await setup('');
+    open();
+    const [placed, unplaced] = await ctx.reader.session.getVisibleText();
+    const sourceRange = { start: { nodePath: [0, 1], textOffset: 0 }, end: { nodePath: [0, 1], textOffset: 4 } };
+    expect(placed.key).toBe(createTextSegmentKey('book-1', 'c1.xhtml', sourceRange));
+    expect(placed.key).toMatch(/^s1\.[0-9a-z]+$/);
+    expect(createTextSegmentKey('book-2', 'c1.xhtml', sourceRange)).not.toBe(placed.key);
+    expect(
+      createTextSegmentKey('book-1', 'c1.xhtml', { ...sourceRange, end: { nodePath: [0, 1], textOffset: 5 } }),
+    ).not.toBe(placed.key);
+    expect(unplaced.key).toBeUndefined();
   });
 
   it('returns visible text with ranges that decorations accept, and drops other books', async () => {

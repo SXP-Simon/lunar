@@ -7,7 +7,7 @@ import { Uniwind } from 'uniwind';
 import { getLunarDatabase } from '@/db';
 import { i18n } from '@/i18n';
 import { usePluginStore } from '@/stores';
-import type { InstalledPlugin } from '../domain/installed-plugin';
+import type { InstalledPlugin, PluginNotice } from '../domain/installed-plugin';
 import { LunarPluginError } from '../domain/plugin-error';
 import {
   deletePluginFiles,
@@ -52,6 +52,8 @@ export function getPluginRuntime(): PluginRuntime {
 function createPluginRuntime(): PluginRuntime {
   const store = usePluginStore;
   const initial = store.getState();
+  // The plugin whose activation was cut short by the previous process ending.
+  let interruptedPluginId = initial.activatingPluginId;
   let safeMode = Boolean(initial.activatingPluginId) || initial.safeModeRequested;
   if (safeMode) {
     initial.setActivatingPlugin(undefined);
@@ -80,6 +82,17 @@ function createPluginRuntime(): PluginRuntime {
         files: { write: writePluginFiles, remove: deletePluginFiles },
       }),
   );
+
+  let installed: readonly InstalledPlugin[] = [];
+  let devPlugin: InstalledPlugin | undefined;
+  let devSession: PluginDevSession | undefined;
+  let devStatus: DevSessionStatus | undefined;
+  const devListeners = new Set<() => void>();
+  let started: Promise<void> | undefined;
+
+  const replaceInstalled = (plugin: InstalledPlugin) => {
+    installed = installed.map((item) => (item.id === plugin.id ? plugin : item));
+  };
 
   const host = new PluginHost({
     modules: createHostModules(),
@@ -112,6 +125,21 @@ function createPluginRuntime(): PluginRuntime {
       colorScheme: Uniwind.currentTheme === 'dark' ? 'dark' : 'light',
     }),
     markActivation: (pluginId) => store.getState().setActivatingPlugin(pluginId),
+    updates: {
+      async commit(plugin) {
+        const committed = await (await installer).commit(plugin);
+        replaceInstalled(committed);
+        return committed;
+      },
+      async revert(plugin) {
+        const restored = await (await installer).revert(plugin);
+        if (restored) replaceInstalled(restored);
+        return restored;
+      },
+    },
+    onLog: (pluginId, entry) => {
+      if (devPlugin?.id === pluginId) devSession?.sendLog(entry);
+    },
     onAutoDisabled: (pluginId, reason) => {
       store.getState().setEnabled(pluginId, false);
       ui.toast(
@@ -127,13 +155,6 @@ function createPluginRuntime(): PluginRuntime {
     },
   });
 
-  let installed: readonly InstalledPlugin[] = [];
-  let devPlugin: InstalledPlugin | undefined;
-  let devSession: PluginDevSession | undefined;
-  let devStatus: DevSessionStatus | undefined;
-  const devListeners = new Set<() => void>();
-  let started: Promise<void> | undefined;
-
   const sync = () => {
     const state = store.getState();
     const plugins = devPlugin ? [...installed.filter((plugin) => plugin.id !== devPlugin!.id), devPlugin] : installed;
@@ -147,9 +168,38 @@ function createPluginRuntime(): PluginRuntime {
     );
   };
 
+  /**
+   * An activation that never finished may have left a half-migrated store or a
+   * broken update behind; both go back to the state before that activation.
+   */
+  const recoverInterruptedActivation = async (pluginId: string): Promise<PluginNotice | undefined> => {
+    await storage.restoreSnapshot(pluginId);
+    const plugin = installed.find((item) => item.id === pluginId);
+    if (!plugin?.previous) return undefined;
+    const restored = await (await installer).revert(plugin);
+    if (!restored) return undefined;
+    replaceInstalled(restored);
+    return {
+      kind: 'reverted',
+      failedVersion: plugin.version,
+      restoredVersion: restored.version,
+      reason: 'The app closed while this version was starting',
+    };
+  };
+
   const reload = async () => {
     const records = await recordsPromise;
     installed = await records.list();
+    let notice: PluginNotice | undefined;
+    const interrupted = interruptedPluginId;
+    if (interrupted) {
+      interruptedPluginId = undefined;
+      try {
+        notice = await recoverInterruptedActivation(interrupted);
+      } catch (error) {
+        console.warn(`[plugins] Recovering ${interrupted} failed`, error);
+      }
+    }
     const known = new Set(installed.map((plugin) => plugin.id));
     const files = await installer;
     for (const directory of listPluginDirectories()) {
@@ -157,6 +207,7 @@ function createPluginRuntime(): PluginRuntime {
     }
     for (const plugin of installed) files.cleanUp(plugin);
     sync();
+    if (interrupted && notice) host.setNotice(interrupted, notice);
   };
 
   const setDevStatus = (status: DevSessionStatus | undefined) => {
@@ -207,7 +258,7 @@ function createPluginRuntime(): PluginRuntime {
     connectDevServer(url) {
       devSession?.stop();
       devSession = new PluginDevSession(url, {
-        fetch: (target) => fetch(target, { cache: 'no-store' } as RequestInit),
+        fetch: (target, init) => fetch(target, { cache: 'no-store', ...init } as RequestInit),
         locales: () => [i18n.language],
         onPlugin: (plugin) => {
           devPlugin = plugin;
@@ -246,5 +297,10 @@ function lazyStorage(): PluginStorageRepository {
     keys: async (pluginId, prefix) => (await get()).keys(pluginId, prefix),
     totalBytes: async (pluginId, excluding) => (await get()).totalBytes(pluginId, excluding),
     clear: async (pluginId) => (await get()).clear(pluginId),
+    getDataVersion: async (pluginId) => (await get()).getDataVersion(pluginId),
+    setDataVersion: async (pluginId, version) => (await get()).setDataVersion(pluginId, version),
+    snapshot: async (pluginId) => (await get()).snapshot(pluginId),
+    restoreSnapshot: async (pluginId) => (await get()).restoreSnapshot(pluginId),
+    dropSnapshot: async (pluginId) => (await get()).dropSnapshot(pluginId),
   };
 }

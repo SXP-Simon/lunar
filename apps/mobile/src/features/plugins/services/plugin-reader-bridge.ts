@@ -30,7 +30,13 @@ import type {
 } from '@/features/reader';
 import type { ReaderTocEntry } from '@/reader';
 import { LunarPluginError, pluginErrorMessage } from '../domain/plugin-error';
-import { decodeLocatorRef, decodeRangeRef, encodeLocatorRef, encodeRangeRef } from '../domain/plugin-refs';
+import {
+  createTextSegmentKey,
+  decodeLocatorRef,
+  decodeRangeRef,
+  encodeLocatorRef,
+  encodeRangeRef,
+} from '../domain/plugin-refs';
 import type { PluginGeneration } from './plugin-generation';
 import type { PluginEntry, PluginHost } from './plugin-host';
 
@@ -503,6 +509,7 @@ export class PluginReaderBridge {
           return visible.segments.map((segment) => ({
             text: segment.text,
             chapterRef: visible.href,
+            key: segment.sourceRange && createTextSegmentKey(bookId, visible.href, segment.sourceRange),
             range: encodeRangeRef({
               bookId,
               href: visible.href,

@@ -248,6 +248,7 @@ function PluginRow({
     t(`plugins.source.${status.plugin.source}`),
     status.pendingVersion ? t('plugins.pendingVersion', { version: status.pendingVersion }) : undefined,
     status.state === 'failed' ? t('plugins.failed') : undefined,
+    status.notice ? t('plugins.restoredVersion', { version: status.notice.restoredVersion }) : undefined,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -262,7 +263,7 @@ function PluginRow({
         <ListGroup.ItemContent>
           <ListGroup.ItemTitle className="text-base font-medium text-foreground">{title}</ListGroup.ItemTitle>
           <ListGroup.ItemDescription
-            className={`mt-0.5 text-sm ${status.state === 'failed' ? 'text-danger' : 'text-muted'}`}>
+            className={`mt-0.5 text-sm ${status.state === 'failed' || status.notice ? 'text-danger' : 'text-muted'}`}>
             {detail}
           </ListGroup.ItemDescription>
         </ListGroup.ItemContent>

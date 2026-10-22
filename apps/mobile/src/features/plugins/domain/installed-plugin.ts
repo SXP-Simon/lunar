@@ -18,6 +18,19 @@ export interface InstalledPlugin {
   readonly entrySha256?: string;
   /** Development builds keep their entry in memory instead of on disk. */
   readonly inlineEntry?: string;
+  /**
+   * The version an update replaced. It stays installed until this version first
+   * activates, and is restored when that activation fails.
+   */
+  readonly previous?: InstalledPlugin;
+}
+
+/** Why a plugin is not running the version the user last installed. */
+export interface PluginNotice {
+  readonly kind: 'reverted';
+  readonly failedVersion: string;
+  readonly restoredVersion: string;
+  readonly reason: string;
 }
 
 export type PluginRunState = 'idle' | 'activating' | 'active' | 'failed';
@@ -31,6 +44,7 @@ export interface PluginStatus {
   readonly activationMs?: number;
   /** A newer version was installed while this one had already run; it applies after a restart. */
   readonly pendingVersion?: string;
+  readonly notice?: PluginNotice;
 }
 
 export interface PluginLogEntry {

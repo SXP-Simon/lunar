@@ -2,10 +2,16 @@ import type { ComponentType } from 'react';
 import type { CommandSource, ConfirmOptions, HostInfo, JsonValue, ToastTone } from '@lunar/plugin-sdk';
 import { localizeManifestText, type PluginActivationEvent } from '@lunar/plugin-sdk/manifest';
 
-import type { InstalledPlugin, PluginLogEntry, PluginRunState, PluginStatus } from '../domain/installed-plugin';
+import type {
+  InstalledPlugin,
+  PluginLogEntry,
+  PluginNotice,
+  PluginRunState,
+  PluginStatus,
+} from '../domain/installed-plugin';
 import { LunarPluginError, pluginErrorMessage } from '../domain/plugin-error';
 import type { PluginStorageRepository } from '../repositories/plugin-repository';
-import { createPluginContext } from './plugin-context';
+import { createMigrationContext, createPluginContext } from './plugin-context';
 import { PluginGeneration } from './plugin-generation';
 import { createPluginRequire, evaluatePluginEntry } from './plugin-loader';
 import type { PluginNetwork } from './plugin-network';
@@ -14,6 +20,7 @@ import { PluginReaderBridge } from './plugin-reader-bridge';
 
 export const PLUGIN_HOST_LIMITS = {
   activationTimeoutMs: 1_000,
+  migrationTimeoutMs: 10_000,
   deactivationTimeoutMs: 1_000,
   crashWindowMs: 10 * 60_000,
   crashesBeforeDisable: 3,
@@ -32,6 +39,14 @@ export interface PluginUiBridge {
   openRoute(pluginId: string, pageId: string, params: Readonly<Record<string, string>>): void;
 }
 
+/** Finishes or undoes an update once its first activation has succeeded or failed. */
+export interface PluginUpdateHandlers {
+  /** Releases the replaced version; resolves to the record without it. */
+  commit(plugin: InstalledPlugin): Promise<InstalledPlugin>;
+  /** Reinstates the replaced version; resolves to it, or `undefined` when it is gone. */
+  revert(plugin: InstalledPlugin): Promise<InstalledPlugin | undefined>;
+}
+
 export interface PluginHostDependencies {
   readonly modules: Readonly<Record<string, unknown>>;
   readonly readEntry: (plugin: InstalledPlugin) => Promise<string>;
@@ -44,6 +59,8 @@ export interface PluginHostDependencies {
   /** Persists which plugin is activating so a crash during activation is detected on the next launch. */
   readonly markActivation: (pluginId: string | undefined) => void;
   readonly onAutoDisabled: (pluginId: string, reason: string) => void;
+  readonly updates?: PluginUpdateHandlers;
+  readonly onLog?: (pluginId: string, entry: PluginLogEntry) => void;
   readonly now?: () => number;
   /** Runs a task when the JavaScript thread is idle. */
   readonly schedule?: (task: () => void) => void;
@@ -63,6 +80,7 @@ export interface PluginEntry {
   pendingPlugin?: InstalledPlugin;
   crashes: number[];
   logs: PluginLogEntry[];
+  notice?: PluginNotice;
 }
 
 export interface PluginListing {
@@ -75,6 +93,7 @@ export class PluginHost {
   private readonly entries = new Map<string, PluginEntry>();
   private readonly listeners = new Set<() => void>();
   private readonly storageListeners = new Map<string, Set<() => void>>();
+  private readonly storageQueues = new Map<string, Promise<unknown>>();
   private order: readonly string[] = [];
   private version = 0;
   private statusCache?: { version: number; statuses: readonly PluginStatus[] };
@@ -185,6 +204,7 @@ export class PluginHost {
       error: entry.error,
       activationMs: entry.activationMs,
       pendingVersion: entry.pendingPlugin?.version,
+      notice: entry.notice,
     }));
     this.statusCache = { version: this.version, statuses };
     return statuses;
@@ -232,8 +252,17 @@ export class PluginHost {
     return entry.activation;
   }
 
+  /** Records why the plugin runs another version than the one last installed. */
+  setNotice(pluginId: string, notice: PluginNotice | undefined): void {
+    const entry = this.entries.get(pluginId);
+    if (!entry) return;
+    entry.notice = notice;
+    this.notify();
+  }
+
   private async activate(entry: PluginEntry): Promise<boolean> {
     const plugin = entry.plugin;
+    const migration = { snapshot: false };
     entry.generationCount += 1;
     const generation = new PluginGeneration(entry.generationCount);
     entry.pending = generation;
@@ -250,6 +279,8 @@ export class PluginHost {
         createPluginRequire(this.deps.modules),
         `lunar-plugin://${plugin.id}/${plugin.version}/main.js`,
       );
+      // Data is migrated before any registration exists, so no event reaches a half-migrated plugin.
+      await this.migrateData(entry, plugin, generation, migration);
       generation.context = createPluginContext(this, entry, generation);
       await withTimeout(
         Promise.resolve(generation.definition.activate(generation.context)),
@@ -264,21 +295,116 @@ export class PluginHost {
       entry.activationMs = this.now() - startedAt;
       this.log(entry, 'info', `Activated generation ${generation.number} in ${entry.activationMs} ms`);
       this.reader.generationCommitted(entry, generation);
+      if (migration.snapshot || plugin.previous) void this.releaseUpdate(entry, plugin, migration.snapshot);
       return true;
     } catch (error) {
       // stop() detaches and disposes a pending generation; its state is already settled.
       const stopped = generation.disposed && entry.pending !== generation;
       if (entry.pending === generation) entry.pending = undefined;
       this.disposeGeneration(entry, generation);
+      if (migration.snapshot) await this.restoreData(entry, plugin);
       if (!stopped) {
         entry.state = 'failed';
         entry.error = pluginErrorMessage(error);
         this.log(entry, 'error', `Activation failed: ${entry.error}`);
+        await this.revertUpdate(entry, plugin, entry.error);
       }
       return false;
     } finally {
       this.deps.markActivation(undefined);
       this.notify();
+    }
+  }
+
+  /**
+   * Brings stored data to the manifest's data version. Data without a recorded
+   * version counts as version 1; a plugin without data simply records its version.
+   */
+  private async migrateData(
+    entry: PluginEntry,
+    plugin: InstalledPlugin,
+    generation: PluginGeneration,
+    migration: { snapshot: boolean },
+  ): Promise<void> {
+    const storage = this.deps.storage;
+    const to = plugin.manifest.dataVersion;
+    const stored = await storage.getDataVersion(plugin.id);
+    const from = stored ?? ((await storage.keys(plugin.id)).length > 0 ? 1 : to);
+    generation.assertLive();
+    if (from === to) {
+      if (stored !== to) await storage.setDataVersion(plugin.id, to);
+      return;
+    }
+    const migrate = generation.definition?.migrate;
+    if (typeof migrate !== 'function') {
+      throw new LunarPluginError(
+        'MIGRATION_FAILED',
+        `Stored data has version ${from}, version ${plugin.version} expects ${to} and defines no migrate()`,
+      );
+    }
+    await storage.snapshot(plugin.id);
+    migration.snapshot = true;
+    generation.assertLive();
+    this.log(entry, 'info', `Migrating data from version ${from} to ${to}`);
+    try {
+      await withTimeout(
+        Promise.resolve(migrate.call(generation.definition, createMigrationContext(this, entry, generation, from, to))),
+        PLUGIN_HOST_LIMITS.migrationTimeoutMs,
+        'migrate() did not finish in time',
+      );
+    } catch (error) {
+      throw new LunarPluginError(
+        'MIGRATION_FAILED',
+        `Data migration from ${from} to ${to} failed: ${pluginErrorMessage(error)}`,
+      );
+    }
+    generation.assertLive();
+    await storage.setDataVersion(plugin.id, to);
+  }
+
+  private async restoreData(entry: PluginEntry, plugin: InstalledPlugin): Promise<void> {
+    try {
+      if (await this.deps.storage.restoreSnapshot(plugin.id)) {
+        this.log(entry, 'warn', 'Restored the data saved before the migration');
+        for (const key of [...this.storageListeners.keys()]) {
+          if (key.startsWith(`${plugin.id}\u0000`)) this.emitStorageChange(plugin.id, key.slice(plugin.id.length + 1));
+        }
+      }
+    } catch (error) {
+      this.log(entry, 'error', `Restoring the data saved before the migration failed: ${pluginErrorMessage(error)}`);
+    }
+  }
+
+  /** The first activation of an update succeeded: the replaced version and data snapshot go. */
+  private async releaseUpdate(entry: PluginEntry, plugin: InstalledPlugin, snapshot: boolean): Promise<void> {
+    try {
+      if (snapshot) await this.deps.storage.dropSnapshot(plugin.id);
+      if (plugin.previous && this.deps.updates) {
+        const committed = await this.deps.updates.commit(plugin);
+        if (entry.plugin === plugin) entry.plugin = committed;
+        this.log(entry, 'info', `Released version ${plugin.previous.version}`);
+        this.notify();
+      }
+    } catch (error) {
+      this.log(entry, 'warn', `Releasing the replaced version failed: ${pluginErrorMessage(error)}`);
+    }
+  }
+
+  /** The first activation of an update failed: the replaced version comes back. */
+  private async revertUpdate(entry: PluginEntry, plugin: InstalledPlugin, reason: string): Promise<void> {
+    if (!plugin.previous || !this.deps.updates || entry.plugin !== plugin) return;
+    try {
+      const restored = await this.deps.updates.revert(plugin);
+      if (!restored || entry.plugin !== plugin) return;
+      entry.plugin = restored;
+      entry.state = 'idle';
+      entry.error = undefined;
+      entry.notice = { kind: 'reverted', failedVersion: plugin.version, restoredVersion: restored.version, reason };
+      this.log(entry, 'warn', `Version ${plugin.version} failed to activate; restored ${restored.version}`);
+      // The restored version starts with the next trigger rather than inside this failed activation.
+      this.schedule(() => void this.ensureActive(plugin.id));
+    } catch (error) {
+      this.log(entry, 'error', `Restoring version ${plugin.previous.version} failed: ${pluginErrorMessage(error)}`);
     }
   }
 
@@ -359,7 +485,9 @@ export class PluginHost {
   }
 
   log(entry: PluginEntry, level: PluginLogEntry['level'], message: string): void {
-    entry.logs.push({ level, message: message.slice(0, 1_000), at: this.now() });
+    const logEntry: PluginLogEntry = { level, message: message.slice(0, 1_000), at: this.now() };
+    entry.logs.push(logEntry);
+    this.deps.onLog?.(entry.plugin.id, logEntry);
     if (entry.logs.length > PLUGIN_HOST_LIMITS.logEntries)
       entry.logs.splice(0, entry.logs.length - PLUGIN_HOST_LIMITS.logEntries);
   }
@@ -386,6 +514,20 @@ export class PluginHost {
       listeners.delete(listener);
       if (listeners.size === 0) this.storageListeners.delete(id);
     };
+  }
+
+  /** Runs a plugin's storage writes one after another, in call order. */
+  serializeStorage<T>(pluginId: string, task: () => Promise<T>): Promise<T> {
+    const run = (this.storageQueues.get(pluginId) ?? Promise.resolve()).then(task);
+    const settled = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.storageQueues.set(pluginId, settled);
+    void settled.then(() => {
+      if (this.storageQueues.get(pluginId) === settled) this.storageQueues.delete(pluginId);
+    });
+    return run;
   }
 
   emitStorageChange(pluginId: string, key: string): void {

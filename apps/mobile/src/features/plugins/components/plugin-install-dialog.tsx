@@ -69,6 +69,16 @@ export function PluginInstallDialog({ preview, isInstalling, onConfirm, onCancel
                 {!preview.package.signed ? (
                   <Text className="text-sm leading-5 text-muted">{t('plugins.unsigned')}</Text>
                 ) : null}
+                {preview.current && preview.kind !== 'reinstall' ? (
+                  <Text className="text-sm leading-5 text-muted">
+                    {t(preview.kind === 'downgrade' ? 'plugins.downgradeWarning' : 'plugins.updateSafety', {
+                      version: preview.current.version,
+                    })}
+                  </Text>
+                ) : null}
+                {preview.migratesData && preview.kind === 'update' ? (
+                  <Text className="text-sm leading-5 text-muted">{t('plugins.migratesData')}</Text>
+                ) : null}
                 <Text className="text-sm font-semibold text-foreground">{t('plugins.permissions')}</Text>
                 {manifest.permissions.length === 0 ? (
                   <Text className="text-sm text-muted">{t('plugins.noPermissions')}</Text>

@@ -156,4 +156,26 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       )`,
     ],
   },
+  {
+    version: 11,
+    name: 'plugin_updates',
+    statements: [
+      // The installed version that an update replaced, kept until the update first activates.
+      'ALTER TABLE plugins ADD COLUMN previous_json TEXT',
+      // Data outlives installation records when the user keeps it on uninstall.
+      `CREATE TABLE IF NOT EXISTS plugin_data (
+        plugin_id TEXT PRIMARY KEY NOT NULL,
+        data_version INTEGER NOT NULL,
+        backup_data_version INTEGER
+      )`,
+      `CREATE TABLE IF NOT EXISTS plugin_storage_backups (
+        plugin_id TEXT NOT NULL,
+        key TEXT NOT NULL,
+        value_json TEXT NOT NULL,
+        byte_size INTEGER NOT NULL CHECK (byte_size >= 0),
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (plugin_id, key)
+      )`,
+    ],
+  },
 ];

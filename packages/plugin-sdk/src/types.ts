@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { IconSpec, PluginComponentSlot } from './manifest';
+import type { IconSpec, PluginComponentSlot } from './manifest.js';
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
@@ -31,6 +31,23 @@ export interface HostInfo {
 export interface PluginDefinition {
   activate(ctx: PluginContext): void | Promise<void>;
   deactivate?(): void | Promise<void>;
+  /**
+   * Converts stored data when the manifest's `dataVersion` differs from the
+   * version the data was written with. Runs before `activate`; when it throws,
+   * the host restores the data and keeps the previously installed version.
+   */
+  migrate?(ctx: MigrationContext): void | Promise<void>;
+}
+
+export interface MigrationContext {
+  readonly plugin: PluginIdentity;
+  /** Data version found in storage. Lower than `to` for updates, higher for downgrades. */
+  readonly from: number;
+  /** The manifest's `dataVersion`. */
+  readonly to: number;
+  readonly storage: StorageAPI;
+  readonly settings: SettingsAPI;
+  readonly log: LogAPI;
 }
 
 export interface PluginContext {
@@ -148,8 +165,14 @@ export type ReaderEventName = keyof ReaderEvents;
 
 export interface TextSegment {
   readonly text: string;
-  /** Opaque range reference accepted by decorations. */
+  /** Opaque range reference accepted by decorations. Valid for the current layout. */
   readonly range: string;
+  /**
+   * Identity of this piece of the book's text, independent of layout: the same
+   * text keeps its key across page turns, reflows and sessions. Absent when the
+   * host cannot place the text in the book source.
+   */
+  readonly key?: string;
   readonly chapterRef?: string;
 }
 
@@ -256,9 +279,18 @@ export interface SettingsAPI {
   onChange(key: string, listener: (value: JsonValue) => void): Disposable;
 }
 
+/** Writes of one plugin apply in call order, so `update` never loses a concurrent write. */
 export interface StorageAPI {
   get<T extends JsonValue = JsonValue>(key: string): Promise<T | undefined>;
   set(key: string, value: JsonValue): Promise<void>;
+  /**
+   * Reads, transforms and writes a value as one step. The updater must be
+   * synchronous; returning `undefined` deletes the key.
+   */
+  update<T extends JsonValue = JsonValue>(
+    key: string,
+    updater: (current: T | undefined) => T | undefined,
+  ): Promise<T | undefined>;
   delete(key: string): Promise<void>;
   keys(prefix?: string): Promise<readonly string[]>;
 }
@@ -316,7 +348,8 @@ export type PluginErrorCode =
   | 'CANCELLED'
   | 'TIMEOUT'
   | 'GENERATION_ENDED'
-  | 'INTEGRITY_FAILED';
+  | 'INTEGRITY_FAILED'
+  | 'MIGRATION_FAILED';
 
 export interface PluginError extends Error {
   readonly code: PluginErrorCode;

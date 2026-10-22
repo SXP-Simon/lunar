@@ -1,5 +1,16 @@
 import type { ComponentType } from 'react';
-import type { HostInfo, JsonValue, PluginContext, RouteProps, SlotProps } from '@lunar/plugin-sdk';
+import type {
+  Disposable,
+  HostInfo,
+  JsonValue,
+  LogAPI,
+  MigrationContext,
+  PluginContext,
+  RouteProps,
+  SettingsAPI,
+  SlotProps,
+  StorageAPI,
+} from '@lunar/plugin-sdk';
 import {
   networkOrigins,
   SDK_VERSION,
@@ -63,17 +74,6 @@ export function createPluginContext(host: PluginHost, entry: PluginEntry, genera
     });
   };
   const messages = () => pickMessages(plugin, host.deps.hostInfo().locale);
-  const settingDefinition = (key: string): PluginSettingContribution => {
-    const definition = contributes.settings.find((item) => item.key === key);
-    if (!definition) throw new LunarPluginError('INVALID_ARGUMENT', `Setting "${key}" is not declared in the manifest`);
-    return definition;
-  };
-  const storageKey = (key: unknown): string => {
-    if (typeof key !== 'string' || key.length === 0 || key.length > STORAGE_LIMITS.keyLength) {
-      throw new LunarPluginError('INVALID_ARGUMENT', 'Storage keys must be non-empty strings of up to 200 characters');
-    }
-    return key;
-  };
 
   const hostInfo: HostInfo = {
     sdkVersion: SDK_VERSION,
@@ -172,70 +172,9 @@ export function createPluginContext(host: PluginHost, entry: PluginEntry, genera
 
     reader: host.reader.createApi(entry, generation),
 
-    settings: {
-      get<T extends JsonValue = JsonValue>(key: string): T {
-        live();
-        const definition = settingDefinition(key);
-        return (host.deps.settings.get(plugin.id, key) ?? definition.default) as T;
-      },
-      async set(key, value) {
-        live();
-        host.deps.settings.set(plugin.id, key, validateSetting(settingDefinition(key), value));
-      },
-      onChange(key, listener) {
-        live();
-        const definition = settingDefinition(key);
-        let previous = host.deps.settings.get(plugin.id, key) ?? definition.default;
-        const unsubscribe = host.deps.settings.subscribe(() => {
-          const next = host.deps.settings.get(plugin.id, key) ?? definition.default;
-          if (Object.is(next, previous)) return;
-          previous = next;
-          try {
-            listener(next);
-          } catch (error) {
-            host.log(entry, 'error', `Setting listener failed: ${String(error)}`);
-          }
-        });
-        return track(unsubscribe);
-      },
-    },
+    settings: createPluginSettings(host, entry, live, track),
 
-    storage: {
-      async get<T extends JsonValue = JsonValue>(key: string): Promise<T | undefined> {
-        live();
-        const json = await host.deps.storage.get(plugin.id, storageKey(key));
-        return json === undefined ? undefined : (JSON.parse(json) as T);
-      },
-      async set(key, value) {
-        live();
-        const validKey = storageKey(key);
-        let json: string;
-        try {
-          json = JSON.stringify(value);
-        } catch {
-          throw new LunarPluginError('INVALID_ARGUMENT', 'Storage values must be JSON');
-        }
-        if (json === undefined) throw new LunarPluginError('INVALID_ARGUMENT', 'Storage values must be JSON');
-        const size = utf8Length(json);
-        if (size > STORAGE_LIMITS.valueBytes) throw new LunarPluginError('QUOTA_EXCEEDED', 'The value is too large');
-        if ((await host.deps.storage.totalBytes(plugin.id, validKey)) + size > STORAGE_LIMITS.totalBytes) {
-          throw new LunarPluginError('QUOTA_EXCEEDED', 'The plugin storage is full');
-        }
-        live();
-        await host.deps.storage.set(plugin.id, validKey, json, size);
-        host.emitStorageChange(plugin.id, validKey);
-      },
-      async delete(key) {
-        live();
-        const validKey = storageKey(key);
-        await host.deps.storage.delete(plugin.id, validKey);
-        host.emitStorageChange(plugin.id, validKey);
-      },
-      async keys(prefix) {
-        live();
-        return host.deps.storage.keys(plugin.id, prefix);
-      },
-    },
+    storage: createPluginStorage(host, plugin.id, live),
 
     network: {
       async request(request) {
@@ -266,10 +205,168 @@ export function createPluginContext(host: PluginHost, entry: PluginEntry, genera
       t: (key, params) => translate(messages(), key, params),
     },
 
-    log: {
-      info: (message, ...details) => host.log(entry, 'info', formatLog(message, details)),
-      warn: (message, ...details) => host.log(entry, 'warn', formatLog(message, details)),
-      error: (message, ...details) => host.log(entry, 'error', formatLog(message, details)),
+    log: createPluginLog(host, entry),
+  };
+}
+
+/** The context handed to `migrate`: data access only, before any registration exists. */
+export function createMigrationContext(
+  host: PluginHost,
+  entry: PluginEntry,
+  generation: PluginGeneration,
+  from: number,
+  to: number,
+): MigrationContext {
+  const plugin = entry.plugin;
+  const live = () => generation.assertLive();
+  return {
+    plugin: { id: plugin.id, version: plugin.version, generation: generation.number, source: plugin.source },
+    from,
+    to,
+    storage: createPluginStorage(host, plugin.id, live),
+    settings: createPluginSettings(host, entry, live, (cleanup) => generation.track(cleanup, () => host.notify())),
+    log: createPluginLog(host, entry),
+  };
+}
+
+function createPluginSettings(
+  host: PluginHost,
+  entry: PluginEntry,
+  live: () => void,
+  track: (cleanup: () => void) => Disposable,
+): SettingsAPI {
+  const pluginId = entry.plugin.id;
+  const definition = (key: string): PluginSettingContribution => {
+    const found = entry.plugin.manifest.contributes.settings.find((item) => item.key === key);
+    if (!found) throw new LunarPluginError('INVALID_ARGUMENT', `Setting "${key}" is not declared in the manifest`);
+    return found;
+  };
+  // A value stored under an older manifest may no longer validate; the default replaces it.
+  const read = (setting: PluginSettingContribution): JsonValue => {
+    const stored = host.deps.settings.get(pluginId, setting.key);
+    if (stored === undefined) return setting.default;
+    try {
+      return validateSetting(setting, stored);
+    } catch {
+      return setting.default;
+    }
+  };
+  return {
+    get<T extends JsonValue = JsonValue>(key: string): T {
+      live();
+      return read(definition(key)) as T;
+    },
+    async set(key, value) {
+      live();
+      host.deps.settings.set(pluginId, key, validateSetting(definition(key), value));
+    },
+    onChange(key, listener) {
+      live();
+      const setting = definition(key);
+      let previous = read(setting);
+      const unsubscribe = host.deps.settings.subscribe(() => {
+        const next = read(setting);
+        if (Object.is(next, previous)) return;
+        previous = next;
+        try {
+          listener(next);
+        } catch (error) {
+          host.log(entry, 'error', `Setting listener failed: ${String(error)}`);
+        }
+      });
+      return track(unsubscribe);
+    },
+  };
+}
+
+function createPluginLog(host: PluginHost, entry: PluginEntry): LogAPI {
+  return {
+    info: (message, ...details) => host.log(entry, 'info', formatLog(message, details)),
+    warn: (message, ...details) => host.log(entry, 'warn', formatLog(message, details)),
+    error: (message, ...details) => host.log(entry, 'error', formatLog(message, details)),
+  };
+}
+
+/**
+ * Plugin-private JSON storage. Writes of one plugin run one after another, so
+ * `update` reads and writes without another write slipping in between.
+ */
+function createPluginStorage(host: PluginHost, pluginId: string, live: () => void): StorageAPI {
+  const repository = host.deps.storage;
+  const validKey = (key: unknown): string => {
+    if (typeof key !== 'string' || key.length === 0 || key.length > STORAGE_LIMITS.keyLength) {
+      throw new LunarPluginError('INVALID_ARGUMENT', 'Storage keys must be non-empty strings of up to 200 characters');
+    }
+    return key;
+  };
+  const read = async <T extends JsonValue>(key: string): Promise<T | undefined> => {
+    const json = await repository.get(pluginId, key);
+    return json === undefined ? undefined : (JSON.parse(json) as T);
+  };
+  const write = async (key: string, value: JsonValue) => {
+    let json: string | undefined;
+    try {
+      json = JSON.stringify(value);
+    } catch {
+      json = undefined;
+    }
+    if (json === undefined) throw new LunarPluginError('INVALID_ARGUMENT', 'Storage values must be JSON');
+    const size = utf8Length(json);
+    if (size > STORAGE_LIMITS.valueBytes) throw new LunarPluginError('QUOTA_EXCEEDED', 'The value is too large');
+    if ((await repository.totalBytes(pluginId, key)) + size > STORAGE_LIMITS.totalBytes) {
+      throw new LunarPluginError('QUOTA_EXCEEDED', 'The plugin storage is full');
+    }
+    live();
+    await repository.set(pluginId, key, json, size);
+  };
+  const remove = async (key: string) => {
+    live();
+    await repository.delete(pluginId, key);
+  };
+
+  return {
+    async get<T extends JsonValue = JsonValue>(key: string): Promise<T | undefined> {
+      live();
+      return read<T>(validKey(key));
+    },
+    async set(key, value) {
+      live();
+      const target = validKey(key);
+      await host.serializeStorage(pluginId, () => write(target, value));
+      host.emitStorageChange(pluginId, target);
+    },
+    async update<T extends JsonValue = JsonValue>(
+      key: string,
+      updater: (current: T | undefined) => T | undefined,
+    ): Promise<T | undefined> {
+      live();
+      const target = validKey(key);
+      if (typeof updater !== 'function') throw new LunarPluginError('INVALID_ARGUMENT', 'updater must be a function');
+      let changed = false;
+      const next = await host.serializeStorage(pluginId, async () => {
+        const current = await read<T>(target);
+        const value: unknown = updater(current);
+        if (value instanceof Promise) {
+          throw new LunarPluginError('INVALID_ARGUMENT', 'The storage updater must be synchronous');
+        }
+        if (value === current) return current;
+        if (value === undefined) await remove(target);
+        else await write(target, value as T);
+        changed = true;
+        return value as T | undefined;
+      });
+      if (changed) host.emitStorageChange(pluginId, target);
+      return next;
+    },
+    async delete(key) {
+      live();
+      const target = validKey(key);
+      await host.serializeStorage(pluginId, () => remove(target));
+      host.emitStorageChange(pluginId, target);
+    },
+    async keys(prefix) {
+      live();
+      return repository.keys(pluginId, prefix);
     },
   };
 }

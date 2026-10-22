@@ -46,3 +46,5 @@ yarn-error.*
 /.pnpm-patches/
 # Independent adapter development checkout; Lunar consumes its packaged release.
 /rito-rn/
+
+/plugins/

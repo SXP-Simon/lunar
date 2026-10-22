@@ -192,6 +192,22 @@ describe('plugin context services', () => {
     await expect(ctx.storage.set('big', 'x'.repeat(300 * 1024))).rejects.toThrow('too large');
   });
 
+  it('applies concurrent updates one after another', async () => {
+    const { ctx, deps } = await activated('');
+    // A slow read would let a plain get-then-set lose one of the two increments.
+    const read = deps.storage.get;
+    deps.storage.get = async (pluginId, key) => {
+      await flush();
+      return read(pluginId, key);
+    };
+    const add = (value: { count: number } | undefined) => ({ count: (value?.count ?? 0) + 1 });
+    await Promise.all([ctx.storage.update('total', add), ctx.storage.update('total', add), ctx.storage.set('x', 1)]);
+    expect(await ctx.storage.get('total')).toEqual({ count: 2 });
+    expect(await ctx.storage.update('total', () => undefined)).toBeUndefined();
+    expect(await ctx.storage.keys()).toEqual(['x']);
+    await expect(ctx.storage.update('total', async () => ({ count: 1 }))).rejects.toThrow('synchronous');
+  });
+
   it('translates with the host locale and interpolates parameters', async () => {
     const { ctx } = await activated('');
     expect(ctx.i18n.t('name')).toBe('测试');

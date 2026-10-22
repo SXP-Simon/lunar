@@ -94,6 +94,15 @@ export function PluginDetailScreen() {
                 : ''}
             </Text>
             {status.error ? <Text className="text-sm text-danger">{status.error}</Text> : null}
+            {status.notice ? (
+              <Text className="text-sm text-danger">
+                {t('plugins.reverted', {
+                  failed: status.notice.failedVersion,
+                  restored: status.notice.restoredVersion,
+                  reason: status.notice.reason,
+                })}
+              </Text>
+            ) : null}
             {status.pendingVersion ? (
               <Text className="text-sm text-muted">
                 {t('plugins.pendingVersion', { version: status.pendingVersion })}

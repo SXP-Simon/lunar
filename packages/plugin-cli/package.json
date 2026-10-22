@@ -7,14 +7,20 @@
   "bin": {
     "lunar-plugin": "./bin/lunar-plugin.mjs"
   },
+  "publishConfig": {
+    "bin": {
+      "lunar-plugin": "./dist/bin.js"
+    }
+  },
   "files": [
-    "bin",
-    "src"
+    "dist"
   ],
   "engines": {
-    "node": ">=23.6"
+    "node": ">=20.19"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "pnpm run build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "pnpm run typecheck && pnpm run test"

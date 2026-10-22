@@ -141,6 +141,8 @@ export const pluginManifestSchema = z
       .optional(),
     publisherKeyId: z.string().max(200).optional(),
     defaultLocale: z.string().max(16).optional(),
+    /** Version of the plugin's stored data format; raising it runs the plugin's `migrate`. */
+    dataVersion: z.number().int().min(1).max(1_000_000).default(1),
     activationEvents: z.array(z.enum(PLUGIN_ACTIVATION_EVENTS)).max(PLUGIN_ACTIVATION_EVENTS.length).default([]),
     permissions: z.array(permission).max(32).default([]),
     contributes: z

@@ -56,11 +56,18 @@ export function plugin(entry: string, patch: Partial<InstalledPlugin> = {}): Ins
   };
 }
 
-export function memoryStorage(): PluginStorageRepository & { readonly data: Map<string, string> } {
+export function memoryStorage(): PluginStorageRepository & {
+  readonly data: Map<string, string>;
+  readonly versions: Map<string, number>;
+} {
   const data = new Map<string, string>();
+  const versions = new Map<string, number>();
+  const backups = new Map<string, { readonly version: number; readonly data: Map<string, string> }>();
   const id = (pluginId: string, key: string) => `${pluginId}\u0000${key}`;
+  const owned = (pluginId: string) => [...data.keys()].filter((key) => key.startsWith(`${pluginId}\u0000`));
   return {
     data,
+    versions,
     get: async (pluginId, key) => data.get(id(pluginId, key)),
     set: async (pluginId, key, value) => {
       data.set(id(pluginId, key), value);
@@ -77,7 +84,32 @@ export function memoryStorage(): PluginStorageRepository & { readonly data: Map<
         .filter(([key]) => key.startsWith(`${pluginId}\u0000`) && key !== id(pluginId, excluding ?? '\u0001'))
         .reduce((sum, [, value]) => sum + value.length, 0),
     clear: async (pluginId) => {
-      for (const key of [...data.keys()]) if (key.startsWith(`${pluginId}\u0000`)) data.delete(key);
+      for (const key of owned(pluginId)) data.delete(key);
+      versions.delete(pluginId);
+      backups.delete(pluginId);
+    },
+    getDataVersion: async (pluginId) => versions.get(pluginId),
+    setDataVersion: async (pluginId, version) => {
+      versions.set(pluginId, version);
+    },
+    snapshot: async (pluginId) => {
+      backups.set(pluginId, {
+        version: versions.get(pluginId) ?? 1,
+        data: new Map(owned(pluginId).map((key) => [key, data.get(key)!])),
+      });
+      if (!versions.has(pluginId)) versions.set(pluginId, 1);
+    },
+    restoreSnapshot: async (pluginId) => {
+      const backup = backups.get(pluginId);
+      if (!backup) return false;
+      for (const key of owned(pluginId)) data.delete(key);
+      for (const [key, value] of backup.data) data.set(key, value);
+      versions.set(pluginId, backup.version);
+      backups.delete(pluginId);
+      return true;
+    },
+    dropSnapshot: async (pluginId) => {
+      backups.delete(pluginId);
     },
   };
 }

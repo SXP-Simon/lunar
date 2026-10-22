@@ -6,7 +6,7 @@ Plugins run with the same access as the app. Only install plugins from sources y
 
 ## Quick start
 
-Requires Node.js 23.6 or newer.
+Requires Node.js 20.19 or newer.
 
 ```sh
 npx lunar-plugin init my-plugin --id org.example.my-plugin --name "My plugin"
@@ -15,7 +15,7 @@ npm install
 npx lunar-plugin dev
 ```
 
-In Lunar, open **Settings → Plugins**, turn on **Developer mode**, and enter one of the addresses that `lunar-plugin dev` prints. Saving a source file rebuilds the plugin and reloads it in the app.
+In Lunar, open **Settings → Plugins**, turn on **Developer mode**, and enter one of the addresses that `lunar-plugin dev` prints. Saving a source file rebuilds the plugin and reloads it in the app, and the plugin's `ctx.log` output appears in the terminal. With the phone on USB, run `adb reverse tcp:5757 tcp:5757` and use the `127.0.0.1` address.
 
 `npx lunar-plugin pack` writes `dist/<id>-<version>.lunar-plugin`, which can be installed from the same screen.
 
@@ -46,6 +46,31 @@ function MainPanel() {
 ```
 
 Every command, panel, overlay, route and setting the code registers must also be declared in `manifest.json`. `lunar-plugin validate` checks the manifest, locales, imports and package limits.
+
+## Stored data and updates
+
+`ctx.storage` is a private JSON store. Writes run in call order, and `update(key, fn)` reads and writes in one step, so counters never lose a concurrent increment.
+
+When a new version stores data differently, raise `dataVersion` in `manifest.json` and convert the data in `migrate`:
+
+```ts
+export default definePlugin({
+  async migrate({ from, to, storage }) {
+    if (from === 1 && to === 2) {
+      for (const key of await storage.keys('book:')) {
+        await storage.update(key, (value) => toVersion2(value));
+      }
+    }
+  },
+  activate(ctx) {
+    // Runs only after the data has the manifest's dataVersion.
+  },
+});
+```
+
+Lunar backs up the plugin's data before `migrate` runs. If `migrate` or the first `activate` of an update fails, the data and the previously installed version are restored.
+
+Text from `ctx.reader.session.getVisibleText()` carries a `key` that stays the same for the same sentence across page turns, reflows and sessions; use it rather than `range` or a location to recognise text you have already seen.
 
 ## What a plugin can use
 

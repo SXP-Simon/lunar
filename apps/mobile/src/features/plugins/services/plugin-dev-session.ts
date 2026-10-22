@@ -1,9 +1,11 @@
 import { parsePluginManifest, satisfiesVersionRange, SDK_VERSION } from '@lunar/plugin-sdk/manifest';
 
-import type { InstalledPlugin } from '../domain/installed-plugin';
+import type { InstalledPlugin, PluginLogEntry } from '../domain/installed-plugin';
 import { LunarPluginError } from '../domain/plugin-error';
 
 export const DEV_POLL_INTERVAL_MS = 1_000;
+export const DEV_LOG_FLUSH_MS = 300;
+const MaxQueuedLogs = 200;
 
 export interface DevSessionStatus {
   readonly url: string;
@@ -14,7 +16,7 @@ export interface DevSessionStatus {
 }
 
 export interface DevSessionDependencies {
-  readonly fetch: (url: string) => Promise<Response>;
+  readonly fetch: (url: string, init?: RequestInit) => Promise<Response>;
   readonly locales: () => readonly string[];
   readonly onPlugin: (plugin: InstalledPlugin) => void;
   readonly onStatus: (status: DevSessionStatus | undefined) => void;
@@ -24,11 +26,14 @@ export interface DevSessionDependencies {
 
 /**
  * Follows a `lunar-plugin dev` server on the local network. Every revision is
- * fetched and handed to the host as a development plugin kept in memory.
+ * fetched and handed to the host as a development plugin kept in memory, and
+ * the plugin's log is sent back to the developer's terminal.
  */
 export class PluginDevSession {
   private stopped = false;
   private timer?: ReturnType<typeof setTimeout>;
+  private logTimer?: ReturnType<typeof setTimeout>;
+  private readonly logQueue: PluginLogEntry[] = [];
   private revision = -1;
   private pluginId?: string;
   private readonly base: URL;
@@ -52,8 +57,33 @@ export class PluginDevSession {
     if (this.stopped) return;
     this.stopped = true;
     if (this.timer) clearTimeout(this.timer);
+    if (this.logTimer) clearTimeout(this.logTimer);
+    this.logQueue.length = 0;
     this.deps.onStatus(undefined);
     this.deps.onStop(this.pluginId);
+  }
+
+  /** Queues a log entry for the terminal; entries go out in small batches. */
+  sendLog(entry: PluginLogEntry): void {
+    if (this.stopped) return;
+    this.logQueue.push(entry);
+    if (this.logQueue.length > MaxQueuedLogs) this.logQueue.splice(0, this.logQueue.length - MaxQueuedLogs);
+    this.logTimer ??= setTimeout(() => void this.flushLogs(), DEV_LOG_FLUSH_MS);
+  }
+
+  private async flushLogs(): Promise<void> {
+    this.logTimer = undefined;
+    const entries = this.logQueue.splice(0);
+    if (entries.length === 0 || this.stopped) return;
+    try {
+      await this.deps.fetch(this.endpoint('/logs'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ entries }),
+      });
+    } catch {
+      // The terminal copy is a convenience; the plugin page keeps the full log.
+    }
   }
 
   private endpoint(path: string): string {

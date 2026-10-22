@@ -32,16 +32,16 @@ export async function readPluginBytes(directoryUri: string, path: string): Promi
   return new File(new Directory(directoryUri), ...path.split('/')).bytes();
 }
 
-/** Removes versions of a plugin other than `keepVersion`, or all of them. */
-export function deletePluginFiles(pluginId: string, keepVersion?: string): void {
+/** Removes versions of a plugin other than `keepVersions`, or all of them. */
+export function deletePluginFiles(pluginId: string, keepVersions?: readonly string[]): void {
   const root = new Directory(Paths.document, PLUGINS_DIRECTORY, pluginId);
   if (!root.exists) return;
-  if (!keepVersion) {
+  if (!keepVersions) {
     root.delete();
     return;
   }
   for (const item of root.list()) {
-    if (item instanceof Directory && item.name !== keepVersion) item.delete();
+    if (item instanceof Directory && !keepVersions.includes(item.name)) item.delete();
   }
 }
 

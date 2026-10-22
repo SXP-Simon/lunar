@@ -83,9 +83,13 @@ export async function main(argv: readonly string[]): Promise<number> {
         port,
         host: values.host ?? '0.0.0.0',
         onEvent: (message) => console.log(`[dev] ${message}`),
+        onLog: (line) => console.log(`[app] ${line}`),
       });
       console.log('Enter one of these addresses in Lunar → Settings → Plugins → Developer connection:');
       server.urls.forEach((url) => console.log(`  ${url}`));
+      const boundPort = new URL(server.urls[0]!).port;
+      console.log(`Over USB, run \`adb reverse tcp:${boundPort} tcp:${boundPort}\` and use:`);
+      console.log(`  http://127.0.0.1:${boundPort}/?token=${server.token}`);
       await new Promise<void>((resolve) => process.once('SIGINT', () => resolve()));
       await server.close();
       return 0;

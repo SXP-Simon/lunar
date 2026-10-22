@@ -143,6 +143,12 @@ export const en: TranslationSchema<typeof zhCN> = {
     trustBody:
       'Plugin code runs in the same environment as Lunar. The permissions below describe what the plugin is for; they cannot stop malicious code. Only install plugins from sources you trust.',
     unsigned: 'This package is not signed, so its publisher cannot be confirmed.',
+    updateSafety:
+      'The new version replaces {{version}} only after it first starts successfully. If it fails to start, {{version}} is restored.',
+    migratesData:
+      'The new version converts the data the plugin has saved. The data is backed up first and restored if the conversion fails.',
+    downgradeWarning:
+      'After the downgrade, the plugin must read data saved by the newer version. If it cannot, the older version will not start and {{version}} is restored.',
     permissions: 'Permissions',
     noPermissions: 'This plugin requests no permissions',
     newPermission: 'new',
@@ -191,6 +197,8 @@ export const en: TranslationSchema<typeof zhCN> = {
       development: 'In development',
     },
     pendingVersion: '{{version}} applies after restart',
+    reverted: '{{failed}} failed to start, so {{restored}} was restored: {{reason}}',
+    restoredVersion: 'Restored {{version}}',
     failed: 'Failed to start',
     enable: 'Enable {{name}}',
     enabled: 'Enabled',

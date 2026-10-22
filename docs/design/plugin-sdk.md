@@ -277,6 +277,7 @@ reading-helper.lunar-plugin
   "platforms": ["android"],
   "main": "main.js",
   "publisherKeyId": "ed25519:example-key",
+  "dataVersion": 1,
   "activationEvents": ["onReaderOpen"],
   "permissions": [
     { "name": "reader.content.read", "reason": "统计当前章节字数" },
@@ -336,6 +337,16 @@ interface Disposable {
 interface PluginDefinition {
   activate(ctx: PluginContext): Promise<void> | void;
   deactivate?(): Promise<void> | void;
+  migrate?(ctx: MigrationContext): Promise<void> | void;
+}
+
+interface MigrationContext {
+  readonly plugin: { id: string; version: string; generation: number };
+  readonly from: number;
+  readonly to: number;
+  readonly storage: StorageAPI;
+  readonly settings: SettingsAPI;
+  readonly log: LogAPI;
 }
 
 interface PluginContext {
@@ -404,12 +415,15 @@ interface SettingsAPI {
 interface StorageAPI {
   get<T>(key: string): Promise<T | undefined>;
   set(key: string, value: unknown): Promise<void>;
+  update<T>(key: string, updater: (current: T | undefined) => T | undefined): Promise<T | undefined>;
   delete(key: string): Promise<void>;
   keys(prefix?: string): Promise<string[]>;
 }
 ```
 
-`settings` 读写清单声明的设置字段，宿主执行类型与范围校验，并在插件设置页自动生成表单。`storage` 提供插件专属 JSON KV，用于业务数据。
+`settings` 读写清单声明的设置字段，宿主执行类型与范围校验，并在插件设置页自动生成表单。旧版本清单下保存、已不满足当前声明的设置值按默认值读取。`storage` 提供插件专属 JSON KV，用于业务数据。
+
+[MUST] 同一插件的存储写入按调用顺序依次执行。`update` 在一次写入内完成读取、变换与写回，变换函数必须同步返回；返回 `undefined` 时删除该键。
 
 ### 7.4 国际化与日志
 
@@ -493,9 +507,12 @@ interface ReaderSessionAPI {
 interface TextSegment {
   text: string;
   range: string;
+  key?: string;
   chapterRef: string;
 }
 ```
+
+`TextSegment.key` 是与排版无关的文本身份，由书籍、章节文档与来源范围计算。同一句文字在翻页、重排与再次打开书籍后保持相同的键，插件据此去重与累计。宿主无法确定来源范围时不提供该字段。`range` 只对当前排版有效，不得作为持久身份。
 
 `TextSegment.range` 是宿主生成的来源范围引用，可用于装饰、高亮、定位与听书跟读。宿主可以在能够确定来源范围时生成该引用；无法确定时返回 `ANCHOR_UNAVAILABLE`。
 
@@ -844,11 +861,21 @@ AI 插件在选区菜单注册解释、翻译与提问命令，在 `reader.panel
 
 ### 14.3 更新与迁移
 
-更新先验证新版本、发布身份、SDK 兼容范围及权限变化。新增权限必须重新授权；用户暂缓授权时继续使用旧版本。
+更新先验证新版本、发布身份、SDK 兼容范围及权限变化。安装确认界面标出新增权限、数据格式变化与降级风险；用户确认即重新授权，取消时继续使用旧版本。
 
-新版本验证完成后进入 `pending` 状态，应用下次启动时切换。切换时保留旧包与插件数据快照，新版本首次激活成功后释放快照；激活失败则恢复旧版本并显示失败原因。
+旧版本已在本进程执行过时，新版本进入 `pending` 状态，应用下次启动时切换；否则新版本立即生效。安装记录保留被替换的版本及其文件，直至新版本首次激活成功。连续多次更新而新版本均未激活时，保留的始终是最后一个成功运行过的版本。
 
-插件可以在清单声明设置与存储的数据版本，并在 `activate` 中通过 `ctx.storage` 完成迁移。宿主在迁移完成前不向该插件派发阅读事件。
+清单字段 `dataVersion` 声明插件存储数据的格式版本，默认为 1。宿主为每个插件记录数据所属版本；未记录版本的既有数据视为版本 1，没有数据的插件直接记录当前版本。两者不一致时，宿主在 `activate` 之前调用插件的 `migrate`，传入原版本与目标版本。降级时原版本大于目标版本，由插件决定能否读取。
+
+1. 宿主先为插件存储建立快照，再调用 `migrate`。迁移在限定时间内完成后记录新的数据版本。
+2. `migrate` 或随后的 `activate` 失败时，宿主恢复快照与原数据版本。
+3. 更新后的首次激活失败时，宿主恢复被替换的版本，并在插件管理页显示失败版本、恢复版本与失败原因。
+4. 首次激活成功后，宿主释放快照与被替换版本的文件。
+5. 激活过程中应用退出时，下次启动进入安全模式，并对该插件执行第 2、3 步。
+
+[MUST] 数据版本不一致而插件未定义 `migrate` 时，激活失败，数据保持原状。
+
+[MUST] 迁移完成之前，插件没有任何注册，也不接收阅读事件。
 
 [MUST] 同一版本号对应固定包摘要。来源提供相同版本号但内容不同的包时，拒绝覆盖并要求发布新版本。
 
@@ -906,6 +933,7 @@ SDK 将错误表现为带固定代码的异常对象。错误消息适合展示�
 | 同步拦截点单次执行       | 16 ms                                |
 | 异步拦截点单次执行       | 500 ms                               |
 | `deactivate` 等待        | 1 秒                                 |
+| `migrate` 总耗时         | 10 秒，超时视为迁移失败并恢复数据    |
 | 装饰层                   | 每插件 4 层，每层每页最多 500 个装饰 |
 | 装饰更新频率             | 每层每秒最多 10 次                   |
 | 同时网络请求             | 每插件最多 4 个                      |
@@ -918,14 +946,18 @@ SDK 将错误表现为带固定代码的异常对象。错误消息适合展示�
 
 ## 16. 完整插件样例
 
-官方插件 [阅读统计](../../plugins/reading-stats) 是 SDK 0.1 的验收样例，覆盖生命周期事件、工具栏命令、自定义面板、选区菜单拦截、页面装饰、插件设置与插件存储。章节全文能力就绪之前，样例逐页读取可见文本。
+官方插件 [阅读统计](../../plugins/reading-stats) 是 SDK 0.1 的验收样例，覆盖生命周期事件、工具栏命令、自定义面板、选区菜单拦截、页面装饰、插件设置、插件存储与数据迁移。章节全文能力就绪之前，样例逐页读取可见文本。
 
 ```tsx
 export default definePlugin({
+  // 数据版本 1 记录了逐页定位符，版本 2 只保留字数。
+  migrate: (ctx) => migrateBookStats(ctx.storage, ctx.from, ctx.to),
+
   activate(ctx) {
     const longSentences = ctx.reader.decorations.create('long-sentences');
+    const counted = new Set<string>();
 
-    const measure = async (location: ReaderLocation) => {
+    const measure = async () => {
       const segments = await ctx.reader.session.getVisibleText();
       const limit = ctx.settings.get<number>('longSentence');
       longSentences.set(
@@ -933,10 +965,15 @@ export default definePlugin({
           .filter((segment) => countCharacters(segment.text) > limit)
           .map((segment) => ({ range: segment.range, style: 'wavy', color: 'accent' })),
       );
-      // 按页面定位符累计本书字数，写入插件存储。
+      // 按 segment.key 去重，本次阅读中同一句只计一次。
+      const characters = takeUnseen(segments, counted).reduce((sum, item) => sum + countCharacters(item.text), 0);
+      const book = ctx.reader.session.current()?.book;
+      if (book && characters > 0) {
+        await ctx.storage.update(bookStatsKey(book.ref), (stored) => addCharacters(parseBookStats(stored), characters));
+      }
     };
-    ctx.reader.on('locationChange', ({ location }) => void measure(location));
-    ctx.reader.on('layoutChange', ({ location }) => void measure(location));
+    ctx.reader.on('locationChange', () => void measure());
+    ctx.reader.on('layoutChange', () => void measure());
 
     ctx.reader.intercept('selectionMenu', (items) => [
       ...items,
@@ -955,7 +992,7 @@ export default definePlugin({
 });
 ```
 
-用户打开书籍后，宿主按 `onReaderOpen` 激活插件。每次翻页或重排时，插件读取当前页正文，统计码点数量，并以波浪线标记超过阈值的句子。用户点击选区菜单中的“字数统计”时，宿主冻结选区并把快照交给插件。组合字符和 emoji 序列可能包含多个码点，面板文案标注了统计单位。
+用户打开书籍后，宿主按 `onReaderOpen` 激活插件。每次翻页或重排时，插件读取当前页正文，以波浪线标记超过阈值的句子，并按句子身份累计本次与本书的阅读字数。重排只更新装饰，已计入的句子不再重复计数。用户点击选区菜单中的“字数统计”时，宿主冻结选区并把快照交给插件。组合字符和 emoji 序列可能包含多个码点，面板文案标注了统计单位。
 
 插件停用后，宿主关闭面板、清除装饰层并撤销全部注册。插件存储中的统计数据按用户的卸载选择保留或删除。
 
@@ -973,7 +1010,11 @@ export default definePlugin({
 
 开发构建提供开发者模式。开发者模式下，应用扫描 `lunar-plugin dev` 输出的配对二维码建立连接，源码保存后宿主撤销旧代次注册并执行新版本入口。
 
+开发连接也把开发中插件的日志按批次回传到 `lunar-plugin dev` 所在终端。通过 USB 调试时，`adb reverse` 映射开发服务端口后可使用回环地址连接。
+
 [MUST] 开发连接只在开发者模式中可用，每次配对使用一次性密钥，正式构建关闭开发服务连接入口。
+
+`@lunar/plugin-sdk` 与 `@lunar/plugin-cli` 在工作区内直接引用 TypeScript 源码；发布时由 `publishConfig` 切换到编译后的 JavaScript 与类型声明，CLI 发布产物要求 Node.js 20.19 及以上版本。
 
 [MUST] 构建工具的检查用于提前发现问题，宿主运行时仍须执行相同的模块注册表、清单与权限检查。
 
@@ -1012,7 +1053,7 @@ export default definePlugin({
 
 A 阶段决定执行方案能否成立，应在其他阶段之前完成。B 至 D 阶段持续使用 `0.x` 试验版本。
 
-截至 2026-10-22，A 至 C 阶段的代码已实现并通过单元测试与 JavaScript 打包，尚未完成真机验收；D 至 F 阶段尚未开始。
+截至 2026-10-22，A 至 C 阶段的代码已实现，开发构建已在真机上运行阅读统计插件，Release 构建尚未验收。E 阶段中的更新切换、数据迁移与失败恢复已实现，签名与官方目录尚未开始；D、F 阶段尚未开始。
 
 | 模块                               | 内容                                                                     |
 | ---------------------------------- | ------------------------------------------------------------------------ |
