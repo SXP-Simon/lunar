@@ -9,13 +9,30 @@ import { useTranslation } from '@/i18n';
 
 const ControlHorizontalPadding = 12;
 
+/** A trailing toolbar button; built-in and extension actions share this shape. */
+export interface ReaderToolbarAction {
+  readonly key: string;
+  readonly accessibilityLabel: string;
+  readonly name: SymbolViewProps['name'];
+  readonly onPress: () => void;
+  readonly isDisabled?: boolean;
+}
+
 interface ControlsProps {
   readonly bookTitle: string;
   readonly onBack: () => void;
+  readonly actions?: readonly ReaderToolbarAction[];
   readonly safeAreaInsets?: EdgeInsets;
 }
 
-export const Controls = memo(function Controls({ bookTitle, onBack, safeAreaInsets }: ControlsProps) {
+const EmptyActions: readonly ReaderToolbarAction[] = [];
+
+export const Controls = memo(function Controls({
+  bookTitle,
+  onBack,
+  actions = EmptyActions,
+  safeAreaInsets,
+}: ControlsProps) {
   const { t } = useTranslation();
   const contextInsets = useSafeAreaInsets();
   const insets = safeAreaInsets ?? contextInsets;
@@ -35,10 +52,26 @@ export const Controls = memo(function Controls({ bookTitle, onBack, safeAreaInse
             name={{ ios: 'chevron.backward', android: 'arrow_back', web: 'arrow_back' }}
             onPress={onBack}
           />
+          {/* Balance the trailing actions so the title stays centred. */}
+          {actions.slice(1).map((action) => (
+            <View key={action.key} className="size-10" />
+          ))}
           <Text className="min-w-0 flex-1 text-center text-base font-semibold text-foreground" numberOfLines={1}>
             {bookTitle}
           </Text>
-          <View className="size-10" />
+          {actions.length === 0 ? (
+            <View className="size-10" />
+          ) : (
+            actions.map((action) => (
+              <IconButton
+                key={action.key}
+                accessibilityLabel={action.accessibilityLabel}
+                isDisabled={action.isDisabled}
+                name={action.name}
+                onPress={action.onPress}
+              />
+            ))
+          )}
         </View>
       </View>
     </View>

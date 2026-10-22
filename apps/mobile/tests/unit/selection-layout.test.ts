@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { computeSelectionLayout } from '../../src/features/reader/components/controls/selection';
+import { arrangeSelectionActions, computeSelectionLayout } from '../../src/features/reader/components/controls/selection';
 
 // Layout calculations use plain rectangles; native components are not rendered.
 vi.mock('react-native-reanimated', () => ({
@@ -53,5 +53,16 @@ describe('reader selection controls layout', () => {
     const layout = computeSelectionLayout([{ x: 20, y: 60, width: 260, height: 520 }], 320, 640, insets)!;
     expect(layout.toolbar.top).toBeGreaterThanOrEqual(52);
     expect(layout.toolbar.top + 156).toBeLessThanOrEqual(604);
+  });
+});
+
+describe('reader selection action rows', () => {
+  it('keeps up to five actions on one row and wraps longer lists by four', () => {
+    expect(arrangeSelectionActions([])).toEqual([]);
+    expect(arrangeSelectionActions([1, 2, 3, 4, 5])).toEqual([[1, 2, 3, 4, 5]]);
+    expect(arrangeSelectionActions([1, 2, 3, 4, 5, 6])).toEqual([
+      [1, 2, 3, 4],
+      [5, 6],
+    ]);
   });
 });

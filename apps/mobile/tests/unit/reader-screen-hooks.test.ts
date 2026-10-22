@@ -140,16 +140,16 @@ afterEach(() => {
 
 describe('reader panels', () => {
   it('keeps the new panel open when the previous drawer finishes closing', () => {
-    let panels = render(() => useReaderPanels(true));
+    let panels = render(() => useReaderPanels([]));
     panels.setPanelOpen('toc', true);
-    panels = render(() => useReaderPanels(true));
+    panels = render(() => useReaderPanels([]));
     expect(panels.activePanel).toBe('toc');
     panels.setPanelOpen('marks', true);
     panels.setPanelOpen('toc', false);
-    panels = render(() => useReaderPanels(true));
+    panels = render(() => useReaderPanels([]));
     expect(panels.activePanel).toBe('marks');
     panels.setPanelOpen('marks', false);
-    expect(render(() => useReaderPanels(true)).activePanel).toBeUndefined();
+    expect(render(() => useReaderPanels([])).activePanel).toBeUndefined();
   });
 });
 

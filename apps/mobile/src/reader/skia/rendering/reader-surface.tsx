@@ -44,12 +44,14 @@ import {
   type ReaderPageTurnSurfaceBinding,
 } from '../anime';
 import {
+  createReaderOverlaySourcesResolver,
   decorateReaderPageOverlays,
   mergeReaderOverlayRects,
   readerOverlayColor,
   readerOverlayDecorationPath,
+  resolveReaderCurrentOverlaySources,
   type ReaderOverlayRect,
-  type ReaderPageOverlayResolver,
+  type ReaderOverlaySource,
 } from './reader-overlays';
 import { ReaderBookmarkMark, ReaderBookmarkPullMark } from './reader-bookmark-mark';
 import { composePageCurlPicture, recordNativeViewportPicture } from './page-picture';
@@ -68,7 +70,8 @@ export interface ReaderSurfaceProps {
   readonly style?: StyleProp<ViewStyle>;
   /** Canvas color used before the runtime has produced its first page. */
   readonly initialBackgroundColor?: string;
-  readonly overlays?: readonly ReaderOverlayRect[];
+  /** Independent overlay producers, merged for every painted page. */
+  readonly overlaySources?: readonly ReaderOverlaySource[];
   /** Transient selection in viewport coordinates; excluded from turn recordings. */
   readonly selectionRects?: readonly ReaderRect[];
   readonly selectionColor?: string;
@@ -76,7 +79,6 @@ export interface ReaderSurfaceProps {
   readonly selectionShowFill?: boolean;
   readonly selectionHandleColor?: string;
   readonly selectionOutlineColor?: string;
-  readonly resolvePageOverlays?: ReaderPageOverlayResolver;
   readonly resolvePageBookmark?: (snapshot: ReaderSnapshot, frame: ReaderPageContent['frame']) => boolean;
   readonly bookmarkColor?: string;
   readonly bookmarkPullDistance?: SharedValue<number>;
@@ -121,14 +123,13 @@ export const ReaderSurface = memo(function ReaderSurface({
   snapshot,
   style,
   initialBackgroundColor = '#000000',
-  overlays,
+  overlaySources,
   selectionRects,
   selectionColor,
   selectionBinding,
   selectionShowFill = true,
   selectionHandleColor,
   selectionOutlineColor,
-  resolvePageOverlays,
   resolvePageBookmark,
   bookmarkColor = '#E5594B',
   bookmarkPullDistance,
@@ -170,6 +171,7 @@ export const ReaderSurface = memo(function ReaderSurface({
   const pullBookmarked = bookmarkPullBookmarked ?? restingBookmark;
   const pullMatrix = useDerivedValue(() => processTransform3d([{ translateY: pull.value }]), [pull]);
   const bookmarkPageOpacity = useDerivedValue(() => (pull.value > 0 ? 0 : 1), [pull]);
+  const resolvePageOverlays = useMemo(() => createReaderOverlaySourcesResolver(overlaySources), [overlaySources]);
   const decoratePage = useCallback(
     (content: ReaderPageContent): ReaderPageContent => ({
       ...decorateReaderPageOverlays(content, resolvePageOverlays),
@@ -218,13 +220,15 @@ export const ReaderSurface = memo(function ReaderSurface({
     snapshot.phase === 'ready' && compiled && frame
       ? `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 0}`
       : undefined;
-  const currentOverlays = useMemo(() => {
-    const synchronous = frame ? (resolvePageOverlays?.(snapshot, frame) ?? []) : [];
-    const source = overlays !== undefined && overlays.length > 0 ? overlays : synchronous;
-    return mergeReaderOverlayRects(
-      source.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId),
-    );
-  }, [frame, overlays, resolvePageOverlays, snapshot]);
+  const currentOverlays = useMemo(
+    () =>
+      mergeReaderOverlayRects(
+        resolveReaderCurrentOverlaySources(overlaySources, snapshot, frame).filter(
+          (overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId,
+        ),
+      ),
+    [frame, overlaySources, snapshot],
+  );
   const currentContent = useMemo<ReaderPageContent | undefined>(
     () =>
       currentKey && compiled && frame

@@ -26,6 +26,13 @@ import {
   resolveReaderFontFaces,
 } from '../../domain/reader-font-face';
 import type { ReaderReadingState } from '../../domain/reader-reading-state';
+import {
+  closeReaderSessionObservation,
+  observeReaderSession,
+  type ReaderSessionLifecycle,
+  type ReaderSessionObservation,
+} from '../../domain/reader-session-events';
+import { ReaderSessionEventBus } from '../../services/reader-session-event-bus';
 import { findReaderReadingState, saveReaderReadingState } from '../../services/reading-state-service';
 
 export interface ReaderSessionOptions {
@@ -60,6 +67,9 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme, palet
   const subscribe = useCallback((listener: () => void) => runtime.subscribe(listener), [runtime]);
   const getSnapshot = useCallback(() => runtime.getSnapshot(), [runtime]);
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const events = useMemo(() => new ReaderSessionEventBus(), []);
+  const observation = useRef<ReaderSessionObservation | undefined>(undefined);
+  const [lifecycle, setLifecycle] = useState<ReaderSessionLifecycle>('closed');
   const currentBook = book?.id === bookId ? book : undefined;
   const currentOpenResult = openResult?.bookId === bookId ? openResult.result : undefined;
   const persistSnapshot = useCallback(
@@ -236,21 +246,50 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme, palet
     };
   }, [chromeFont, fonts, runtime]);
 
-  useEffect(() => {
-    persistSnapshot(snapshot);
-  }, [persistSnapshot, snapshot]);
-
-  // Saving on exit reads the latest preferences without making preference
-  // changes tear down the runtime. Only the runtime's lifetime owns close().
-  const persistOnExit = useEffectEvent(() => {
+  // Reads the latest preferences without making preference changes tear down
+  // the runtime or resubscribe listeners. Only the runtime's lifetime owns close().
+  const persistCurrentSnapshot = useEffectEvent(() => {
     persistSnapshot(runtime.getSnapshot());
   });
+
+  useEffect(() => {
+    const unsubscribe = events.onAny((event) => {
+      if (
+        event.type === 'ready' ||
+        event.type === 'locationChange' ||
+        event.type === 'layoutChange' ||
+        event.type === 'paginationChange'
+      ) {
+        persistCurrentSnapshot();
+      }
+    });
+    return unsubscribe;
+  }, [events]);
+
+  // Lifecycle events are derived after React adopts a snapshot, so listeners
+  // never run inside page-turn gestures or the runtime's own dispatch. The
+  // persistence listener above subscribes first and sees every event.
+  useEffect(() => {
+    const result = observeReaderSession(observation.current, snapshot);
+    observation.current = result.observation;
+    setLifecycle(result.observation?.lifecycle ?? 'closed');
+    for (const event of result.events) events.emit(event);
+  }, [events, snapshot]);
+
+  // A preference change rewrites the saved typography and theme for the
+  // current position before the resulting reflow reports its own layout event.
+  useEffect(() => {
+    persistCurrentSnapshot();
+  }, [persistSnapshot]);
 
   useEffect(() => {
     sessionMounted.current = true;
     return () => {
       sessionMounted.current = false;
-      persistOnExit();
+      persistCurrentSnapshot();
+      const closing = closeReaderSessionObservation(observation.current);
+      observation.current = undefined;
+      if (closing) events.emit(closing);
       layoutQueue.current = layoutQueue.current
         .then(async () => {
           await runtime.close();
@@ -259,11 +298,13 @@ export function useReaderSession({ bookId, viewport, contentInsets, theme, palet
         })
         .catch(() => undefined);
     };
-  }, [runtime]);
+  }, [events, runtime]);
 
   return {
     runtime,
     snapshot,
+    events,
+    lifecycle,
     book: currentBook,
     metadata: currentOpenResult?.metadata,
     toc: currentOpenResult?.toc ?? [],
