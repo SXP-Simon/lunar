@@ -1014,7 +1014,7 @@ export default definePlugin({
 
 [MUST] 开发连接只在开发者模式中可用，每次配对使用一次性密钥，正式构建关闭开发服务连接入口。
 
-`@lunar/plugin-sdk` 与 `@lunar/plugin-cli` 在工作区内直接引用 TypeScript 源码；发布时由 `publishConfig` 切换到编译后的 JavaScript 与类型声明，CLI 发布产物要求 Node.js 20.19 及以上版本。
+`@lunar/plugin-sdk` 与 `@lunar/plugin-cli` 在工作区内直接引用 TypeScript 源码；发布时由 `publishConfig` 切换到编译后的 JavaScript 与类型声明，CLI 要求 Node.js 22.18 及以上版本，工作区内依靠 Node.js 默认的类型剥离直接运行源码。
 
 [MUST] 构建工具的检查用于提前发现问题，宿主运行时仍须执行相同的模块注册表、清单与权限检查。
 

@@ -6,7 +6,7 @@ Plugins run with the same access as the app. Only install plugins from sources y
 
 ## Quick start
 
-Requires Node.js 20.19 or newer.
+Requires Node.js 22.18 or newer.
 
 ```sh
 npx lunar-plugin init my-plugin --id org.example.my-plugin --name "My plugin"
