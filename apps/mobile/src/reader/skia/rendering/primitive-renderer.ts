@@ -23,6 +23,7 @@ import {
   isBookOwnedPageGround,
   isOpaqueColor,
   makeResolvedPrimitivePaint,
+  mixColors,
   resolvedPrimitiveColor,
   type SkiaColorOverride,
 } from './reader-colors';
@@ -163,6 +164,11 @@ export function renderResolvedPrimitives(
         case 'draw-image':
           drawImage(canvas, command, options, alpha);
           break;
+        case 'image-fallback':
+          // Images are acquired before compilation, so a missing asset is broken, never loading.
+          if (command.state === 'broken' && !options.images.resolveImage(command.src))
+            drawImageFallback(canvas, command, options.colorOverride, alpha);
+          break;
         case 'text':
         case 'ruby':
           renderResolvedPrimitiveText(
@@ -221,6 +227,35 @@ function drawImage(
     }
   }
   safeDispose(paint);
+}
+
+function drawImageFallback(
+  canvas: SkCanvas,
+  command: Extract<ReaderResolvedPrimitive, { kind: 'image-fallback' }>,
+  colors: SkiaColorOverride | undefined,
+  alpha: number,
+): void {
+  const background = colors?.backgroundColor ?? '#ffffff';
+  const foreground = colors?.foregroundColor ?? '#000000';
+  const block = mixColors(background, foreground, command.blockInk);
+  const blockPaint = makeResolvedPrimitivePaint(block, alpha);
+  canvas.drawRect(resolvedPrimitiveRect(command.block), blockPaint);
+  safeDispose(blockPaint);
+  const iconPaint = makeResolvedPrimitivePaint(mixColors(block, foreground, command.iconInk), alpha);
+  for (const piece of command.pieces) {
+    canvas.save();
+    canvas.translate(piece.offset.x, piece.offset.y);
+    if (piece.clip) {
+      const clip = makeResolvedPrimitivePath(piece.clip);
+      canvas.clipPath(clip, ClipOp.Intersect, true);
+      safeDispose(clip);
+    }
+    const path = makeResolvedPrimitivePath(piece.path, 'evenodd');
+    canvas.drawPath(path, iconPaint);
+    safeDispose(path);
+    canvas.restore();
+  }
+  safeDispose(iconPaint);
 }
 
 function resolvedPrimitiveRect(value: ReaderResolvedRect) {

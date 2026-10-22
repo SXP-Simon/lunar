@@ -1510,7 +1510,7 @@ function toReaderHitEntries(page: import('@umbrae-labs/rito-rn').RitoPage): impo
       imageSource: hit.imageSrc,
       imageAlt: hit.imageAlt,
       footnoteKey: hit.footnoteKey,
-      footnotePending: hit.footnotePending,
+      footnotePending: hit.kind === 'footnote-pending',
       sourcePoint: hit.sourcePoint
         ? {
             nodePath: hit.sourcePoint.nodePath,
