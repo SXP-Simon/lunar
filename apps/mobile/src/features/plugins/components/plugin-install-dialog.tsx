@@ -1,6 +1,6 @@
 import { Button } from 'heroui-native/button';
 import { Dialog } from 'heroui-native/dialog';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { localizeManifestText } from '@lunar/plugin-sdk/manifest';
 
 import { useTranslation } from '@/i18n';
@@ -17,6 +17,7 @@ interface PluginInstallDialogProps {
 /** States the trust model plainly before a plugin's code is ever written to disk or run. */
 export function PluginInstallDialog({ preview, isInstalling, onConfirm, onCancel }: PluginInstallDialogProps) {
   const { t, i18n } = useTranslation();
+  const { height: windowHeight } = useWindowDimensions();
   const manifest = preview?.package.manifest;
   const messages = manifest
     ? pickMessages(
@@ -42,14 +43,15 @@ export function PluginInstallDialog({ preview, isInstalling, onConfirm, onCancel
         if (!open && !isInstalling) onCancel();
       }}>
       <Dialog.Portal unstable_accessibilityContainerViewIsModal>
-        <Dialog.Overlay />
-        <Dialog.Content className="mx-5 max-h-[80%] max-w-md gap-4 rounded-2xl p-5">
+        <Dialog.Overlay className="bg-black/40 dark:bg-black/70" />
+        {/* Swiping to dismiss would claim the vertical drags the permission list needs. */}
+        <Dialog.Content className="mx-5 max-w-md gap-4 rounded-2xl p-5" isSwipeable={false}>
           {manifest && preview ? (
             <>
               <Dialog.Title>
                 {t(`plugins.installTitle.${preview.kind}`, { name: text(manifest.name), version: manifest.version })}
               </Dialog.Title>
-              <ScrollView contentContainerClassName="gap-3">
+              <ScrollView contentContainerClassName="gap-3" style={{ maxHeight: windowHeight * 0.5 }}>
                 <Text className="text-sm leading-5 text-muted">
                   {[
                     manifest.id,

@@ -44,7 +44,7 @@ export function ConfirmModal({
         hostName={portalHostName}
         disableFullWindowOverlay={Boolean(portalHostName)}
         unstable_accessibilityContainerViewIsModal>
-        <Dialog.Overlay />
+        <Dialog.Overlay className="bg-black/40 dark:bg-black/70" />
         <Dialog.Content className="mx-5 max-w-md gap-4 rounded-2xl p-5">
           <Dialog.Title>{title}</Dialog.Title>
           {description && <Dialog.Description>{description}</Dialog.Description>}
