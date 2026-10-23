@@ -170,11 +170,8 @@ export default function ReaderScreen() {
   );
   const {
     gesture: pageTurnGesture,
-    interactiveTurn,
-    automaticTurns,
     automaticNavigationActive,
     isSettling,
-    completeAutomaticTurn,
     surfaceBinding: pageTurnSurfaceBinding,
     next,
     previous,
@@ -411,7 +408,14 @@ export default function ReaderScreen() {
 
   const handleReadingPress = useCallback(
     (x: number, y: number) => {
-      if (!viewport || !isReady || isSettling || bookmarkPull.distance.get() > 0) return;
+      if (!viewport || !isReady || bookmarkPull.distance.get() > 0) return;
+      // While a turn settles the page under the finger is already leaving, so
+      // only the turn zones respond; the controller plays the tap right after.
+      if (isSettling) {
+        if (x < viewport.width * 0.3) void previous();
+        else if (x > viewport.width * 0.7) void next();
+        return;
+      }
       if (selection) {
         clearSelection();
         return;
@@ -604,11 +608,7 @@ export default function ReaderScreen() {
               initialBackgroundColor={initialPaperColor}
               animationStyle={animationStyle}
               spreadMode={spreadMode}
-              interactiveTurn={interactiveTurn}
-              automaticTurns={automaticTurns}
-              automaticNavigationActive={automaticNavigationActive}
-              onAutomaticTurnComplete={completeAutomaticTurn}
-              pageTurnSurfaceBinding={pageTurnSurfaceBinding}
+              pageTurn={pageTurnSurfaceBinding}
               chapterTitle={chapterTitle}
               progressLabel={`${progressText}${progressPercentage === undefined ? '' : ` · ${progressPercentage}%`}`}
               overlayColor={readerTheme === 'dark' ? '#A3A3A3' : '#5C5C5C'}

@@ -1,7 +1,7 @@
 import type { CanvasRef, SkPicture } from '@shopify/react-native-skia';
 import { useEffect, type RefObject } from 'react';
 
-import { AUTOMATIC_PAGE_TURN_START_INTERVAL_MS } from '../core/page-turn-concurrency';
+import { AUTOMATIC_PAGE_TURN_START_INTERVAL_MS, burstPageTurnDurationMs } from '../core/page-turn-concurrency';
 import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import type { ReaderAutomaticTurn, ReaderPageContent } from '../core/page-turn-types';
 import { nativeAutomaticPageTurnFaces, nativeAutomaticPageTurnId } from './page-turn';
@@ -122,11 +122,14 @@ export function useNativeAutomaticPageTurnSubmission({
           direction: turn.direction,
           spread: false,
           startAtMs: Date.now(),
-          durationMs: pageTurnEffect.motion.getDuration({
-            releaseVelocity: 0,
-            animationDuration: 360,
-            incomingPageLanding: turn.direction < 0,
-          }),
+          durationMs: burstPageTurnDurationMs(
+            pageTurnEffect.motion.getDuration({
+              releaseVelocity: 0,
+              animationDuration: 360,
+              incomingPageLanding: turn.direction < 0,
+            }),
+            turn.burst,
+          ),
           launchIntervalMs: AUTOMATIC_PAGE_TURN_START_INTERVAL_MS,
           paperColor,
         });

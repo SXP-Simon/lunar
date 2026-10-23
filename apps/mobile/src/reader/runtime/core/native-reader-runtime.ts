@@ -56,6 +56,9 @@ interface RetainedReaderPicture {
   readonly renderKey?: string;
 }
 
+/** Foreground work that leaves an idle speculative candidate in place. */
+const SPECULATION_PRESERVING_OPERATIONS = new Set(['prepare', 'commit', 'cancel', 'warm', 'speculate']);
+
 // A turn across a chapter boundary can visit several local spreads before it
 // returns to the original chapter. Keep that neighborhood available for the
 // common back-and-forth gesture while retaining a bounded native resource set.
@@ -105,6 +108,15 @@ export class LunarReaderRuntime implements ReaderRuntime {
   private renderId = 0;
   private preparedTurnId = 0;
   private preparedTurn?: ReaderPreparedTurn;
+  /**
+   * A prepared turn held while the reader is idle, so the next swipe or tap
+   * starts from a ready target. Any other foreground operation cancels it
+   * first; a claim turns it into an ordinary prepared turn.
+   */
+  private speculativeTurnId?: number;
+  /** Queued operations that will cancel the speculative candidate when they run. */
+  private pendingSpeculationRevocations = 0;
+  private readonly speculationRevokedListeners = new Set<(preparedTurnId: number) => void>();
   /**
    * Foreground operations share one queue. Background work has its own lane;
    * the publication queue and native compare-and-swap checks keep its result
@@ -207,6 +219,146 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.enqueueForeground(() => this.prepareAdjacentWithinForeground(direction), 'prepare', performanceId);
   }
 
+  /** Whether the visible page has a neighbor in this direction. */
+  canNavigate(direction: ReaderTurnDirection): boolean {
+    return this.snapshot.phase === 'ready' && this.publication?.canNavigate?.(direction) !== false;
+  }
+
+  /**
+   * Prepares the neighbor in one direction and holds it while the reader is
+   * idle. Only a fully paginated book speculates: background pagination may
+   * replace the visible artifact, which a held candidate could not survive.
+   * The result still ends in one commit or cancel; until it is claimed, any
+   * other foreground operation cancels it first.
+   */
+  async speculateAdjacent(
+    direction: ReaderTurnDirection,
+    performanceId?: string,
+  ): Promise<ReaderPreparedTurn | undefined> {
+    if (!this.publication || this.snapshot.phase !== 'ready') return undefined;
+    return this.enqueueForeground(
+      async () => {
+        if (!this.paginationComplete || this.pendingSpeculationRevocations > 0 || this.foregroundQueued > 1) {
+          return undefined;
+        }
+        const existing = this.preparedTurn;
+        if (existing) {
+          return this.speculativeTurnId === existing.id &&
+            existing.direction === direction &&
+            existing.revisionId === this.snapshot.revisionId &&
+            existing.sourceSnapshotSpreadIndex === this.snapshot.spreadIndex
+            ? existing
+            : undefined;
+        }
+        const prepared = await this.prepareAdjacentWithinForeground(direction);
+        if (!prepared) return undefined;
+        // A backward candidate at the first private slot rebases every slot.
+        // Held while idle, that would point the visible snapshot at the wrong
+        // frame, so such a neighbor is only prepared once an input asks for it.
+        if (prepared.sourcePreparedSpreadIndex !== prepared.sourceSnapshotSpreadIndex || !this.paginationComplete) {
+          await this.cancelPreparedTurnWithinForeground(prepared);
+          return undefined;
+        }
+        this.speculativeTurnId = prepared.id;
+        readerDiagnostic('turn.runtime.speculate', () => `prepared=${prepared.id} direction=${direction}`);
+        return prepared;
+      },
+      'speculate',
+      performanceId,
+    );
+  }
+
+  /**
+   * Takes ownership of a speculative candidate for an input starting now.
+   * Fails once another foreground operation is queued, because that operation
+   * cancels the candidate before it runs.
+   */
+  claimPreparedTurn(preparedTurn: ReaderPreparedTurn): boolean {
+    if (this.preparedTurn?.id !== preparedTurn.id || this.pendingSpeculationRevocations > 0) return false;
+    if (this.speculativeTurnId === preparedTurn.id) this.speculativeTurnId = undefined;
+    return true;
+  }
+
+  /**
+   * Returns a cancelled input's candidate to the idle speculative state when
+   * it still starts from the visible page, so a repeated swipe needs no new
+   * preparation. Returns false when the caller must cancel it instead.
+   */
+  releasePreparedTurnToSpeculation(preparedTurn: ReaderPreparedTurn): boolean {
+    if (
+      this.preparedTurn?.id !== preparedTurn.id ||
+      this.pendingSpeculationRevocations > 0 ||
+      !this.paginationComplete ||
+      preparedTurn.sourcePreparedSpreadIndex !== preparedTurn.sourceSnapshotSpreadIndex ||
+      this.snapshot.phase !== 'ready' ||
+      this.snapshot.revisionId !== preparedTurn.revisionId ||
+      this.snapshot.spreadIndex !== preparedTurn.sourceSnapshotSpreadIndex
+    ) {
+      return false;
+    }
+    this.speculativeTurnId = preparedTurn.id;
+    return true;
+  }
+
+  /**
+   * Cancels a candidate only while it is still speculative. An input that
+   * claimed it in the meantime keeps it, so a stale idle request can never
+   * cancel a turn that is now in use.
+   */
+  async releaseSpeculation(preparedTurn: ReaderPreparedTurn): Promise<void> {
+    await this.enqueueForeground(
+      async () => {
+        if (this.speculativeTurnId !== preparedTurn.id) return;
+        await this.cancelSpeculationWithinForeground();
+      },
+      'cancel',
+      preparedTurn.performanceId,
+    );
+  }
+
+  /** Notified synchronously when a speculative candidate stops being claimable. */
+  subscribeSpeculationRevoked(listener: (preparedTurnId: number) => void): () => void {
+    this.speculationRevokedListeners.add(listener);
+    return () => this.speculationRevokedListeners.delete(listener);
+  }
+
+  /**
+   * The snapshot the target page publishes once committed, so its chrome shows
+   * its own book position instead of a copy of the source page.
+   */
+  getPreparedTargetSnapshot(preparedTurn: ReaderPreparedTurn): ReaderSnapshot | undefined {
+    if (!this.publication || this.snapshot.phase !== 'ready' || this.preparedTurn?.id !== preparedTurn.id) {
+      return undefined;
+    }
+    try {
+      const target = this.createReadySnapshot(preparedTurn.targetSpreadIndex);
+      const sourceBookSpread = this.snapshot.bookSpreadIndex;
+      const step = preparedTurn.direction === 'next' ? 1 : -1;
+      return {
+        ...target,
+        renderId: preparedTurn.targetRenderId,
+        ...(target.bookSpreadIndex === undefined && sourceBookSpread !== undefined
+          ? { bookSpreadIndex: Math.max(0, sourceBookSpread + step), totalSpreads: this.snapshot.totalSpreads }
+          : {}),
+      };
+    } catch {
+      return undefined;
+    }
+  }
+
+  private notifySpeculationRevoked(): void {
+    const preparedTurnId = this.speculativeTurnId;
+    if (preparedTurnId === undefined) return;
+    for (const listener of this.speculationRevokedListeners) listener(preparedTurnId);
+  }
+
+  private async cancelSpeculationWithinForeground(): Promise<void> {
+    const preparedTurn = this.preparedTurn;
+    if (!preparedTurn || this.speculativeTurnId !== preparedTurn.id) return;
+    this.notifySpeculationRevoked();
+    await this.cancelPreparedTurnWithinForeground(preparedTurn).catch(() => undefined);
+  }
+
   private async prepareAdjacentWithinForeground(
     direction: ReaderTurnDirection,
   ): Promise<ReaderPreparedTurn | undefined> {
@@ -221,9 +373,16 @@ export class LunarReaderRuntime implements ReaderRuntime {
       existing.sourceSnapshotSpreadIndex === sourceSnapshot.spreadIndex &&
       existing.direction === direction
     ) {
+      // An input asking for the held candidate's direction adopts it.
+      if (this.speculativeTurnId === existing.id) this.speculativeTurnId = undefined;
       return existing;
     }
-    if (existing) return undefined;
+    if (existing && this.speculativeTurnId === existing.id) {
+      await this.cancelSpeculationWithinForeground();
+      if (this.preparedTurn) return undefined;
+    } else if (existing) {
+      return undefined;
+    }
     const preparedTurnId = ++this.preparedTurnId;
     const operation = this.operation;
     const delta = direction === 'next' ? 1 : -1;
@@ -365,6 +524,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
           return snapshot;
         } finally {
           if (this.preparedTurn?.id === preparedTurn.id) this.preparedTurn = undefined;
+          if (this.speculativeTurnId === preparedTurn.id) this.speculativeTurnId = undefined;
         }
       },
       'commit',
@@ -414,6 +574,7 @@ export class LunarReaderRuntime implements ReaderRuntime {
       );
     } finally {
       if (this.preparedTurn?.id === preparedTurn.id) this.preparedTurn = undefined;
+      if (this.speculativeTurnId === preparedTurn.id) this.speculativeTurnId = undefined;
     }
   }
 
@@ -819,8 +980,20 @@ export class LunarReaderRuntime implements ReaderRuntime {
     workId = readerPerformanceId(kind),
   ): Promise<T> {
     const queuedAt = readerPerformanceStart();
+    // Navigation and other foreground work never runs behind a held
+    // candidate. Revoke it now so no input can claim it, then cancel it in
+    // queue order before the operation itself runs.
+    const revokesSpeculation = !SPECULATION_PRESERVING_OPERATIONS.has(kind);
+    if (revokesSpeculation) {
+      this.pendingSpeculationRevocations += 1;
+      this.notifySpeculationRevoked();
+    }
     this.foregroundQueued += 1;
     return this.enqueueAction(async () => {
+      if (revokesSpeculation) {
+        this.pendingSpeculationRevocations -= 1;
+        await this.cancelSpeculationWithinForeground();
+      }
       readerPerformanceEnd('reader.runtime.queue', queuedAt, { workId, operation: kind });
       this.performanceId = workId;
       const startedAt = readerPerformanceStart();
@@ -1147,6 +1320,8 @@ export class LunarReaderRuntime implements ReaderRuntime {
     this.textMeasurer?.dispose();
     this.textMeasurer = undefined;
     this.publication = undefined;
+    this.notifySpeculationRevoked();
+    this.speculativeTurnId = undefined;
     this.preparedTurn = undefined;
     this.paginationComplete = false;
     this.backgroundScheduled = false;

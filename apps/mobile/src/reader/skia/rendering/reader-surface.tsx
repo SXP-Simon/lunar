@@ -30,17 +30,20 @@ import { readerPerformanceActivity, startReaderPerformanceMonitor } from '../../
 import {
   PageCurlMesh,
   automaticPageTurnPaintOrder,
+  burstPageTurnDurationMs,
   getReaderPageTurnEffect,
   nativeAutomaticPageTurnBaseContent,
   nativeInteractivePageTurnBaseContent,
   useNativePageTurns,
+  usePageTurnState,
   useReaderPageTransition,
   usePageCurlTexture,
+  ReaderPageTurnStore,
   type ReaderAutomaticTurn,
   type ReaderPageAnimationStyle,
   type ReaderPageContent,
   type ReaderPageTurnEffect,
-  type ReaderInteractiveTurn,
+  type ReaderPageTurnState,
   type ReaderPageTurnSurfaceBinding,
 } from '../anime';
 import {
@@ -100,13 +103,11 @@ export interface ReaderSurfaceProps {
   /** Duration in milliseconds for a page turn. */
   readonly animationDuration?: number;
   readonly spreadMode?: ReaderSpreadMode;
-  /** Optional finger-controlled turn; its target picture can arrive during the drag. */
-  readonly interactiveTurn?: ReaderInteractiveTurn;
-  /** Automatic page turns retained until their visual transition completes. */
-  readonly automaticTurns?: readonly ReaderAutomaticTurn[];
-  readonly automaticNavigationActive?: boolean;
-  readonly onAutomaticTurnComplete?: (turnId: number) => void;
-  readonly pageTurnSurfaceBinding?: ReaderPageTurnSurfaceBinding;
+  /**
+   * The page-turn controller's surface binding. The surface subscribes to the
+   * turns itself, so a moving turn never re-renders the screen around it.
+   */
+  readonly pageTurn?: ReaderPageTurnSurfaceBinding;
   /** Skia-owned reader chrome rendered in the same Canvas as the page. */
   readonly chapterTitle?: string;
   readonly progressLabel?: string;
@@ -115,7 +116,8 @@ export interface ReaderSurfaceProps {
 }
 
 const EmptyOverlays: readonly ReaderOverlayRect[] = [];
-const EmptyAutomaticTurns: readonly ReaderAutomaticTurn[] = [];
+const IdlePageTurnStore = new ReaderPageTurnStore();
+const selectSurfacePageTurnState = (state: ReaderPageTurnState) => state;
 const DefaultOverlayInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 
 export const ReaderSurface = memo(function ReaderSurface({
@@ -144,17 +146,18 @@ export const ReaderSurface = memo(function ReaderSurface({
   animationStyle = 'slide',
   animationDuration = 360,
   spreadMode = 'double',
-  interactiveTurn: preparedInteractiveTurn,
-  automaticTurns: preparedAutomaticTurns = EmptyAutomaticTurns,
-  automaticNavigationActive = false,
-  onAutomaticTurnComplete,
-  pageTurnSurfaceBinding,
+  pageTurn,
   chapterTitle,
   progressLabel,
   overlayColor = '#777777',
   overlayInsets = DefaultOverlayInsets,
 }: ReaderSurfaceProps) {
   useEffect(() => startReaderPerformanceMonitor(), []);
+  const pageTurnState = usePageTurnState(pageTurn?.store ?? IdlePageTurnStore, selectSurfacePageTurnState);
+  const preparedInteractiveTurn = pageTurnState.interactiveTurn;
+  const preparedAutomaticTurns = pageTurnState.automaticTurns;
+  const automaticNavigationActive = pageTurnState.automaticNavigationActive;
+  const onAutomaticTurnComplete = pageTurn?.completeAutomaticTurn;
   useEffect(() => {
     readerPerformanceActivity('surface.commit', 0, {
       revision: snapshot.revisionId,
@@ -198,6 +201,16 @@ export const ReaderSurface = memo(function ReaderSurface({
         to: decoratePage(turn.to),
       })),
     [decoratePage, preparedAutomaticTurns],
+  );
+  // Stocked pages carry the same bookmark and overlays as the pages drawn, so
+  // their textures match what the turn reveals.
+  const preparedStock = pageTurnState.stock;
+  const pageTurnStock = useMemo(
+    () =>
+      preparedStock
+        ? { ...preparedStock, source: decoratePage(preparedStock.source), target: decoratePage(preparedStock.target) }
+        : undefined,
+    [decoratePage, preparedStock],
   );
   const pageTurnEffect = getReaderPageTurnEffect(animationStyle);
   const { ref, size: viewport } = useCanvasSize();
@@ -365,24 +378,22 @@ export const ReaderSurface = memo(function ReaderSurface({
   const nativeAutomaticPageTurnState = useNativePageTurns({
     paintKey: nativePaintKey,
     canvasRef: ref,
-    enabled:
-      pageTurnEffect.native !== undefined &&
-      spreadMode === 'single' &&
-      (onAutomaticTurnComplete !== undefined || pageTurnSurfaceBinding !== undefined),
+    enabled: pageTurnEffect.native !== undefined && spreadMode === 'single' && pageTurn !== undefined,
     turns: automaticTurns,
     pixelWidth: nativePixelWidth,
     pixelHeight: nativePixelHeight,
     paperColor: nativePaperColor,
     createPicture: createNativePagePicture,
     createChromePicture: separateNativeChrome ? createNativeChromePicture : undefined,
-    onComplete: onAutomaticTurnComplete,
     pageTurnEffect,
     fixedChromeTop: overlayTop + 24,
     fixedChromeBottom: overlayBottom + 24,
     currentContent,
     interactiveTurn,
     interactiveSource: interactiveTurn?.source ?? currentContent,
-    surfaceBinding: pageTurnSurfaceBinding,
+    stock: pageTurnStock,
+    resetEpoch: pageTurnState.nativeResetEpoch,
+    binding: pageTurn,
   });
   const {
     transition: activeTransition,
@@ -847,7 +858,7 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
   viewportHeight,
   viewportWidth,
 }: AutomaticPageCurlLayerProps) {
-  const { direction, id: turnId } = turn;
+  const { direction, id: turnId, burst } = turn;
   const incomingLanding = spreadMode === 'single' && direction < 0;
   const source = incomingLanding ? turn.to : turn.from;
   const progressText = progressLabelForSnapshot(source.snapshot);
@@ -903,11 +914,14 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
 
   useEffect(() => {
     if (!texturesReady) return;
-    const duration = pageTurnEffect.motion.getDuration({
-      releaseVelocity: 0,
-      animationDuration,
-      incomingPageLanding: incomingLanding,
-    });
+    const duration = burstPageTurnDurationMs(
+      pageTurnEffect.motion.getDuration({
+        releaseVelocity: 0,
+        animationDuration,
+        incomingPageLanding: incomingLanding,
+      }),
+      burst,
+    );
     progress.set(
       withTiming(
         1,
@@ -927,7 +941,7 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
       ),
     );
     return () => cancelAnimation(progress);
-  }, [animationDuration, incomingLanding, onComplete, pageTurnEffect, progress, texturesReady, turnId]);
+  }, [animationDuration, burst, incomingLanding, onComplete, pageTurnEffect, progress, texturesReady, turnId]);
 
   return (
     <PageCurlMesh

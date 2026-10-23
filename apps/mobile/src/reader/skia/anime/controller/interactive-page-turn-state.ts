@@ -5,11 +5,12 @@ import type { ReaderPageContent } from '../core/page-turn-types';
 export interface ReaderDragState {
   readonly performanceId?: string;
   readonly id: number;
-  readonly nativeGestureToken: number;
   readonly revisionId: number;
   readonly startSpread: number;
   readonly startX: number;
   readonly source: ReaderPageContent;
+  /** Stock token of the prepared pair; 0 until the drag owns one. */
+  nativeGestureToken: number;
   direction: 1 | -1;
   directionLocked: boolean;
   pendingPublished: boolean;
@@ -27,6 +28,7 @@ export interface ReaderDragState {
   prepared: boolean;
   preparation?: Promise<ReaderPreparedTurn | undefined>;
   preparedTurn?: ReaderPreparedTurn;
+  target?: ReaderPageContent;
   targetUnavailableLogged?: boolean;
 }
 
@@ -38,6 +40,7 @@ export interface ReaderCommittedHandoff {
   readonly spreadIndex: number;
   readonly renderId: number;
   readonly nativeTurnId?: string;
+  waitingForFrames?: boolean;
 }
 
 export interface ReaderNativeGestureHandoff {
@@ -47,4 +50,17 @@ export interface ReaderNativeGestureHandoff {
   readonly generation: number;
   commit?: Promise<ReaderSnapshot>;
   terminalEventHandled: boolean;
+  /** Settles the navigation promise of a tap that consumed a stocked pair. */
+  onCommitted?: (snapshot: ReaderSnapshot) => void;
+}
+
+/** A prepared pair held while the reader is idle. */
+export interface ReaderSpeculation {
+  readonly token: number;
+  readonly preparedTurn: ReaderPreparedTurn;
+  readonly direction: 1 | -1;
+  readonly source: ReaderPageContent;
+  readonly target: ReaderPageContent;
+  /** An input owns it now; it returns to idle only if that input cancels. */
+  claimed: boolean;
 }

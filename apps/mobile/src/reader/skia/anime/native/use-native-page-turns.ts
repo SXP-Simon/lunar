@@ -1,6 +1,7 @@
 import type { CanvasRef, SkPicture } from '@shopify/react-native-skia';
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 
+import type { ReaderPageTurnStock } from '../controller/page-turn-store';
 import type { ReaderAutomaticTurn, ReaderInteractiveTurn, ReaderPageContent } from '../core/page-turn-types';
 import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import type { ReaderPageTurnSurfaceBinding } from './page-turn-binding';
@@ -27,14 +28,15 @@ interface NativePageTurnsOptions {
   readonly createPicture: (content: ReaderPageContent) => SkPicture;
   readonly createChromePicture?: (content: ReaderPageContent) => SkPicture;
   readonly paintKey?: string;
-  readonly onComplete?: (turnId: number) => void;
   readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly fixedChromeTop: number;
   readonly fixedChromeBottom: number;
   readonly currentContent?: ReaderPageContent;
   readonly interactiveSource?: ReaderPageContent;
   readonly interactiveTurn?: ReaderInteractiveTurn;
-  readonly surfaceBinding?: ReaderPageTurnSurfaceBinding;
+  readonly stock?: ReaderPageTurnStock;
+  readonly resetEpoch?: number;
+  readonly binding?: ReaderPageTurnSurfaceBinding;
 }
 
 interface NativePageTurnsState {
@@ -52,15 +54,17 @@ export function useNativePageTurns({
   createPicture,
   createChromePicture,
   paintKey,
-  onComplete,
   pageTurnEffect,
   fixedChromeTop,
   fixedChromeBottom,
   currentContent,
   interactiveSource,
   interactiveTurn,
-  surfaceBinding,
+  stock,
+  resetEpoch,
+  binding,
 }: NativePageTurnsOptions): NativePageTurnsState {
+  const onComplete = binding?.completeAutomaticTurn;
   const recordings = useMemo(() => new NativePageRecordingCache(), []);
   useEffect(() => () => recordings.clear(), [recordings, paintKey]);
   const supported = useMemo(() => enabled && nativePagerCompositorAvailable(), [enabled]);
@@ -161,10 +165,11 @@ export function useNativePageTurns({
   ]);
 
   useEffect(() => {
+    const values = binding?.values;
     if (!active) {
-      surfaceBinding?.nativeId.set(-1);
-      surfaceBinding?.inputReady.set(false);
-      surfaceBinding?.stockedGestureToken.set(0);
+      values?.nativePagerId.set(-1);
+      values?.nativeInputReady.set(false);
+      binding?.onStockLost();
       return;
     }
     const canvas = canvasRef.current;
@@ -172,20 +177,20 @@ export function useNativePageTurns({
     const submitted = submittedTurnIds.current;
     const submittedGestureStocks = submittedGestureStockIds.current;
     const nativeId = canvas.getNativeId();
-    const inputReady = surfaceBinding ? configureNativePagerInput(canvas, true) : false;
-    surfaceBinding?.nativeId.set(nativeId);
-    surfaceBinding?.inputReady.set(inputReady);
+    const inputReady = binding ? configureNativePagerInput(canvas, true) : false;
+    values?.nativePagerId.set(nativeId);
+    values?.nativeInputReady.set(inputReady);
     return () => {
       configureNativePagerInput(canvas, false);
       resetNativePagerCompositor(canvas);
       submitted.clear();
       submittedGestureStocks.clear();
       anchorKey.current = undefined;
-      surfaceBinding?.nativeId.set(-1);
-      surfaceBinding?.inputReady.set(false);
-      surfaceBinding?.stockedGestureToken.set(0);
+      values?.nativePagerId.set(-1);
+      values?.nativeInputReady.set(false);
+      binding?.onStockLost();
     };
-  }, [active, canvasRef, surfaceBinding]);
+  }, [active, binding, canvasRef]);
 
   useNativeInteractivePageTurn({
     recordings,
@@ -197,11 +202,13 @@ export function useNativePageTurns({
     currentContent,
     interactiveSource,
     interactiveTurn,
+    stock,
+    resetEpoch,
     pageTurnEffect,
     paperColor,
     pixelHeight,
     pixelWidth,
-    surfaceBinding,
+    binding,
     turnsActive: turns.length > 0,
     anchorKeyRef: anchorKey,
     submittedStockIdsRef: submittedGestureStockIds,
@@ -229,8 +236,8 @@ export function useNativePageTurns({
     canvasRef,
     interactiveTurn,
     onComplete,
+    onNativeEvent: binding?.onNativeEvent,
     submittedTurnIds,
-    surfaceBinding,
     turns,
   });
 
