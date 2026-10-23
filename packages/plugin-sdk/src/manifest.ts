@@ -58,6 +58,16 @@ export const ICON_NAMES = [
 ] as const;
 export type IconName = (typeof ICON_NAMES)[number];
 export type IconSpec = IconName | { readonly android: string; readonly ios: string };
+/** A PNG inside the package's `assets` directory, such as `assets/icon.png`. */
+export type PackageIconPath = `assets/${string}.png`;
+/** The plugin's own icon: a host symbol or a packaged image. */
+export type PluginIcon = IconSpec | PackageIconPath;
+
+const PACKAGE_ICON = /^assets\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\.png$/;
+
+export function isPackageIcon(icon: PluginIcon | undefined): icon is PackageIconPath {
+  return typeof icon === 'string' && PACKAGE_ICON.test(icon);
+}
 
 const PLUGIN_ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$/;
 const LOCAL_ID = /^[a-z][a-z0-9]*(?:[-.][a-z0-9]+)*$/;
@@ -71,6 +81,10 @@ const iconSpec = z.union([
   z.enum(ICON_NAMES),
   z.strictObject({ android: z.string().min(1).max(64), ios: z.string().min(1).max(64) }),
 ]);
+
+const packageIcon = z
+  .templateLiteral(['assets/', z.string(), '.png'])
+  .refine((path) => PACKAGE_ICON.test(path), 'must be a PNG file under assets/');
 
 const permission = z.strictObject({
   name: z
@@ -134,7 +148,7 @@ export const pluginManifestSchema = z
     author: z.string().max(120).optional(),
     homepage: z.url({ protocol: /^https$/ }).optional(),
     license: z.string().max(64).optional(),
-    icon: iconSpec.optional(),
+    icon: z.union([iconSpec, packageIcon]).optional(),
     platforms: z
       .array(z.enum(['android', 'ios']))
       .min(1)

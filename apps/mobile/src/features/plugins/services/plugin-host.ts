@@ -96,6 +96,9 @@ export class PluginHost {
   private readonly storageQueues = new Map<string, Promise<unknown>>();
   private order: readonly string[] = [];
   private version = 0;
+  private readonly logListeners = new Set<() => void>();
+  private logVersion = 0;
+  private logFlushScheduled = false;
   private statusCache?: { version: number; statuses: readonly PluginStatus[] };
 
   constructor(readonly deps: PluginHostDependencies) {
@@ -119,6 +122,16 @@ export class PluginHost {
   };
 
   getVersion = (): number => this.version;
+
+  /** Log writes notify separately so frequent logging does not re-render plugin views. */
+  subscribeLogs = (listener: () => void): (() => void) => {
+    this.logListeners.add(listener);
+    return () => {
+      this.logListeners.delete(listener);
+    };
+  };
+
+  getLogVersion = (): number => this.logVersion;
 
   notify(): void {
     this.version += 1;
@@ -490,6 +503,14 @@ export class PluginHost {
     this.deps.onLog?.(entry.plugin.id, logEntry);
     if (entry.logs.length > PLUGIN_HOST_LIMITS.logEntries)
       entry.logs.splice(0, entry.logs.length - PLUGIN_HOST_LIMITS.logEntries);
+    this.logVersion += 1;
+    // Plugins can log while a component renders; notify after the current task.
+    if (this.logFlushScheduled || this.logListeners.size === 0) return;
+    this.logFlushScheduled = true;
+    queueMicrotask(() => {
+      this.logFlushScheduled = false;
+      for (const listener of [...this.logListeners]) listener();
+    });
   }
 
   getLogs(pluginId: string): readonly PluginLogEntry[] {

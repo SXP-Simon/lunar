@@ -75,6 +75,21 @@ describe('plugin package', () => {
     ).rejects.toThrow('Sandboxed plugins');
   });
 
+  it('requires a declared icon to be a packaged PNG', async () => {
+    const withIcon = (icon?: Uint8Array) =>
+      packArchive({
+        ...files(),
+        'manifest.json': JSON.stringify(manifest({ icon: 'assets/icon.png' })),
+        ...(icon ? { 'assets/icon.png': icon } : {}),
+      });
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    await expect(readPluginPackage(await withIcon(png), sha256)).resolves.toMatchObject({
+      manifest: { icon: 'assets/icon.png' },
+    });
+    await expect(readPluginPackage(await withIcon(), sha256)).rejects.toThrow('assets/icon.png: file is missing');
+    await expect(readPluginPackage(await withIcon(new Uint8Array([1, 2, 3])), sha256)).rejects.toThrow('not a PNG');
+  });
+
   it('rejects data that is not an archive', async () => {
     await expect(readPluginPackage(new Uint8Array([1, 2, 3]), sha256)).rejects.toThrow('not a valid plugin package');
   });

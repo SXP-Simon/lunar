@@ -146,6 +146,22 @@ describe('plugin host lifecycle', () => {
     expect(host.getStatuses()[0].enabled).toBe(false);
   });
 
+  it('batches log notifications after the current task', async () => {
+    const { host } = createTestHost();
+    host.setPlugins([{ plugin: plugin(entry('activate() {}')), enabled: true }]);
+    await host.ensureActive('org.example.test');
+    const listener = vi.fn();
+    const unsubscribe = host.subscribeLogs(listener);
+    const version = host.getLogVersion();
+    host.reportCrash('org.example.test', new Error('first'), 'reader.panel:panel');
+    host.reportCrash('org.example.test', new Error('second'), 'reader.panel:panel');
+    expect(listener).not.toHaveBeenCalled();
+    await Promise.resolve();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(host.getLogVersion()).toBeGreaterThan(version);
+    unsubscribe();
+  });
+
   it('activates plugins that declare an eager event', async () => {
     const { host } = createTestHost();
     host.setPlugins([

@@ -4,7 +4,9 @@ import {
   createIntegrityManifest,
   findPathCollisions,
   parseIntegrityManifest,
+  PACKAGE_LIMITS,
   serializeIntegrityManifest,
+  validatePackageIcon,
   validatePackagePath,
   verifyPackageIntegrity,
 } from '../src/package-format';
@@ -69,5 +71,21 @@ describe('integrity manifest', () => {
     expect(
       parseIntegrityManifest('{"format":1,"algorithm":"sha256","files":[{"path":"a","size":1,"sha256":"x"}]}'),
     ).toBeUndefined();
+  });
+});
+
+describe('package icons', () => {
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0]);
+
+  it('accepts a PNG within the size limit', () => {
+    expect(validatePackageIcon(png)).toBeUndefined();
+  });
+
+  it('rejects missing, oversized and non-PNG files', () => {
+    expect(validatePackageIcon(undefined)).toBe('file is missing');
+    expect(validatePackageIcon(bytes('<svg/>'))).toBe('file is not a PNG image');
+    const large = new Uint8Array(PACKAGE_LIMITS.iconBytes + 1);
+    large.set(png);
+    expect(validatePackageIcon(large)).toMatch(/exceeds/);
   });
 });

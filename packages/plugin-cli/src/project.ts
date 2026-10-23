@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { MANIFEST_FILE, parsePluginManifest, type PluginManifest } from '@lunar/plugin-sdk/manifest';
-import { LOCALES_DIRECTORY } from '@lunar/plugin-sdk/package-format';
+import { isPackageIcon, MANIFEST_FILE, parsePluginManifest, type PluginManifest } from '@lunar/plugin-sdk/manifest';
+import { LOCALES_DIRECTORY, validatePackageIcon } from '@lunar/plugin-sdk/package-format';
 
 export interface PluginProject {
   readonly root: string;
@@ -43,6 +43,13 @@ export async function loadProject(directory: string): Promise<PluginProject> {
   if (!parsed.ok) throw new ProjectError(`${MANIFEST_FILE} is invalid`, parsed.issues);
   if (parsed.manifest.trust !== 'full') {
     throw new ProjectError('Only "trust": "full" plugins can be built with SDK 0.1');
+  }
+
+  const icon = parsed.manifest.icon;
+  if (isPackageIcon(icon)) {
+    const iconPath = path.join(root, icon);
+    const problem = validatePackageIcon(existsSync(iconPath) ? await readFile(iconPath) : undefined);
+    if (problem) throw new ProjectError(`${MANIFEST_FILE} is invalid`, [`icon ${icon}: ${problem}`]);
   }
 
   const entry = await resolveEntry(root);

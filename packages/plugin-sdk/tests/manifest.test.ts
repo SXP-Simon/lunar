@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   compareVersions,
+  isPackageIcon,
   localizeManifestText,
   networkOrigins,
   parsePluginManifest,
@@ -68,6 +69,22 @@ describe('plugin manifest', () => {
         '(root): Unrecognized key: "extra"',
       ]),
     );
+  });
+
+  it('accepts host symbols or a PNG under assets/ as the plugin icon', () => {
+    for (const icon of [
+      'chart',
+      { android: 'query_stats', ios: 'chart.bar' },
+      'assets/icon.png',
+      'assets/img/icon-2x.png',
+    ]) {
+      expect(parsePluginManifest({ ...valid, icon }).ok, JSON.stringify(icon)).toBe(true);
+    }
+    for (const icon of ['icon.png', 'assets/../icon.png', 'assets/icon.svg', 'assets/.png', 'assets/icon@2x.png']) {
+      expect(parsePluginManifest({ ...valid, icon }).ok, icon).toBe(false);
+    }
+    expect(isPackageIcon('assets/icon.png')).toBe(true);
+    expect(isPackageIcon('chart')).toBe(false);
   });
 
   it('rejects dangling command references and inconsistent settings', () => {

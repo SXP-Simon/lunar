@@ -1,5 +1,6 @@
 import type { SymbolViewProps } from 'expo-symbols';
-import type { IconName, IconSpec } from '@lunar/plugin-sdk';
+import type { IconName, IconSpec, PluginIcon } from '@lunar/plugin-sdk';
+import { isPackageIcon } from '@lunar/plugin-sdk/manifest';
 
 type SymbolName = SymbolViewProps['name'];
 
@@ -24,8 +25,12 @@ const Icons: Record<IconName, { readonly ios: string; readonly android: string }
   translate: { ios: 'translate', android: 'translate' },
 };
 
-/** Maps a manifest icon to platform symbols; custom names are passed through unchecked. */
-export function pluginSymbolName(icon: IconSpec | undefined): SymbolName {
-  const resolved = icon === undefined ? Icons.extension : typeof icon === 'string' ? Icons[icon] : icon;
+/**
+ * Maps a manifest icon to platform symbols; custom names are passed through unchecked.
+ * Packaged images fall back to the generic plugin symbol.
+ */
+export function pluginSymbolName(icon: IconSpec | PluginIcon | undefined): SymbolName {
+  const resolved =
+    icon === undefined || isPackageIcon(icon) ? Icons.extension : typeof icon === 'string' ? Icons[icon] : icon;
   return { ios: resolved.ios, android: resolved.android, web: resolved.android } as SymbolName;
 }

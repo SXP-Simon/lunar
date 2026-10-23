@@ -14,7 +14,18 @@ export const PACKAGE_LIMITS = {
   fileBytes: 8 * 1024 * 1024,
   entries: 500,
   depth: 8,
+  iconBytes: 512 * 1024,
 } as const;
+
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+/** Returns why a packaged icon is unacceptable, or `undefined` for a usable PNG. */
+export function validatePackageIcon(bytes: Uint8Array | undefined): string | undefined {
+  if (!bytes) return 'file is missing';
+  if (bytes.byteLength > PACKAGE_LIMITS.iconBytes) return `file exceeds ${PACKAGE_LIMITS.iconBytes} bytes`;
+  if (!PNG_SIGNATURE.every((byte, index) => bytes[index] === byte)) return 'file is not a PNG image';
+  return undefined;
+}
 
 export interface IntegrityEntry {
   readonly path: string;

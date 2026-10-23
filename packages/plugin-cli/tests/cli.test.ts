@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { unzipSync } from 'fflate';
@@ -54,6 +54,21 @@ describe('plugin build', () => {
     await writeFile(path.join(directory, 'locales/en.json'), JSON.stringify({ name: 'Hello' }));
     await expect(loadProject(directory)).rejects.toBeInstanceOf(ProjectError);
     await expect(loadProject(directory)).rejects.toThrow('locales/en.json: missing "description"');
+  });
+
+  it('requires a declared icon to be a PNG under assets/', async () => {
+    const manifestPath = path.join(directory, 'manifest.json');
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, unknown>;
+    await writeFile(manifestPath, JSON.stringify({ ...manifest, icon: 'assets/icon.png' }));
+    await expect(loadProject(directory)).rejects.toThrow('icon assets/icon.png: file is missing');
+    await mkdir(path.join(directory, 'assets'));
+    await writeFile(path.join(directory, 'assets/icon.png'), '<svg/>');
+    await expect(loadProject(directory)).rejects.toThrow('file is not a PNG image');
+    await writeFile(
+      path.join(directory, 'assets/icon.png'),
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
+    expect((await loadProject(directory)).staticFiles).toContain('assets/icon.png');
   });
 });
 

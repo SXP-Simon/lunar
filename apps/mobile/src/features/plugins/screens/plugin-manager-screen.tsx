@@ -21,6 +21,7 @@ import { pluginSymbolName } from '../domain/plugin-icons';
 import { pickPluginPackage } from '../infrastructure/expo-plugin-files';
 import { takeExternalPluginPackage } from '../services/external-plugin-install';
 import type { PluginInstallPreview } from '../services/plugin-installer';
+import { PluginIcon } from '../components/plugin-icon';
 import { PluginInstallDialog } from '../components/plugin-install-dialog';
 import { usePluginRuntime } from '../components/plugin-runtime-provider';
 
@@ -191,7 +192,6 @@ export function PluginManagerScreen() {
                       ? runtime.host.localize(status.plugin.id, status.plugin.manifest.description)
                       : undefined
                   }
-                  iconColor={iconColor}
                   safeMode={safeMode}
                   onToggle={(enabled) => setEnabled(status.plugin.id, enabled)}
                   onPress={() =>
@@ -221,7 +221,6 @@ function PluginRow({
   status,
   title,
   description,
-  iconColor,
   safeMode,
   onToggle,
   onPress,
@@ -229,7 +228,6 @@ function PluginRow({
   readonly status: PluginStatus;
   readonly title: string;
   readonly description?: string;
-  readonly iconColor: string;
   readonly safeMode: boolean;
   readonly onToggle: (enabled: boolean) => void;
   readonly onPress: () => void;
@@ -255,9 +253,7 @@ function PluginRow({
         accessibilityHint={detail}
         className="min-w-0 flex-1 flex-row items-center gap-4 rounded-3xl px-2 py-3 active:bg-surface"
         onPress={onPress}>
-        <View className="size-14 items-center justify-center rounded-2xl border border-border bg-surface">
-          <SymbolView name={pluginSymbolName(status.plugin.manifest.icon)} size={26} tintColor={iconColor} />
-        </View>
+        <PluginIcon plugin={status.plugin} size="md" />
         <View className="min-w-0 flex-1 gap-0.5">
           <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
             {title}

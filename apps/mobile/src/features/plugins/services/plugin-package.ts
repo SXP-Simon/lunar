@@ -1,5 +1,6 @@
 import { strFromU8, unzipSync } from 'fflate';
 import {
+  isPackageIcon,
   MANIFEST_FILE,
   parsePluginManifest,
   satisfiesVersionRange,
@@ -14,6 +15,7 @@ import {
   PACKAGE_LIMITS,
   parseIntegrityManifest,
   SIGNATURE_FILE,
+  validatePackageIcon,
   validatePackagePath,
   verifyPackageIntegrity,
   type Sha256,
@@ -93,6 +95,11 @@ export async function readPluginPackage(archive: Uint8Array, sha256: Sha256): Pr
       'INCOMPATIBLE_SDK',
       `The plugin needs SDK ${manifest.sdk}; Lunar provides ${SDK_VERSION}`,
     );
+  }
+
+  if (isPackageIcon(manifest.icon)) {
+    const problem = validatePackageIcon(files.get(manifest.icon));
+    if (problem) fail(`${manifest.icon}: ${problem}`);
   }
 
   const entry = files.get(ENTRY_FILE);

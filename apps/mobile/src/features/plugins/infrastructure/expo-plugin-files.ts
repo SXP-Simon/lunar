@@ -28,6 +28,11 @@ export async function readPluginText(directoryUri: string, path: string): Promis
   return new File(new Directory(directoryUri), ...path.split('/')).text();
 }
 
+/** File URI of a packaged file, for components that load it themselves. */
+export function pluginFileUri(directoryUri: string, path: string): string {
+  return new File(new Directory(directoryUri), ...path.split('/')).uri;
+}
+
 export async function readPluginBytes(directoryUri: string, path: string): Promise<Uint8Array> {
   return new File(new Directory(directoryUri), ...path.split('/')).bytes();
 }

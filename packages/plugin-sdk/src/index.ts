@@ -10,7 +10,15 @@ import type {
 } from './types.js';
 
 export type * from './types.js';
-export type { IconName, IconSpec, PluginComponentSlot, PluginManifest, PluginSlot } from './manifest.js';
+export type {
+  IconName,
+  IconSpec,
+  PackageIconPath,
+  PluginComponentSlot,
+  PluginIcon,
+  PluginManifest,
+  PluginSlot,
+} from './manifest.js';
 
 // Lunar supplies this module's runtime when it executes a plugin; plugin
 // bundles keep `@lunar/plugin-sdk` external. The implementations below only
