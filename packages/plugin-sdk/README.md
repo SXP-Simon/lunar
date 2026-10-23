@@ -15,7 +15,7 @@ npm install
 npx lunar-plugin dev
 ```
 
-In Lunar, open **Settings → Plugins**, turn on **Developer mode**, and enter one of the addresses that `lunar-plugin dev` prints. Saving a source file rebuilds the plugin and reloads it in the app, and the plugin's `ctx.log` output appears in the terminal. With the phone on USB, run `adb reverse tcp:5757 tcp:5757` and use the `127.0.0.1` address.
+In Lunar, open **Settings → Plugin settings**, turn on **Developer mode**, and enter one of the addresses that `lunar-plugin dev` prints. Saving a source file rebuilds the plugin and reloads it in the app, and the plugin's `ctx.log` output appears in the terminal. With the phone on USB, run `adb reverse tcp:5757 tcp:5757` and use the `127.0.0.1` address.
 
 `npx lunar-plugin pack` writes `dist/<id>-<version>.lunar-plugin`, which can be installed from the same screen.
 

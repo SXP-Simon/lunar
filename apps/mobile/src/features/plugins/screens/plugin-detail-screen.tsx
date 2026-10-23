@@ -41,7 +41,7 @@ export function PluginDetailScreen() {
   if (!status) {
     return (
       <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-        <PluginScreenHeader title={t('plugins.title')} fallback={'/settings/plugins' as Href} />
+        <PluginScreenHeader title={t('plugins.title')} fallback={'/(tabs)/plugins' as Href} />
         <Text className="px-5 text-sm text-muted">{t('plugins.notFound')}</Text>
       </View>
     );
@@ -60,7 +60,7 @@ export function PluginDetailScreen() {
       await runtime.uninstall(plugin.id, keepData);
       setConfirmUninstall(false);
       if (router.canGoBack()) router.back();
-      else router.replace('/settings/plugins' as Href);
+      else router.replace('/(tabs)/plugins' as Href);
     } catch (error) {
       toast.show({ variant: 'danger', label: pluginErrorMessage(error) });
     } finally {
@@ -72,7 +72,7 @@ export function PluginDetailScreen() {
     <View
       className="flex-1 bg-background"
       style={{ paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
-      <PluginScreenHeader title={text(manifest.name)} fallback={'/settings/plugins' as Href} />
+      <PluginScreenHeader title={text(manifest.name)} fallback={'/(tabs)/plugins' as Href} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="grow px-4 pt-4"

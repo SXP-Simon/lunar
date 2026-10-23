@@ -1,27 +1,29 @@
 import { useRouter, type Href } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { ControlField } from 'heroui-native/control-field';
-import { Description } from 'heroui-native/description';
-import { Input } from 'heroui-native/input';
-import { Label } from 'heroui-native/label';
-import { ListGroup } from 'heroui-native/list-group';
-import { Separator } from 'heroui-native/separator';
+import { useThemeColor } from 'heroui-native/hooks';
+import { Menu } from 'heroui-native/menu';
+import { Spinner } from 'heroui-native/spinner';
 import { Switch } from 'heroui-native/switch';
 import { useToast } from 'heroui-native/toast';
-import { Fragment, useState, useSyncExternalStore } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { useState, useSyncExternalStore } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { APP_TAB_BAR_HEIGHT } from '@/components/ui/app-tabs';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
 import { usePluginStore } from '@/stores';
 import type { PluginStatus } from '../domain/installed-plugin';
 import { pluginErrorMessage } from '../domain/plugin-error';
+import { pluginSymbolName } from '../domain/plugin-icons';
 import { pickPluginPackage } from '../infrastructure/expo-plugin-files';
 import type { PluginInstallPreview } from '../services/plugin-installer';
 import { PluginInstallDialog } from '../components/plugin-install-dialog';
 import { usePluginRuntime } from '../components/plugin-runtime-provider';
-import { PluginScreenHeader } from '../components/plugin-screen-header';
+
+const PLUGIN_SETTINGS_ROUTE = '/settings/plugins' as Href;
 
 export function PluginManagerScreen() {
   const { t } = useTranslation();
@@ -31,24 +33,30 @@ export function PluginManagerScreen() {
   useMarkInitialContentReady(true);
   const runtime = usePluginRuntime();
   const statuses = useSyncExternalStore(runtime.host.subscribe, runtime.host.getStatuses);
-  const devStatus = useSyncExternalStore(runtime.subscribeDevStatus, runtime.getDevStatus);
   const developerMode = usePluginStore((state) => state.developerMode);
-  const setDeveloperMode = usePluginStore((state) => state.setDeveloperMode);
   const setEnabled = usePluginStore((state) => state.setEnabled);
   const setSafeModeRequested = usePluginStore((state) => state.setSafeModeRequested);
   const [safeMode, setSafeMode] = useState(runtime.isSafeMode());
   const [preview, setPreview] = useState<PluginInstallPreview>();
+  const [isPicking, setIsPicking] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
-  const [devUrl, setDevUrl] = useState(devStatus?.url ?? '');
+  const iconColor = useThemeColor('foreground');
 
   const fail = (error: unknown) => toast.show({ variant: 'danger', label: pluginErrorMessage(error) });
 
   const pickPackage = async () => {
+    if (!developerMode) {
+      toast.show({ variant: 'default', label: t('plugins.installNeedsDeveloperMode') });
+      return;
+    }
+    setIsPicking(true);
     try {
       const picked = await pickPluginPackage();
       if (picked) setPreview(await runtime.inspectPackage(picked.bytes));
     } catch (error) {
       fail(error);
+    } finally {
+      setIsPicking(false);
     }
   };
 
@@ -69,24 +77,68 @@ export function PluginManagerScreen() {
     }
   };
 
-  const connect = () => {
-    try {
-      runtime.connectDevServer(devUrl);
-    } catch (error) {
-      fail(error);
-    }
-  };
-
   return (
     <View
       className="flex-1 bg-background"
       style={{ paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
-      <PluginScreenHeader title={t('plugins.title')} fallback={'/(tabs)/settings' as Href} />
+      <View className="w-full max-w-[800px] flex-row items-center gap-2 self-center px-4 pt-1 pb-2">
+        <Text accessibilityRole="header" className="min-w-0 flex-1 px-1 text-2xl font-semibold text-foreground">
+          {t('plugins.title')}
+        </Text>
+        <Button
+          accessibilityLabel={t('plugins.installFromFile')}
+          className="h-9 rounded-full"
+          hitSlop={4}
+          isDisabled={isPicking}
+          isIconOnly
+          onPress={() => void pickPackage()}
+          size="sm"
+          variant="secondary">
+          {isPicking ? (
+            <Spinner color={iconColor} size="sm" />
+          ) : (
+            <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={19} tintColor={iconColor} />
+          )}
+        </Button>
+        <Menu>
+          <Menu.Trigger asChild>
+            <Button
+              accessibilityLabel={t('plugins.moreActions')}
+              className="h-9 rounded-full"
+              hitSlop={4}
+              isIconOnly
+              size="sm"
+              variant="secondary">
+              <SymbolView
+                name={{ ios: 'ellipsis', android: 'more_vert', web: 'more_vert' }}
+                size={19}
+                tintColor={iconColor}
+              />
+            </Button>
+          </Menu.Trigger>
+          <Menu.Portal>
+            <Menu.Overlay />
+            <Menu.Content align="end" placement="bottom" presentation="popover" width={240}>
+              <Menu.Item onPress={() => router.push(PLUGIN_SETTINGS_ROUTE)}>
+                <Menu.ItemTitle>{t('plugins.settingsTitle')}</Menu.ItemTitle>
+              </Menu.Item>
+              <Menu.Item
+                onPress={() => {
+                  setSafeModeRequested(true);
+                  toast.show({ variant: 'default', label: t('plugins.safeModeScheduled') });
+                }}>
+                <Menu.ItemTitle>{t('plugins.requestSafeMode')}</Menu.ItemTitle>
+              </Menu.Item>
+            </Menu.Content>
+          </Menu.Portal>
+        </Menu>
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="grow px-4 pt-4"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
-        <View className="w-full max-w-[800px] gap-8 self-center">
+        contentContainerClassName="grow px-4 pt-2"
+        contentContainerStyle={{ paddingBottom: APP_TAB_BAR_HEIGHT + insets.bottom + 32 }}>
+        <View className="w-full max-w-[800px] grow gap-6 self-center">
           {safeMode ? (
             <View className="gap-3 rounded-3xl bg-surface p-5">
               <Text className="text-base font-semibold text-foreground">{t('plugins.safeModeTitle')}</Text>
@@ -102,119 +154,38 @@ export function PluginManagerScreen() {
             </View>
           ) : null}
 
-          <View>
-            <Text className="mb-2 ml-3 text-sm font-medium text-muted">{t('plugins.installedSection')}</Text>
-            <ListGroup className="overflow-hidden rounded-3xl bg-surface">
-              {statuses.length === 0 ? (
-                <View className="px-5 py-6">
-                  <Text className="text-sm text-muted">{t('plugins.empty')}</Text>
-                </View>
-              ) : (
-                statuses.map((status, index) => (
-                  <Fragment key={status.plugin.id}>
-                    {index > 0 ? <Separator className="mx-5" /> : null}
-                    <PluginRow
-                      status={status}
-                      title={runtime.host.localize(status.plugin.id, status.plugin.manifest.name)}
-                      safeMode={safeMode}
-                      onToggle={(enabled) => setEnabled(status.plugin.id, enabled)}
-                      onPress={() =>
-                        router.push({
-                          pathname: '/settings/plugins/[pluginId]',
-                          params: { pluginId: status.plugin.id },
-                        } as unknown as Href)
-                      }
-                    />
-                  </Fragment>
-                ))
-              )}
-            </ListGroup>
-          </View>
-
-          <View className="gap-3">
-            <Button variant="primary" isDisabled={!developerMode} onPress={() => void pickPackage()}>
-              {t('plugins.installFromFile')}
-            </Button>
-            <Text className="px-3 text-xs leading-4 text-muted">
-              {t(developerMode ? 'plugins.installFromFileHint' : 'plugins.installNeedsDeveloperMode')}
-            </Text>
-          </View>
-
-          <View>
-            <Text className="mb-2 ml-3 text-sm font-medium text-muted">{t('plugins.developerSection')}</Text>
-            <ListGroup className="overflow-hidden rounded-3xl bg-surface">
-              <ControlField
-                accessibilityLabel={t('plugins.developerMode')}
-                accessibilityRole="switch"
-                accessibilityState={{ checked: developerMode }}
-                className="min-h-[72px] px-5 py-4 active:bg-surface-secondary"
-                isSelected={developerMode}
-                onSelectedChange={(enabled) => {
-                  setDeveloperMode(enabled);
-                  if (!enabled) runtime.disconnectDevServer();
-                }}>
-                <View className="flex-1 pr-4">
-                  <Label className="text-base font-medium text-foreground">{t('plugins.developerMode')}</Label>
-                  <Description className="mt-0.5 text-sm leading-5 text-muted">
-                    {t('plugins.developerModeDescription')}
-                  </Description>
-                </View>
-                <ControlField.Indicator>
-                  <Switch className="h-7 w-12" accessibilityElementsHidden>
-                    <Switch.Thumb className="size-5" />
-                  </Switch>
-                </ControlField.Indicator>
-              </ControlField>
-              {developerMode ? (
-                <View className="gap-3 px-5 pb-5">
-                  <Separator />
-                  <Label>{t('plugins.devServer')}</Label>
-                  <Input
-                    value={devUrl}
-                    onChangeText={setDevUrl}
-                    placeholder="http://192.168.1.2:5757/?token=…"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="url"
-                    accessibilityLabel={t('plugins.devServer')}
-                  />
-                  {devStatus ? (
-                    <Text className={`text-sm ${devStatus.state === 'error' ? 'text-danger' : 'text-muted'}`}>
-                      {devStatus.state === 'error'
-                        ? devStatus.error
-                        : devStatus.state === 'connected'
-                          ? t('plugins.devConnected', {
-                              id: devStatus.pluginId ?? '',
-                              revision: String(devStatus.revision ?? 0),
-                            })
-                          : t('plugins.devConnecting')}
-                    </Text>
-                  ) : null}
-                  <View className="flex-row gap-3">
-                    <Button className="flex-1" variant="primary" isDisabled={!devUrl.trim()} onPress={connect}>
-                      {t(devStatus ? 'plugins.devReconnect' : 'plugins.devConnect')}
-                    </Button>
-                    {devStatus ? (
-                      <Button className="flex-1" variant="tertiary" onPress={() => runtime.disconnectDevServer()}>
-                        {t('plugins.devDisconnect')}
-                      </Button>
-                    ) : null}
-                  </View>
-                </View>
-              ) : null}
-            </ListGroup>
-          </View>
-
-          <View className="gap-2">
-            <Button
-              variant="tertiary"
-              onPress={() => {
-                setSafeModeRequested(true);
-                toast.show({ variant: 'default', label: t('plugins.safeModeScheduled') });
-              }}>
-              {t('plugins.requestSafeMode')}
-            </Button>
-          </View>
+          {statuses.length === 0 ? (
+            <View className="grow items-center justify-center gap-3 px-6 pb-16">
+              <View className="size-16 items-center justify-center rounded-3xl border border-border bg-surface">
+                <SymbolView name={pluginSymbolName(undefined)} size={30} tintColor={iconColor} />
+              </View>
+              <Text className="text-base font-semibold text-foreground">{t('plugins.empty')}</Text>
+            </View>
+          ) : (
+            <View className="gap-1">
+              {statuses.map((status) => (
+                <PluginRow
+                  key={status.plugin.id}
+                  status={status}
+                  title={runtime.host.localize(status.plugin.id, status.plugin.manifest.name)}
+                  description={
+                    status.plugin.manifest.description
+                      ? runtime.host.localize(status.plugin.id, status.plugin.manifest.description)
+                      : undefined
+                  }
+                  iconColor={iconColor}
+                  safeMode={safeMode}
+                  onToggle={(enabled) => setEnabled(status.plugin.id, enabled)}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/plugins/[pluginId]',
+                      params: { pluginId: status.plugin.id },
+                    } as unknown as Href)
+                  }
+                />
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -231,18 +202,23 @@ export function PluginManagerScreen() {
 function PluginRow({
   status,
   title,
+  description,
+  iconColor,
   safeMode,
   onToggle,
   onPress,
 }: {
   readonly status: PluginStatus;
   readonly title: string;
+  readonly description?: string;
+  readonly iconColor: string;
   readonly safeMode: boolean;
   readonly onToggle: (enabled: boolean) => void;
   readonly onPress: () => void;
 }) {
   const { t } = useTranslation();
   const development = status.plugin.source === 'development';
+  const hasProblem = status.state === 'failed' || status.notice !== undefined;
   const detail = [
     status.plugin.version,
     t(`plugins.source.${status.plugin.source}`),
@@ -255,21 +231,31 @@ function PluginRow({
 
   return (
     <View className="flex-row items-center">
-      <ListGroup.Item
+      <Pressable
         accessibilityRole="button"
         accessibilityLabel={title}
-        className="min-h-[72px] flex-1 px-5 py-4 active:bg-surface-secondary"
+        accessibilityHint={detail}
+        className="min-w-0 flex-1 flex-row items-center gap-4 rounded-3xl px-2 py-3 active:bg-surface"
         onPress={onPress}>
-        <ListGroup.ItemContent>
-          <ListGroup.ItemTitle className="text-base font-medium text-foreground">{title}</ListGroup.ItemTitle>
-          <ListGroup.ItemDescription
-            className={`mt-0.5 text-sm ${status.state === 'failed' || status.notice ? 'text-danger' : 'text-muted'}`}>
+        <View className="size-14 items-center justify-center rounded-2xl border border-border bg-surface">
+          <SymbolView name={pluginSymbolName(status.plugin.manifest.icon)} size={26} tintColor={iconColor} />
+        </View>
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+            {title}
+          </Text>
+          {description ? (
+            <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
+              {description}
+            </Text>
+          ) : null}
+          <Text className={`text-xs leading-4 ${hasProblem ? 'text-danger' : 'text-muted'}`} numberOfLines={1}>
             {detail}
-          </ListGroup.ItemDescription>
-        </ListGroup.ItemContent>
-      </ListGroup.Item>
+          </Text>
+        </View>
+      </Pressable>
       {development ? null : (
-        <View className="pr-5">
+        <View className="pl-2 pr-2">
           <ControlField
             accessibilityLabel={t('plugins.enable', { name: title })}
             accessibilityRole="switch"

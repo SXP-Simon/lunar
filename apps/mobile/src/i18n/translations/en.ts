@@ -22,6 +22,7 @@ export const en: TranslationSchema<typeof zhCN> = {
   },
   tabs: {
     library: 'Library',
+    plugins: 'Plugins',
     settings: 'Settings',
   },
   settings: {
@@ -41,8 +42,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     reading: 'Reading',
     readingSettings: 'Reading settings',
     about: 'About',
-    plugins: 'Plugins',
-    pluginsDescription: 'Manage reader plugins and developer options',
+    pluginSettings: 'Plugin settings',
     openGitHub: 'Open Lunar on GitHub',
     openGitHubHint: 'Open the project page in your browser',
     openGitHubFailed: 'Could not open the project page',
@@ -125,6 +125,9 @@ export const en: TranslationSchema<typeof zhCN> = {
   },
   plugins: {
     title: 'Plugins',
+    settingsTitle: 'Plugin settings',
+    moreActions: 'More actions',
+    openSettings: 'Open plugin settings',
     back: 'Back',
     retry: 'Retry',
     slotFailed: 'The plugin could not start',
@@ -176,13 +179,11 @@ export const en: TranslationSchema<typeof zhCN> = {
     exitSafeMode: 'Leave safe mode',
     requestSafeMode: 'Start in safe mode next time',
     safeModeScheduled: 'All plugins will be paused at the next launch',
-    installedSection: 'Installed',
     empty: 'No plugins installed',
     installFromFile: 'Install from file',
     installFromFileHint: 'Choose a .lunar-plugin package. Its permissions are shown before installation.',
     installNeedsDeveloperMode:
-      'Signature verification is not available yet. Turn on developer mode to install local packages.',
-    developerSection: 'Developer',
+      'Signature verification is not available yet. Turn on developer mode in plugin settings to install local packages.',
     developerMode: 'Developer mode',
     developerModeDescription: 'Install local packages and live-reload plugins from lunar-plugin dev',
     devServer: 'Development server address',

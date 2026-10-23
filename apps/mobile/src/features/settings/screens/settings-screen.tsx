@@ -64,14 +64,18 @@ export function SettingsScreen() {
               />
             </SettingSection>
             <View className="mt-8">
-              <SettingSection title={t('settings.readingSettings')} onPress={() => router.push('/settings/reading')} />
-            </View>
-            <View className="mt-8">
-              <SettingSection
-                title={t('settings.plugins')}
-                description={t('settings.pluginsDescription')}
-                onPress={() => router.push('/settings/plugins' as Href)}
-              />
+              <SettingSection>
+                <SettingRow
+                  variant="action"
+                  title={t('settings.readingSettings')}
+                  onPress={() => router.push('/settings/reading')}
+                />
+                <SettingRow
+                  variant="action"
+                  title={t('settings.pluginSettings')}
+                  onPress={() => router.push('/settings/plugins' as Href)}
+                />
+              </SettingSection>
             </View>
             <View className="mt-8">
               <SettingSection title={t('settings.about')} onPress={() => router.push('/settings/about')} />
