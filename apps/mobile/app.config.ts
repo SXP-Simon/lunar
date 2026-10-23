@@ -44,6 +44,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             { scheme: 'file', mimeType: 'application/epub+zip' },
           ],
         },
+        // Android does not map `.lunar-plugin` to a MIME type, so file managers
+        // open plugin packages as generic binary files.
+        {
+          action: 'VIEW',
+          category: ['DEFAULT', 'BROWSABLE'],
+          data: [
+            { scheme: 'content', mimeType: 'application/octet-stream' },
+            { scheme: 'file', mimeType: 'application/octet-stream' },
+          ],
+        },
         ...['SEND', 'SEND_MULTIPLE'].map((action) => ({
           action,
           category: ['DEFAULT'],
@@ -62,6 +72,21 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             CFBundleTypeRole: 'Viewer',
             LSHandlerRank: 'Alternate',
             LSItemContentTypes: ['org.idpf.epub-container'],
+          },
+          {
+            CFBundleTypeName: 'Lunar plugin',
+            CFBundleTypeRole: 'Viewer',
+            LSHandlerRank: 'Owner',
+            LSItemContentTypes: ['moe.lunar.plugin-package'],
+          },
+        ],
+        UTExportedTypeDeclarations: [
+          ...(config.ios?.infoPlist?.UTExportedTypeDeclarations ?? []),
+          {
+            UTTypeIdentifier: 'moe.lunar.plugin-package',
+            UTTypeDescription: 'Lunar plugin',
+            UTTypeConformsTo: ['public.data'],
+            UTTypeTagSpecification: { 'public.filename-extension': ['lunar-plugin'] },
           },
         ],
         UTImportedTypeDeclarations: [

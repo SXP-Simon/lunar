@@ -1,4 +1,4 @@
-import { useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { ControlField } from 'heroui-native/control-field';
@@ -7,7 +7,7 @@ import { Menu } from 'heroui-native/menu';
 import { Spinner } from 'heroui-native/spinner';
 import { Switch } from 'heroui-native/switch';
 import { useToast } from 'heroui-native/toast';
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,6 +19,7 @@ import type { PluginStatus } from '../domain/installed-plugin';
 import { pluginErrorMessage } from '../domain/plugin-error';
 import { pluginSymbolName } from '../domain/plugin-icons';
 import { pickPluginPackage } from '../infrastructure/expo-plugin-files';
+import { takeExternalPluginPackage } from '../services/external-plugin-install';
 import type { PluginInstallPreview } from '../services/plugin-installer';
 import { PluginInstallDialog } from '../components/plugin-install-dialog';
 import { usePluginRuntime } from '../components/plugin-runtime-provider';
@@ -28,6 +29,7 @@ const PLUGIN_SETTINGS_ROUTE = '/settings/plugins' as Href;
 export function PluginManagerScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { install: installRequest } = useLocalSearchParams<{ install?: string }>();
   const insets = useSafeAreaInsets();
   const { toast } = useToast();
   useMarkInitialContentReady(true);
@@ -59,6 +61,22 @@ export function PluginManagerScreen() {
       setIsPicking(false);
     }
   };
+
+  // Packages opened from a file manager or another app arrive as `?install=<requestId>`.
+  useEffect(() => {
+    if (!installRequest) return;
+    router.setParams({ install: undefined });
+    const opened = takeExternalPluginPackage(installRequest);
+    if (!opened) return;
+    if (!developerMode) {
+      toast.show({ variant: 'default', label: t('plugins.installNeedsDeveloperMode') });
+      return;
+    }
+    void opened
+      .then((picked) => runtime.inspectPackage(picked.bytes))
+      .then(setPreview)
+      .catch((error: unknown) => toast.show({ variant: 'danger', label: pluginErrorMessage(error) }));
+  }, [developerMode, installRequest, router, runtime, t, toast]);
 
   const install = async () => {
     if (!preview) return;

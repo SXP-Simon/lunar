@@ -1,5 +1,6 @@
 package com.lunarain_079.epubreceiver
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -39,20 +40,19 @@ class EpubReceiverModule : Module() {
       }
     }
 
+    AsyncFunction("fileName") { value: String ->
+      val context = appContext.reactContext ?: error("Application context is unavailable.")
+      val uri = Uri.parse(value)
+      require(uri.scheme == "content" || uri.scheme == "file") { "Unsupported file URI." }
+      displayName(context, uri)
+    }
+
     AsyncFunction("stageEpub") { value: String ->
       val context = appContext.reactContext ?: error("Application context is unavailable.")
       val uri = Uri.parse(value)
       require(uri.scheme == "content" || uri.scheme == "file") { "Unsupported file URI." }
       val resolver = context.contentResolver
-      var name = uri.lastPathSegment ?: "book.epub"
-      if (uri.scheme == "content") {
-        resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-          if (cursor.moveToFirst()) {
-            val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (column >= 0 && !cursor.isNull(column)) name = cursor.getString(column)
-          }
-        }
-      }
+      var name = displayName(context, uri) ?: "book.epub"
       if (!name.endsWith(".epub", ignoreCase = true) && resolver.getType(uri) == "application/epub+zip" && !name.contains('.')) {
         name += ".epub"
       }
@@ -80,6 +80,18 @@ class EpubReceiverModule : Module() {
         throw error
       }
     }
+  }
+
+  private fun displayName(context: Context, uri: Uri): String? {
+    if (uri.scheme == "content") {
+      context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst()) {
+          val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+          if (column >= 0 && !cursor.isNull(column)) return cursor.getString(column)
+        }
+      }
+    }
+    return uri.lastPathSegment
   }
 
   @Suppress("DEPRECATION")

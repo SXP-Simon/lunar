@@ -10,7 +10,7 @@
 
 Android 注册 `application/epub+zip` 的 `VIEW`、`SEND` 与 `SEND_MULTIPLE`，供文件管理器打开文件和其他应用分享文件使用。iOS 注册 EPUB 文档类型，接收文档打开请求。通用二进制 MIME 类型暂时保持由应用内文件选择器处理。
 
-`src/app/+native-intent.ts` 将外部文件打开请求交给书库公开入口。Android 分享接收组件处理应用运行期间的分享事件；首次启动的分享请求在初始导航中处理。`external-import-service` 立即缓存来源文件，按顺序调用现有导入服务，同一请求的多个页面订阅共用同一个处理结果。导入完成后清理缓存文件，返回书库并通过 Toast 展示处理结果。
+`src/app/+native-intent.ts` 先把扩展名为 `.lunar-plugin` 的外部文件交给插件公开入口，其余外部文件打开请求交给书库公开入口。Android 分享接收组件处理应用运行期间的分享事件；首次启动的分享请求在初始导航中处理。`external-import-service` 立即缓存来源文件，按顺序调用现有导入服务，同一请求的多个页面订阅共用同一个处理结果。导入完成后清理缓存文件，返回书库并通过 Toast 展示处理结果。
 
 本地 Expo 模块 `modules/expo/epub-receiver` 负责平台文件读取。Android 从内容提供者查询文件名，并通过输入流复制文件；iOS 使用安全作用域访问与文件协调器复制文档。缓存复制阶段限制来源文件为 100 MiB，后续 EPUB 内容校验继续由现有导入服务执行。
 
