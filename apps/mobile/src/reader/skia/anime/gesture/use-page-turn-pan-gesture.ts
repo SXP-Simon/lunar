@@ -13,9 +13,13 @@ import {
 } from '../native/pager-compositor';
 import {
   directedThrowVelocity,
+  gestureSampleClockMs,
+  GESTURE_RELEASE_IDLE_DECAY_SECONDS,
   planarTurnProgressForTranslation,
-  throwAccelerationForRelease,
+  releaseIdleDecay,
+  trackThrowAcceleration,
   trackThrowVelocity,
+  type PageTurnReleaseSample,
 } from './page-turn-gesture';
 
 export interface PageTurnGestureValues {
@@ -31,6 +35,8 @@ export interface PageTurnGestureValues {
   readonly heldRollTilt: SharedValue<number>;
   readonly token: SharedValue<number>;
   readonly dragThrowVelocity: SharedValue<number>;
+  readonly dragThrowAcceleration: SharedValue<number>;
+  readonly lastSampleAtMs: SharedValue<number>;
   readonly jsSampleIndex: SharedValue<number>;
   readonly nativeActive: SharedValue<boolean>;
   readonly nativePagerId: SharedValue<number>;
@@ -41,13 +47,23 @@ export interface PageTurnGestureValues {
 interface PageTurnPanGestureOptions {
   readonly automaticNavigationActive: boolean;
   readonly beginDrag: (x: number, y: number, token: number) => void;
-  readonly endDrag: (velocityX?: number, translationX?: number, nativeReleased?: boolean) => void;
+  readonly endDrag: (
+    velocityX?: number,
+    translationX?: number,
+    nativeReleased?: boolean,
+    release?: PageTurnReleaseSample,
+  ) => void;
   readonly isSettling: boolean;
   readonly markNativeGestureAccepted: (token: number) => void;
   readonly pageTurnEffect: ReaderPageTurnEffect;
   readonly spreadMode: ReaderSpreadMode;
   readonly surfaceTop: number;
-  readonly updateDrag: (translationX: number, absoluteY: number, velocityX: number) => void;
+  readonly updateDrag: (
+    translationX: number,
+    absoluteY: number,
+    throwVelocity: number,
+    throwAcceleration: number,
+  ) => void;
   readonly values: PageTurnGestureValues;
   readonly viewport?: ReaderViewport;
 }
@@ -65,6 +81,8 @@ export function usePageTurnGestureValues(): PageTurnGestureValues {
   const heldRollTilt = useSharedValue(0);
   const token = useSharedValue(0);
   const dragThrowVelocity = useSharedValue(0);
+  const dragThrowAcceleration = useSharedValue(0);
+  const lastSampleAtMs = useSharedValue(0);
   const jsSampleIndex = useSharedValue(0);
   const nativeActive = useSharedValue(false);
   const nativePagerId = useSharedValue(-1);
@@ -85,6 +103,8 @@ export function usePageTurnGestureValues(): PageTurnGestureValues {
       heldRollTilt,
       token,
       dragThrowVelocity,
+      dragThrowAcceleration,
+      lastSampleAtMs,
       jsSampleIndex,
       nativeActive,
       nativePagerId,
@@ -94,9 +114,11 @@ export function usePageTurnGestureValues(): PageTurnGestureValues {
     [
       direction,
       directionLocked,
+      dragThrowAcceleration,
       dragThrowVelocity,
       grabY,
       heldRollTilt,
+      lastSampleAtMs,
       nativeActive,
       nativeInputReady,
       nativePagerId,
@@ -137,9 +159,11 @@ export function usePageTurnPanGesture({
   const {
     direction,
     directionLocked,
+    dragThrowAcceleration,
     dragThrowVelocity,
     grabY,
     heldRollTilt,
+    lastSampleAtMs,
     nativeActive,
     nativeInputReady,
     nativePagerId,
@@ -181,6 +205,8 @@ export function usePageTurnPanGesture({
           nativeStockedToken.value = 0;
           token.value += 1;
           dragThrowVelocity.value = 0;
+          dragThrowAcceleration.value = 0;
+          lastSampleAtMs.value = gestureSampleClockMs();
           jsSampleIndex.value = 0;
           scheduleOnRN(beginDrag, event.x - event.translationX, event.y - event.translationY, token.value);
           // Recognition already includes horizontal travel. Start preparing its
@@ -204,14 +230,11 @@ export function usePageTurnPanGesture({
             grabY.value = Math.min(viewportHeight, Math.max(0, event.absoluteY - surfaceTop));
             heldRollTilt.value = geometry.heldRollTilt;
             pressedEdgeX.value = geometry.pressedEdgeX;
-            dragThrowVelocity.value = trackThrowVelocity(
-              dragThrowVelocity.value,
-              event.velocityX,
-              initialDirection,
-              viewportWidth,
-            );
+            // Recognition already measured this travel, so its pan velocity
+            // seeds the track instead of being blended in from rest.
+            dragThrowVelocity.value = directedThrowVelocity(event.velocityX, initialDirection, viewportWidth);
             jsSampleIndex.value = 1;
-            scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
+            scheduleOnRN(updateDrag, event.translationX, event.absoluteY, dragThrowVelocity.value, 0);
           }
         })
         .onUpdate((event) => {
@@ -266,21 +289,36 @@ export function usePageTurnPanGesture({
               }
             }
           }
+          const sampledAtMs = gestureSampleClockMs();
+          const sampleSeconds = (sampledAtMs - lastSampleAtMs.value) / 1000;
+          const previousThrowVelocity = dragThrowVelocity.value;
+          dragThrowVelocity.value = trackThrowVelocity(
+            previousThrowVelocity,
+            event.velocityX,
+            activeDirection,
+            viewportWidth,
+            sampleSeconds,
+          );
+          dragThrowAcceleration.value = trackThrowAcceleration(
+            dragThrowAcceleration.value,
+            previousThrowVelocity,
+            dragThrowVelocity.value,
+            sampleSeconds,
+          );
+          lastSampleAtMs.value = sampledAtMs;
           // The shared values above drive every drawn frame. JavaScript only
           // needs periodic samples for preparation and release prediction.
+          // Native owns intermediate frames once it runs; the final sample in
+          // onEnd still updates RN release state.
           jsSampleIndex.value += 1;
-          if (jsSampleIndex.value === 1 || jsSampleIndex.value % 2 === 0) {
-            dragThrowVelocity.value = trackThrowVelocity(
+          if ((jsSampleIndex.value === 1 || jsSampleIndex.value % 2 === 0) && !nativeActive.value) {
+            scheduleOnRN(
+              updateDrag,
+              event.translationX,
+              event.absoluteY,
               dragThrowVelocity.value,
-              event.velocityX,
-              activeDirection,
-              viewportWidth,
+              dragThrowAcceleration.value,
             );
-            // Native now owns intermediate frames. The final sample below still
-            // updates RN release state, so in-flight samples can stay on UI.
-            if (!nativeActive.value) {
-              scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
-            }
           }
         })
         .onEnd((event) => {
@@ -304,22 +342,30 @@ export function usePageTurnPanGesture({
           grabY.value = Math.min(viewportHeight, Math.max(0, event.absoluteY - surfaceTop));
           heldRollTilt.value = geometry.heldRollTilt;
           pressedEdgeX.value = geometry.pressedEdgeX;
+          const releaseTuning = nativeGesturePolicy?.getReleaseTuning(activeDirection, spreadMode);
+          // A finger that rested before lifting has spent its throw. The final
+          // pan velocity still sets the release, so a last-moment flick back
+          // toward the source can cancel the turn.
+          const idleDecay = releaseIdleDecay(
+            (gestureSampleClockMs() - lastSampleAtMs.value) / 1000,
+            releaseTuning?.idleDecaySeconds ?? GESTURE_RELEASE_IDLE_DECAY_SECONDS,
+          );
+          const release: PageTurnReleaseSample = {
+            throwVelocity: directedThrowVelocity(event.velocityX, activeDirection, viewportWidth) * idleDecay,
+            throwAcceleration: dragThrowAcceleration.value * idleDecay,
+            idleDecay,
+          };
           let nativeReleased = false;
           if (nativeActive.value) {
-            const releaseTuning = nativeGesturePolicy?.getReleaseTuning(activeDirection, spreadMode);
             updateNativePagerGestureOnUI(nativePagerId.value, {
               fingerX,
               turnProgress: progress.value,
             });
-            const throwVelocity = directedThrowVelocity(event.velocityX, activeDirection, viewportWidth);
-            // The native pager decides a single-page release, so it has to be
-            // handed the same throw sample the JavaScript decision reads.
-            const throwAcceleration = throwAccelerationForRelease(
-              dragThrowVelocity.value,
-              event.velocityX,
-              activeDirection,
-              viewportWidth,
-            );
+            // The native pager decides a single-page release, so it is handed
+            // the same sample the JavaScript decision reads. Its own idle clock
+            // restarts at the update above, so the decay applied here is the
+            // only one.
+            const { throwVelocity, throwAcceleration } = release;
             nativeReleased =
               endNativePagerGestureOnUI(nativePagerId.value, {
                 fingerX,
@@ -339,8 +385,14 @@ export function usePageTurnPanGesture({
           }
           started.value = false;
           directionLocked.value = false;
-          scheduleOnRN(updateDrag, event.translationX, event.absoluteY, event.velocityX);
-          scheduleOnRN(endDrag, event.velocityX, event.translationX, nativeReleased);
+          scheduleOnRN(
+            updateDrag,
+            event.translationX,
+            event.absoluteY,
+            dragThrowVelocity.value,
+            dragThrowAcceleration.value,
+          );
+          scheduleOnRN(endDrag, event.velocityX, event.translationX, nativeReleased, release);
         })
         .onFinalize(() => {
           'worklet';
@@ -357,6 +409,7 @@ export function usePageTurnPanGesture({
       beginDrag,
       direction,
       directionLocked,
+      dragThrowAcceleration,
       dragThrowVelocity,
       endDrag,
       grabY,
@@ -364,6 +417,7 @@ export function usePageTurnPanGesture({
       gestureBlocked,
       getGestureGeometry,
       getGestureStartBookX,
+      lastSampleAtMs,
       markNativeGestureAccepted,
       jsSampleIndex,
       nativeActive,

@@ -6,7 +6,7 @@ import { readerDiagnostic, readerPerformanceMark } from '../../../runtime/core/p
 import { describePreparedTarget, describeSnapshotIdentity, formatTraceNumber } from '../core/page-content';
 import type { ReaderPageTurnEffect } from '../core/page-turn-effect';
 import type { ReaderInteractiveTurn } from '../core/page-turn-types';
-import { planarTurnProgressForTranslation } from '../gesture/page-turn-gesture';
+import { planarTurnProgressForTranslation, type PageTurnReleaseSample } from '../gesture/page-turn-gesture';
 import type { PageTurnGestureValues } from '../gesture/use-page-turn-pan-gesture';
 import type {
   ReaderCommittedHandoff,
@@ -44,9 +44,20 @@ export function usePageTurnRelease({
   setInteractiveTurn,
   spreadMode,
   viewport,
-}: PageTurnReleaseOptions): (releaseVelocity?: number, releaseTranslationX?: number, nativeReleased?: boolean) => void {
+}: PageTurnReleaseOptions): (
+  releaseVelocity?: number,
+  releaseTranslationX?: number,
+  nativeReleased?: boolean,
+  release?: PageTurnReleaseSample,
+) => void {
   const finishDrag = useCallback(
-    (state: ReaderDragState, releaseVelocity = 0, releaseTranslationX = 0, nativeReleased = false) => {
+    (
+      state: ReaderDragState,
+      releaseVelocity = 0,
+      releaseTranslationX = 0,
+      nativeReleased = false,
+      release?: PageTurnReleaseSample,
+    ) => {
       readerPerformanceMark('reader.gesture.release', {
         workId: state.performanceId,
         turnId: state.id,
@@ -83,12 +94,14 @@ export function usePageTurnRelease({
         });
       }
 
-      const terminalThrowVelocity = viewport
-        ? Math.max(0, (state.direction === 1 ? -releaseVelocity : releaseVelocity) / Math.max(1, viewport.width))
-        : 0;
-      const throwVelocity = Math.max(state.throwVelocity, terminalThrowVelocity);
+      // Decide on the sample the pan gesture handed the native pager, so the
+      // declarative path and the composer settle the same drag the same way.
+      // A cancelled pan carries no sample and therefore no throw.
+      const idleDecay = release?.idleDecay ?? 0;
+      const throwVelocity = release?.throwVelocity ?? 0;
+      const throwAcceleration = release?.throwAcceleration ?? 0;
       const towardTargetVelocity = viewport
-        ? (state.direction === 1 ? -releaseVelocity : releaseVelocity) / Math.max(1, viewport.width)
+        ? ((state.direction === 1 ? -releaseVelocity : releaseVelocity) / Math.max(1, viewport.width)) * idleDecay
         : 0;
       const commit = pageTurnEffect.gesture.shouldCommit({
         progress: state.renderProgress,
@@ -98,7 +111,7 @@ export function usePageTurnRelease({
         startBookX: state.startBookX,
         fingerX: state.fingerX,
         throwVelocity,
-        throwAcceleration: state.throwAcceleration,
+        throwAcceleration,
       });
       readerDiagnostic('turn.release', () =>
         [
@@ -375,7 +388,7 @@ export function usePageTurnRelease({
   );
 
   return useCallback(
-    (releaseVelocity = 0, releaseTranslationX = 0, nativeReleased = false) => {
+    (releaseVelocity = 0, releaseTranslationX = 0, nativeReleased = false, release?: PageTurnReleaseSample) => {
       const state = dragStateRef.current;
       if (!state) {
         gestureValues.releasePending.set(false);
@@ -391,12 +404,12 @@ export function usePageTurnRelease({
         );
         void preparation.then(() => {
           if (dragStateRef.current === state) {
-            finishDrag(state, releaseVelocity, releaseTranslationX, nativeReleased);
+            finishDrag(state, releaseVelocity, releaseTranslationX, nativeReleased, release);
           }
         });
         return;
       }
-      finishDrag(state, releaseVelocity, releaseTranslationX, nativeReleased);
+      finishDrag(state, releaseVelocity, releaseTranslationX, nativeReleased, release);
     },
     [dragStateRef, finishDrag, gestureValues.releasePending],
   );

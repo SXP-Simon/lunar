@@ -6,11 +6,7 @@ import type { LunarReaderRuntime, ReaderPreparedTurn } from '../../../runtime/co
 import { readerDiagnostic, readerPerformanceId, readerPerformanceMark } from '../../../runtime/core/performance';
 import { acknowledgeNativePagerPresentationById, type NativePagerEventRecord } from '../native/pager-compositor';
 import { readerInteractivePageTurnIdentity } from '../native/page-turn';
-import {
-  planarTurnProgressForTranslation,
-  throwAccelerationForRelease,
-  trackThrowVelocity,
-} from '../gesture/page-turn-gesture';
+import { planarTurnProgressForTranslation } from '../gesture/page-turn-gesture';
 import {
   describePreparedTarget,
   describeSnapshotIdentity,
@@ -314,7 +310,7 @@ export function useInteractivePageTurn({
   );
 
   const updateDrag = useCallback(
-    (translationX: number, absoluteY: number, velocityX: number) => {
+    (translationX: number, absoluteY: number, throwVelocity: number, throwAcceleration: number) => {
       const state = dragState.current;
       if (!state || !viewport || !isReady) return;
       if (!state.directionLocked) {
@@ -345,8 +341,10 @@ export function useInteractivePageTurn({
         direction,
         spreadMode,
       });
-      state.throwAcceleration = throwAccelerationForRelease(state.throwVelocity, velocityX, direction, viewport.width);
-      state.throwVelocity = trackThrowVelocity(state.throwVelocity, velocityX, direction, viewport.width);
+      // The pan gesture tracks the throw on the UI runtime at every sample;
+      // this side only sees every other one, so it adopts that track as is.
+      state.throwAcceleration = throwAcceleration;
+      state.throwVelocity = throwVelocity;
       state.grabY = Math.min(viewport.height, Math.max(0, absoluteY - surfaceTop));
 
       if (!state.pendingPublished && pageTurnEffect.visual.kind === 'slide') {

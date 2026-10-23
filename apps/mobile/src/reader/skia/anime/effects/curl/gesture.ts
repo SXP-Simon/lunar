@@ -11,6 +11,25 @@ export const SLOW_COMMIT_EDGE_X = MIN_PRESSED_EDGE_X - 0.3565937167398107;
 export const VISUAL_TURN_TRAVEL = 0.38;
 export const GESTURE_COMMIT_TRAVEL = 0.58;
 export const DEFAULT_GESTURE_COMMIT_THRESHOLD = 0.8;
+/**
+ * A drag that starts closer to the spine than this holds the sheet too weakly
+ * to lift it: the page only compresses under the finger and always springs
+ * back. The native composer applies the same rule to the drags it owns.
+ */
+export const WEAK_GRIP_START_BOOK_X = 0.25;
+const WEAK_GRIP_MAXIMUM_COMPRESSION = 0.04;
+const WEAK_GRIP_COMPRESSION_PER_PAGE = 0.2;
+
+export function isWeakGripStart(startBookX: number): boolean {
+  'worklet';
+  return startBookX < WEAK_GRIP_START_BOOK_X;
+}
+
+export function weakGripPressedEdgeX(fingerX: number): number {
+  'worklet';
+  const travel = Math.max(0, 1 - Math.min(1, Math.max(-1, fingerX)));
+  return 1 - Math.min(WEAK_GRIP_MAXIMUM_COMPRESSION, travel * WEAK_GRIP_COMPRESSION_PER_PAGE);
+}
 
 export function pageTurnStartBookXForTouch(localX: number, direction: 1 | -1, pageWidth: number): number {
   'worklet';

@@ -2,11 +2,13 @@ import {
   MIN_PRESSED_EDGE_X,
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
+  isWeakGripStart,
   postHingeTurnProgressForFingerX,
+  weakGripPressedEdgeX,
 } from './gesture';
-import { AUTOMATIC_PAGE_TURN_DURATION_MS } from './strategy';
+import { AUTOMATIC_PAGE_TURN_DURATION_MS } from './timing';
 
-export { AUTOMATIC_PAGE_TURN_DURATION_MS } from './strategy';
+export { AUTOMATIC_PAGE_TURN_DURATION_MS } from './timing';
 
 const CURVATURE_RELAXATION = 10;
 // Inverse J0 over chord lengths [0.035, 1]. This is the reference worklet's
@@ -21,6 +23,11 @@ const AUTOMATIC_RELEASE_X = 0.9;
 const AUTOMATIC_CURVATURE_RELAXATION = 10;
 const AUTOMATIC_REVERSE_RELEASE_X = 0.4;
 const AUTOMATIC_PRESS_DURATION_MS = 120;
+// A cancelled drag eases its pressed edge back out with an initial speed that
+// grows with how tightly the paper was rolled, as the native composer does.
+const MIN_REVERT_INITIAL_SPEED = 0.65;
+const MAX_REVERT_INITIAL_SPEED = 6.3;
+const REVERT_EASE_OUT_INITIAL_SLOPE = 3;
 
 export interface GestureCurlProfile {
   readonly amplitude: number;
@@ -62,6 +69,16 @@ export function bendAmplitudeForChord(chord: number): number {
   }
   const normalized = x * previous - beforePrevious + INVERSE_BESSEL_CHEBYSHEV[0]!;
   return normalized * Math.sqrt(Math.max(0, 1 - safeChord));
+}
+
+/** Duration of the ease-out that returns a released pressed edge to rest. */
+export function curlRevertDurationMs(pressedEdgeX: number): number {
+  const edgeX = Math.min(1, Math.max(MIN_PRESSED_EDGE_X, pressedEdgeX));
+  const distance = 1 - edgeX;
+  if (distance <= 1e-8) return 0;
+  const completeness = clampUnit(bendAmplitudeForChord(edgeX) / bendAmplitudeForChord(MIN_PRESSED_EDGE_X));
+  const initialSpeed = MIN_REVERT_INITIAL_SPEED + (MAX_REVERT_INITIAL_SPEED - MIN_REVERT_INITIAL_SPEED) * completeness;
+  return (1000 * REVERT_EASE_OUT_INITIAL_SLOPE * distance) / initialSpeed;
 }
 
 function createTurnCurlProfile(
@@ -135,6 +152,14 @@ export function createGestureCurlProfile({
   const safeReleaseProgress = clampUnit(releaseProgress);
   const progressScale = spreadMode === 'single' && direction > 0 ? 2 : 1;
   const currentFingerX = 1 - Math.min(1, animationProgress * progressScale);
+  if (isWeakGripStart(startBookX)) {
+    return {
+      amplitude: bendAmplitudeForChord(weakGripPressedEdgeX(currentFingerX)),
+      rotation: 0,
+      landedLength: 0,
+      uniformity: 0,
+    };
+  }
   const releaseFingerX = 1 - Math.min(1, safeReleaseProgress * progressScale);
   let profileProgress = postHingeTurnProgressForFingerX(currentFingerX, startBookX);
   let profilePressedEdgeX = Math.min(1, Math.max(MIN_PRESSED_EDGE_X, pressedEdgeX));
