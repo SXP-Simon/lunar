@@ -164,7 +164,6 @@ export class AutomaticPageTurnQueue {
       from: navigation.from,
       to,
       direction: navigation.direction,
-      burst: inFlight.length > 0,
     };
     readerPerformanceMark('reader.turn.ready', {
       workId: navigation.performanceId,

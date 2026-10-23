@@ -424,21 +424,6 @@ function motionTuningValues(
   ];
 }
 
-/**
- * Starts a stocked turn for a tap handled on the RN runtime. Native accepts it
- * only when the first frame is already texture-backed, so a false result means
- * the caller must animate the turn some other way.
- */
-export function consumeNativePagerInputById(nativeId: number, direction: 1 | -1): boolean {
-  const consumeInput = nativePagerRnApi.consumeInput;
-  if (nativeId < 0 || !consumeInput) return false;
-  try {
-    return consumeInput(nativeId, direction) === true;
-  } catch {
-    return false;
-  }
-}
-
 export function consumeNativePagerInputOnUI(nativeId: number, direction: 1 | -1): boolean | undefined {
   'worklet';
   try {

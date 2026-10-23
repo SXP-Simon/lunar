@@ -5,16 +5,12 @@ import { ReaderPageTurnCoordinator } from '../../src/reader/skia/anime/controlle
 import { curlPageTurnEffect } from '../../src/reader/skia/anime/effects/curl/strategy';
 import { slidePageTurnEffect } from '../../src/reader/skia/anime/effects/slide/strategy';
 import type { PageTurnGestureValues } from '../../src/reader/skia/anime/gesture/use-page-turn-pan-gesture';
-import {
-  acknowledgeNativePagerPresentationById,
-  consumeNativePagerInputById,
-} from '../../src/reader/skia/anime/native/pager-compositor';
+import { acknowledgeNativePagerPresentationById } from '../../src/reader/skia/anime/native/pager-compositor';
 
 vi.mock('react-native-worklets', () => ({ runOnUI: (fn: (...args: unknown[]) => unknown) => fn }));
 vi.mock('../../src/reader/skia/anime/native/pager-compositor', () => ({
   acknowledgeNativePagerPresentationById: vi.fn(),
   cancelNativePagerGestureOnUI: vi.fn(),
-  consumeNativePagerInputById: vi.fn(() => true),
 }));
 
 beforeEach(() => {
@@ -27,10 +23,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function page(index: number, complete = false): ReaderSnapshot {
-  return {
-    phase: 'ready', revisionId: 1, spreadIndex: index, renderId: index + 100, paginationComplete: complete,
-  } as ReaderSnapshot;
+function page(index: number): ReaderSnapshot {
+  return { phase: 'ready', revisionId: 1, spreadIndex: index, renderId: index + 100 } as ReaderSnapshot;
 }
 
 function sharedValues(): PageTurnGestureValues {
@@ -42,13 +36,11 @@ function sharedValues(): PageTurnGestureValues {
   ].map(([key, value]) => [key, shared(value)])) as unknown as PageTurnGestureValues;
 }
 
-function fixture({ complete = false, effect = slidePageTurnEffect } = {}) {
-  let current = page(3, complete);
+function fixture({ effect = slidePageTurnEffect } = {}) {
+  let current = page(3);
   let preparationId = 0;
   let held: ReaderPreparedTurn | undefined;
-  let speculative = false;
   const listeners = new Set<(snapshot: ReaderSnapshot) => void>();
-  const revoked = new Set<(id: number) => void>();
   const emit = (snapshot: ReaderSnapshot) => {
     current = snapshot;
     for (const listener of listeners) listener(snapshot);
@@ -65,35 +57,13 @@ function fixture({ complete = false, effect = slidePageTurnEffect } = {}) {
   const runtime = {
     getSnapshot: () => current,
     subscribe: (listener: (snapshot: ReaderSnapshot) => void) => { listeners.add(listener); return () => listeners.delete(listener); },
-    subscribeSpeculationRevoked: (listener: (id: number) => void) => { revoked.add(listener); return () => revoked.delete(listener); },
     suspendBackgroundPagination: vi.fn(() => () => undefined),
     getCurrentPicture: (_revision: number, index: number) => ({ page: index }),
     getCurrentFrame: (index: number) => ({ page: index, width: 400, height: 800 }),
     getPreparedTargetSnapshot: (turn: ReaderPreparedTurn) =>
       ({ ...current, spreadIndex: turn.targetSpreadIndex, renderId: turn.targetRenderId, bookSpreadIndex: turn.targetSpreadIndex }),
     canNavigate: vi.fn(() => true),
-    prepareAdjacent: vi.fn(async (direction: 'next' | 'previous') => {
-      if (held && speculative && held.direction === direction) { speculative = false; return held; }
-      return prepare(direction);
-    }),
-    speculateAdjacent: vi.fn(async (direction: 'next' | 'previous') => {
-      if (held) return undefined;
-      speculative = true;
-      return prepare(direction);
-    }),
-    claimPreparedTurn: vi.fn((turn: ReaderPreparedTurn) => {
-      if (held?.id !== turn.id) return false;
-      speculative = false;
-      return true;
-    }),
-    releasePreparedTurnToSpeculation: vi.fn((turn: ReaderPreparedTurn) => {
-      if (held?.id !== turn.id || !current.paginationComplete) return false;
-      speculative = true;
-      return true;
-    }),
-    releaseSpeculation: vi.fn(async (turn: ReaderPreparedTurn) => {
-      if (held?.id === turn.id && speculative) { held = undefined; speculative = false; }
-    }),
+    prepareAdjacent: vi.fn(async (direction: 'next' | 'previous') => prepare(direction)),
     commitPreparedTurn: vi.fn(async (turn: ReaderPreparedTurn) => {
       held = undefined;
       emit({ ...current, spreadIndex: turn.targetSpreadIndex, renderId: turn.targetRenderId });
@@ -102,7 +72,6 @@ function fixture({ complete = false, effect = slidePageTurnEffect } = {}) {
     cancelPreparedTurn: vi.fn(async (turn: ReaderPreparedTurn) => { if (held?.id === turn.id) held = undefined; }),
     warmAdjacentPictures: vi.fn(async () => undefined),
     next: vi.fn(async () => {
-      for (const listener of revoked) if (held && speculative) listener(held.id);
       emit({ ...current, spreadIndex: current.spreadIndex + 1, renderId: current.renderId! + 1 });
       return current;
     }),
@@ -174,65 +143,6 @@ describe('page turn coordinator handoff', () => {
     expect(runtime.prepareAdjacent).toHaveBeenCalledOnce();
   });
 
-  it('holds the next page while idle and lets a swipe start from it without preparing', async () => {
-    const { runtime, state, drag } = fixture({ complete: true });
-    await vi.advanceTimersByTimeAsync(200);
-    expect(runtime.speculateAdjacent).toHaveBeenCalledWith('next');
-    const stock = state().stock!;
-    expect(stock.target.key).toBe('1:4:104');
-    expect(stock.target.snapshot.bookSpreadIndex).toBe(4);
-
-    await drag();
-    expect(runtime.prepareAdjacent).not.toHaveBeenCalled();
-    expect(runtime.claimPreparedTurn).toHaveBeenCalledOnce();
-    expect(state().interactiveTurn?.content?.key).toBe('1:4:104');
-    expect(state().interactiveTurn?.nativeGesture?.token).toBe(stock.token);
-  });
-
-  it('plays a tap from the stocked pair and resolves once the target reaches the subscriber', async () => {
-    const { coordinator, runtime, state, native, render, values } = fixture({ complete: true });
-    await vi.advanceTimersByTimeAsync(200);
-    const stock = state().stock!;
-    values.nativeInputReady.set(true);
-    coordinator.markStocked(stock.token);
-    expect(values.nativeStockToken.value).toBe(stock.token);
-
-    const navigation = coordinator.next();
-    expect(consumeNativePagerInputById).toHaveBeenCalledWith(0, 1);
-    expect(runtime.next).not.toHaveBeenCalled();
-    expect(state().interactiveTurn?.nativeGesture).toMatchObject({ driven: true, consumed: false });
-    expect(values.nativeStockToken.value).toBe(0);
-
-    native(stock.token, stock.preparedTurnId, 'consumed');
-    native(stock.token, stock.preparedTurnId, 'completed');
-    await expect(navigation).resolves.toMatchObject({ spreadIndex: 4 });
-    render(page(4, true));
-    await vi.advanceTimersByTimeAsync(40);
-    expect(state().interactiveTurn).toBeUndefined();
-    expect(acknowledgeNativePagerPresentationById).toHaveBeenCalled();
-  });
-
-  it('queues a second tap behind a consumed native sheet instead of waiting for its handoff', async () => {
-    const { coordinator, runtime, state, native, values } = fixture({ complete: true, effect: curlPageTurnEffect });
-    await vi.advanceTimersByTimeAsync(200);
-    const stock = state().stock!;
-    values.nativeInputReady.set(true);
-    coordinator.markStocked(stock.token);
-    void coordinator.next();
-    native(stock.token, stock.preparedTurnId, 'consumed');
-    native(stock.token, stock.preparedTurnId, 'completed');
-    const second = coordinator.next();
-    await vi.advanceTimersByTimeAsync(0);
-    await expect(second).resolves.toMatchObject({ spreadIndex: 5 });
-    expect(runtime.commitPreparedTurn).toHaveBeenCalledOnce();
-    expect(runtime.next).toHaveBeenCalledOnce();
-    // The first sheet's target never shows as a still page; its presentation
-    // is released when the next turn takes over.
-    expect(acknowledgeNativePagerPresentationById).toHaveBeenCalledWith(0, `lunar-interactive:${stock.token}:${stock.preparedTurnId}#turn:1`);
-    expect(state().interactiveTurn).toBeUndefined();
-    expect(state().automaticTurns).toHaveLength(1);
-  });
-
   it('runs a tap made during a settling turn after the turn hands off', async () => {
     const { coordinator, runtime, state, drag, release, native, render } = fixture();
     await drag();
@@ -266,21 +176,17 @@ describe('page turn coordinator handoff', () => {
     await vi.advanceTimersByTimeAsync(0);
     await navigation;
     expect(turnsAtEmit).toBe(1);
-    expect(state().automaticTurns[0]).toMatchObject({ direction: 1, burst: false });
+    expect(state().automaticTurns[0]).toMatchObject({ direction: 1 });
   });
 
-  it('returns a cancelled swipe to the idle candidate instead of preparing again', async () => {
-    const { runtime, state, drag, coordinator } = fixture({ complete: true });
-    await vi.advanceTimersByTimeAsync(200);
+  it('cancels the prepared target of a released swipe and clears its stocked pair', async () => {
+    const { runtime, state, drag, coordinator } = fixture();
     await drag(-40);
+    expect(state().stock?.preparedTurnId).toBe(1);
     coordinator.endDrag(0, -40, false, { throwVelocity: 0, throwAcceleration: 0, idleDecay: 1 });
     await vi.advanceTimersByTimeAsync(1000);
+    expect(runtime.cancelPreparedTurn).toHaveBeenCalledOnce();
     expect(state().interactiveTurn).toBeUndefined();
-    expect(runtime.releasePreparedTurnToSpeculation).toHaveBeenCalledOnce();
-    expect(runtime.cancelPreparedTurn).not.toHaveBeenCalled();
-    expect(state().stock?.preparedTurnId).toBe(1);
-    await drag();
-    expect(runtime.prepareAdjacent).not.toHaveBeenCalled();
-    expect(runtime.speculateAdjacent).toHaveBeenCalledOnce();
+    expect(state().stock).toBeUndefined();
   });
 });

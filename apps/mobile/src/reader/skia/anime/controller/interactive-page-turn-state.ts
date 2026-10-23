@@ -50,17 +50,4 @@ export interface ReaderNativeGestureHandoff {
   readonly generation: number;
   commit?: Promise<ReaderSnapshot>;
   terminalEventHandled: boolean;
-  /** Settles the navigation promise of a tap that consumed a stocked pair. */
-  onCommitted?: (snapshot: ReaderSnapshot) => void;
-}
-
-/** A prepared pair held while the reader is idle. */
-export interface ReaderSpeculation {
-  readonly token: number;
-  readonly preparedTurn: ReaderPreparedTurn;
-  readonly direction: 1 | -1;
-  readonly source: ReaderPageContent;
-  readonly target: ReaderPageContent;
-  /** An input owns it now; it returns to idle only if that input cancels. */
-  claimed: boolean;
 }

@@ -1,4 +1,3 @@
-import { burstPageTurnDurationMs } from '../../core/page-turn-concurrency';
 import type { ReaderPageTurnEffect, ReaderPageTurnReleaseContext } from '../../core/page-turn-effect';
 import { clampUnit } from '../../core/page-turn-math';
 import { curlRevertDurationMs } from './geometry';
@@ -149,11 +148,8 @@ export const curlPageTurnEffect: ReaderPageTurnEffect = {
     getDuration: ({ incomingPageLanding }) =>
       incomingPageLanding ? PAGE_TURN_REVERSE_DURATION_MS : PAGE_TURN_DURATION_MS,
     getSettleDuration: getCurlSettleDuration,
-    getAutomaticDuration: ({ incomingPageLanding, queuedTurnCount }) =>
-      burstPageTurnDurationMs(
-        incomingPageLanding ? PAGE_TURN_REVERSE_DURATION_MS : PAGE_TURN_DURATION_MS,
-        queuedTurnCount > 1,
-      ),
+    getAutomaticDuration: ({ incomingPageLanding }) =>
+      incomingPageLanding ? PAGE_TURN_REVERSE_DURATION_MS : PAGE_TURN_DURATION_MS,
     getEasing: ({ fromProgress, targetProgress, incomingPageLanding, interactive }) => {
       if (!interactive) return linear;
       if (targetProgress === 0) return easeOutCubic;

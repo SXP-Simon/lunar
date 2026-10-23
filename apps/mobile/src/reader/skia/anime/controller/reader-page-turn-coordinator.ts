@@ -22,14 +22,12 @@ import { readerInteractivePageTurnIdentity } from '../native/page-turn';
 import {
   acknowledgeNativePagerPresentationById,
   cancelNativePagerGestureOnUI,
-  consumeNativePagerInputById,
   type NativePagerEventRecord,
 } from '../native/pager-compositor';
 import type {
   ReaderCommittedHandoff,
   ReaderDragState,
   ReaderNativeGestureHandoff,
-  ReaderSpeculation,
 } from './interactive-page-turn-state';
 import { AutomaticPageTurnQueue } from './automatic-page-turn-queue';
 import { ReaderPageTurnStore, type ReaderPageTurnState, type ReaderPageTurnStock } from './page-turn-store';
@@ -43,9 +41,7 @@ export interface ReaderPageTurnConfig {
   readonly surfaceTop: number;
 }
 
-/** Idle time before the neighbor in the reading direction is prepared and stocked. */
-const SPECULATION_DELAY_MS = 120;
-/** Idle time before neighbors are compiled while the book is still paginating. */
+/** Idle time before neighboring pictures are compiled. */
 const WARM_DELAY_MS = 350;
 const PAGE_TURN_SETTLE_FALLBACK_DELAY_MS = 180;
 
@@ -56,9 +52,9 @@ interface DeferredTap {
 
 /**
  * Owns every page turn of one reader runtime: finger drags, released sheets,
- * taps and their native handoffs, plus the candidate held while idle. It is a
- * plain object so that turn bookkeeping never re-renders the reader screen;
- * React only reads the store slices it draws.
+ * taps and their native handoffs. It is a plain object so that turn
+ * bookkeeping never re-renders the reader screen; React only reads the store
+ * slices it draws.
  */
 export class ReaderPageTurnCoordinator {
   readonly store = new ReaderPageTurnStore();
@@ -76,12 +72,7 @@ export class ReaderPageTurnCoordinator {
   private readonly nativeHandoffs = new Map<number, ReaderNativeGestureHandoff>();
   private committedHandoff?: ReaderCommittedHandoff;
   private stockTokenSequence = 0;
-  private stockedToken = 0;
-
-  // The idle candidate.
-  private speculation?: ReaderSpeculation;
   private idleTimer?: ReturnType<typeof setTimeout>;
-  private preferredDirection: 1 | -1 = 1;
   private deferredTap?: DeferredTap;
   private readonly automatic: AutomaticPageTurnQueue;
 
@@ -102,32 +93,23 @@ export class ReaderPageTurnCoordinator {
         this.publish({});
       },
       beforeNavigate: () => this.prepareForAutomaticNavigation(),
-      navigate: (direction, performanceId) => this.runAutomaticNavigation(direction, performanceId),
-      settled: (direction, moved) => {
-        if (moved) this.preferredDirection = direction;
-        this.scheduleIdleWork();
-      },
+      navigate: (direction, performanceId) =>
+        direction > 0 ? runtime.next(performanceId) : runtime.previous(performanceId),
+      settled: () => this.scheduleIdleWork(),
     });
   }
 
   /** Starts listening to the runtime; the returned function disposes the controller. */
   attach(): () => void {
     this.disposed = false;
-    this.detachments.push(
-      this.runtime.subscribe(this.handleRuntimeSnapshot),
-      this.runtime.subscribeSpeculationRevoked(this.handleSpeculationRevoked),
-    );
+    this.detachments.push(this.runtime.subscribe(this.handleRuntimeSnapshot));
     this.values.nativeStockToken.set(0);
     this.scheduleIdleWork();
     return () => this.dispose();
   }
 
   configure(config: ReaderPageTurnConfig): void {
-    const effectChanged =
-      config.pageTurnEffect !== this.config.pageTurnEffect || config.spreadMode !== this.config.spreadMode;
     this.config = config;
-    // A held pair was stocked for the previous effect's composer setup.
-    if (effectChanged) this.dropSpeculation(true);
     this.scheduleIdleWork();
   }
 
@@ -248,7 +230,6 @@ export class ReaderPageTurnCoordinator {
       return;
     }
     if (state.preparing || state.prepared) return;
-    if (this.claimSpeculation(state)) return;
 
     if (!state.pendingPublished && pageTurnEffect.visual.kind === 'slide') {
       state.pendingPublished = true;
@@ -268,7 +249,6 @@ export class ReaderPageTurnCoordinator {
 
   readonly markNativeGestureAccepted = (stockToken: number): void => {
     const state = this.drag;
-    if (state && state.nativeGestureToken === 0 && state.directionLocked) this.claimSpeculation(state);
     if (!state || state.nativeGestureToken !== stockToken || !state.preparedTurn || !state.prepared) {
       // The composer took a drag RN no longer owns. Hand the sheet back.
       readerDiagnostic('turn.native.orphan', () => `stock=${stockToken} turn=${state?.id ?? 'none'}`);
@@ -339,7 +319,6 @@ export class ReaderPageTurnCoordinator {
       () => `turn=${identity.gestureToken} prepared=${identity.preparedTurnId} event=${event.event} native=${event.id}`,
     );
     if (event.event === 'consumed' && !handoff.commit) {
-      if (this.speculation?.preparedTurn.id === handoff.preparedTurn.id) this.speculation = undefined;
       this.updateInteractive((turn) =>
         turn.nativeGesture?.token === identity.gestureToken
           ? {
@@ -356,7 +335,9 @@ export class ReaderPageTurnCoordinator {
     if (handoff.terminalEventHandled || (event.event !== 'completed' && event.event !== 'cancelled')) return;
     handoff.terminalEventHandled = true;
     if (event.event === 'cancelled') {
-      void this.retirePreparedTurn(handoff.preparedTurn, identity.gestureToken)
+      void this.runtime
+        .cancelPreparedTurn(handoff.preparedTurn)
+        .catch(() => undefined)
         .then(waitForPageHandoffFrames)
         .then(() => {
           if (this.nativeHandoffs.get(identity.gestureToken) !== handoff) return;
@@ -374,7 +355,6 @@ export class ReaderPageTurnCoordinator {
         if (this.nativeHandoffs.get(identity.gestureToken) !== handoff) return;
         const preparedTurn = handoff.preparedTurn;
         this.nativeHandoffs.delete(identity.gestureToken);
-        handoff.onCommitted?.(result);
         if (
           result.revisionId !== preparedTurn.revisionId ||
           result.spreadIndex !== preparedTurn.targetSpreadIndex ||
@@ -401,26 +381,20 @@ export class ReaderPageTurnCoordinator {
       .catch(() => {
         if (this.nativeHandoffs.get(identity.gestureToken) !== handoff) return;
         this.nativeHandoffs.delete(identity.gestureToken);
-        handoff.onCommitted?.(this.runtime.getSnapshot());
         if (this.activeTurnId === handoff.turnId) this.finishTurn();
       });
   };
 
   /** Reports that the composer now holds the pair stocked under this token. */
   readonly markStocked = (token: number): void => {
-    this.stockedToken = token;
     const stock = this.store.getState().stock;
     if (!stock || stock.token !== token || this.nativeHandoffs.has(token)) return;
-    // A claimed idle pair already belongs to an input; only an unclaimed pair
-    // or the drag's own pair may start a native drag.
-    if (this.speculation?.token === token && this.speculation.claimed) return;
     this.values.nativeStockDirection.set(stock.direction);
     this.values.nativeStockToken.set(token);
   };
 
   /** The composer was re-anchored and dropped every stocked pair. */
   readonly markStockLost = (): void => {
-    this.stockedToken = 0;
     this.values.nativeStockToken.set(0);
   };
 
@@ -447,7 +421,6 @@ export class ReaderPageTurnCoordinator {
     const preparedTurn = this.drag?.preparedTurn;
     this.drag = undefined;
     if (preparedTurn) void this.runtime.cancelPreparedTurn(preparedTurn);
-    this.dropSpeculation(true);
     this.backgroundSuspension?.();
     this.backgroundSuspension = undefined;
     for (const resolve of this.deferredTap?.resolvers ?? []) resolve(this.runtime.getSnapshot());
@@ -495,29 +468,6 @@ export class ReaderPageTurnCoordinator {
   }
 
   // Drag preparation.
-
-  private claimSpeculation(state: ReaderDragState): boolean {
-    const speculation = this.speculation;
-    if (!speculation || speculation.claimed) return false;
-    if (speculation.direction !== state.direction || speculation.source.key !== state.source.key) {
-      // The runtime cancels this candidate itself before preparing the other side.
-      this.dropSpeculation(false);
-      return false;
-    }
-    if (!this.runtime.claimPreparedTurn(speculation.preparedTurn)) {
-      this.dropSpeculation(false);
-      return false;
-    }
-    speculation.claimed = true;
-    state.nativeGestureToken = speculation.token;
-    state.preparedTurn = speculation.preparedTurn;
-    readerDiagnostic(
-      'turn.prepare.speculative',
-      () => `turn=${state.id} prepared=${speculation.preparedTurn.id} token=${speculation.token}`,
-    );
-    this.showPreparedTurn(state, speculation.preparedTurn, speculation.target);
-    return true;
-  }
 
   private prepareDragTarget(state: ReaderDragState): void {
     state.preparing = true;
@@ -706,7 +656,6 @@ export class ReaderPageTurnCoordinator {
         `preparedId=${state.preparedTurn?.id ?? 'none'}`,
       ].join(' '),
     );
-    if (commit) this.preferredDirection = state.direction;
     const settleContext = {
       fromProgress: state.renderProgress,
       releaseVelocity: towardTargetVelocity,
@@ -758,7 +707,7 @@ export class ReaderPageTurnCoordinator {
     if (!commit) {
       const preparedTurn = state.preparedTurn;
       if (!state.prepared) {
-        if (preparedTurn) void this.retirePreparedTurn(preparedTurn, state.nativeGestureToken);
+        if (preparedTurn) void this.runtime.cancelPreparedTurn(preparedTurn);
         readerDiagnostic(
           'turn.cancel.clear',
           () => `turn=${state.id} mode=without-mounted-target prepared=${preparedTurn?.id ?? 'none'}`,
@@ -781,7 +730,7 @@ export class ReaderPageTurnCoordinator {
             'turn.cancel.visual-ready',
             () => `turn=${state.id} prepared=${preparedTurn?.id ?? 'none'} generation=${generation}`,
           );
-          return preparedTurn ? this.retirePreparedTurn(preparedTurn, state.nativeGestureToken) : undefined;
+          return preparedTurn ? this.runtime.cancelPreparedTurn(preparedTurn) : undefined;
         })
         .catch(() => undefined)
         .then(waitForPageHandoffFrames)
@@ -828,7 +777,6 @@ export class ReaderPageTurnCoordinator {
       return;
     }
 
-    if (this.speculation?.preparedTurn.id === preparedTurn.id) this.speculation = undefined;
     const navigate = this.runtime.commitPreparedTurn(preparedTurn);
     const settleDuration = pageTurnEffect.motion.getSettleDuration({ ...settleContext, targetProgress: 1 });
     const generation = ++this.handoffGeneration;
@@ -918,32 +866,6 @@ export class ReaderPageTurnCoordinator {
     return Promise.race([visualSettle, waitFor(settleDuration + PAGE_TURN_SETTLE_FALLBACK_DELAY_MS)]);
   }
 
-  /**
-   * Ends a prepared turn an input gave up on. When it still starts from the
-   * visible page it becomes the idle candidate again, so the next swipe in
-   * that direction starts at once; otherwise it is cancelled.
-   */
-  private async retirePreparedTurn(preparedTurn: ReaderPreparedTurn, token: number): Promise<void> {
-    if (this.runtime.releasePreparedTurnToSpeculation(preparedTurn)) {
-      const source = readerPageContentForSnapshot(this.runtime, this.runtime.getSnapshot());
-      const target = this.contentForPreparedTurn(preparedTurn, source?.snapshot);
-      if (source && target && token > 0) {
-        this.speculation = {
-          token,
-          preparedTurn,
-          direction: preparedTurn.direction === 'next' ? 1 : -1,
-          source,
-          target,
-          claimed: false,
-        };
-        return;
-      }
-      await this.runtime.releaseSpeculation(preparedTurn);
-      return;
-    }
-    await this.runtime.cancelPreparedTurn(preparedTurn);
-  }
-
   // Handoff to the subscriber.
 
   private beginCommittedHandoff(handoff: ReaderCommittedHandoff): void {
@@ -995,21 +917,9 @@ export class ReaderPageTurnCoordinator {
   private finishTurn(): void {
     this.activeTurnId = undefined;
     this.committedHandoff = undefined;
-    this.publishInteractive(undefined);
-    const speculation = this.speculation;
-    if (speculation && !speculation.claimed) {
-      this.publish({
-        stock: this.stockFor(
-          speculation.token,
-          speculation.preparedTurn,
-          speculation.direction,
-          speculation.source,
-          speculation.target,
-        ),
-      });
-      // The composer still holds this pair from the cancelled input.
-      if (this.stockedToken === speculation.token) this.markStocked(speculation.token);
-    }
+    // The finished turn's pair is spent; the next drag stocks its own.
+    this.values.nativeStockToken.set(0);
+    this.publish({ interactiveTurn: undefined, stock: undefined });
     const deferred = this.deferredTap;
     if (deferred) {
       this.deferredTap = undefined;
@@ -1025,119 +935,19 @@ export class ReaderPageTurnCoordinator {
 
   private navigate(direction: 1 | -1): Promise<ReaderSnapshot> {
     if (this.disposed) return Promise.resolve(this.runtime.getSnapshot());
-    // A sheet the composer has already consumed keeps animating on its own,
-    // so further taps queue behind its commit and overlap it like any burst.
-    // A tap during a drag or a declarative settle runs right after that turn
+    // A tap during a drag or a settling turn runs right after that turn
     // instead of tearing it down; the latest direction wins.
-    const nativeConsumed = this.store.getState().interactiveTurn?.nativeGesture?.consumed === true;
-    if (this.drag || (this.activeTurnId !== undefined && !nativeConsumed)) {
+    if (this.drag || this.activeTurnId !== undefined) {
       const deferred = this.deferredTap ?? { direction, resolvers: [] };
       deferred.direction = direction;
       this.deferredTap = deferred;
       return new Promise((resolve) => deferred.resolvers.push(resolve));
     }
-    return this.consumeStockedTurn(direction) ?? this.automatic.enqueue(direction);
-  }
-
-  /**
-   * Plays a tap from the pair stocked while idle. The composer starts it at
-   * once and the turn then follows exactly the handoff of a released drag.
-   */
-  private consumeStockedTurn(direction: 1 | -1): Promise<ReaderSnapshot> | undefined {
-    const speculation = this.speculation;
-    const values = this.values;
-    if (
-      !speculation ||
-      speculation.claimed ||
-      speculation.direction !== direction ||
-      this.store.getState().automaticNavigationActive ||
-      !values.nativeInputReady.value ||
-      values.nativeStockToken.value !== speculation.token ||
-      values.nativeStockDirection.value !== direction
-    ) {
-      return undefined;
-    }
-    if (!this.runtime.claimPreparedTurn(speculation.preparedTurn)) {
-      this.dropSpeculation(false);
-      return undefined;
-    }
-    if (!consumeNativePagerInputById(values.nativePagerId.value, direction)) {
-      if (!this.runtime.releasePreparedTurnToSpeculation(speculation.preparedTurn)) this.dropSpeculation(true);
-      return undefined;
-    }
-    values.nativeStockToken.set(0);
-    speculation.claimed = true;
-    this.clearIdleTimer();
-    this.preferredDirection = direction;
-    const performanceId = readerPerformanceId('automatic');
-    const turnId = ++this.turnSequence;
-    this.activeTurnId = turnId;
-    readerDiagnostic(
-      'turn.tap.native',
-      () => `turn=${turnId} prepared=${speculation.preparedTurn.id} direction=${directionName(direction)}`,
-    );
-    return new Promise<ReaderSnapshot>((resolve) => {
-      this.nativeHandoffs.set(speculation.token, {
-        turnId,
-        gestureToken: speculation.token,
-        preparedTurn: speculation.preparedTurn,
-        generation: ++this.handoffGeneration,
-        terminalEventHandled: false,
-        onCommitted: resolve,
-      });
-      this.publish({
-        interactiveTurn: {
-          performanceId,
-          source: speculation.source,
-          content: speculation.target,
-          direction,
-          progress: 0,
-          settling: true,
-          settleTo: 1,
-          nativeGesture: {
-            token: speculation.token,
-            preparedTurnId: speculation.preparedTurn.id,
-            driven: true,
-            settling: true,
-            consumed: false,
-          },
-        },
-      });
-    });
-  }
-
-  /** Commits the idle candidate when the tap asks for it; otherwise navigates normally. */
-  private async runAutomaticNavigation(direction: 1 | -1, performanceId: string | undefined): Promise<ReaderSnapshot> {
-    const speculation = this.speculation;
-    if (
-      speculation &&
-      !speculation.claimed &&
-      speculation.direction === direction &&
-      sameSnapshotIdentity(speculation.source.snapshot, this.runtime.getSnapshot()) &&
-      this.runtime.claimPreparedTurn(speculation.preparedTurn)
-    ) {
-      this.speculation = undefined;
-      this.values.nativeStockToken.set(0);
-      this.publish({ stock: undefined });
-      return this.runtime.commitPreparedTurn(speculation.preparedTurn);
-    }
-    return direction > 0 ? this.runtime.next(performanceId) : this.runtime.previous(performanceId);
+    return this.automatic.enqueue(direction);
   }
 
   private async prepareForAutomaticNavigation(): Promise<void> {
     if (this.activeTurnId === undefined && !this.drag) return;
-    if (!this.drag) {
-      // A consumed native sheet: let its commit land so this turn starts from
-      // its target, then hand the composer its presentation now, since no
-      // still frame of that target will be shown. A late completion of the
-      // same sheet is acknowledged by the native event handler.
-      const activeTurnId = this.activeTurnId;
-      const pending = [...this.nativeHandoffs.values()].find((handoff) => handoff.turnId === activeTurnId)?.commit;
-      if (pending) await pending.catch(() => undefined);
-      if (this.activeTurnId !== activeTurnId) return;
-      const nativeTurnId = this.committedHandoff?.nativeTurnId;
-      if (nativeTurnId) acknowledgeNativePagerPresentationById(this.values.nativePagerId.value, nativeTurnId);
-    }
     this.handoffGeneration += 1;
     const preparedTurn = this.drag?.preparedTurn;
     this.drag = undefined;
@@ -1151,17 +961,6 @@ export class ReaderPageTurnCoordinator {
 
   private readonly handleRuntimeSnapshot = (snapshot: ReaderSnapshot): void => {
     this.automatic.handleRuntimeSnapshot(snapshot);
-    const speculation = this.speculation;
-    if (speculation && !speculation.claimed && !sameSnapshotIdentity(speculation.source.snapshot, snapshot)) {
-      this.dropSpeculation(true);
-    }
-  };
-
-  private readonly handleSpeculationRevoked = (preparedTurnId: number): void => {
-    const speculation = this.speculation;
-    if (speculation && !speculation.claimed && speculation.preparedTurn.id === preparedTurnId) {
-      this.dropSpeculation(false);
-    }
   };
 
   // Idle preparation.
@@ -1190,59 +989,11 @@ export class ReaderPageTurnCoordinator {
     this.clearIdleTimer();
     const snapshot = this.subscriberSnapshot;
     if (!this.isIdle(snapshot)) return;
-    const speculation = this.speculation;
-    if (speculation && sameSnapshotIdentity(speculation.source.snapshot, snapshot)) return;
-    // Without an animation a tap only swaps pictures, which warming covers.
-    const speculate = snapshot.paginationComplete === true && this.config.pageTurnEffect.visual.kind !== 'none';
-    this.idleTimer = setTimeout(
-      () => {
-        this.idleTimer = undefined;
-        if (!this.isIdle(snapshot)) return;
-        if (speculate) {
-          void this.speculate(snapshot);
-        } else {
-          void this.runtime.warmAdjacentPictures(snapshot.revisionId, snapshot.spreadIndex).catch(() => undefined);
-        }
-      },
-      speculate ? SPECULATION_DELAY_MS : WARM_DELAY_MS,
-    );
-  }
-
-  private async speculate(snapshot: ReaderSnapshot): Promise<void> {
-    const preferred = this.preferredDirection;
-    const direction = this.runtime.canNavigate(directionName(preferred))
-      ? preferred
-      : this.runtime.canNavigate(directionName(oppositeDirection(preferred)))
-        ? oppositeDirection(preferred)
-        : undefined;
-    if (direction === undefined) return;
-    const preparedTurn = await this.runtime.speculateAdjacent(directionName(direction)).catch(() => undefined);
-    if (!preparedTurn) return;
-    // An input may have claimed this candidate while it was prepared; only a
-    // candidate that is still idle can be adopted or discarded here.
-    const source = readerPageContentForSnapshot(this.runtime, snapshot);
-    const target = this.contentForPreparedTurn(preparedTurn, snapshot);
-    if (!this.isIdle(snapshot) || this.speculation || !source || !target) {
-      void this.runtime.releaseSpeculation(preparedTurn);
-      return;
-    }
-    const token = ++this.stockTokenSequence;
-    this.speculation = { token, preparedTurn, direction, source, target, claimed: false };
-    readerDiagnostic(
-      'turn.speculate.ready',
-      () => `prepared=${preparedTurn.id} token=${token} target=${describePreparedTarget(preparedTurn)}`,
-    );
-    this.publish({ stock: this.stockFor(token, preparedTurn, direction, source, target) });
-  }
-
-  /** Forgets the idle candidate; `cancel` also asks the runtime to discard it. */
-  private dropSpeculation(cancel: boolean): void {
-    const speculation = this.speculation;
-    if (!speculation || speculation.claimed) return;
-    this.speculation = undefined;
-    if (this.values.nativeStockToken.value === speculation.token) this.values.nativeStockToken.set(0);
-    if (this.store.getState().stock?.token === speculation.token) this.publish({ stock: undefined });
-    if (cancel) void this.runtime.releaseSpeculation(speculation.preparedTurn);
+    this.idleTimer = setTimeout(() => {
+      this.idleTimer = undefined;
+      if (!this.isIdle(snapshot)) return;
+      void this.runtime.warmAdjacentPictures(snapshot.revisionId, snapshot.spreadIndex).catch(() => undefined);
+    }, WARM_DELAY_MS);
   }
 
   private stockFor(
@@ -1288,10 +1039,6 @@ export class ReaderPageTurnCoordinator {
 
 function directionName(direction: 1 | -1): ReaderTurnDirection {
   return direction > 0 ? 'next' : 'previous';
-}
-
-function oppositeDirection(direction: 1 | -1): 1 | -1 {
-  return direction > 0 ? -1 : 1;
 }
 
 function shallowEqualState(left: ReaderPageTurnState, right: ReaderPageTurnState): boolean {

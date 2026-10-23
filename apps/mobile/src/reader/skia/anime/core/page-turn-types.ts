@@ -92,6 +92,4 @@ export interface ReaderAutomaticTurn {
   readonly from: ReaderPageContent;
   readonly to: ReaderPageContent;
   readonly direction: 1 | -1;
-  /** Another automatic turn was still moving when this one was published. */
-  readonly burst?: boolean;
 }

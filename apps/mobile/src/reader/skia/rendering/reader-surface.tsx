@@ -30,7 +30,6 @@ import { readerPerformanceActivity, startReaderPerformanceMonitor } from '../../
 import {
   PageCurlMesh,
   automaticPageTurnPaintOrder,
-  burstPageTurnDurationMs,
   getReaderPageTurnEffect,
   nativeAutomaticPageTurnBaseContent,
   nativeInteractivePageTurnBaseContent,
@@ -858,7 +857,7 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
   viewportHeight,
   viewportWidth,
 }: AutomaticPageCurlLayerProps) {
-  const { direction, id: turnId, burst } = turn;
+  const { direction, id: turnId } = turn;
   const incomingLanding = spreadMode === 'single' && direction < 0;
   const source = incomingLanding ? turn.to : turn.from;
   const progressText = progressLabelForSnapshot(source.snapshot);
@@ -914,14 +913,11 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
 
   useEffect(() => {
     if (!texturesReady) return;
-    const duration = burstPageTurnDurationMs(
-      pageTurnEffect.motion.getDuration({
-        releaseVelocity: 0,
-        animationDuration,
-        incomingPageLanding: incomingLanding,
-      }),
-      burst,
-    );
+    const duration = pageTurnEffect.motion.getDuration({
+      releaseVelocity: 0,
+      animationDuration,
+      incomingPageLanding: incomingLanding,
+    });
     progress.set(
       withTiming(
         1,
@@ -941,7 +937,7 @@ const AutomaticPageCurlLayer = memo(function AutomaticPageCurlLayer({
       ),
     );
     return () => cancelAnimation(progress);
-  }, [animationDuration, burst, incomingLanding, onComplete, pageTurnEffect, progress, texturesReady, turnId]);
+  }, [animationDuration, incomingLanding, onComplete, pageTurnEffect, progress, texturesReady, turnId]);
 
   return (
     <PageCurlMesh
