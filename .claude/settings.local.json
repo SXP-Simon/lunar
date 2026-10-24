@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed 's/.*fn //')",
+      "Bash(grep -rn \"enum .*{$\\\\|Pending\\\\|Unavailable\\\\|Resolved\" rito-core/src/runtime/reader_session/types.rs)",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ]
+  }
+}

@@ -148,6 +148,8 @@ pnpm android
 
 CNB 构建失败或被取消时，GitHub 构建任务失败，发布任务跳过执行。等待上限为 160 分钟，超时后尝试停止 CNB 构建。GitHub 取消信号也会触发停止处理。任务结束后删除临时 CNB 分支；强制终止导致清理未完成时，可根据任务摘要中的构建链接和日志中的分支名称手动处理。
 
+Maven Central 对共享出口实行消费限额。CNB 节点的出口被限流时，Central 返回 HTTP 429，Gradle 收到该响应后禁用该仓库并继续构建，随后只存在于 Central 的依赖解析失败，日志表现为 `Repository MavenRepo is disabled due to earlier error`，与源码无关。`scripts/gradle-mirrors.init.gradle` 由 `scripts/build-android.sh` 安装到 Gradle 用户目录的 `init.d`，应用构建与 `node_modules` 内 React Native、Expo 插件构建都会先查询镜像，未命中时回退到原有仓库。`LUNAR_GRADLE_MIRRORS` 用逗号分隔的 URL 覆盖镜像列表，设置为 `off` 关闭镜像。`.cnb.yml` 的 Android 流水线在失败后重试一次，用于覆盖这类瞬时故障。[Maven Central 429](https://central.sonatype.org/faq/429-error/)
+
 上传中断时，Release 保持草稿。在附件保留期内重新执行失败的发布任务，会使用同一次运行的构建附件。重新执行全部任务会重新编译并替换该运行的 Actions 附件，CNB 附件使用新的尝试编号。CNB 和 Actions 附件均保留七天，公开 Release 附件继续保存。
 
 同一提交、同一标签的自动草稿支持恢复。公开 Release 和人工草稿受到保护，后续修改使用新标签发布。Nightly 重试沿用该次运行的标签，标签提交发生变化时发布检查终止。

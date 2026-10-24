@@ -1,0 +1,74 @@
+// Routes every Gradle build in the composite through mirrors placed ahead of the public
+// repositories.
+//
+// Maven Central rate-limits shared build infrastructure and answers HTTP 429 to Gradle.
+// After one such response Gradle disables that repository for the rest of the build
+// ("Repository MavenRepo is disabled due to earlier error"), so a single throttled request
+// fails dependency resolution outright even though the source is unaffected: the CNB
+// build shares its egress with other tenants and cannot influence how much traffic that
+// network sends to Central. Mirrors first means the public repositories are only consulted
+// for artifacts the mirrors do not carry.
+//
+// scripts/build-android.sh installs this file into $GRADLE_USER_HOME/init.d, so it also
+// covers the Gradle plugin builds that Expo and React Native ship inside node_modules:
+// those configure their own repositories and the application's build files cannot reach
+// them. Set LUNAR_GRADLE_MIRRORS to a comma separated URL list to override the mirrors,
+// or to `off` to leave resolution untouched.
+
+import org.gradle.api.initialization.resolve.RepositoriesMode
+
+def configured = System.getenv('LUNAR_GRADLE_MIRRORS')?.trim()
+if (configured?.toLowerCase() == 'off') {
+  return
+}
+
+def mirrorUrls = configured
+  ? configured.split(',').collect { it.trim() }.findAll { it }
+  : [
+      'https://maven.aliyun.com/repository/central',
+      'https://maven.aliyun.com/repository/google',
+      'https://maven.aliyun.com/repository/gradle-plugin',
+      'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/',
+    ]
+
+// An init script action runs when a project is created, before its build script declares
+// repositories, and beforeSettings runs before settings.gradle registers anything, so the
+// mirrors take priority without dropping the declared repositories.
+def addMirrors = { repositories ->
+  def declared = repositories.collect { repository ->
+    try {
+      repository.hasProperty('url') ? repository.url.toString() : ''
+    } catch (Exception ignored) {
+      ''
+    }
+  }
+  mirrorUrls.eachWithIndex { String url, int index ->
+    if (!(url ==~ '(?i)https?://.+') || declared.contains(url)) {
+      return
+    }
+    repositories.maven { repository ->
+      repository.name = "lunarMirror${index}"
+      repository.url = url
+    }
+  }
+}
+
+beforeSettings { settings ->
+  addMirrors(settings.pluginManagement.repositories)
+  addMirrors(settings.dependencyResolutionManagement.repositories)
+}
+
+// A build that forbids project repositories fails as soon as one is declared, so the mode
+// decides whether project repositories may receive the mirrors. Every build in the
+// composite has its own Gradle instance, so the flag is kept per build.
+settingsEvaluated { settings ->
+  settings.gradle.ext.lunarForbidsProjectRepositories =
+    settings.dependencyResolutionManagement.repositoriesMode.get() == RepositoriesMode.FAIL_ON_PROJECT_REPOS
+}
+
+allprojects { project ->
+  addMirrors(project.buildscript.repositories)
+  if (!project.gradle.ext.has('lunarForbidsProjectRepositories') || !project.gradle.ext.lunarForbidsProjectRepositories) {
+    addMirrors(project.repositories)
+  }
+}

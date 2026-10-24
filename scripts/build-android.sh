@@ -48,6 +48,23 @@ done
 
 export LUNAR_BUILD_COMMIT="$(git rev-parse HEAD)"
 
+# Maven Central throttles shared CI egress and Gradle disables a repository for the rest
+# of the build after the first 429, which fails dependency resolution before any source is
+# compiled. The init script mirrors the public repositories and also reaches the Gradle
+# plugin builds inside node_modules; see its header for the details. Install it in the
+# Gradle user home that the CNB volume caches before EAS starts Gradle.
+export GRADLE_USER_HOME="${GRADLE_USER_HOME:-${HOME:-/root}/.gradle}"
+GRADLE_INIT_SCRIPT="$GRADLE_USER_HOME/init.d/00-lunar-mirrors.init.gradle"
+if [[ "${LUNAR_GRADLE_MIRRORS:-}" == off ]]; then
+  # An earlier successful pipeline may have merged the mirror into the shared cache.
+  rm -f "$GRADLE_INIT_SCRIPT"
+  echo "Gradle mirrors disabled by LUNAR_GRADLE_MIRRORS=off."
+else
+  mkdir -p "$GRADLE_USER_HOME/init.d"
+  install -m 0644 "$REPOSITORY_ROOT/scripts/gradle-mirrors.init.gradle" "$GRADLE_INIT_SCRIPT"
+  echo "Gradle mirrors installed: $GRADLE_INIT_SCRIPT (${LUNAR_GRADLE_MIRRORS:-default set})"
+fi
+
 # Expo prebuild applies these limits through with-android-build-memory.
 # Defaults target the CNB runner with 16 CPUs and 32 GiB of memory.
 # Reserve memory for Kotlin, Metro, native compilers and the operating system.

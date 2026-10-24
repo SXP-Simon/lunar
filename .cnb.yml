@@ -12,6 +12,10 @@
           - node_modules:copy-on-write
       imports: &expo-secrets
         - https://cnb.cool/Umbrae-Labs/secrets/-/blob/main/expo.yml
+      # Dependency downloads are the one stage that fails for reasons outside this
+      # repository (throttled mirrors, flaky registry egress). Retry the pipeline once
+      # so a transient failure costs a rerun instead of a red build.
+      retry: 1
       stages:
         - name: Build development APK
           script: bash scripts/build-android.sh development
@@ -26,6 +30,7 @@
     - runner: *android-runner
       docker: *android-docker
       imports: *expo-secrets
+      retry: 1
       env:
         CI: 'true'
         ANDROID_HOME: /opt/android-sdk
