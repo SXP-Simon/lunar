@@ -30,7 +30,7 @@ beforeAll(async () => {
 });
 afterAll(() => vi.unstubAllGlobals());
 
-function render(progress: number, direction: 1 | -1, gestureDriven = false, spreadMode: 'single' | 'double' = 'single') {
+function meshLayers(progress: number, direction: 1 | -1, gestureDriven: boolean, spreadMode: 'single' | 'double') {
   const incoming = spreadMode === 'single' && direction === -1;
   const element = PageCurlMesh({
     picture: {} as Parameters<typeof PageCurlMesh>[0]['picture'],
@@ -42,7 +42,14 @@ function render(progress: number, direction: 1 | -1, gestureDriven = false, spre
     paperColor: '#000000',
     phase: incoming ? 'incoming-landing' : 'full',
   });
-  const shaderProps = element!.props.children.props;
+  const [shadowLayer, paperLayer] = React.Children.toArray(element!.props.children) as React.ReactElement<{
+    children: React.ReactElement<{ source: string; uniforms: { value: Record<string, number | number[]> } }>;
+  }>[];
+  return { shadow: shadowLayer!.props.children.props, paper: paperLayer!.props.children.props };
+}
+
+function render(progress: number, direction: 1 | -1, gestureDriven = false, spreadMode: 'single' | 'double' = 'single') {
+  const shaderProps = meshLayers(progress, direction, gestureDriven, spreadMode).paper;
   const effect = kit.RuntimeEffect.Make(shaderProps.source, (error: string) => { throw new Error(error); });
   expect(effect).toBeTruthy();
   const uniforms = shaderProps.uniforms.value;
@@ -90,6 +97,33 @@ describe('curl printed face rendering', () => {
     const pixel = render(0, 1);
     expect(pixel(40)).toEqual([255, 0, 0, 255]);
     expect(pixel(360)).toEqual([0, 0, 255, 255]);
+  }, 15000);
+
+  it('casts the roll shadow onto the uncovered page only', () => {
+    const shaderProps = meshLayers(0.3, 1, false, 'single').shadow;
+    const effect = kit.RuntimeEffect.Make(shaderProps.source, (error: string) => { throw new Error(error); });
+    const uniforms = shaderProps.uniforms.value;
+    const data = Array.from({ length: effect.getUniformCount() }, (_, index) =>
+      uniforms[effect.getUniformName(index)]).flat();
+    const shader = effect.makeShader(data);
+    const surface = kit.MakeSurface(width, height);
+    const paint = new kit.Paint();
+    const canvas = surface.getCanvas();
+    canvas.clear(kit.Color(255, 255, 255, 1));
+    paint.setShader(shader);
+    canvas.drawRect(kit.XYWHRect(0, 0, width, height), paint);
+    const pixels = canvas.readPixels(0, 0, {
+      width, height, colorType: kit.ColorType.RGBA_8888,
+      alphaType: kit.AlphaType.Unpremul, colorSpace: kit.ColorSpace.SRGB,
+    });
+    const red = (x: number) => pixels[(height / 2 * width + x) * 4]!;
+    const rollX = Math.round((uniforms.shadow as number[])[0]! * width);
+    surface.delete(); paint.delete(); shader.delete(); effect.delete();
+    expect(rollX).toBeGreaterThan(0);
+    expect(rollX).toBeLessThan(width);
+    // Darkest beside the roll, fading into the open page.
+    expect(red(Math.min(width - 1, rollX + 2))).toBeLessThan(250);
+    expect(red(Math.min(width - 1, rollX + 2))).toBeLessThan(red(width - 1));
   }, 15000);
 
   it('preserves the outgoing face in double-page backward turns', () => {

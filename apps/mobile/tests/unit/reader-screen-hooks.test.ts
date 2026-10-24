@@ -139,17 +139,30 @@ afterEach(() => {
 });
 
 describe('reader panels', () => {
+  const registered = [
+    { key: 'toc', accessibilityLabel: 'toc', name: 'list' },
+    { key: 'marks', accessibilityLabel: 'marks', name: 'bookmark' },
+  ] as unknown as Parameters<typeof useReaderPanels>[0];
+
   it('keeps the new panel open when the previous drawer finishes closing', () => {
-    let panels = render(() => useReaderPanels(true));
+    let panels = render(() => useReaderPanels(registered));
     panels.setPanelOpen('toc', true);
-    panels = render(() => useReaderPanels(true));
+    panels = render(() => useReaderPanels(registered));
     expect(panels.activePanel).toBe('toc');
     panels.setPanelOpen('marks', true);
     panels.setPanelOpen('toc', false);
-    panels = render(() => useReaderPanels(true));
+    panels = render(() => useReaderPanels(registered));
     expect(panels.activePanel).toBe('marks');
     panels.setPanelOpen('marks', false);
-    expect(render(() => useReaderPanels(true)).activePanel).toBeUndefined();
+    expect(render(() => useReaderPanels(registered)).activePanel).toBeUndefined();
+  });
+
+  it('releases an open panel whose descriptor was removed and refuses unknown panels', () => {
+    let panels = render(() => useReaderPanels(registered));
+    expect(panels.selectPanel('missing')).toBe(false);
+    panels.setPanelOpen('marks', true);
+    panels = render(() => useReaderPanels(registered.slice(0, 1)));
+    expect(panels.activePanel).toBeUndefined();
   });
 });
 

@@ -8,8 +8,7 @@ import {
   readerPerformanceMark,
   readerPerformanceStart,
 } from '../../../runtime/core/performance';
-import type { ReaderPageTurnSurfaceBinding } from './page-turn-binding';
-import { takeNativePagerEvents } from './pager-compositor';
+import { takeNativePagerEvents, type NativePagerEventRecord } from './pager-compositor';
 
 interface NativePageTurnEventsOptions {
   readonly active: boolean;
@@ -17,8 +16,9 @@ interface NativePageTurnEventsOptions {
   readonly canvasRef: RefObject<CanvasRef | null>;
   readonly interactiveTurn?: ReaderInteractiveTurn;
   readonly onComplete?: (turnId: number) => void;
+  /** Receives every event that does not belong to a submitted automatic turn. */
+  readonly onNativeEvent?: (event: NativePagerEventRecord) => void;
   readonly submittedTurnIds: RefObject<Set<number>>;
-  readonly surfaceBinding?: ReaderPageTurnSurfaceBinding;
   readonly turns: readonly ReaderAutomaticTurn[];
 }
 
@@ -28,22 +28,22 @@ export function useNativePageTurnEvents({
   canvasRef,
   interactiveTurn,
   onComplete,
+  onNativeEvent,
   submittedTurnIds,
-  surfaceBinding,
   turns,
 }: NativePageTurnEventsOptions): number | undefined {
   const presentedTurnIds = useRef(new Set<number>());
   const [presentedTurnId, setPresentedTurnId] = useState<number>();
   const onCompleteRef = useRef(onComplete);
-  const surfaceBindingRef = useRef(surfaceBinding);
+  const onNativeEventRef = useRef(onNativeEvent);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
   useEffect(() => {
-    surfaceBindingRef.current = surfaceBinding;
-  }, [surfaceBinding]);
+    onNativeEventRef.current = onNativeEvent;
+  }, [onNativeEvent]);
 
   useEffect(() => {
     const liveTurnIds = new Set(turns.map((turn) => turn.id));
@@ -63,8 +63,18 @@ export function useNativePageTurnEvents({
     setPresentedTurnId(undefined);
   }, [active]);
 
+  // Poll while anything native is in flight. The latest turns are read
+  // through refs, so the interval is not rebuilt on every turn update.
+  const turnsRef = useRef(turns);
+  const interactiveTurnRef = useRef(interactiveTurn);
   useEffect(() => {
-    if (!active || (!(automaticActive && turns.length > 0) && !interactiveTurn)) return;
+    turnsRef.current = turns;
+    interactiveTurnRef.current = interactiveTurn;
+  }, [interactiveTurn, turns]);
+  const polling = active && ((automaticActive && turns.length > 0) || interactiveTurn !== undefined);
+
+  useEffect(() => {
+    if (!polling) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const drainEvents = () => {
@@ -75,11 +85,12 @@ export function useNativePageTurnEvents({
       for (const event of events) {
         const turnId = readerAutomaticPageTurnId(event.id);
         const gesture = readerInteractivePageTurnIdentity(event.id);
+        const interactive = interactiveTurnRef.current;
         const workId =
           turnId !== undefined
-            ? turns.find((turn) => turn.id === turnId)?.performanceId
-            : gesture?.gestureToken === interactiveTurn?.nativeGesture?.token
-              ? interactiveTurn?.performanceId
+            ? turnsRef.current.find((turn) => turn.id === turnId)?.performanceId
+            : gesture?.gestureToken === interactive?.nativeGesture?.token
+              ? interactive?.performanceId
               : undefined;
         readerPerformanceMark('reader.native.event', {
           workId,
@@ -89,7 +100,7 @@ export function useNativePageTurnEvents({
           deliveryDelayMs: Math.max(0, Date.now() - event.eventAtMs),
         });
         if (turnId === undefined || !submittedTurnIds.current.has(turnId)) {
-          surfaceBindingRef.current?.onNativeEvent(event);
+          onNativeEventRef.current?.(event);
           continue;
         }
         if (event.event === 'started') {
@@ -109,7 +120,7 @@ export function useNativePageTurnEvents({
       clearInterval(timer);
       drainEvents();
     };
-  }, [active, automaticActive, canvasRef, interactiveTurn, submittedTurnIds, turns]);
+  }, [canvasRef, polling, submittedTurnIds]);
 
   return presentedTurnId;
 }

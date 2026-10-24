@@ -1,4 +1,4 @@
-import { SymbolView } from 'expo-symbols';
+import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
 import { Fragment, useMemo, useState } from 'react';
@@ -99,16 +99,33 @@ export function computeSelectionLayout(
   };
 }
 
+/** A selection toolbar command; built-in and extension actions share this shape. */
+export interface ReaderSelectionAction {
+  readonly key: string;
+  readonly label: string;
+  readonly name: SymbolViewProps['name'];
+  readonly onPress: () => void;
+  readonly isDisabled?: boolean;
+}
+
+const MaxActionsPerRow = 4;
+
+/** Rows of at most four actions, keeping a five-action toolbar on one row. */
+export function arrangeSelectionActions<T>(actions: readonly T[]): readonly (readonly T[])[] {
+  if (actions.length <= MaxActionsPerRow + 1) return actions.length > 0 ? [actions] : [];
+  const rows: T[][] = [];
+  for (let index = 0; index < actions.length; index += MaxActionsPerRow) {
+    rows.push(actions.slice(index, index + MaxActionsPerRow));
+  }
+  return rows;
+}
+
 interface SelectionControlsProps {
-  readonly copyLabel: string;
-  readonly highlightLabel: string;
-  readonly noteLabel: string;
-  readonly excerptLabel: string;
+  readonly actions: readonly ReaderSelectionAction[];
   readonly selectionLabel: string;
   readonly startHandleLabel: string;
   readonly endHandleLabel: string;
   readonly isHighlightDisabled?: boolean;
-  readonly isExistingHighlight: boolean;
   readonly selectedColor: ReaderHighlightColor;
   readonly colorLabels: Readonly<Record<ReaderHighlightColor, string>>;
   readonly onColorChange: (color: ReaderHighlightColor) => void;
@@ -119,23 +136,15 @@ interface SelectionControlsProps {
   readonly viewportWidth: number;
   readonly viewportHeight: number;
   readonly safeAreaInsets: EdgeInsets;
-  readonly onCopy: () => void;
-  readonly onHighlight: () => void;
-  readonly onNote: () => void;
-  readonly onExcerpt: () => void;
   readonly drag?: ReaderSelectionDragController;
 }
 
 export function SelectionControls({
-  copyLabel,
-  highlightLabel,
-  noteLabel,
-  excerptLabel,
+  actions,
   selectionLabel,
   startHandleLabel,
   endHandleLabel,
   isHighlightDisabled = false,
-  isExistingHighlight,
   selectedColor,
   colorLabels,
   onColorChange,
@@ -146,10 +155,6 @@ export function SelectionControls({
   viewportWidth,
   viewportHeight,
   safeAreaInsets,
-  onCopy,
-  onHighlight,
-  onNote,
-  onExcerpt,
   drag,
 }: SelectionControlsProps) {
   const foreground = useThemeColor('foreground');
@@ -184,73 +189,35 @@ export function SelectionControls({
           onLayout={(event) => setMeasuredHeight(event.nativeEvent.layout.height)}
           className={`gap-2 ${layout.toolbar.placement === 'above' ? 'flex-col-reverse' : 'flex-col'}`}
           style={toolbarStyle}>
-          <View className="min-h-14 flex-row items-center rounded-2xl border border-border bg-surface px-1.5 py-0.5 shadow-lg">
+          <View className="rounded-2xl border border-border bg-surface px-1.5 py-0.5 shadow-lg">
             <View
               pointerEvents="none"
               className={`absolute size-2.5 rotate-45 bg-surface ${layout.toolbar.placement === 'above' ? '-bottom-1.5 border-b border-r border-border' : '-top-1.5 border-l border-t border-border'}`}
               style={{ left: layout.toolbar.arrowLeft }}
             />
-            <Button
-              accessibilityLabel={copyLabel}
-              className="h-auto min-h-12 flex-1 flex-col gap-0.5 rounded-xl px-2 py-1"
-              onPress={onCopy}
-              size="sm"
-              variant="ghost">
-              <SymbolView
-                name={{ ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' }}
-                size={19}
-                tintColor={foreground}
-              />
-              <Button.Label className="text-xs">{copyLabel}</Button.Label>
-            </Button>
-            <View className="h-6 w-px bg-border" />
-            <Button
-              accessibilityLabel={excerptLabel}
-              className="h-auto min-h-12 flex-1 flex-col gap-0.5 rounded-xl px-2 py-1"
-              onPress={onExcerpt}
-              size="sm"
-              variant="ghost">
-              <SymbolView
-                name={{ ios: 'quote.bubble', android: 'format_quote', web: 'format_quote' }}
-                size={20}
-                tintColor={foreground}
-              />
-              <Button.Label className="text-xs">{excerptLabel}</Button.Label>
-            </Button>
-            <View className="h-6 w-px bg-border" />
-            <Button
-              accessibilityLabel={highlightLabel}
-              className="h-auto min-h-12 flex-1 flex-col gap-0.5 rounded-xl px-2 py-1"
-              isDisabled={isHighlightDisabled}
-              onPress={onHighlight}
-              size="sm"
-              variant="ghost">
-              <SymbolView
-                name={
-                  isExistingHighlight
-                    ? { ios: 'trash', android: 'delete', web: 'delete' }
-                    : { ios: 'highlighter', android: 'ink_highlighter', web: 'ink_highlighter' }
-                }
-                size={20}
-                tintColor={foreground}
-              />
-              <Button.Label className="text-xs">{highlightLabel}</Button.Label>
-            </Button>
-            <View className="h-6 w-px bg-border" />
-            <Button
-              accessibilityLabel={noteLabel}
-              className="h-auto min-h-12 flex-1 flex-col gap-0.5 rounded-xl px-2 py-1"
-              isDisabled={isHighlightDisabled}
-              onPress={onNote}
-              size="sm"
-              variant="ghost">
-              <SymbolView
-                name={{ ios: 'square.and.pencil', android: 'edit_note', web: 'edit_note' }}
-                size={20}
-                tintColor={foreground}
-              />
-              <Button.Label className="text-xs">{noteLabel}</Button.Label>
-            </Button>
+            {arrangeSelectionActions(actions).map((row, rowIndex) => (
+              <View
+                key={row[0]?.key ?? rowIndex}
+                className={`min-h-14 flex-row items-center ${rowIndex > 0 ? 'border-t border-border' : ''}`}>
+                {row.map((action, index) => (
+                  <Fragment key={action.key}>
+                    {index > 0 ? <View className="h-6 w-px bg-border" /> : null}
+                    <Button
+                      accessibilityLabel={action.label}
+                      className="h-auto min-h-12 flex-1 flex-col gap-0.5 rounded-xl px-2 py-1"
+                      isDisabled={action.isDisabled}
+                      onPress={action.onPress}
+                      size="sm"
+                      variant="ghost">
+                      <SymbolView name={action.name} size={20} tintColor={foreground} />
+                      <Button.Label className="text-xs" numberOfLines={1}>
+                        {action.label}
+                      </Button.Label>
+                    </Button>
+                  </Fragment>
+                ))}
+              </View>
+            ))}
           </View>
           <View
             pointerEvents="box-none"

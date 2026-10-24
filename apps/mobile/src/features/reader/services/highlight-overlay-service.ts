@@ -1,8 +1,9 @@
 import {
+  compactReaderText,
   createReaderTextSelectionFromSourceRange,
+  findReaderTextSelectionByText,
   normalizeReaderTextSelectionSearchQuery,
   resolveReaderTextSelectionSegmentSourceRange,
-  createReaderTextSelectionFromRange,
   type ReaderHitEntry,
   type ReaderRuntime,
   type ReaderSourcePoint,
@@ -51,7 +52,7 @@ export function createReaderHighlightRegions(
   return highlights.flatMap((highlight) => {
     if (highlight.href !== href) return [];
     const sourceSelection = createReaderTextSelectionFromSourceRange(entries, highlight.sourceRange);
-    const textSelection = createReaderTextSelectionFromText(entries, highlight.text);
+    const textSelection = findReaderTextSelectionByText(entries, highlight.text);
     const selection =
       sourceSelection && selectionMatchesHighlight(sourceSelection.text, highlight.text)
         ? sourceSelection
@@ -137,7 +138,7 @@ export async function resolveReaderHighlightOverlays(
 
     const exact = await runtime.resolveExactSourceRange({ href, sourceRange: highlight.sourceRange });
     if (exact.status === 'resolved') {
-      const textSelection = createReaderTextSelectionFromText(entries, highlight.text);
+      const textSelection = findReaderTextSelectionByText(entries, highlight.text);
       if (textSelection && !selectionMatchesHighlight(exact.selectedText, highlight.text)) {
         overlays.push(
           ...textSelection.bounds.map((bounds) => ({
@@ -187,44 +188,8 @@ function alignExactBoundsToHitLine(
   return hit ? { ...rect.bounds, y: hit.bounds.y, height: hit.bounds.height } : rect.bounds;
 }
 
-function createReaderTextSelectionFromText(
-  entries: readonly ReaderHitEntry[],
-  text: string,
-): ReaderTextSelection | undefined {
-  // Fragment artifacts expose the text runs and bounds but may omit durable
-  // source points. Matching the persisted text keeps painting and hit testing
-  // usable while the exact source-range response is being projected.
-  const query = compactHighlightText(text);
-  if (!query) return undefined;
-
-  const compactEntries: { readonly entryIndex: number; readonly charIndex: number; readonly char: string }[] = [];
-  for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
-    const entry = entries[entryIndex];
-    if (entry.imageSource !== undefined || entry.text.length === 0) continue;
-    for (let charIndex = 0; charIndex < entry.text.length; charIndex += 1) {
-      const char = entry.text[charIndex];
-      if (!/\s/u.test(char)) compactEntries.push({ entryIndex, charIndex, char });
-    }
-  }
-
-  const compactText = compactEntries.map((item) => item.char).join('');
-  const start = compactText.indexOf(query);
-  if (start < 0) return undefined;
-  const first = compactEntries[start];
-  const last = compactEntries[start + query.length - 1];
-  if (!first || !last) return undefined;
-  return createReaderTextSelectionFromRange(entries, {
-    start: { entryIndex: first.entryIndex, charIndex: first.charIndex },
-    end: { entryIndex: last.entryIndex, charIndex: last.charIndex + 1 },
-  });
-}
-
 function selectionMatchesHighlight(selectionText: string, highlightText: string): boolean {
-  return compactHighlightText(selectionText) === compactHighlightText(highlightText);
-}
-
-function compactHighlightText(text: string): string {
-  return text.replace(/\s+/gu, '');
+  return compactReaderText(selectionText) === compactReaderText(highlightText);
 }
 
 function highlightDecoration(highlight: ReaderHighlight): Pick<ReaderOverlayRect, 'decoration' | 'thickness'> {

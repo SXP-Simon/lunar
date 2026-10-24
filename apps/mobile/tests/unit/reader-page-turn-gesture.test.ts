@@ -4,6 +4,7 @@ import {
   PLANAR_RELEASE_PROJECTION_SECONDS,
   projectedPageTurnProgress,
 } from '../../src/reader/skia/anime/core/page-turn-math';
+import { createGestureCurlProfile, curlRevertDurationMs } from '../../src/reader/skia/anime/effects/curl/geometry';
 import {
   GESTURE_HINGE_CHORD_X,
   GESTURE_LIFT_START_FINGER_X,
@@ -20,7 +21,12 @@ import {
   SLIDE_RELEASE_PROJECTION_SECONDS,
   slidePageTurnEffect,
 } from '../../src/reader/skia/anime/effects/slide/strategy';
-import { planarTurnProgressForTranslation } from '../../src/reader/skia/anime/gesture/page-turn-gesture';
+import {
+  planarTurnProgressForTranslation,
+  releaseIdleDecay,
+  trackThrowAcceleration,
+  trackThrowVelocity,
+} from '../../src/reader/skia/anime/gesture/page-turn-gesture';
 
 describe('reader page turn gesture effects', () => {
   it('uses Persimmon pressed-roll geometry', () => {
@@ -187,5 +193,59 @@ describe('reader page turn gesture effects', () => {
       1,
       SLIDE_RELEASE_PROJECTION_SECONDS,
     )).toBeCloseTo(0.64);
+  });
+
+  it('only presses the page when a drag starts near the spine', () => {
+    const weak = curlPageTurnEffect.gesture.getGeometry({ startBookX: 0.2, translationX: -150, direction: 1, pageWidth: 300 });
+    expect(weak.heldRollTilt).toBe(0);
+    expect(weak.pressedEdgeX).toBeCloseTo(0.96);
+    const full = curlPageTurnEffect.gesture.getGeometry({ startBookX: 0.8, translationX: -150, direction: 1, pageWidth: 300 });
+    expect(full.pressedEdgeX).toBeLessThan(0.6);
+
+    const profile = createGestureCurlProfile({
+      progress: 0.4, direction: 1, startBookX: 0.2, pressedEdgeX: weak.pressedEdgeX, heldRollTilt: 0,
+      spreadMode: 'single', settling: false, settleTo: 0, releaseProgress: 0.4,
+    });
+    expect(profile.rotation).toBe(0);
+    expect(profile.landedLength).toBe(0);
+    expect(curlPageTurnEffect.native?.gesture.canStart(1, 0.2)).toBe(false);
+  });
+
+  it('eases a cancelled roll back faster the tighter it was rolled', () => {
+    expect(curlRevertDurationMs(1)).toBe(0);
+    // A weak grip only compressed the edge, so it releases within a few frames.
+    expect(curlRevertDurationMs(0.96)).toBeGreaterThan(1000 / 60);
+    expect(curlRevertDurationMs(0.96)).toBeLessThan(100);
+    expect(curlRevertDurationMs(MIN_PRESSED_EDGE_X)).toBeCloseTo((3000 * (1 - MIN_PRESSED_EDGE_X)) / 6.3);
+    const settle = (pressedEdgeX: number) => curlPageTurnEffect.motion.getSettleDuration({
+      fromProgress: 0.15, targetProgress: 0, releaseVelocity: 0, throwVelocity: 0, animationDuration: 947,
+      pageWidth: 400, direction: 1, spreadMode: 'single', fingerX: 0.7, pressedEdgeX, heldRollTilt: 0, startBookX: 1,
+    });
+    expect(settle(0.7)).toBe(Math.round(curlRevertDurationMs(0.7)));
+  });
+
+  it('tracks the throw by elapsed time, not by sample count', () => {
+    const track = (sampleSeconds: number) => {
+      let velocity = 0;
+      let acceleration = 0;
+      for (let elapsed = 0; elapsed < 0.1 - 1e-9; elapsed += sampleSeconds) {
+        const previous = velocity;
+        velocity = trackThrowVelocity(velocity, -800, 1, 400, sampleSeconds);
+        acceleration = trackThrowAcceleration(acceleration, previous, velocity, sampleSeconds);
+      }
+      return { velocity, acceleration };
+    };
+    const at60Hz = track(1 / 60);
+    const at120Hz = track(1 / 120);
+    expect(at120Hz.velocity).toBeCloseTo(at60Hz.velocity, 6);
+    // 2 page widths per second approached with a 45 ms time constant.
+    expect(at60Hz.velocity).toBeCloseTo(2 * (1 - Math.exp(-0.1 / 0.045)), 2);
+    expect(at120Hz.acceleration).toBeCloseTo(at60Hz.acceleration, 0);
+  });
+
+  it('drops the throw of a finger that rested before lifting', () => {
+    expect(releaseIdleDecay(0)).toBe(1);
+    expect(releaseIdleDecay(0.1)).toBeCloseTo(Math.exp(-1));
+    expect(releaseIdleDecay(0.5)).toBeLessThan(0.01);
   });
 });

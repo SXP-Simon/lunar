@@ -17,6 +17,42 @@ export type ReaderPageOverlayResolver = (
   frame: ReaderRenderFrame,
 ) => readonly ReaderPageOverlay[];
 
+/**
+ * One independent producer of page overlays, such as persisted highlights or
+ * search hits. Sources are merged rather than replaced, so each producer owns
+ * only its own refinement of the visible page.
+ */
+export interface ReaderOverlaySource {
+  readonly key: string;
+  /** Overlays for any page the surface paints, including page-turn neighbours. */
+  readonly resolvePage?: ReaderPageOverlayResolver;
+  /** Refined overlays for the visible page; they replace this source's page result when non-empty. */
+  readonly current?: readonly ReaderPageOverlay[];
+}
+
+const EmptyPageOverlays: readonly ReaderPageOverlay[] = [];
+
+export function createReaderOverlaySourcesResolver(
+  sources: readonly ReaderOverlaySource[] | undefined,
+): ReaderPageOverlayResolver | undefined {
+  const resolvers = sources?.flatMap((source) => (source.resolvePage ? [source.resolvePage] : [])) ?? [];
+  if (resolvers.length === 0) return undefined;
+  if (resolvers.length === 1) return resolvers[0];
+  return (snapshot, frame) => resolvers.flatMap((resolve) => resolve(snapshot, frame));
+}
+
+export function resolveReaderCurrentOverlaySources(
+  sources: readonly ReaderOverlaySource[] | undefined,
+  snapshot: ReaderSnapshot,
+  frame: ReaderRenderFrame | undefined,
+): readonly ReaderPageOverlay[] {
+  if (!sources || sources.length === 0) return EmptyPageOverlays;
+  return sources.flatMap((source) => {
+    if (source.current !== undefined && source.current.length > 0) return source.current;
+    return frame ? (source.resolvePage?.(snapshot, frame) ?? EmptyPageOverlays) : EmptyPageOverlays;
+  });
+}
+
 export function decorateReaderPageOverlays(
   content: ReaderPageContent,
   resolveOverlays?: ReaderPageOverlayResolver,

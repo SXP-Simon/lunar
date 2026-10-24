@@ -1,10 +1,25 @@
 import { clampUnit } from '../core/page-turn-math';
 
-/** Weight each new pan sample carries in the tracked throw velocity. */
-export const GESTURE_THROW_VELOCITY_SMOOTHING = 0.35;
+/**
+ * Time constants of the tracked throw. Pan events arrive at the display rate,
+ * so smoothing per sample would make a 120 Hz drag settle twice as fast as a
+ * 60 Hz one; blending by elapsed time keeps the release identical on both.
+ */
+export const GESTURE_THROW_VELOCITY_TIME_CONSTANT_SECONDS = 0.045;
+export const GESTURE_THROW_ACCELERATION_TIME_CONSTANT_SECONDS = 0.06;
 
-/** Per-frame step that turns a tracked velocity change into an acceleration. */
-export const GESTURE_THROW_ACCELERATION_STEP = 60;
+/** A finger held still before lifting loses its throw with this time constant. */
+export const GESTURE_RELEASE_IDLE_DECAY_SECONDS = 0.1;
+
+const MAX_TRACKED_THROW_VELOCITY = 6;
+const MAX_TRACKED_THROW_ACCELERATION = 20;
+const MIN_SAMPLE_INTERVAL_SECONDS = 0.001;
+
+/** Wall clock of pan samples, read on the UI runtime inside gesture callbacks. */
+export function gestureSampleClockMs(): number {
+  'worklet';
+  return Date.now();
+}
 
 export function planarTurnProgressForTranslation(translationX: number, direction: 1 | -1, pageWidth: number): number {
   'worklet';
@@ -21,32 +36,54 @@ export function directedThrowVelocity(velocityX: number, direction: 1 | -1, page
   return Math.max(0, (direction === 1 ? -velocityX : velocityX) / Math.max(1, pageWidth));
 }
 
-/**
- * Folds a pan sample into the tracked throw velocity. Both the JavaScript
- * release decision and the native pager release read this sample, so they have
- * to agree on it.
- */
+/** Folds a pan sample taken `deltaSeconds` after the previous one into the tracked throw velocity. */
 export function trackThrowVelocity(
   trackedVelocity: number,
   velocityX: number,
   direction: 1 | -1,
   pageWidth: number,
+  deltaSeconds: number,
 ): number {
   'worklet';
-  return (
-    trackedVelocity +
-    (directedThrowVelocity(velocityX, direction, pageWidth) - trackedVelocity) * GESTURE_THROW_VELOCITY_SMOOTHING
-  );
+  const instantaneous = Math.min(MAX_TRACKED_THROW_VELOCITY, directedThrowVelocity(velocityX, direction, pageWidth));
+  const blend =
+    1 - Math.exp(-Math.max(MIN_SAMPLE_INTERVAL_SECONDS, deltaSeconds) / GESTURE_THROW_VELOCITY_TIME_CONSTANT_SECONDS);
+  return trackedVelocity + (instantaneous - trackedVelocity) * blend;
 }
 
-/** Tracked velocity change of a release, in page widths per second squared. */
-export function throwAccelerationForRelease(
-  trackedVelocity: number,
-  velocityX: number,
-  direction: 1 | -1,
-  pageWidth: number,
+/** Tracks the rate of change of the tracked throw velocity, in page widths per second squared. */
+export function trackThrowAcceleration(
+  trackedAcceleration: number,
+  previousVelocity: number,
+  nextVelocity: number,
+  deltaSeconds: number,
 ): number {
   'worklet';
-  const instantaneous = directedThrowVelocity(velocityX, direction, pageWidth);
-  return Math.max(0, (instantaneous - trackedVelocity) * GESTURE_THROW_ACCELERATION_STEP);
+  const interval = Math.max(MIN_SAMPLE_INTERVAL_SECONDS, deltaSeconds);
+  const instantaneous = Math.min(
+    MAX_TRACKED_THROW_ACCELERATION,
+    Math.max(-MAX_TRACKED_THROW_ACCELERATION, (nextVelocity - previousVelocity) / interval),
+  );
+  const blend = 1 - Math.exp(-interval / GESTURE_THROW_ACCELERATION_TIME_CONSTANT_SECONDS);
+  return trackedAcceleration + (instantaneous - trackedAcceleration) * blend;
+}
+
+/** Share of the throw that survives the finger resting `idleSeconds` before it lifts. */
+export function releaseIdleDecay(idleSeconds: number, decaySeconds = GESTURE_RELEASE_IDLE_DECAY_SECONDS): number {
+  'worklet';
+  return Math.exp(-Math.max(0, idleSeconds) / Math.max(0.005, decaySeconds));
+}
+
+/**
+ * The single release sample. The pan gesture computes it once on the UI
+ * runtime and hands the same values to the native pager and to the JavaScript
+ * release, so whichever of the two owns the drag reaches the same decision.
+ */
+export interface PageTurnReleaseSample {
+  /** Final pan speed toward the target, after idle decay; never negative. */
+  readonly throwVelocity: number;
+  /** Tracked throw acceleration after idle decay. */
+  readonly throwAcceleration: number;
+  /** Idle decay already applied to both values above. */
+  readonly idleDecay: number;
 }

@@ -273,6 +273,17 @@ export function effectiveTextColor(
   return isGrayscaleColor(original) ? override.foregroundColor : original;
 }
 
+/** Opaque `background` moved `share` of the way towards `foreground`, per sRGB channel. */
+export function mixColors(background: ReaderColor | string, foreground: ReaderColor | string, share: number): string {
+  const ground = skiaColor(background);
+  const ink = skiaColor(foreground);
+  const [red, green, blue] = [0, 1, 2].map((index) => {
+    const from = ground[index] ?? 0;
+    return Math.round(clamp(from + ((ink[index] ?? 0) - from) * share) * 255);
+  });
+  return `rgb(${red}, ${green}, ${blue})`;
+}
+
 export function resolvedPrimitiveColor(value: ReaderResolvedColor): ReaderColor {
   return {
     space: value.space,

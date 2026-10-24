@@ -2,7 +2,6 @@ import type { ReaderAutomaticTurn, ReaderPageTransitionState } from './page-turn
 
 export const AUTOMATIC_PAGE_TURN_START_INTERVAL_MS = 100;
 export const AUTOMATIC_PAGE_TURN_MAX_LANES = 10;
-
 export function appendAutomaticPageTurn(
   turns: readonly ReaderAutomaticTurn[],
   turn: ReaderAutomaticTurn,

@@ -7,6 +7,7 @@ export {
   resolveReaderRangeOverlays,
   resolveReaderSearchOverlays,
   type ReaderOverlayRect,
+  type ReaderOverlaySource,
 } from './reader-overlays';
 export {
   effectiveTextColor,

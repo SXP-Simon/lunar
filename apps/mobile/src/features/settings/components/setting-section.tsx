@@ -4,15 +4,12 @@ import { Children, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { SettingRow } from './setting-row';
 
-type SettingSectionProps = {
-  title: string;
-} & (
-  | { children: ReactNode; onPress?: never; description?: never }
-  | { children?: never; onPress: () => void; description?: string }
-);
+type SettingSectionProps =
+  | { title?: string; children: ReactNode; onPress?: never; description?: never }
+  | { title: string; children?: never; onPress: () => void; description?: string };
 
 export function SettingSection({ title, children, onPress, description }: SettingSectionProps) {
-  if (onPress) {
+  if (onPress && title) {
     return (
       <ListGroup className="overflow-hidden rounded-3xl bg-surface">
         <SettingRow variant="action" title={title} description={description} onPress={onPress} />
@@ -23,7 +20,7 @@ export function SettingSection({ title, children, onPress, description }: Settin
 
   return (
     <View>
-      <Text className="mb-2 ml-3 text-sm font-medium text-muted">{title}</Text>
+      {title ? <Text className="mb-2 ml-3 text-sm font-medium text-muted">{title}</Text> : null}
       <ListGroup className="overflow-hidden rounded-3xl bg-surface">
         {rows.map((row, index) => (
           <View key={index}>

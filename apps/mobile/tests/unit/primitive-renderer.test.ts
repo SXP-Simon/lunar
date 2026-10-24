@@ -7,10 +7,21 @@ import { makeResolvedPrimitivePath, renderResolvedPrimitives, type ReaderPrimiti
 const { pathCalls } = vi.hoisted(() => ({ pathCalls: [] as unknown[][] }));
 
 vi.mock('@shopify/react-native-skia', () => ({
+  ClipOp: { Intersect: 'intersect' },
   FillType: { EvenOdd: 'even-odd', Winding: 'winding' },
   Skia: {
     XYWHRect: (x: number, y: number, width: number, height: number) => ({ x, y, width, height }),
-    Paint: () => ({ setAntiAlias() {}, setColor() {}, setAlphaf() {}, dispose() {} }),
+    Color: (value: string) => {
+      const channels = /^rgb\((\d+), (\d+), (\d+)\)$/.exec(value)?.slice(1).map((channel) => Number(channel) / 255);
+      if (channels) return [...channels, 1];
+      if (value === '#ffffff') return [1, 1, 1, 1];
+      if (value === '#000000') return [0, 0, 0, 1];
+      throw new Error(`Unexpected test colour ${value}`);
+    },
+    Paint: () => {
+      const paint = { color: [] as number[], setAntiAlias() {}, setColor(color: number[]) { paint.color = [...color]; }, setAlphaf() {}, dispose() {} };
+      return paint;
+    },
     PathBuilder: { Make: () => ({
       setFillType: (value: string) => { pathCalls.push(['fill', value]); },
       moveTo: (x: number, y: number) => { pathCalls.push(['move', x, y]); },
@@ -26,6 +37,45 @@ vi.mock('@shopify/react-native-skia', () => ({
 }));
 
 describe('Rito resolved primitive rendering', () => {
+  it('paints an image fallback only while the image is missing', () => {
+    const fallback = {
+      kind: 'image-fallback' as const,
+      src: 'images/cover.jpg',
+      state: 'broken' as const,
+      block: { x: 2, y: 4, width: 20, height: 10 },
+      blockInk: 0.25,
+      iconInk: 0.5,
+      pieces: [{ offset: { x: 3, y: 1 }, clip: [{ op: 'rect' as const, x: 0, y: 0, width: 4, height: 4 }], path: [{ op: 'close' as const }] }],
+    };
+    const render = (commands: ReaderResolvedPrimitiveList['commands'], image?: object) => {
+      const calls: unknown[][] = [];
+      const canvas = {
+        save() {}, restore() {}, scale() {},
+        translate(x: number, y: number) { calls.push(['translate', x, y]); },
+        clipPath() { calls.push(['clip']); },
+        drawRect(rect: unknown, paint: { color: number[] }) { calls.push(['rect', rect, paint.color]); },
+        drawPath(_path: unknown, paint: { color: number[] }) { calls.push(['path', paint.color]); },
+      } as unknown as SkCanvas;
+      renderResolvedPrimitives(canvas, { formatVersion: 2, ratio: 1, commandCount: commands.length, commands }, {
+        pixelRatio: 1,
+        images: { resolveImage: () => image },
+        colorOverride: { backgroundColor: '#ffffff', foregroundColor: '#000000' },
+      } as unknown as ReaderPrimitiveRenderOptions);
+      return calls;
+    };
+
+    const block = Math.round(255 * 0.75) / 255;
+    const icon = Math.round(255 * (block / 2)) / 255;
+    expect(render([fallback])).toEqual([
+      ['rect', { x: 2, y: 4, width: 20, height: 10 }, [block, block, block, 1]],
+      ['translate', 3, 1],
+      ['clip'],
+      ['path', [icon, icon, icon, 1]],
+    ]);
+    expect(render([fallback], { width: 1, height: 1 })).toEqual([]);
+    expect(render([{ ...fallback, state: 'loading' }])).toEqual([]);
+  });
+
   it('draws device geometry and CSS text at the Picture scale', () => {
     const draws: { kind: string; x: number; y: number; width?: number; scale: number }[] = [];
     const scales: number[] = [];

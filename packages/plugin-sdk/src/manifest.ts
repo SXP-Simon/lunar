@@ -1,0 +1,327 @@
+// Shared by the Lunar host and the plugin CLI. Keep this module free of
+// runtime relative imports: Node runs the CLI from TypeScript source directly.
+import { z } from 'zod';
+
+export const SDK_VERSION = '0.1.0';
+export const MANIFEST_FILE = 'manifest.json';
+export const MANIFEST_VERSION = 1;
+
+export const PLUGIN_SLOTS = [
+  'reader.toolbar',
+  'reader.panel',
+  'reader.overlay',
+  'app.route',
+  'settings.plugin',
+] as const;
+export type PluginSlot = (typeof PLUGIN_SLOTS)[number];
+/** Slots whose entries are React components registered by plugin code. */
+export type PluginComponentSlot = Exclude<PluginSlot, 'reader.toolbar' | 'app.route'>;
+
+export const PLUGIN_PERMISSIONS = [
+  'reader.events',
+  'reader.selection.read',
+  'reader.content.read',
+  'reader.navigate',
+  'reader.decorations',
+  'reader.annotations',
+  'library.metadata.read',
+  'library.import',
+  'audio.speech',
+  'audio.playback',
+  'credentials.use',
+] as const;
+export type PluginPermissionName = (typeof PLUGIN_PERMISSIONS)[number] | `network:${string}`;
+
+/** Eager activation triggers. Using any contributed entry activates its plugin implicitly. */
+export const PLUGIN_ACTIVATION_EVENTS = ['onStartup', 'onReaderOpen'] as const;
+export type PluginActivationEvent = (typeof PLUGIN_ACTIVATION_EVENTS)[number];
+
+export const ICON_NAMES = [
+  'book',
+  'bookmark',
+  'chart',
+  'edit',
+  'extension',
+  'headphones',
+  'info',
+  'list',
+  'pause',
+  'play',
+  'search',
+  'settings',
+  'sparkles',
+  'star',
+  'stop',
+  'text',
+  'timer',
+  'translate',
+] as const;
+export type IconName = (typeof ICON_NAMES)[number];
+export type IconSpec = IconName | { readonly android: string; readonly ios: string };
+
+const PLUGIN_ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$/;
+const LOCAL_ID = /^[a-z][a-z0-9]*(?:[-.][a-z0-9]+)*$/;
+const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?$/;
+const NETWORK_PERMISSION = /^network:https:\/\/[a-z0-9.-]+(?::\d{1,5})?$/;
+const SETTING_KEY = /^[a-zA-Z][a-zA-Z0-9_.-]{0,63}$/;
+
+const localId = z.string().regex(LOCAL_ID, 'must be lowercase letters, digits, "-" or "."').max(64);
+const text = z.string().min(1).max(120);
+const iconSpec = z.union([
+  z.enum(ICON_NAMES),
+  z.strictObject({ android: z.string().min(1).max(64), ios: z.string().min(1).max(64) }),
+]);
+
+const permission = z.strictObject({
+  name: z
+    .string()
+    .refine(
+      (name) => (PLUGIN_PERMISSIONS as readonly string[]).includes(name) || NETWORK_PERMISSION.test(name),
+      'unknown permission',
+    ),
+  reason: z.string().min(1).max(200),
+});
+
+const command = z.strictObject({ id: localId, title: text, icon: iconSpec.optional() });
+const toolbarItem = z.strictObject({
+  id: localId,
+  command: localId,
+  title: text.optional(),
+  icon: iconSpec.optional(),
+});
+const panel = z.strictObject({ id: localId, title: text, icon: iconSpec });
+const componentEntry = z.strictObject({ id: localId, title: text.optional() });
+const route = z.strictObject({ id: localId, title: text });
+
+const settingBase = { key: z.string().regex(SETTING_KEY), title: text, description: z.string().max(300).optional() };
+const setting = z.discriminatedUnion('type', [
+  z.strictObject({ ...settingBase, type: z.literal('boolean'), default: z.boolean() }),
+  z.strictObject({
+    ...settingBase,
+    type: z.literal('number'),
+    default: z.number().finite(),
+    min: z.number().finite().optional(),
+    max: z.number().finite().optional(),
+    step: z.number().positive().optional(),
+  }),
+  z.strictObject({
+    ...settingBase,
+    type: z.literal('string'),
+    default: z.string().max(2000),
+    maxLength: z.number().int().positive().max(2000).optional(),
+  }),
+  z.strictObject({
+    ...settingBase,
+    type: z.literal('select'),
+    default: z.string(),
+    options: z
+      .array(z.strictObject({ value: z.string().min(1).max(64), label: text }))
+      .min(1)
+      .max(32),
+  }),
+]);
+
+export const pluginManifestSchema = z
+  .strictObject({
+    manifestVersion: z.literal(MANIFEST_VERSION),
+    id: z.string().regex(PLUGIN_ID, 'must be a lowercase reverse-domain identifier').max(128),
+    name: text,
+    version: z.string().regex(SEMVER, 'must be a semantic version'),
+    sdk: z.string().min(1).max(64),
+    trust: z.enum(['full', 'sandboxed']),
+    main: z.literal('main.js'),
+    description: z.string().max(500).optional(),
+    author: z.string().max(120).optional(),
+    homepage: z.url({ protocol: /^https$/ }).optional(),
+    license: z.string().max(64).optional(),
+    icon: iconSpec.optional(),
+    platforms: z
+      .array(z.enum(['android', 'ios']))
+      .min(1)
+      .optional(),
+    publisherKeyId: z.string().max(200).optional(),
+    defaultLocale: z.string().max(16).optional(),
+    /** Version of the plugin's stored data format; raising it runs the plugin's `migrate`. */
+    dataVersion: z.number().int().min(1).max(1_000_000).default(1),
+    activationEvents: z.array(z.enum(PLUGIN_ACTIVATION_EVENTS)).max(PLUGIN_ACTIVATION_EVENTS.length).default([]),
+    permissions: z.array(permission).max(32).default([]),
+    contributes: z
+      .strictObject({
+        commands: z.array(command).max(64).default([]),
+        slots: z
+          .strictObject({
+            'reader.toolbar': z.array(toolbarItem).max(4).default([]),
+            'reader.panel': z.array(panel).max(4).default([]),
+            'reader.overlay': z.array(componentEntry).max(4).default([]),
+            'app.route': z.array(route).max(16).default([]),
+            'settings.plugin': z.array(componentEntry).max(1).default([]),
+          })
+          .prefault({}),
+        settings: z.array(setting).max(64).default([]),
+      })
+      .prefault({}),
+  })
+  .superRefine((manifest, context) => {
+    const issue = (path: (string | number)[], message: string) => context.addIssue({ code: 'custom', path, message });
+    const { commands, slots, settings } = manifest.contributes;
+    const commandIds = new Set<string>();
+    commands.forEach((item, index) => {
+      if (commandIds.has(item.id)) issue(['contributes', 'commands', index, 'id'], 'duplicate command id');
+      commandIds.add(item.id);
+    });
+    for (const slot of PLUGIN_SLOTS) {
+      const seen = new Set<string>();
+      slots[slot].forEach((item, index) => {
+        if (seen.has(item.id)) issue(['contributes', 'slots', slot, index, 'id'], 'duplicate slot id');
+        seen.add(item.id);
+      });
+    }
+    slots['reader.toolbar'].forEach((item, index) => {
+      if (!commandIds.has(item.command)) {
+        issue(['contributes', 'slots', 'reader.toolbar', index, 'command'], 'refers to an undeclared command');
+      }
+    });
+    const keys = new Set<string>();
+    settings.forEach((item, index) => {
+      if (keys.has(item.key)) issue(['contributes', 'settings', index, 'key'], 'duplicate setting key');
+      keys.add(item.key);
+      if (item.type === 'number') {
+        if (item.min !== undefined && item.max !== undefined && item.min > item.max) {
+          issue(['contributes', 'settings', index, 'min'], 'must not exceed max');
+        }
+        if (
+          (item.min !== undefined && item.default < item.min) ||
+          (item.max !== undefined && item.default > item.max)
+        ) {
+          issue(['contributes', 'settings', index, 'default'], 'must be within min and max');
+        }
+      }
+      if (item.type === 'select' && !item.options.some((option) => option.value === item.default)) {
+        issue(['contributes', 'settings', index, 'default'], 'must be one of the options');
+      }
+    });
+    const permissions = new Set<string>();
+    manifest.permissions.forEach((item, index) => {
+      if (permissions.has(item.name)) issue(['permissions', index, 'name'], 'duplicate permission');
+      permissions.add(item.name);
+    });
+    if (!parseVersionRange(manifest.sdk)) issue(['sdk'], 'must be a version range such as ^0.1.0');
+  });
+
+export type PluginManifest = z.output<typeof pluginManifestSchema>;
+export type PluginManifestInput = z.input<typeof pluginManifestSchema>;
+export type PluginCommandContribution = PluginManifest['contributes']['commands'][number];
+export type PluginSettingContribution = PluginManifest['contributes']['settings'][number];
+export type PluginPanelContribution = PluginManifest['contributes']['slots']['reader.panel'][number];
+export type PluginToolbarContribution = PluginManifest['contributes']['slots']['reader.toolbar'][number];
+export type PluginRouteContribution = PluginManifest['contributes']['slots']['app.route'][number];
+
+export type ManifestParseResult =
+  { readonly ok: true; readonly manifest: PluginManifest } | { readonly ok: false; readonly issues: readonly string[] };
+
+export function parsePluginManifest(input: unknown): ManifestParseResult {
+  const result = pluginManifestSchema.safeParse(input);
+  if (result.success) return { ok: true, manifest: result.data };
+  return {
+    ok: false,
+    issues: result.error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`),
+  };
+}
+
+export function hasPermission(manifest: PluginManifest, name: PluginPermissionName): boolean {
+  return manifest.permissions.some((item) => item.name === name);
+}
+
+/** Origins such as `https://api.example.com` granted through `network:` permissions. */
+export function networkOrigins(manifest: PluginManifest): readonly string[] {
+  return manifest.permissions.flatMap((item) =>
+    item.name.startsWith('network:') ? [item.name.slice('network:'.length)] : [],
+  );
+}
+
+/** Resolves `%key%` manifest text against a locale table, keeping the text when the key is missing. */
+export function localizeManifestText(value: string, messages: Readonly<Record<string, string>> | undefined): string {
+  const match = /^%([^%]+)%$/.exec(value);
+  return match ? (messages?.[match[1]] ?? match[1]) : value;
+}
+
+interface Version {
+  readonly major: number;
+  readonly minor: number;
+  readonly patch: number;
+  readonly prerelease?: string;
+}
+
+export function parseVersion(value: string): Version | undefined {
+  const match = SEMVER.exec(value.trim());
+  if (!match) return undefined;
+  return { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]), prerelease: match[4] };
+}
+
+export function compareVersions(left: string, right: string): number {
+  const a = parseVersion(left);
+  const b = parseVersion(right);
+  if (!a || !b) throw new RangeError(`Invalid version: ${a ? right : left}`);
+  return (
+    a.major - b.major ||
+    a.minor - b.minor ||
+    a.patch - b.patch ||
+    (a.prerelease === b.prerelease
+      ? 0
+      : a.prerelease === undefined
+        ? 1
+        : b.prerelease === undefined
+          ? -1
+          : a.prerelease < b.prerelease
+            ? -1
+            : 1)
+  );
+}
+
+type Comparator = { readonly operator: '>=' | '<' | '='; readonly version: string };
+
+/** Supports exact versions, `^`, `~`, `>=` and space-separated `>=x <y` pairs. */
+function parseVersionRange(range: string): readonly Comparator[] | undefined {
+  const parts = range.trim().split(/\s+/);
+  const comparators: Comparator[] = [];
+  for (const part of parts) {
+    const match = /^(\^|~|>=|<|=)?(.+)$/.exec(part);
+    const version = match ? parseVersion(match[2]) : undefined;
+    if (!match || !version) return undefined;
+    const base = `${version.major}.${version.minor}.${version.patch}`;
+    switch (match[1]) {
+      case '^': {
+        const upper =
+          version.major > 0
+            ? `${version.major + 1}.0.0`
+            : version.minor > 0
+              ? `0.${version.minor + 1}.0`
+              : `0.0.${version.patch + 1}`;
+        comparators.push({ operator: '>=', version: match[2] }, { operator: '<', version: upper });
+        break;
+      }
+      case '~':
+        comparators.push(
+          { operator: '>=', version: match[2] },
+          { operator: '<', version: `${version.major}.${version.minor + 1}.0` },
+        );
+        break;
+      case '>=':
+      case '<':
+        comparators.push({ operator: match[1], version: match[2] });
+        break;
+      default:
+        comparators.push({ operator: '=', version: base });
+    }
+  }
+  return comparators;
+}
+
+export function satisfiesVersionRange(version: string, range: string): boolean {
+  const comparators = parseVersionRange(range);
+  if (!comparators || !parseVersion(version)) return false;
+  return comparators.every(({ operator, version: bound }) => {
+    const order = compareVersions(version, bound);
+    return operator === '>=' ? order >= 0 : operator === '<' ? order < 0 : order === 0;
+  });
+}

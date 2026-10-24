@@ -1,20 +1,25 @@
 import type { ReaderPageTurnEffect, ReaderPageTurnReleaseContext } from '../../core/page-turn-effect';
 import { clampUnit } from '../../core/page-turn-math';
+import { curlRevertDurationMs } from './geometry';
 import { NATIVE_CURL_MOTION_CONFIG } from './native-motion';
 import {
   anchoredGestureFingerX,
   bookXForGestureTravel,
   gestureLiftRotationForFingerX,
   gesturePressedChordForFingerX,
+  isWeakGripStart,
   MIN_PRESSED_EDGE_X,
   pageTurnStartBookXForTouch,
   postHingeTurnProgressForFingerX,
   SLOW_COMMIT_EDGE_X,
   turnCommitScore,
+  WEAK_GRIP_START_BOOK_X,
+  weakGripPressedEdgeX,
 } from './gesture';
 import { gestureSinglePreviousCurlProgress, gestureSinglePreviousCurlRemainingDurationMs } from './progress';
+import { AUTOMATIC_PAGE_TURN_DURATION_MS } from './timing';
 
-export const AUTOMATIC_PAGE_TURN_DURATION_MS = 947;
+export { AUTOMATIC_PAGE_TURN_DURATION_MS } from './timing';
 export const PAGE_TURN_DURATION_MS = AUTOMATIC_PAGE_TURN_DURATION_MS;
 export const PAGE_TURN_GESTURE_SETTLE_DURATION_MS = 520;
 export const PAGE_TURN_REVERSE_DURATION_MS = 854;
@@ -79,6 +84,9 @@ export const curlPageTurnEffect: ReaderPageTurnEffect = {
       'worklet';
       const currentBookX = bookXForGestureTravel(startBookX, translationX, direction, pageWidth);
       const fingerX = anchoredGestureFingerX(startBookX, currentBookX);
+      if (isWeakGripStart(startBookX)) {
+        return { fingerX, heldRollTilt: 0, pressedEdgeX: weakGripPressedEdgeX(fingerX) };
+      }
       const heldRollTilt = gestureLiftRotationForFingerX(fingerX);
       return {
         fingerX,
@@ -106,17 +114,19 @@ export const curlPageTurnEffect: ReaderPageTurnEffect = {
       const incomingPage = spreadMode === 'single' && direction === -1;
       const commitFingerX = incomingPage ? 1 - clampUnit(progress) * (1 - SLOW_COMMIT_EDGE_X) : fingerX;
       const score = turnCommitScore(commitFingerX, Math.max(throwVelocity, towardTargetVelocity), throwAcceleration);
-      return (incomingPage || startBookX >= 0.25) && score >= curlGestureCommitThreshold(direction, spreadMode);
+      return (
+        (incomingPage || !isWeakGripStart(startBookX)) && score >= curlGestureCommitThreshold(direction, spreadMode)
+      );
     },
   },
   native: {
     visualKind: 'curl',
     motion: NATIVE_CURL_MOTION_CONFIG,
     gesture: {
-      minimumStartBookX: 0.25,
+      minimumStartBookX: WEAK_GRIP_START_BOOK_X,
       canStart: (direction, startBookX) => {
         'worklet';
-        return direction < 0 || startBookX >= 0.25;
+        return direction < 0 || !isWeakGripStart(startBookX);
       },
       getReleaseTuning: (direction, spreadMode) => {
         'worklet';
@@ -203,7 +213,7 @@ function getCurlSettleDuration({
   const progress = clampUnit(fromProgress);
   const incomingPage = spreadMode === 'single' && direction === -1;
   if (targetProgress === 0) {
-    return Math.max(1000 / 60, Math.round(incomingPage ? 700 * progress : PAGE_TURN_REVERT_DURATION_MS * progress));
+    return Math.max(1000 / 60, Math.round(incomingPage ? 700 * progress : curlRevertDurationMs(pressedEdgeX)));
   }
 
   const minimumSpeed = direction === -1 ? GESTURE_BACKWARD_MINIMUM_SPEED_SCALE : GESTURE_FORWARD_MINIMUM_SPEED_SCALE;

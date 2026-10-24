@@ -8,5 +8,7 @@ export function toReaderDisplayList(
   width: number,
   height: number,
 ): ReaderDisplayList {
-  return { width, height, resolvedPrimitives: displayList as ReaderResolvedPrimitiveList };
+  // Assigned without a cast so a primitive Rito adds fails type checking here.
+  const resolvedPrimitives: ReaderResolvedPrimitiveList = displayList;
+  return { width, height, resolvedPrimitives };
 }

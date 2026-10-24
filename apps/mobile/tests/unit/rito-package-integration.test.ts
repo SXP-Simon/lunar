@@ -8,10 +8,12 @@ import { toReaderDisplayList } from '../../src/reader/rito/rito-display-list';
 
 describe('published Rito package integration', () => {
   it('converts the public primitive contract into a Lunar display list', () => {
-    const hex = readFileSync(new URL('../fixtures/rito-2-primitive-list.hex', import.meta.url), 'utf8').trim();
+    const hex = readFileSync(new URL('../fixtures/rito-3-primitive-list.hex', import.meta.url), 'utf8').trim();
     const bytes = Uint8Array.from(hex.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
     const list = decodeRitoReaderPrimitiveList(bytes);
     expect(list.formatVersion).toBe(2);
-    expect(toReaderDisplayList(list, 360, 640).resolvedPrimitives?.commandCount).toBe(13);
+    const commands = toReaderDisplayList(list, 360, 640).resolvedPrimitives.commands;
+    expect(commands).toHaveLength(14);
+    expect(commands.at(-1)).toMatchObject({ kind: 'image-fallback', src: 'images/cover.jpg', state: 'broken' });
   });
 });

@@ -34,22 +34,26 @@ import {
   nativeAutomaticPageTurnBaseContent,
   nativeInteractivePageTurnBaseContent,
   useNativePageTurns,
+  usePageTurnState,
   useReaderPageTransition,
   usePageCurlTexture,
+  ReaderPageTurnStore,
   type ReaderAutomaticTurn,
   type ReaderPageAnimationStyle,
   type ReaderPageContent,
   type ReaderPageTurnEffect,
-  type ReaderInteractiveTurn,
+  type ReaderPageTurnState,
   type ReaderPageTurnSurfaceBinding,
 } from '../anime';
 import {
+  createReaderOverlaySourcesResolver,
   decorateReaderPageOverlays,
   mergeReaderOverlayRects,
   readerOverlayColor,
   readerOverlayDecorationPath,
+  resolveReaderCurrentOverlaySources,
   type ReaderOverlayRect,
-  type ReaderPageOverlayResolver,
+  type ReaderOverlaySource,
 } from './reader-overlays';
 import { ReaderBookmarkMark, ReaderBookmarkPullMark } from './reader-bookmark-mark';
 import { composePageCurlPicture, recordNativeViewportPicture } from './page-picture';
@@ -68,7 +72,8 @@ export interface ReaderSurfaceProps {
   readonly style?: StyleProp<ViewStyle>;
   /** Canvas color used before the runtime has produced its first page. */
   readonly initialBackgroundColor?: string;
-  readonly overlays?: readonly ReaderOverlayRect[];
+  /** Independent overlay producers, merged for every painted page. */
+  readonly overlaySources?: readonly ReaderOverlaySource[];
   /** Transient selection in viewport coordinates; excluded from turn recordings. */
   readonly selectionRects?: readonly ReaderRect[];
   readonly selectionColor?: string;
@@ -76,7 +81,6 @@ export interface ReaderSurfaceProps {
   readonly selectionShowFill?: boolean;
   readonly selectionHandleColor?: string;
   readonly selectionOutlineColor?: string;
-  readonly resolvePageOverlays?: ReaderPageOverlayResolver;
   readonly resolvePageBookmark?: (snapshot: ReaderSnapshot, frame: ReaderPageContent['frame']) => boolean;
   readonly bookmarkColor?: string;
   readonly bookmarkPullDistance?: SharedValue<number>;
@@ -98,13 +102,11 @@ export interface ReaderSurfaceProps {
   /** Duration in milliseconds for a page turn. */
   readonly animationDuration?: number;
   readonly spreadMode?: ReaderSpreadMode;
-  /** Optional finger-controlled turn; its target picture can arrive during the drag. */
-  readonly interactiveTurn?: ReaderInteractiveTurn;
-  /** Automatic page turns retained until their visual transition completes. */
-  readonly automaticTurns?: readonly ReaderAutomaticTurn[];
-  readonly automaticNavigationActive?: boolean;
-  readonly onAutomaticTurnComplete?: (turnId: number) => void;
-  readonly pageTurnSurfaceBinding?: ReaderPageTurnSurfaceBinding;
+  /**
+   * The page-turn controller's surface binding. The surface subscribes to the
+   * turns itself, so a moving turn never re-renders the screen around it.
+   */
+  readonly pageTurn?: ReaderPageTurnSurfaceBinding;
   /** Skia-owned reader chrome rendered in the same Canvas as the page. */
   readonly chapterTitle?: string;
   readonly progressLabel?: string;
@@ -113,7 +115,8 @@ export interface ReaderSurfaceProps {
 }
 
 const EmptyOverlays: readonly ReaderOverlayRect[] = [];
-const EmptyAutomaticTurns: readonly ReaderAutomaticTurn[] = [];
+const IdlePageTurnStore = new ReaderPageTurnStore();
+const selectSurfacePageTurnState = (state: ReaderPageTurnState) => state;
 const DefaultOverlayInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 
 export const ReaderSurface = memo(function ReaderSurface({
@@ -121,14 +124,13 @@ export const ReaderSurface = memo(function ReaderSurface({
   snapshot,
   style,
   initialBackgroundColor = '#000000',
-  overlays,
+  overlaySources,
   selectionRects,
   selectionColor,
   selectionBinding,
   selectionShowFill = true,
   selectionHandleColor,
   selectionOutlineColor,
-  resolvePageOverlays,
   resolvePageBookmark,
   bookmarkColor = '#E5594B',
   bookmarkPullDistance,
@@ -143,17 +145,18 @@ export const ReaderSurface = memo(function ReaderSurface({
   animationStyle = 'slide',
   animationDuration = 360,
   spreadMode = 'double',
-  interactiveTurn: preparedInteractiveTurn,
-  automaticTurns: preparedAutomaticTurns = EmptyAutomaticTurns,
-  automaticNavigationActive = false,
-  onAutomaticTurnComplete,
-  pageTurnSurfaceBinding,
+  pageTurn,
   chapterTitle,
   progressLabel,
   overlayColor = '#777777',
   overlayInsets = DefaultOverlayInsets,
 }: ReaderSurfaceProps) {
   useEffect(() => startReaderPerformanceMonitor(), []);
+  const pageTurnState = usePageTurnState(pageTurn?.store ?? IdlePageTurnStore, selectSurfacePageTurnState);
+  const preparedInteractiveTurn = pageTurnState.interactiveTurn;
+  const preparedAutomaticTurns = pageTurnState.automaticTurns;
+  const automaticNavigationActive = pageTurnState.automaticNavigationActive;
+  const onAutomaticTurnComplete = pageTurn?.completeAutomaticTurn;
   useEffect(() => {
     readerPerformanceActivity('surface.commit', 0, {
       revision: snapshot.revisionId,
@@ -170,6 +173,7 @@ export const ReaderSurface = memo(function ReaderSurface({
   const pullBookmarked = bookmarkPullBookmarked ?? restingBookmark;
   const pullMatrix = useDerivedValue(() => processTransform3d([{ translateY: pull.value }]), [pull]);
   const bookmarkPageOpacity = useDerivedValue(() => (pull.value > 0 ? 0 : 1), [pull]);
+  const resolvePageOverlays = useMemo(() => createReaderOverlaySourcesResolver(overlaySources), [overlaySources]);
   const decoratePage = useCallback(
     (content: ReaderPageContent): ReaderPageContent => ({
       ...decorateReaderPageOverlays(content, resolvePageOverlays),
@@ -197,6 +201,16 @@ export const ReaderSurface = memo(function ReaderSurface({
       })),
     [decoratePage, preparedAutomaticTurns],
   );
+  // Stocked pages carry the same bookmark and overlays as the pages drawn, so
+  // their textures match what the turn reveals.
+  const preparedStock = pageTurnState.stock;
+  const pageTurnStock = useMemo(
+    () =>
+      preparedStock
+        ? { ...preparedStock, source: decoratePage(preparedStock.source), target: decoratePage(preparedStock.target) }
+        : undefined,
+    [decoratePage, preparedStock],
+  );
   const pageTurnEffect = getReaderPageTurnEffect(animationStyle);
   const { ref, size: viewport } = useCanvasSize();
   const compiled =
@@ -218,13 +232,15 @@ export const ReaderSurface = memo(function ReaderSurface({
     snapshot.phase === 'ready' && compiled && frame
       ? `${snapshot.revisionId}:${snapshot.spreadIndex}:${snapshot.renderId ?? 0}`
       : undefined;
-  const currentOverlays = useMemo(() => {
-    const synchronous = frame ? (resolvePageOverlays?.(snapshot, frame) ?? []) : [];
-    const source = overlays !== undefined && overlays.length > 0 ? overlays : synchronous;
-    return mergeReaderOverlayRects(
-      source.filter((overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId),
-    );
-  }, [frame, overlays, resolvePageOverlays, snapshot]);
+  const currentOverlays = useMemo(
+    () =>
+      mergeReaderOverlayRects(
+        resolveReaderCurrentOverlaySources(overlaySources, snapshot, frame).filter(
+          (overlay) => overlay.revisionId === undefined || overlay.revisionId === snapshot.revisionId,
+        ),
+      ),
+    [frame, overlaySources, snapshot],
+  );
   const currentContent = useMemo<ReaderPageContent | undefined>(
     () =>
       currentKey && compiled && frame
@@ -361,24 +377,22 @@ export const ReaderSurface = memo(function ReaderSurface({
   const nativeAutomaticPageTurnState = useNativePageTurns({
     paintKey: nativePaintKey,
     canvasRef: ref,
-    enabled:
-      pageTurnEffect.native !== undefined &&
-      spreadMode === 'single' &&
-      (onAutomaticTurnComplete !== undefined || pageTurnSurfaceBinding !== undefined),
+    enabled: pageTurnEffect.native !== undefined && spreadMode === 'single' && pageTurn !== undefined,
     turns: automaticTurns,
     pixelWidth: nativePixelWidth,
     pixelHeight: nativePixelHeight,
     paperColor: nativePaperColor,
     createPicture: createNativePagePicture,
     createChromePicture: separateNativeChrome ? createNativeChromePicture : undefined,
-    onComplete: onAutomaticTurnComplete,
     pageTurnEffect,
     fixedChromeTop: overlayTop + 24,
     fixedChromeBottom: overlayBottom + 24,
     currentContent,
     interactiveTurn,
     interactiveSource: interactiveTurn?.source ?? currentContent,
-    surfaceBinding: pageTurnSurfaceBinding,
+    stock: pageTurnStock,
+    resetEpoch: pageTurnState.nativeResetEpoch,
+    binding: pageTurn,
   });
   const {
     transition: activeTransition,

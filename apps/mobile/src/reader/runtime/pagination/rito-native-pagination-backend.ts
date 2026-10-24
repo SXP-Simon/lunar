@@ -69,6 +69,8 @@ interface PreparedAdjacentState extends ReaderPreparedAdjacent {
 const RETAINED_BOUNDARY_ARTIFACT_CAP = 1;
 const RETAINED_BOUNDARY_KEEP_ALIVE_CAP = 1;
 const RETAINED_SLOT_RADIUS = 4;
+/** The href Rito gives a pinned host face: this prefix, then its SHA-256. */
+const RITO_HOST_FONT_HREF_PREFIX = 'rito-host-font:';
 
 /**
  * Rito 2.0.0 pagination backend. It keeps the native artifact as the source of
@@ -229,6 +231,10 @@ class RitoNativePublication implements LoadedReaderPublication {
     if (existing?.frame && !replace && existing.frame.sourceKey === sourceKey) return;
     for (const font of artifact.fonts) {
       if (!this.fonts) break;
+      // Rito lists the pinned faces it painted with too. Lunar registered them
+      // under the same `__RitoPinned_` aliases from its own bytes before opening,
+      // and the session refuses to read back faces above its resource limit.
+      if (font.href.startsWith(RITO_HOST_FONT_HREF_PREFIX)) continue;
       const key = JSON.stringify([
         font.href,
         font.family,
@@ -1510,7 +1516,7 @@ function toReaderHitEntries(page: import('@umbrae-labs/rito-rn').RitoPage): impo
       imageSource: hit.imageSrc,
       imageAlt: hit.imageAlt,
       footnoteKey: hit.footnoteKey,
-      footnotePending: hit.footnotePending,
+      footnotePending: hit.kind === 'footnote-pending',
       sourcePoint: hit.sourcePoint
         ? {
             nodePath: hit.sourcePoint.nodePath,

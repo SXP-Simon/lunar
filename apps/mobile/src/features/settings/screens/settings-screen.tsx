@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { type Href, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -64,7 +64,18 @@ export function SettingsScreen() {
               />
             </SettingSection>
             <View className="mt-8">
-              <SettingSection title={t('settings.readingSettings')} onPress={() => router.push('/settings/reading')} />
+              <SettingSection>
+                <SettingRow
+                  variant="action"
+                  title={t('settings.readingSettings')}
+                  onPress={() => router.push('/settings/reading')}
+                />
+                <SettingRow
+                  variant="action"
+                  title={t('settings.pluginSettings')}
+                  onPress={() => router.push('/settings/plugins' as Href)}
+                />
+              </SettingSection>
             </View>
             <View className="mt-8">
               <SettingSection title={t('settings.about')} onPress={() => router.push('/settings/about')} />

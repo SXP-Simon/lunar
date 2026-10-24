@@ -10,6 +10,7 @@ import { Uniwind, useUniwind } from 'uniwind';
 
 import { AppProviders } from '@/components/providers/app-providers';
 import { ExternalEpubShareListener } from '@/features/library';
+import { PluginRuntimeProvider } from '@/features/plugins';
 import { applyLanguagePreference } from '@/i18n';
 import { useApplicationLaunchStore, useApplicationSettingsStore } from '@/stores';
 
@@ -56,12 +57,14 @@ export default function RootLayout() {
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <NavigationBar hidden={false} style={isDark ? 'dark' : 'light'} />
         <ExternalEpubShareListener />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="reader/[bookId]" />
-          <Stack.Screen name="import-epub" />
-        </Stack>
+        <PluginRuntimeProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="reader/[bookId]" />
+            <Stack.Screen name="import-epub" />
+          </Stack>
+        </PluginRuntimeProvider>
       </ThemeProvider>
     </AppProviders>
   );

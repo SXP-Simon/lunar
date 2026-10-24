@@ -229,6 +229,19 @@ describe('saved reader location navigation', () => {
     } finally { await backend.close(); }
   });
 
+  it('leaves pinned host faces to their pre-open registration instead of reading them back', async () => {
+    const sha = 'a'.repeat(64);
+    const hostFont = { family: `__RitoPinned_${sha}`, href: `rito-host-font:${sha}`, weight: 400, style: 'normal',
+      shapeFingerprint: 'host', byteLength: 25_575_676n };
+    const loadFont = vi.fn(async () => undefined);
+    const { backend, publication, session } = await setup({ fonts: [hostFont], fontRegistry: { loadFont } });
+    try {
+      await publication.resolveLocator!(target);
+      expect(session.readResource).not.toHaveBeenCalled();
+      expect(loadFont).not.toHaveBeenCalled();
+    } finally { await backend.close(); }
+  });
+
   it('retries a font registration that failed on a candidate page', async () => {
     const loadFont = vi.fn(async () => undefined);
     const { backend, publication, session, destination } = await setup({ fontRegistry: { loadFont } });

@@ -207,6 +207,35 @@ export class LunarReaderRuntime implements ReaderRuntime {
     return this.enqueueForeground(() => this.prepareAdjacentWithinForeground(direction), 'prepare', performanceId);
   }
 
+  /** Whether the visible page has a neighbor in this direction. */
+  canNavigate(direction: ReaderTurnDirection): boolean {
+    return this.snapshot.phase === 'ready' && this.publication?.canNavigate?.(direction) !== false;
+  }
+
+  /**
+   * The snapshot the target page publishes once committed, so its chrome shows
+   * its own book position instead of a copy of the source page.
+   */
+  getPreparedTargetSnapshot(preparedTurn: ReaderPreparedTurn): ReaderSnapshot | undefined {
+    if (!this.publication || this.snapshot.phase !== 'ready' || this.preparedTurn?.id !== preparedTurn.id) {
+      return undefined;
+    }
+    try {
+      const target = this.createReadySnapshot(preparedTurn.targetSpreadIndex);
+      const sourceBookSpread = this.snapshot.bookSpreadIndex;
+      const step = preparedTurn.direction === 'next' ? 1 : -1;
+      return {
+        ...target,
+        renderId: preparedTurn.targetRenderId,
+        ...(target.bookSpreadIndex === undefined && sourceBookSpread !== undefined
+          ? { bookSpreadIndex: Math.max(0, sourceBookSpread + step), totalSpreads: this.snapshot.totalSpreads }
+          : {}),
+      };
+    } catch {
+      return undefined;
+    }
+  }
+
   private async prepareAdjacentWithinForeground(
     direction: ReaderTurnDirection,
   ): Promise<ReaderPreparedTurn | undefined> {

@@ -1,0 +1,38 @@
+{
+  "name": "@lunar/plugin-cli",
+  "version": "0.1.0",
+  "description": "Build, validate, pack and live-reload Lunar reader plugins.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "lunar-plugin": "./bin/lunar-plugin.mjs"
+  },
+  "publishConfig": {
+    "bin": {
+      "lunar-plugin": "./dist/bin.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "pnpm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "pnpm run typecheck && pnpm run test"
+  },
+  "dependencies": {
+    "@lunar/plugin-sdk": "workspace:*",
+    "esbuild": "0.25.12",
+    "fflate": "0.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "typescript": "~6.0.3",
+    "vitest": "3.2.4"
+  }
+}

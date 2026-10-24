@@ -42,8 +42,29 @@ const QUADRATURE_OFFSET = 0.5 / Math.sqrt(3);
 const CAMERA_DISTANCE = 4;
 const MAX_PERSPECTIVE_SCALE = 1.34;
 const DEVICE_TEXTURE_SCALE = Math.min(3, Math.max(1, PixelRatio.get()));
+const MINIMUM_SHADOW_WIDTH = 0.045;
+const MAXIMUM_SHADOW_WIDTH = 0.28;
+const MAXIMUM_SHADOW_STRENGTH = 0.34;
+const MAXIMUM_CURL_AMPLITUDE = 2.147033481101353;
 
 const PAGE_CURL_TWO_SIDED_SHADER = createPageCurlShader(true);
+// The curl casts a soft shadow onto the page it uncovers and darkens the spine,
+// matching the native composer. Uniforms are shared with the paper shader;
+// Skia only reads the names an effect declares.
+const PAGE_CURL_SHADOW_SHADER = Skia.RuntimeEffect.Make(`
+uniform float2 pageSize;
+uniform float4 geometry;
+uniform float4 shadow;
+
+half4 main(float2 position) {
+  float bookX = (position.x - geometry.x) / geometry.y;
+  float distanceFromRoll = (bookX - shadow.x) / max(0.035, shadow.y);
+  float castShadow = exp(-distanceFromRoll * distanceFromRoll * 2.4) * shadow.z;
+  float spineShadow = exp(-abs(bookX) * 44.0) * min(0.07, shadow.z * 0.32);
+  float sourceSide = smoothstep(-0.02, 0.035, bookX * shadow.w);
+  return half4(0.0, 0.0, 0.0, clamp((castShadow + spineShadow) * sourceSide, 0.0, 0.42));
+}
+`);
 const oneSidedPageCurlShaders = new Map<string, ReturnType<typeof createPageCurlShader>>();
 
 function shaderPaperRgb(color: string): string {
@@ -123,7 +144,8 @@ float4 sampleRun(float bookX, float4 run) {
   float normalZ = abs(mix(before.w, after.w, correctedProgress));
   bool screenFront = deltaX > 0.0;
   bool textureFront = (screenFront ? 1.0 : -1.0) * perspective.w > 0.0;
-  float shade = (1.0 - normalZ) * 0.16;
+  float deformation = 1.0 - normalZ;
+  float shade = deformation * 0.16 + (textureFront ? 0.0 : deformation * 0.055);
   return float4(
     material,
     1.0 - min(0.2, shade),
@@ -326,23 +348,17 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
   }
 
   return (
-    <Rect x={0} y={0} width={width} height={height}>
-      <Shader source={shader} uniforms={uniforms}>
-        <ImageShader
-          fit="fill"
-          image={image}
-          height={1}
-          sampling={{ B: 0, C: 0.5 }}
-          tx="clamp"
-          ty="clamp"
-          width={1}
-          x={0}
-          y={0}
-        />
-        {backImage && (
+    <>
+      {PAGE_CURL_SHADOW_SHADER && (
+        <Rect x={0} y={0} width={width} height={height}>
+          <Shader source={PAGE_CURL_SHADOW_SHADER} uniforms={uniforms} />
+        </Rect>
+      )}
+      <Rect x={0} y={0} width={width} height={height}>
+        <Shader source={shader} uniforms={uniforms}>
           <ImageShader
             fit="fill"
-            image={backImage}
+            image={image}
             height={1}
             sampling={{ B: 0, C: 0.5 }}
             tx="clamp"
@@ -351,9 +367,22 @@ export function PageCurlMesh(props: PageCurlMeshProps) {
             x={0}
             y={0}
           />
-        )}
-      </Shader>
-    </Rect>
+          {backImage && (
+            <ImageShader
+              fit="fill"
+              image={backImage}
+              height={1}
+              sampling={{ B: 0, C: 0.5 }}
+              tx="clamp"
+              ty="clamp"
+              width={1}
+              x={0}
+              y={0}
+            />
+          )}
+        </Shader>
+      </Rect>
+    </>
   );
 }
 
@@ -458,6 +487,42 @@ export function usePageCurlTexture(
   );
 
   return { image, ready: textureReady };
+}
+
+function smoothstep(minimum: number, maximum: number, value: number): number {
+  'worklet';
+  const progress = Math.min(1, Math.max(0, (value - minimum) / (maximum - minimum)));
+  return progress * progress * (3 - 2 * progress);
+}
+
+/**
+ * Shadow input for the current profile: anchored at the silhouette the sheet
+ * casts toward the page it uncovers, widened and darkened by lift and roll,
+ * and faded out once the free edge crosses the spine. The composer adds terms
+ * driven by frame-to-frame motion; this stateless fallback keeps the static
+ * part, which carries most of the shadow.
+ */
+function createCurlShadow(
+  minimumX: number,
+  maximumX: number,
+  edgeX: number,
+  amplitude: number,
+  maxLift: number,
+  direction: 1 | -1,
+): number[] {
+  'worklet';
+  const curl = Math.min(1, Math.max(0, Math.abs(amplitude) / MAXIMUM_CURL_AMPLITUDE));
+  const edgePresence = smoothstep(-0.035, 0.1, edgeX * direction);
+  const strength = Math.min(MAXIMUM_SHADOW_STRENGTH, Math.max(0, (0.018 + maxLift * 0.28) * edgePresence));
+  return [
+    direction === 1 ? maximumX : minimumX,
+    Math.min(
+      MAXIMUM_SHADOW_WIDTH,
+      Math.max(MINIMUM_SHADOW_WIDTH, MINIMUM_SHADOW_WIDTH + maxLift * 0.12 + curl * 0.035),
+    ),
+    strength < 0.0005 ? 0 : strength,
+    direction,
+  ];
 }
 
 function profileSelector(start: number, end: number): string {
@@ -579,10 +644,12 @@ function createCurlUniforms(
     projected[offset + 3] = tangentX / length;
   }
 
+  let maxLift = 0;
   for (let index = 0; index < PROFILE_POINTS; index += 1) {
     const offset = index * 4;
     const physicalX = projected[offset]! * direction;
     const depth = Math.max(0, projected[offset + 1]!);
+    maxLift = Math.max(maxLift, depth);
     const normalX = projected[offset + 2]! * direction;
     const normalZ = projected[offset + 3]!;
     const scale = Math.min(MAX_PERSPECTIVE_SCALE, CAMERA_DISTANCE / Math.max(0.001, CAMERA_DISTANCE - depth));
@@ -606,6 +673,23 @@ function createCurlUniforms(
       }
     }
   }
+
+  let minimumX = Number.POSITIVE_INFINITY;
+  let maximumX = Number.NEGATIVE_INFINITY;
+  for (let index = 0; index < PROFILE_POINTS; index += 1) {
+    minimumX = Math.min(minimumX, projected[index * 4]!);
+    maximumX = Math.max(maximumX, projected[index * 4]!);
+  }
+  // An incoming page sweeps in from the spine and lands over the source, so
+  // it casts toward the screen-front side whatever the turn direction.
+  const shadow = createCurlShadow(
+    minimumX,
+    maximumX,
+    projected[(PROFILE_POINTS - 1) * 4]!,
+    amplitude,
+    maxLift,
+    incomingLanding ? 1 : direction,
+  );
 
   const runs = new Array<number>(PROFILE_RUNS * 4).fill(0);
   let runCount = 0;
@@ -643,5 +727,6 @@ function createCurlUniforms(
     perspective: [0.5, CAMERA_DISTANCE, MAX_PERSPECTIVE_SCALE, incomingLanding ? 1 : direction],
     profile: projected,
     runs,
+    shadow,
   };
 }

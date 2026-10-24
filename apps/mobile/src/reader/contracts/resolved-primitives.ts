@@ -209,4 +209,26 @@ export type ReaderResolvedPrimitive =
       readonly sourceRect?: ReaderResolvedRect | undefined;
       readonly tiles?: ReaderResolvedTilePlan | undefined;
     }
+  | ReaderResolvedImageFallbackPrimitive
   | ReaderResolvedTextPrimitive;
+
+/**
+ * Stands in for the image `src` only while that image is in `state`:
+ * `block` takes the page background mixed with `blockInk` of the text
+ * colour, then each piece is filled even-odd with the block colour mixed
+ * with `iconInk` of the text colour, translated by its offset and clipped
+ * to its clip.
+ */
+export interface ReaderResolvedImageFallbackPrimitive {
+  readonly kind: 'image-fallback';
+  readonly src: string;
+  readonly state: 'loading' | 'broken';
+  readonly block: ReaderResolvedRect;
+  readonly blockInk: number;
+  readonly iconInk: number;
+  readonly pieces: readonly {
+    readonly offset: ReaderResolvedDevicePoint;
+    readonly clip?: readonly ReaderResolvedPathOp[] | undefined;
+    readonly path: readonly ReaderResolvedPathOp[];
+  }[];
+}

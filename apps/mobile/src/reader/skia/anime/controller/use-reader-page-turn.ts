@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import type { PanGesture } from 'react-native-gesture-handler';
 
 import type { ReaderSnapshot, ReaderSpreadMode, ReaderViewport } from '../../../contracts';
 import type { LunarReaderRuntime } from '../../../runtime/core/native-reader-runtime';
-import type { ReaderAutomaticTurn, ReaderInteractiveTurn, ReaderPageAnimationStyle } from '../core/page-turn-types';
+import type { ReaderPageAnimationStyle } from '../core/page-turn-types';
 import { getReaderPageTurnEffect } from '../effects/page-turn-effects';
+import { usePageTurnGestureValues, usePageTurnPanGesture } from '../gesture/use-page-turn-pan-gesture';
 import type { ReaderPageTurnSurfaceBinding } from '../native/page-turn-binding';
-import { useAutomaticPageTurnNavigation } from './use-automatic-page-turn-navigation';
-import { useInteractivePageTurn } from './use-interactive-page-turn';
+import { usePageTurnState, type ReaderPageTurnState } from './page-turn-store';
+import { ReaderPageTurnCoordinator } from './reader-page-turn-coordinator';
 
 export type { ReaderPageTurnSurfaceBinding } from '../native/page-turn-binding';
 
@@ -24,16 +25,32 @@ export interface UseReaderPageTurnOptions {
 
 export interface ReaderPageTurnController {
   readonly gesture: PanGesture;
-  readonly interactiveTurn?: ReaderInteractiveTurn;
-  readonly automaticTurns: readonly ReaderAutomaticTurn[];
   readonly automaticNavigationActive: boolean;
   readonly isSettling: boolean;
+  /** Hand to `ReaderSurface`; the surface subscribes to the turns it draws. */
   readonly surfaceBinding: ReaderPageTurnSurfaceBinding;
-  completeAutomaticTurn(turnId: number): void;
   next(): Promise<ReaderSnapshot>;
   previous(): Promise<ReaderSnapshot>;
 }
 
+interface ReaderPageTurnBusyState {
+  readonly isSettling: boolean;
+  readonly automaticNavigationActive: boolean;
+}
+
+const selectBusyState = (state: ReaderPageTurnState): ReaderPageTurnBusyState => ({
+  isSettling: state.isSettling,
+  automaticNavigationActive: state.automaticNavigationActive,
+});
+
+const sameBusyState = (left: ReaderPageTurnBusyState, right: ReaderPageTurnBusyState): boolean =>
+  left.isSettling === right.isSettling && left.automaticNavigationActive === right.automaticNavigationActive;
+
+/**
+ * Connects the reader screen to its page-turn controller. The screen re-renders
+ * only when a turn starts or ends blocking input; the moving turn itself is
+ * drawn by `ReaderSurface` from the controller's store.
+ */
 export function useReaderPageTurn({
   runtime,
   snapshot,
@@ -44,42 +61,52 @@ export function useReaderPageTurn({
   surfaceTop = 0,
 }: UseReaderPageTurnOptions): ReaderPageTurnController {
   const pageTurnEffect = getReaderPageTurnEffect(animationStyle);
-  const prepareInteractiveTurnRef = useRef<() => Promise<void>>(() => Promise.resolve());
-  const prepareForAutomaticNavigation = useCallback(() => prepareInteractiveTurnRef.current(), []);
-  const automatic = useAutomaticPageTurnNavigation({
-    beforeNavigate: prepareForAutomaticNavigation,
-    pageTurnEffect,
-    runtime,
-  });
-  const interactive = useInteractivePageTurn({
-    runtime,
-    snapshot,
-    viewport,
-    animationDuration,
+  const values = usePageTurnGestureValues();
+  const config = useMemo(
+    () => ({ viewport, pageTurnEffect, spreadMode, animationDuration, surfaceTop }),
+    [animationDuration, pageTurnEffect, spreadMode, surfaceTop, viewport],
+  );
+  // One controller per runtime. It is created in state rather than a memo so
+  // React never discards it while it still owns native and runtime resources.
+  const [controller, setController] = useState(() => new ReaderPageTurnCoordinator(runtime, values, config));
+  if (controller.runtime !== runtime) {
+    setController(new ReaderPageTurnCoordinator(runtime, values, config));
+  }
+
+  useEffect(() => controller.attach(), [controller]);
+  useLayoutEffect(() => controller.configure(config), [config, controller]);
+  useLayoutEffect(() => controller.setSubscriberSnapshot(snapshot), [controller, snapshot]);
+
+  const gesture = usePageTurnPanGesture({
+    beginDrag: controller.beginDrag,
+    endDrag: controller.endDrag,
+    markNativeGestureAccepted: controller.markNativeGestureAccepted,
     pageTurnEffect,
     spreadMode,
-    automaticNavigationActive: automatic.active,
     surfaceTop,
+    updateDrag: controller.updateDrag,
+    values,
+    viewport,
   });
-
-  useEffect(() => {
-    prepareInteractiveTurnRef.current = interactive.prepareForAutomaticNavigation;
-  }, [interactive.prepareForAutomaticNavigation]);
-
-  const pageTurnActive = automatic.active || interactive.interactiveTurn !== undefined;
-  useEffect(() => {
-    if (pageTurnActive) return runtime.suspendBackgroundPagination();
-  }, [pageTurnActive, runtime]);
+  const busy = usePageTurnState(controller.store, selectBusyState, sameBusyState);
+  const surfaceBinding = useMemo<ReaderPageTurnSurfaceBinding>(
+    () => ({
+      store: controller.store,
+      values,
+      onNativeEvent: controller.handleNativeEvent,
+      onStocked: controller.markStocked,
+      onStockLost: controller.markStockLost,
+      completeAutomaticTurn: controller.completeAutomaticTurn,
+    }),
+    [controller, values],
+  );
 
   return {
-    gesture: interactive.gesture,
-    interactiveTurn: interactive.interactiveTurn,
-    automaticTurns: automatic.turns,
-    automaticNavigationActive: automatic.active,
-    isSettling: interactive.isSettling,
-    surfaceBinding: interactive.surfaceBinding,
-    completeAutomaticTurn: automatic.complete,
-    next: automatic.next,
-    previous: automatic.previous,
+    gesture,
+    automaticNavigationActive: busy.automaticNavigationActive,
+    isSettling: busy.isSettling,
+    surfaceBinding,
+    next: controller.next,
+    previous: controller.previous,
   };
 }
