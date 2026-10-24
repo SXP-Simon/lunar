@@ -29,8 +29,6 @@ pnpm check:expo
 
 Use `pnpm --filter @lunar/mobile <command>` for application-specific commands. EAS commands run from `apps/mobile`; repository release scripts remain in `scripts`. See [release instructions](docs/releasing.md) and the [plugin SDK design](docs/design/plugin-sdk.md).
 
-On Windows, use static checks, tests, Expo configuration inspection, and JavaScript bundling. Android native builds run in the Linux CNB environment.
-
 ## Contributing
 
 Issues and Pull Requests are welcome.
