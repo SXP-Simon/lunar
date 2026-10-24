@@ -124,6 +124,15 @@ export interface SpinnerProps {
   readonly size?: 'sm' | 'md' | 'lg';
 }
 
+/** A ring that shows how far a bounded task has progressed. */
+export interface ProgressCircleProps {
+  /** Completion from 0 to 1; values outside the range are clamped. */
+  readonly value: number;
+  /** Diameter in points. Defaults to 28. */
+  readonly size?: number;
+  readonly accessibilityLabel?: string;
+}
+
 export interface EmptyStateProps {
   readonly icon?: IconSpec;
   readonly title: string;
@@ -165,6 +174,7 @@ export declare const Image: ComponentType<ImageProps>;
 export declare const TextField: ComponentType<TextFieldProps>;
 export declare const Switch: ComponentType<SwitchProps>;
 export declare const Spinner: ComponentType<SpinnerProps>;
+export declare const ProgressCircle: ComponentType<ProgressCircleProps>;
 export declare const EmptyState: ComponentType<EmptyStateProps>;
 export declare const PanelHeader: ComponentType<PanelHeaderProps>;
 export declare const List: ComponentType<ListProps>;

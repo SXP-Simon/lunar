@@ -609,7 +609,7 @@ interface UIAPI {
 | 文本 | `Text`、`Heading`、`Markdown`                                 |
 | 操作 | `Button`、`IconButton`、`Pressable`、`Chip`、`Menu`          |
 | 输入 | `TextField`、`Switch`、`Slider`、`Select`、`SegmentedControl` |
-| 反馈 | `Spinner`、`Progress`、`EmptyState`、`ErrorState`             |
+| 反馈 | `Spinner`、`ProgressCircle`、`Progress`、`EmptyState`、`ErrorState` |
 | 容器 | `PanelHeader`、`List`、`ListItem`、`Sheet`                    |
 | 媒体 | `Image`（按插件网络权限加载的 HTTPS 地址）、`Icon`            |
 

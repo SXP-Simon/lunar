@@ -13,6 +13,7 @@ import { Switch as HeroSwitch } from 'heroui-native/switch';
 import { TextField as HeroTextField } from 'heroui-native/text-field';
 import { Children, Fragment, useContext } from 'react';
 import { Pressable as NativePressable, ScrollView, Text as NativeText, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { useCSSVariable, withUniwind } from 'uniwind';
 import type * as Ui from '@lunar/plugin-sdk/ui';
 import { networkOrigins } from '@lunar/plugin-sdk/manifest';
@@ -287,6 +288,46 @@ function Spinner({ size = 'md' }: Ui.SpinnerProps) {
   return <HeroSpinner size={size} />;
 }
 
+function ProgressCircle({ value, size = 28, accessibilityLabel }: Ui.ProgressCircleProps) {
+  const muted = useThemeColor('muted');
+  const accent = useCSSVariable('--color-navigation-active') as string;
+  const ratio = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
+  const stroke = Math.max(2, Math.round(size / 9));
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  return (
+    <View
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(ratio * 100) }}
+      style={{ width: size, height: size }}>
+      <Svg height={size} width={size}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          fill="none"
+          r={radius}
+          stroke={muted}
+          strokeOpacity={0.3}
+          strokeWidth={stroke}
+        />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          fill="none"
+          r={radius}
+          stroke={accent}
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={circumference * (1 - ratio)}
+          strokeLinecap="round"
+          strokeWidth={stroke}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </Svg>
+    </View>
+  );
+}
+
 function EmptyState({ icon, title, description, action }: Ui.EmptyStateProps) {
   return (
     <View className="items-center gap-2 px-4 py-8">
@@ -375,6 +416,7 @@ export const uiModule = {
   TextField,
   Switch,
   Spinner,
+  ProgressCircle,
   EmptyState,
   PanelHeader,
   List,
