@@ -12,6 +12,7 @@ import type {
   StorageAPI,
 } from '@lunar/plugin-sdk';
 import {
+  hasPermission,
   networkOrigins,
   SDK_VERSION,
   type PluginComponentSlot,
@@ -39,8 +40,9 @@ export const HOST_CAPABILITIES: Readonly<Record<string, number>> = Object.freeze
   'reader.decorations': 1,
   settings: 1,
   storage: 1,
-  network: 1,
+  network: 2,
   clipboard: 1,
+  'library.import': 1,
 });
 
 export const STORAGE_LIMITS = {
@@ -175,6 +177,31 @@ export function createPluginContext(host: PluginHost, entry: PluginEntry, genera
     settings: createPluginSettings(host, entry, live, track),
 
     storage: createPluginStorage(host, plugin.id, live),
+
+    library: {
+      async importEpub(input) {
+        live();
+        if (!hasPermission(manifest, 'library.import')) {
+          throw new LunarPluginError('PERMISSION_DENIED', 'The library.import permission is required');
+        }
+        if (
+          typeof input.fileName !== 'string' ||
+          input.fileName.length === 0 ||
+          input.fileName.length > 200 ||
+          !input.fileName.toLowerCase().endsWith('.epub') ||
+          !(input.bytes instanceof Uint8Array)
+        ) {
+          throw new LunarPluginError('INVALID_ARGUMENT', 'A valid EPUB file name and byte array are required');
+        }
+        if (input.bytes.byteLength > 100 * 1024 * 1024) {
+          throw new LunarPluginError('QUOTA_EXCEEDED', 'The EPUB exceeds the 100 MiB import limit');
+        }
+        if (input.onProgress !== undefined && typeof input.onProgress !== 'function') {
+          throw new LunarPluginError('INVALID_ARGUMENT', 'onProgress must be a function');
+        }
+        return host.deps.library.importEpub(input);
+      },
+    },
 
     network: {
       async request(request) {

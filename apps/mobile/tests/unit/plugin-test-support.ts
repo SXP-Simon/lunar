@@ -135,6 +135,9 @@ export function createTestHost(patch: Partial<PluginHostDependencies> = {}) {
     },
     storage: memoryStorage(),
     network: vi.fn(),
+    library: {
+      importEpub: vi.fn(async () => ({ id: 'book-1', title: 'Imported', author: '', language: 'zh-CN' })),
+    },
     clipboard: vi.fn(async () => undefined),
     ui: { toast: vi.fn(), confirm: vi.fn(async () => true), openRoute: vi.fn() },
     hostInfo: () => ({

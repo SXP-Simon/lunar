@@ -16,6 +16,7 @@ import {
   sha256Hex,
   writePluginFiles,
 } from '../infrastructure/expo-plugin-files';
+import { importPluginEpub } from '../infrastructure/expo-plugin-library';
 import { SQLitePluginRecordRepository, SQLitePluginStorageRepository } from '../repositories/sqlite-plugin-repository';
 import type { PluginStorageRepository } from '../repositories/plugin-repository';
 import { PluginDevSession, type DevSessionStatus } from '../services/plugin-dev-session';
@@ -116,6 +117,7 @@ function createPluginRuntime(): PluginRuntime {
     },
     storage,
     network: createPluginNetwork((url, init) => fetch(url, init)),
+    library: { importEpub: importPluginEpub },
     clipboard: (text) => Clipboard.setStringAsync(text).then(() => undefined),
     ui,
     hostInfo: () => ({

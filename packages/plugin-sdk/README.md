@@ -51,6 +51,8 @@ Every command, panel, overlay, route and setting the code registers must also be
 
 `ctx.storage` is a private JSON store. Writes run in call order, and `update(key, fn)` reads and writes in one step, so counters never lose a concurrent increment.
 
+`NetworkResponse.bytes` exposes the original response bytes for images and other binary resources; `body` contains the UTF-8 decoded text. Set `responseType: 'bytes'` on binary requests to skip the text allocation. Plugins with the `library.import` permission can call `ctx.library.importEpub({ fileName, bytes, onProgress })` to import a user-requested EPUB through Lunar's normal library pipeline. Imports are limited to 100 MiB.
+
 When a new version stores data differently, raise `dataVersion` in `manifest.json` and convert the data in `migrate`:
 
 ```ts

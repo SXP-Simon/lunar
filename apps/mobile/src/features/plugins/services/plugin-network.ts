@@ -1,9 +1,10 @@
+import { strFromU8 } from 'fflate';
 import type { NetworkRequest, NetworkResponse } from '@lunar/plugin-sdk';
 import { LunarPluginError } from '../domain/plugin-error';
 
 export const NETWORK_LIMITS = {
   timeoutMs: 30_000,
-  responseCharacters: 2 * 1024 * 1024,
+  responseBytes: 16 * 1024 * 1024,
   requestBodyCharacters: 1024 * 1024,
   concurrentRequests: 4,
 } as const;
@@ -57,6 +58,10 @@ export function createPluginNetwork(fetchImpl: FetchLike) {
     if (!['GET', 'POST', 'PUT', 'DELETE'].includes(method)) {
       throw new LunarPluginError('INVALID_ARGUMENT', `Method ${String(method)} is not supported`);
     }
+    const responseType = request.responseType ?? 'text';
+    if (responseType !== 'text' && responseType !== 'bytes') {
+      throw new LunarPluginError('INVALID_ARGUMENT', 'The response type must be text or bytes');
+    }
     if (request.body !== undefined && request.body.length > NETWORK_LIMITS.requestBodyCharacters) {
       throw new LunarPluginError('QUOTA_EXCEEDED', 'The request body is too large');
     }
@@ -92,10 +97,8 @@ export function createPluginNetwork(fetchImpl: FetchLike) {
       if (response.url && new URL(response.url).origin !== url.origin) {
         throw new LunarPluginError('NETWORK_DENIED', 'The request was redirected to another origin');
       }
-      const body = await response.text();
-      if (body.length > NETWORK_LIMITS.responseCharacters) {
-        throw new LunarPluginError('QUOTA_EXCEEDED', 'The response is too large');
-      }
+      const bytes = await readResponseBytes(response, NETWORK_LIMITS.responseBytes);
+      const body = responseType === 'bytes' ? '' : strFromU8(bytes);
       const responseHeaders: Record<string, string> = {};
       response.headers.forEach((value, name) => {
         if (name.toLowerCase() !== 'set-cookie') responseHeaders[name.toLowerCase()] = value;
@@ -104,6 +107,7 @@ export function createPluginNetwork(fetchImpl: FetchLike) {
         status: response.status,
         headers: responseHeaders,
         body,
+        bytes,
         json<T>() {
           try {
             return JSON.parse(body) as T;
@@ -130,6 +134,40 @@ export function createPluginNetwork(fetchImpl: FetchLike) {
 }
 
 export type PluginNetwork = ReturnType<typeof createPluginNetwork>;
+
+async function readResponseBytes(response: Response, limit: number): Promise<Uint8Array> {
+  const declared = Number(response.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > limit) {
+    throw new LunarPluginError('QUOTA_EXCEEDED', 'The response is too large');
+  }
+  if (!response.body?.getReader) {
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.byteLength > limit) throw new LunarPluginError('QUOTA_EXCEEDED', 'The response is too large');
+    return bytes;
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    total += value.byteLength;
+    if (total > limit) {
+      await reader.cancel();
+      throw new LunarPluginError('QUOTA_EXCEEDED', 'The response is too large');
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
 
 function isPrivateHost(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');

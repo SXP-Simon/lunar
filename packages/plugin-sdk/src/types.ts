@@ -60,6 +60,7 @@ export interface PluginContext {
   readonly reader: ReaderAPI;
   readonly settings: SettingsAPI;
   readonly storage: StorageAPI;
+  readonly library: LibraryAPI;
   readonly network: NetworkAPI;
   readonly services: HostServicesAPI;
   readonly i18n: I18nAPI;
@@ -302,6 +303,8 @@ export interface NetworkRequest {
   readonly method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   readonly headers?: Readonly<Record<string, string>>;
   readonly body?: string;
+  /** Binary mode avoids decoding the response into a second, text-sized allocation. */
+  readonly responseType?: 'text' | 'bytes';
   readonly timeoutMs?: number;
   readonly signal?: AbortSignal;
 }
@@ -309,12 +312,33 @@ export interface NetworkRequest {
 export interface NetworkResponse {
   readonly status: number;
   readonly headers: Readonly<Record<string, string>>;
+  /** UTF-8 decoded response text; empty when the request uses binary responseType. */
   readonly body: string;
+  readonly bytes: Uint8Array;
   json<T = JsonValue>(): T;
 }
 
 export interface NetworkAPI {
   request(request: NetworkRequest): Promise<NetworkResponse>;
+}
+
+export interface EpubImport {
+  readonly fileName: string;
+  readonly bytes: Uint8Array;
+  /** Import progress from 0 to 1. */
+  readonly onProgress?: (progress: number) => void;
+}
+
+export interface ImportedLibraryBook {
+  readonly id: string;
+  readonly title: string;
+  readonly author?: string;
+  readonly language?: string;
+}
+
+export interface LibraryAPI {
+  /** Imports one user-requested EPUB into the Lunar library. */
+  importEpub(input: EpubImport): Promise<ImportedLibraryBook>;
 }
 
 export interface HostServicesAPI {

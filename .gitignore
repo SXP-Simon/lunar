@@ -47,4 +47,4 @@ yarn-error.*
 # Independent adapter development checkout; Lunar consumes its packaged release.
 /rito-rn/
 
-/plugins/
+/plugins/*

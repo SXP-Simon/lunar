@@ -1063,7 +1063,7 @@ A 阶段决定执行方案能否成立，应在其他阶段之前完成。B 至 
 | `apps/mobile/src/features/reader`  | 会话事件、会话端口、交互状态、扩展点契约、扩展面板与装饰叠加层           |
 | `plugins/reading-stats`            | 官方阅读统计插件                                                         |
 
-SDK 0.1 尚未提供 `getChapterText`、`library` 接口、凭据服务、语音与音频服务、签名验证与官方目录；宿主通过 `host.capabilities` 报告已实现的能力。
+SDK 0.1 尚未提供 `getChapterText`、`library.metadata.read` 接口、凭据服务、语音与音频服务、签名验证与官方目录；宿主通过 `host.capabilities` 报告已实现的能力。`library.import` 已支持用户请求的单次 EPUB 字节导入。
 
 ### 18.1 尚待验证的事项
 

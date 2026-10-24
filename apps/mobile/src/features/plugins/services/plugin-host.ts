@@ -1,5 +1,13 @@
 import type { ComponentType } from 'react';
-import type { CommandSource, ConfirmOptions, HostInfo, JsonValue, ToastTone } from '@lunar/plugin-sdk';
+import type {
+  CommandSource,
+  ConfirmOptions,
+  EpubImport,
+  HostInfo,
+  ImportedLibraryBook,
+  JsonValue,
+  ToastTone,
+} from '@lunar/plugin-sdk';
 import { localizeManifestText, type PluginActivationEvent } from '@lunar/plugin-sdk/manifest';
 
 import type {
@@ -47,12 +55,17 @@ export interface PluginUpdateHandlers {
   revert(plugin: InstalledPlugin): Promise<InstalledPlugin | undefined>;
 }
 
+export interface PluginLibrary {
+  importEpub(input: EpubImport): Promise<ImportedLibraryBook>;
+}
+
 export interface PluginHostDependencies {
   readonly modules: Readonly<Record<string, unknown>>;
   readonly readEntry: (plugin: InstalledPlugin) => Promise<string>;
   readonly settings: PluginSettingsAccess;
   readonly storage: PluginStorageRepository;
   readonly network: PluginNetwork;
+  readonly library: PluginLibrary;
   readonly clipboard: (text: string) => Promise<void>;
   readonly ui: PluginUiBridge;
   readonly hostInfo: () => Omit<HostInfo, 'capabilities' | 'sdkVersion'>;

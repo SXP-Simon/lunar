@@ -241,4 +241,24 @@ describe('plugin context services', () => {
       expect.anything(),
     );
   });
+
+  it('requires library.import before accepting EPUB bytes', async () => {
+    const { ctx } = await activated('');
+    await expect(ctx.library.importEpub({ fileName: 'book.epub', bytes: new Uint8Array() })).rejects.toMatchObject({
+      code: 'PERMISSION_DENIED',
+    });
+  });
+
+  it('imports EPUB bytes through the host library bridge', async () => {
+    const setup = createTestHost();
+    const permitted = manifest({ permissions: [{ name: 'library.import', reason: 'import' }] });
+    setup.host.setPlugins([
+      { plugin: plugin(entry('activate(ctx) { globalThis.__ctx = ctx; }'), { manifest: permitted }), enabled: true },
+    ]);
+    await setup.host.ensureActive('org.example.test');
+    const ctx = (globalThis as { __ctx?: any }).__ctx;
+    const bytes = new Uint8Array([1, 2, 3]);
+    await expect(ctx.library.importEpub({ fileName: 'book.epub', bytes })).resolves.toMatchObject({ id: 'book-1' });
+    expect(setup.deps.library.importEpub).toHaveBeenCalledWith({ fileName: 'book.epub', bytes });
+  });
 });
