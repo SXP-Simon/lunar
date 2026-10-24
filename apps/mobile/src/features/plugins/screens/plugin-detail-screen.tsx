@@ -57,7 +57,7 @@ export function PluginDetailScreen() {
   const text = (value: string) => host.localize(plugin.id, value);
   const development = plugin.source === 'development';
   const customSettings = manifest.contributes.slots['settings.plugin'][0];
-  const routes = manifest.contributes.slots['app.route'];
+  const routes = manifest.contributes.slots['app.route'].filter((route) => !route.hidden);
   const logCount = host.getLogs(plugin.id).length;
   const stateText = [
     t(`plugins.state.${status.state}`),

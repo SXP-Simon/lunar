@@ -105,7 +105,8 @@ const toolbarItem = z.strictObject({
 });
 const panel = z.strictObject({ id: localId, title: text, icon: iconSpec });
 const componentEntry = z.strictObject({ id: localId, title: text.optional() });
-const route = z.strictObject({ id: localId, title: text });
+/** `hidden` keeps nested routes such as a detail page out of the plugin's entry list. */
+const route = z.strictObject({ id: localId, title: text, hidden: z.boolean().default(false) });
 
 const settingBase = { key: z.string().regex(SETTING_KEY), title: text, description: z.string().max(300).optional() };
 const setting = z.discriminatedUnion('type', [
