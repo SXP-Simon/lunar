@@ -57,6 +57,7 @@ export function PluginDetailScreen() {
   const text = (value: string) => host.localize(plugin.id, value);
   const development = plugin.source === 'development';
   const customSettings = manifest.contributes.slots['settings.plugin'][0];
+  const routes = manifest.contributes.slots['app.route'];
   const logCount = host.getLogs(plugin.id).length;
   const stateText = [
     t(`plugins.state.${status.state}`),
@@ -169,6 +170,24 @@ export function PluginDetailScreen() {
               }
             />
           </ListGroup>
+
+          {status.enabled && routes.length > 0 ? (
+            <ListGroup className="overflow-hidden rounded-3xl bg-surface">
+              {routes.map((route) => (
+                <InfoRow
+                  key={route.id}
+                  title={text(route.title)}
+                  value={t('plugins.openPage')}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/plugin/[pluginId]/[pageId]',
+                      params: { pluginId: plugin.id, pageId: route.id },
+                    } as unknown as Href)
+                  }
+                />
+              ))}
+            </ListGroup>
+          ) : null}
 
           {manifest.contributes.settings.length > 0 || customSettings ? (
             <View className="gap-2">

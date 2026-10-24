@@ -605,13 +605,15 @@ interface UIAPI {
 | ---- | ------------------------------------------------------------- |
 | 布局 | `Stack`、`Row`、`Surface`、`Divider`、`ScrollArea`            |
 | 文本 | `Text`、`Heading`、`Markdown`                                 |
-| 操作 | `Button`、`IconButton`、`Chip`、`Menu`                        |
+| 操作 | `Button`、`IconButton`、`Pressable`、`Chip`、`Menu`          |
 | 输入 | `TextField`、`Switch`、`Slider`、`Select`、`SegmentedControl` |
 | 反馈 | `Spinner`、`Progress`、`EmptyState`、`ErrorState`             |
 | 容器 | `PanelHeader`、`List`、`ListItem`、`Sheet`                    |
-| 媒体 | `Image`（包内资源或宿主受管资源）、`Icon`                     |
+| 媒体 | `Image`（按插件网络权限加载的 HTTPS 地址）、`Icon`            |
 
 [MUST] 界面组件只接受语义颜色、语义间距与语义字号，宿主统一处理浅色与深色主题、字体缩放、触控区域和无障碍角色。
+
+[MUST] `Image` 只加载插件 `network:` 权限声明内的 HTTPS 地址，未授权地址由宿主按占位块渲染，插件不能借图片请求访问未声明的来源。
 
 [SHOULD] 插件优先使用界面组件包。插件直接使用 `react-native` 基础组件时，由插件自行保证主题与无障碍质量。
 

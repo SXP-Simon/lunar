@@ -1,3 +1,4 @@
+import { Image as ExpoImage } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { Button as HeroButton } from 'heroui-native/button';
 import { ControlField } from 'heroui-native/control-field';
@@ -10,12 +11,15 @@ import { Separator } from 'heroui-native/separator';
 import { Spinner as HeroSpinner } from 'heroui-native/spinner';
 import { Switch as HeroSwitch } from 'heroui-native/switch';
 import { TextField as HeroTextField } from 'heroui-native/text-field';
-import { Children, Fragment } from 'react';
-import { ScrollView, Text as NativeText, View } from 'react-native';
-import { useCSSVariable } from 'uniwind';
+import { Children, Fragment, useContext } from 'react';
+import { Pressable as NativePressable, ScrollView, Text as NativeText, View } from 'react-native';
+import { useCSSVariable, withUniwind } from 'uniwind';
 import type * as Ui from '@lunar/plugin-sdk/ui';
+import { networkOrigins } from '@lunar/plugin-sdk/manifest';
 
 import { pluginSymbolName } from '../domain/plugin-icons';
+import { assertRequestAllowed } from '../services/plugin-network';
+import { PluginScopeContext, type PluginScopeValue } from './plugin-scope';
 
 // Class names are complete literals so that the host's style scan includes them.
 const Gap: Record<Ui.Space, string> = {
@@ -52,6 +56,9 @@ const Weight = { regular: 'font-normal', medium: 'font-medium', semibold: 'font-
 const TextAlign = { start: 'text-left', center: 'text-center', end: 'text-right' } as const;
 const HeadingSize = { 1: 'text-2xl', 2: 'text-xl', 3: 'text-lg' } as const;
 const ButtonVariant = { primary: 'primary', secondary: 'secondary', ghost: 'ghost', danger: 'danger' } as const;
+const Rounded = { none: '', sm: 'rounded', md: 'rounded-lg', lg: 'rounded-2xl' } as const;
+const PressedStyle = { opacity: 0.6 };
+const StyledImage = withUniwind(ExpoImage);
 
 function layout(props: Ui.StackProps, direction: 'flex-col' | 'flex-row', extra = '') {
   return [
@@ -142,6 +149,51 @@ function Icon({ name, size = 20, tone = 'default' }: Ui.IconProps) {
   return <SymbolView name={pluginSymbolName(name)} size={size} tintColor={color} />;
 }
 
+function Pressable({ onPress, accessibilityLabel, disabled, style, children }: Ui.PressableProps) {
+  return (
+    <NativePressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityState={{ disabled: disabled === true }}
+      disabled={disabled === true || !onPress}
+      onPress={onPress}
+      style={(state) => [style, state.pressed && disabled !== true ? PressedStyle : null]}>
+      {children}
+    </NativePressable>
+  );
+}
+
+function Image({ source, accessibilityLabel, aspectRatio = 1, rounded = 'md', style }: Ui.ImageProps) {
+  const scope = useContext(PluginScopeContext);
+  const uri = permittedImageUri(scope, source.uri);
+  const className = `bg-surface-secondary ${Rounded[rounded]}`.trim();
+  if (!uri)
+    return <View accessibilityLabel={accessibilityLabel} className={className} style={[{ aspectRatio }, style]} />;
+  return (
+    <StyledImage
+      accessible={Boolean(accessibilityLabel)}
+      accessibilityLabel={accessibilityLabel}
+      cachePolicy="memory-disk"
+      className={className}
+      contentFit="cover"
+      source={uri}
+      style={[{ aspectRatio }, style]}
+      transition={120}
+    />
+  );
+}
+
+/** Images follow the plugin's `network:` permissions, so covers cannot reach an undeclared origin. */
+function permittedImageUri(scope: PluginScopeValue | undefined, uri: string): string | undefined {
+  const manifest = scope && scope.host.getEntry(scope.pluginId)?.plugin.manifest;
+  if (!manifest) return undefined;
+  try {
+    return assertRequestAllowed({ url: uri }, networkOrigins(manifest)).href;
+  } catch {
+    return undefined;
+  }
+}
+
 function Button({
   children,
   onPress,
@@ -188,6 +240,7 @@ function TextField({
   placeholder,
   multiline,
   disabled,
+  keyboardType,
   onSubmit,
 }: Ui.TextFieldProps) {
   return (
@@ -198,6 +251,7 @@ function TextField({
         onChangeText={onChangeText}
         placeholder={placeholder}
         multiline={multiline}
+        keyboardType={keyboardType === 'number' ? 'number-pad' : 'default'}
         onSubmitEditing={onSubmit}
         accessibilityLabel={label ?? placeholder}
       />
@@ -316,6 +370,8 @@ export const uiModule = {
   Button,
   IconButton,
   Icon,
+  Pressable,
+  Image,
   TextField,
   Switch,
   Spinner,

@@ -48,3 +48,5 @@ yarn-error.*
 /rito-rn/
 
 /plugins/*
+
+.tmp/

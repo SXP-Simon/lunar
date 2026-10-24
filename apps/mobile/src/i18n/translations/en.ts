@@ -212,6 +212,7 @@ export const en: TranslationSchema<typeof zhCN> = {
     },
     activationTime: 'Started in {{ms}} ms',
     settings: 'Settings',
+    openPage: 'Open',
     detailTitle: 'Plugin info',
     versionLabel: 'Version {{version}}',
     permissionCount: '{{count}}',

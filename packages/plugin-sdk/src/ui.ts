@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from 'react';
-import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
+import type { ImageStyle, StyleProp, TextStyle, ViewStyle } from 'react-native';
 import type { IconSpec } from './manifest.js';
 
 // Lunar supplies these components when it executes a plugin; plugin bundles
@@ -77,6 +77,28 @@ export interface IconProps {
   readonly tone?: TextTone;
 }
 
+/**
+ * A tappable area for composite content such as a cover card. The host applies
+ * its own press feedback and accessibility role; the plugin supplies layout.
+ */
+export interface PressableProps {
+  readonly onPress?: () => void;
+  readonly accessibilityLabel?: string;
+  readonly disabled?: boolean;
+  readonly style?: StyleProp<ViewStyle>;
+  readonly children?: ReactNode;
+}
+
+export interface ImageProps {
+  /** An HTTPS URL the host loads, caches and decodes on the plugin's behalf. */
+  readonly source: { readonly uri: string };
+  readonly accessibilityLabel?: string;
+  /** Box aspect ratio (width / height). Defaults to 1. */
+  readonly aspectRatio?: number;
+  readonly rounded?: 'none' | 'sm' | 'md' | 'lg';
+  readonly style?: StyleProp<ImageStyle>;
+}
+
 export interface TextFieldProps {
   readonly value: string;
   readonly onChangeText: (value: string) => void;
@@ -85,6 +107,8 @@ export interface TextFieldProps {
   readonly placeholder?: string;
   readonly multiline?: boolean;
   readonly disabled?: boolean;
+  /** Keyboard suited to the expected input; the host maps it onto the platform keyboards. */
+  readonly keyboardType?: 'text' | 'number';
   readonly onSubmit?: () => void;
 }
 
@@ -136,6 +160,8 @@ export declare const Heading: ComponentType<HeadingProps>;
 export declare const Button: ComponentType<ButtonProps>;
 export declare const IconButton: ComponentType<IconButtonProps>;
 export declare const Icon: ComponentType<IconProps>;
+export declare const Pressable: ComponentType<PressableProps>;
+export declare const Image: ComponentType<ImageProps>;
 export declare const TextField: ComponentType<TextFieldProps>;
 export declare const Switch: ComponentType<SwitchProps>;
 export declare const Spinner: ComponentType<SpinnerProps>;

@@ -204,6 +204,7 @@ export const zhCN = {
     },
     activationTime: '启动耗时 {{ms}} 毫秒',
     settings: '设置',
+    openPage: '打开',
     detailTitle: '插件信息',
     versionLabel: '版本：{{version}}',
     permissionCount: '{{count}} 项',
