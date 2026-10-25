@@ -17,12 +17,23 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 
 该次环境故障中，`/proc/meminfo` 显示 `MemAvailable=0`、`SwapFree=32 kB`；开发版和基线版同时驻留（各自 RSS/Swap 见 `fxl-proc-memory.txt`），截图超时，而 ADB shell 仍可响应。此证据不足以归因给特定 EPUB 或 Rito。已结束该测试模拟器，重启同一 AVD 的只读实例，使用 4096MiB 内存，后续只运行一个 APK。测试 APK、样书仍使用原先校验值，未更换引擎。
 
+## 已完成：原书字体与行距模式
+
+- [PR #6](https://github.com/Umbrae-Labs/lunar/pull/6)，代码分支 `feat/reader-publisher-style`，提交 `7f82e2907a35c68e7389bf91e73f50183a86dfa4`，基于 main 独立分出。
+- 同一 APK 的开发客户端实测 OTF regular/bold 注册、Custom/Publisher 往返及重启恢复；87 文件／540 测试、类型检查通过。
+- 见 [设备验证报告](publisher-style-validation.md)。此项恢复字体和行距覆盖策略，不代表完整出版版式还原。
+
+## 新确认的问题
+
+- [Lunar #5](https://github.com/Umbrae-Labs/lunar/issues/5)：Cole 流式 Youth 的右浮动图片与正文重叠，未定位到具体布局或绘制模块。
+- [Rito #40](https://github.com/Ringyuki/Rito/issues/40)：未激活的备用 stylesheet 使整章拒绝加载。Waste Land 控制变体已隔离该原因，草枕也首先被它阻断。
+
 ## 尚需完成的目标
 
 4GB 单应用复测已推进：Cole 可打开，固定画页完整显示；Youth 流式页的浮动图文重叠。Waste Land 与草枕被 alternate stylesheet 选择校验阻断；仅移除 Waste Land 的备用引用后可打开，且变体通过 EPUBCheck。源码根因及截图见 [复杂排版设备验证](complex-layout-device-validation.md)。以上新增问题尚未修复。
 
 1. 固定版式／混合版式识别与提示：完成干净环境复测，按证据决定实现，独立分支及 PR。
-2. 出版方样式：比较实际嵌入字体与当前全局覆盖，验证后实现原书／自定义模式，独立分支及 PR。
+2. 出版方样式：基础模式已在 PR #6 实现；继续验证其他字体格式和复杂样式，不能将该 PR 当作全部样式保真通过。
 3. 锁定 Rito 的真实能力：逐项验证表格、浮动、Ruby、竖排、定位；补充覆盖样本，不能拿上游 dev 文档代替设备证据。
 4. 阅读交互：跨页文本完整性、搜索、选区／划线、改字号和重新打开定位；确认的问题分别开分支。
 5. 导入／首次打开／跨章节／重排：采集有构建和设备身份的指标，分析内存及耗时；模拟器指标不得表述为真机性能或引擎横向排名。
