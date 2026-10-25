@@ -1,0 +1,341 @@
+[
+  {
+    "file": "internallinks.epub",
+    "features": [
+      {
+        "path": "OEBPS/0001.xhtml",
+        "tables": [
+          {
+            "rows": 3,
+            "spans": [
+              {
+                "rowspan": "2"
+              },
+              {
+                "rowspan": "2"
+              },
+              {
+                "rowspan": "2"
+              },
+              {
+                "rowspan": "2"
+              }
+            ],
+            "firstRows": [
+              "項目 iBooks3.0 (iOS6) Adobe Digita Editions 2.0 Readium 0.5.3 Kindle Previewer 2.7 (Kindle Paperwhite モード） MS明朝 MathMLサポート MathML直接描画 未サポート MathJaxによる 未サポート"
+            ]
+          }
+        ],
+        "rubyCount": 0,
+        "rubyExamples": []
+      },
+      {
+        "path": "OEBPS/0005.xhtml",
+        "tables": [
+          {
+            "rows": 6,
+            "spans": [],
+            "firstRows": [
+              "linear=\"no\" linear=\"yes\" Readium 0.5 表示しない 表示する Adobe Digital Editions 2.0 表示する 表示する iBooks 3.0 表示しない 表示する Kobo 2.1.4 表示する 表示する Kindle 2.71 表示しない 表示する"
+            ]
+          }
+        ],
+        "rubyCount": 0,
+        "rubyExamples": []
+      },
+      {
+        "path": "OEBPS/0006.xhtml",
+        "tables": [
+          {
+            "rows": 6,
+            "spans": [],
+            "firstRows": [
+              "NCXとNAV NAVのみ Readium 0.5 表示する 表示する Adobe Digital Editions 2.0 表示する 表示しない iBooks 3.0 表示する 表示する Kobo 2.1.4 表示する 表示する Kindle 2.71 NCXは必須と説明されている XHTMLの目次が必要とされている"
+            ]
+          }
+        ],
+        "rubyCount": 0,
+        "rubyExamples": []
+      }
+    ],
+    "css": []
+  },
+  {
+    "file": "kusamakura-japanese-vertical-writing.epub",
+    "features": [
+      {
+        "path": "OPS/xhtml/一.xhtml",
+        "tables": [],
+        "rubyCount": 394,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">山路<html:rt>やまみち</html:rt></html:ruby>を登りながら、こう考えた。",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">智<html:rt>ち</html:rt></html:ruby>に働けば"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/七.xhtml",
+        "tables": [],
+        "rubyCount": 296,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">手拭<html:rt>てぬぐい</html:rt></html:ruby>を下げて、",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">湯壺<html:rt>ゆつぼ</html:rt></html:ruby>へ"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/三.xhtml",
+        "tables": [],
+        "rubyCount": 465,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">昨夕<html:rt>ゆうべ</html:rt></html:ruby>は妙な気持ちがした。",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">具合<html:rt>ぐあい</html:rt></html:ruby>庭の作り方は無論、東西の区別さえわからなかった。何だか廻廊のような所をしきりに引き廻されて、しまいに六畳ほどの小さな座敷へ入れられた。"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/九.xhtml",
+        "tables": [],
+        "rubyCount": 150,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">三脚几<html:rt>さんきゃくき</html:rt></html:ruby>に",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">縛<html:rt>しば</html:rt></html:ruby>りつけた、書物の一冊を"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/二.xhtml",
+        "tables": [],
+        "rubyCount": 272,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">軒下<html:rt>のきした</html:rt></html:ruby>から奥を",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">覗<html:rt>のぞ</html:rt></html:ruby>くと"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/五.xhtml",
+        "tables": [],
+        "rubyCount": 310,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">旦那<html:rt>だんな</html:rt></html:ruby>は、やっぱり東京ですか」",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">一目<html:rt>ひとめ</html:rt></html:ruby>見りゃあ、——"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/八.xhtml",
+        "tables": [],
+        "rubyCount": 330,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">御馳走<html:rt>ごちそう</html:rt></html:ruby>になる。",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">相客<html:rt>あいきゃく</html:rt></html:ruby>は僧一人、"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/六.xhtml",
+        "tables": [],
+        "rubyCount": 399,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">襖<html:rt>ふすま</html:rt></html:ruby>も",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">開<html:rt>あ</html:rt></html:ruby>け"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/十.xhtml",
+        "tables": [],
+        "rubyCount": 302,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">二股<html:rt>ふたまた</html:rt></html:ruby>に",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">岐<html:rt>わか</html:rt></html:ruby>れて、おのずから鏡が池の周囲となる。池の"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/十一.xhtml",
+        "tables": [],
+        "rubyCount": 269,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">山里<html:rt>やまざと</html:rt></html:ruby>の",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">朧<html:rt>おぼろ</html:rt></html:ruby>に乗じてそぞろ歩く。観海寺の石段を登りながら"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/十三.xhtml",
+        "tables": [],
+        "rubyCount": 206,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">川舟<html:rt>かわふね</html:rt></html:ruby>で久一さんを吉田の",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">停車場<html:rt>ステーション</html:rt></html:ruby>まで見送る。舟のなかに坐ったものは、送られる久一さんと、送る老人と、那美さんと、那美さんの兄さんと、荷物の世話をする源兵衛と、それから余である。余は無論"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/十二.xhtml",
+        "tables": [],
+        "rubyCount": 436,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">基督<html:rt>キリスト</html:rt></html:ruby>は最高度に芸術家の態度を具足したるものなりとは、オスカー・ワイルドの説と記憶している。基督は知らず。観海寺の",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">和尚<html:rt>おしょう</html:rt></html:ruby>のごときは、まさしくこの資格を有していると思う。趣味があると云う意味ではない。時勢に通じていると云う訳でもない。彼は"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/四.xhtml",
+        "tables": [],
+        "rubyCount": 774,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">奇麗<html:rt>きれい</html:rt></html:ruby>に掃除がしてある。ちょっと気がかりだから、念のため戸棚をあけて見る。下には小さな",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">用箪笥<html:rt>ようだんす</html:rt></html:ruby>が見える。上から"
+        ]
+      }
+    ],
+    "css": [
+      {
+        "path": "OPS/css/horizontal.css",
+        "writingModes": [
+          "    /*writing-mode: horizontal-tb",
+          "    -webkit-writing-mode: horizontal-tb"
+        ]
+      },
+      {
+        "path": "OPS/css/vertical.css",
+        "writingModes": [
+          "    -epub-writing-mode: vertical-rl",
+          "    /*writing-mode: horizontal-tb",
+          "    -webkit-writing-mode: horizontal-tb"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "kusamakura-vertical-only.epub",
+    "features": [
+      {
+        "path": "OPS/xhtml/一.xhtml",
+        "tables": [],
+        "rubyCount": 394,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">山路<html:rt>やまみち</html:rt></html:ruby>を登りながら、こう考えた。",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">智<html:rt>ち</html:rt></html:ruby>に働けば"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/七.xhtml",
+        "tables": [],
+        "rubyCount": 296,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">手拭<html:rt>てぬぐい</html:rt></html:ruby>を下げて、",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">湯壺<html:rt>ゆつぼ</html:rt></html:ruby>へ"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/三.xhtml",
+        "tables": [],
+        "rubyCount": 465,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">昨夕<html:rt>ゆうべ</html:rt></html:ruby>は妙な気持ちがした。",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">具合<html:rt>ぐあい</html:rt></html:ruby>庭の作り方は無論、東西の区別さえわからなかった。何だか廻廊のような所をしきりに引き廻されて、しまいに六畳ほどの小さな座敷へ入れられた。"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/九.xhtml",
+        "tables": [],
+        "rubyCount": 150,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">三脚几<html:rt>さんきゃくき</html:rt></html:ruby>に",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">縛<html:rt>しば</html:rt></html:ruby>りつけた、書物の一冊を"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/二.xhtml",
+        "tables": [],
+        "rubyCount": 272,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">軒下<html:rt>のきした</html:rt></html:ruby>から奥を",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">覗<html:rt>のぞ</html:rt></html:ruby>くと"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/五.xhtml",
+        "tables": [],
+        "rubyCount": 310,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">旦那<html:rt>だんな</html:rt></html:ruby>は、やっぱり東京ですか」",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">一目<html:rt>ひとめ</html:rt></html:ruby>見りゃあ、——"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/八.xhtml",
+        "tables": [],
+        "rubyCount": 330,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">御馳走<html:rt>ごちそう</html:rt></html:ruby>になる。",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">相客<html:rt>あいきゃく</html:rt></html:ruby>は僧一人、"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/六.xhtml",
+        "tables": [],
+        "rubyCount": 399,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">襖<html:rt>ふすま</html:rt></html:ruby>も",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">開<html:rt>あ</html:rt></html:ruby>け"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/十.xhtml",
+        "tables": [],
+        "rubyCount": 302,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">二股<html:rt>ふたまた</html:rt></html:ruby>に",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">岐<html:rt>わか</html:rt></html:ruby>れて、おのずから鏡が池の周囲となる。池の"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/十一.xhtml",
+        "tables": [],
+        "rubyCount": 269,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">山里<html:rt>やまざと</html:rt></html:ruby>の",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">朧<html:rt>おぼろ</html:rt></html:ruby>に乗じてそぞろ歩く。観海寺の石段を登りながら"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/十三.xhtml",
+        "tables": [],
+        "rubyCount": 206,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">川舟<html:rt>かわふね</html:rt></html:ruby>で久一さんを吉田の",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">停車場<html:rt>ステーション</html:rt></html:ruby>まで見送る。舟のなかに坐ったものは、送られる久一さんと、送る老人と、那美さんと、那美さんの兄さんと、荷物の世話をする源兵衛と、それから余である。余は無論"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/十二.xhtml",
+        "tables": [],
+        "rubyCount": 436,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">基督<html:rt>キリスト</html:rt></html:ruby>は最高度に芸術家の態度を具足したるものなりとは、オスカー・ワイルドの説と記憶している。基督は知らず。観海寺の",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">和尚<html:rt>おしょう</html:rt></html:ruby>のごときは、まさしくこの資格を有していると思う。趣味があると云う意味ではない。時勢に通じていると云う訳でもない。彼は"
+        ]
+      },
+      {
+        "path": "OPS/xhtml/四.xhtml",
+        "tables": [],
+        "rubyCount": 774,
+        "rubyExamples": [
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">奇麗<html:rt>きれい</html:rt></html:ruby>に掃除がしてある。ちょっと気がかりだから、念のため戸棚をあけて見る。下には小さな",
+          "<html:ruby xmlns:html=\"http://www.w3.org/1999/xhtml\">用箪笥<html:rt>ようだんす</html:rt></html:ruby>が見える。上から"
+        ]
+      }
+    ],
+    "css": [
+      {
+        "path": "OPS/css/horizontal.css",
+        "writingModes": [
+          "    /*writing-mode: horizontal-tb",
+          "    -webkit-writing-mode: horizontal-tb"
+        ]
+      },
+      {
+        "path": "OPS/css/vertical.css",
+        "writingModes": [
+          "    -epub-writing-mode: vertical-rl",
+          "    /*writing-mode: horizontal-tb",
+          "    -webkit-writing-mode: horizontal-tb"
+        ]
+      }
+    ]
+  }
+]

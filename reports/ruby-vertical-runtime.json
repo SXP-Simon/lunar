@@ -1,0 +1,3636 @@
+{
+  "frame": {
+    "commands": [
+      {
+        "color": {
+          "alpha": 1,
+          "component0": 1,
+          "component1": 1,
+          "component2": 1,
+          "none": {
+            "alpha": false,
+            "component0": false,
+            "component1": false,
+            "component2": false
+          },
+          "space": "srgb"
+        },
+        "ground": "page",
+        "kind": "fill-rect",
+        "rect": {
+          "height": 2399.25,
+          "width": 1078.875,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "kind": "push-state"
+      },
+      {
+        "dx": 0,
+        "dy": 0,
+        "kind": "translate"
+      },
+      {
+        "color": {
+          "alpha": 1,
+          "component0": 1,
+          "component1": 1,
+          "component2": 1,
+          "none": {
+            "alpha": false,
+            "component0": false,
+            "component1": false,
+            "component2": false
+          },
+          "space": "srgb"
+        },
+        "ground": "page",
+        "kind": "fill-rect",
+        "rect": {
+          "height": 2399.25,
+          "width": 1078.875,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "kind": "push-state"
+      },
+      {
+        "kind": "clip-path",
+        "path": [
+          {
+            "height": 1998.24999675,
+            "op": "rect",
+            "width": 1015.875,
+            "x": 63,
+            "y": 233.00000325
+          }
+        ]
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 358.38749980926514,
+            "y": 120.51065597534179
+          },
+          {
+            "byte": 1,
+            "x": 358.38749980926514,
+            "y": 142.11065635681152
+          },
+          {
+            "byte": 2,
+            "x": 358.38749980926514,
+            "y": 163.71065673828124
+          },
+          {
+            "byte": 3,
+            "x": 358.38749980926514,
+            "y": 185.31065711975097
+          },
+          {
+            "byte": 4,
+            "x": 358.38749980926514,
+            "y": 206.9106575012207
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 21.600000381469727,
+            "style": "normal",
+            "weight": 700
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 108.000002,
+          "width": 21.6,
+          "x": 358.3875,
+          "y": 103.230656
+        },
+        "text": "EPUB "
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 358.38749980926514,
+            "y": 184.57625827789306
+          },
+          {
+            "byte": 1,
+            "x": 358.38749980926514,
+            "y": 206.1762586593628
+          },
+          {
+            "byte": 2,
+            "x": 358.38749980926514,
+            "y": 227.7762590408325
+          },
+          {
+            "byte": 3,
+            "x": 358.38749980926514,
+            "y": 249.37625942230224
+          },
+          {
+            "byte": 4,
+            "x": 358.38749980926514,
+            "y": 270.976259803772
+          },
+          {
+            "byte": 5,
+            "x": 358.38749980926514,
+            "y": 292.5762601852417
+          },
+          {
+            "byte": 6,
+            "x": 358.38749980926514,
+            "y": 314.17626056671145
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 21.600000381469727,
+            "style": "normal",
+            "weight": 700
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 151.200003,
+          "width": 21.6,
+          "x": 358.3875,
+          "y": 167.296258
+        },
+        "text": "Prefix "
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 358.38749980926514,
+            "y": 250.97466049194335
+          },
+          {
+            "byte": 1,
+            "x": 358.38749980926514,
+            "y": 272.5746608734131
+          },
+          {
+            "byte": 2,
+            "x": 358.38749980926514,
+            "y": 294.17466125488284
+          },
+          {
+            "byte": 3,
+            "x": 358.38749980926514,
+            "y": 315.77466163635256
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 21.600000381469727,
+            "style": "normal",
+            "weight": 700
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 86.400002,
+          "width": 21.6,
+          "x": 358.3875,
+          "y": 233.69466
+        },
+        "text": "Ruby"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 323.875,
+            "y": 103.16190567016602
+          },
+          {
+            "byte": 3,
+            "x": 323.875,
+            "y": 121.16190567016602
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 18,
+          "x": 323.875,
+          "y": 88.761906
+        },
+        "text": "山道"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 342.375,
+            "y": 96.68378067016602
+          },
+          {
+            "byte": 3,
+            "x": 342.375,
+            "y": 105.68378067016602
+          },
+          {
+            "byte": 6,
+            "x": 342.375,
+            "y": 114.68378067016602
+          },
+          {
+            "byte": 9,
+            "x": 342.375,
+            "y": 123.68378067016602
+          }
+        ],
+        "kind": "ruby",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 9,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 9,
+          "x": 342.375,
+          "y": 88.761906
+        },
+        "text": "やまみち"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 323.875,
+            "y": 139.16190567016602
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 323.875,
+          "y": 124.761906
+        },
+        "text": "を"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 323.875,
+            "y": 157.16190567016602
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 323.875,
+          "y": 142.761906
+        },
+        "text": "歩"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 323.875,
+            "y": 175.16190567016602
+          },
+          {
+            "byte": 3,
+            "x": 332.875,
+            "y": 182.361905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 18,
+          "x": 323.875,
+          "y": 160.761906
+        },
+        "text": "く。"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 323.875,
+            "y": 211.16190567016602
+          },
+          {
+            "byte": 3,
+            "x": 323.875,
+            "y": 229.16190567016602
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 18,
+          "x": 323.875,
+          "y": 196.761906
+        },
+        "text": "漢字"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 342.375,
+            "y": 206.18378067016602
+          },
+          {
+            "byte": 3,
+            "x": 342.375,
+            "y": 218.18378067016602
+          },
+          {
+            "byte": 6,
+            "x": 342.375,
+            "y": 230.18378067016602
+          }
+        ],
+        "kind": "ruby",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 9,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 9,
+          "x": 342.375,
+          "y": 196.761906
+        },
+        "text": "かんじ"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 323.875,
+            "y": 247.16190567016602
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 323.875,
+          "y": 232.761906
+        },
+        "text": "を"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 323.875,
+            "y": 265.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 323.875,
+          "y": 250.761906
+        },
+        "text": "読"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 323.875,
+            "y": 283.161905670166
+          },
+          {
+            "byte": 3,
+            "x": 332.875,
+            "y": 290.361905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 18,
+          "x": 323.875,
+          "y": 268.761906
+        },
+        "text": "む。"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 103.16190567016602
+          },
+          {
+            "byte": 3,
+            "x": 276.1875,
+            "y": 121.16190567016602
+          },
+          {
+            "byte": 6,
+            "x": 276.1875,
+            "y": 139.16190567016602
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 54,
+          "width": 18,
+          "x": 276.1875,
+          "y": 88.761906
+        },
+        "text": "一列目"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 157.16190567016602
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 142.761906
+        },
+        "text": "の"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 175.16190567016602
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 160.761906
+        },
+        "text": "終"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 193.16190567016602
+          },
+          {
+            "byte": 3,
+            "x": 276.1875,
+            "y": 211.16190567016602
+          },
+          {
+            "byte": 6,
+            "x": 285.1875,
+            "y": 218.361905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 54,
+          "width": 18,
+          "x": 276.1875,
+          "y": 178.761906
+        },
+        "text": "わり。"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 247.16190567016602
+          },
+          {
+            "byte": 3,
+            "x": 276.1875,
+            "y": 265.161905670166
+          },
+          {
+            "byte": 6,
+            "x": 276.1875,
+            "y": 283.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 54,
+          "width": 18,
+          "x": 276.1875,
+          "y": 232.761906
+        },
+        "text": "二列目"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 301.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 286.761906
+        },
+        "text": "の"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 319.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 304.761906
+        },
+        "text": "始"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 337.161905670166
+          },
+          {
+            "byte": 3,
+            "x": 276.1875,
+            "y": 355.161905670166
+          },
+          {
+            "byte": 6,
+            "x": 285.1875,
+            "y": 362.361905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 54,
+          "width": 18,
+          "x": 276.1875,
+          "y": 322.761906
+        },
+        "text": "まり。"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 391.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 376.761906
+        },
+        "text": "春"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 409.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 394.761906
+        },
+        "text": "の"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 427.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 412.761906
+        },
+        "text": "風"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 445.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 430.761906
+        },
+        "text": "が"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 463.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 448.761906
+        },
+        "text": "静"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 481.161905670166
+          },
+          {
+            "byte": 3,
+            "x": 276.1875,
+            "y": 499.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 18,
+          "x": 276.1875,
+          "y": 466.761906
+        },
+        "text": "かな"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 517.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 502.761906
+        },
+        "text": "庭"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 535.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 520.761906
+        },
+        "text": "を"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 553.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 538.761906
+        },
+        "text": "通"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 571.161905670166
+          },
+          {
+            "byte": 3,
+            "x": 285.1875,
+            "y": 578.361905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 18,
+          "x": 276.1875,
+          "y": 556.761906
+        },
+        "text": "る。"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 607.161905670166
+          },
+          {
+            "byte": 3,
+            "x": 276.1875,
+            "y": 625.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 18,
+          "x": 276.1875,
+          "y": 592.761906
+        },
+        "text": "文字"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 643.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 628.761906
+        },
+        "text": "の"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 661.161905670166
+          },
+          {
+            "byte": 3,
+            "x": 276.1875,
+            "y": 679.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 18,
+          "x": 276.1875,
+          "y": 646.761906
+        },
+        "text": "順番"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 697.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 682.761906
+        },
+        "text": "を"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 715.161905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 276.1875,
+          "y": 700.761906
+        },
+        "text": "確"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 276.1875,
+            "y": 733.161905670166
+          },
+          {
+            "byte": 3,
+            "x": 276.1875,
+            "y": 751.161905670166
+          },
+          {
+            "byte": 6,
+            "x": 276.1875,
+            "y": 769.161905670166
+          },
+          {
+            "byte": 9,
+            "x": 285.1875,
+            "y": 776.361905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 72,
+          "width": 18,
+          "x": 276.1875,
+          "y": 718.761906
+        },
+        "text": "かめる。"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 228.5,
+            "y": 103.16190567016602
+          },
+          {
+            "byte": 3,
+            "x": 228.5,
+            "y": 121.16190567016602
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 36,
+          "width": 18,
+          "x": 228.5,
+          "y": 88.761906
+        },
+        "text": "最後"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 228.5,
+            "y": 139.16190567016602
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 18,
+          "width": 18,
+          "x": 228.5,
+          "y": 124.761906
+        },
+        "text": "の"
+      },
+      {
+        "clusters": [
+          {
+            "byte": 0,
+            "x": 228.5,
+            "y": 157.16190567016602
+          },
+          {
+            "byte": 3,
+            "x": 228.5,
+            "y": 175.16190567016602
+          },
+          {
+            "byte": 6,
+            "x": 237.5,
+            "y": 182.361905670166
+          },
+          {
+            "byte": 9,
+            "x": 228.5,
+            "y": 211.16190567016602
+          },
+          {
+            "byte": 12,
+            "x": 228.5,
+            "y": 229.16190567016602
+          },
+          {
+            "byte": 15,
+            "x": 237.5,
+            "y": 236.361905670166
+          }
+        ],
+        "kind": "text",
+        "paint": {
+          "color": {
+            "alpha": 1,
+            "component0": 0,
+            "component1": 0,
+            "component2": 0,
+            "none": {
+              "alpha": false,
+              "component0": false,
+              "component1": false,
+              "component2": false
+            },
+            "space": "srgb"
+          },
+          "font": {
+            "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+            "sizePx": 18,
+            "style": "normal",
+            "weight": 400
+          },
+          "textShadows": []
+        },
+        "rect": {
+          "height": 108,
+          "width": 18,
+          "x": 228.5,
+          "y": 142.761906
+        },
+        "text": "段落。終点。"
+      },
+      {
+        "kind": "pop-state"
+      },
+      {
+        "kind": "pop-state"
+      }
+    ],
+    "hits": [
+      {
+        "bounds": {
+          "height": 35.625,
+          "width": 64.06560230255127,
+          "x": 38.46875,
+          "y": 88.76190567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "EPUB ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 5,
+            "lineIndex": 0,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 35.625,
+          "width": 66.3984022140503,
+          "x": 102.53435230255127,
+          "y": 88.76190567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "Prefix ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 7,
+            "lineIndex": 0,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 35.625,
+          "width": 49.636810302734375,
+          "x": 168.93275451660156,
+          "y": 88.76190567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "Ruby",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 4,
+            "lineIndex": 0,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 33.34375,
+          "width": 36,
+          "x": 24,
+          "y": 124.38690567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "山道",
+        "textRange": {
+          "end": {
+            "blockIndex": 1,
+            "charIndex": 2,
+            "lineIndex": 0,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 1,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 33.34375,
+          "width": 18,
+          "x": 60,
+          "y": 124.38690567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "を",
+        "textRange": {
+          "end": {
+            "blockIndex": 1,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 1,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 33.34375,
+          "width": 18,
+          "x": 78,
+          "y": 124.38690567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "歩",
+        "textRange": {
+          "end": {
+            "blockIndex": 1,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 1,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 33.34375,
+          "width": 36,
+          "x": 96,
+          "y": 124.38690567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "く。",
+        "textRange": {
+          "end": {
+            "blockIndex": 1,
+            "charIndex": 2,
+            "lineIndex": 0,
+            "runIndex": 3
+          },
+          "start": {
+            "blockIndex": 1,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 3
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 33.34375,
+          "width": 36,
+          "x": 132,
+          "y": 124.38690567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "漢字",
+        "textRange": {
+          "end": {
+            "blockIndex": 1,
+            "charIndex": 2,
+            "lineIndex": 0,
+            "runIndex": 4
+          },
+          "start": {
+            "blockIndex": 1,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 4
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 33.34375,
+          "width": 18,
+          "x": 168,
+          "y": 124.38690567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "を",
+        "textRange": {
+          "end": {
+            "blockIndex": 1,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 5
+          },
+          "start": {
+            "blockIndex": 1,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 5
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 33.34375,
+          "width": 18,
+          "x": 186,
+          "y": 124.38690567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "読",
+        "textRange": {
+          "end": {
+            "blockIndex": 1,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 6
+          },
+          "start": {
+            "blockIndex": 1,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 6
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 33.34375,
+          "width": 36,
+          "x": 204,
+          "y": 124.38690567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "む。",
+        "textRange": {
+          "end": {
+            "blockIndex": 1,
+            "charIndex": 2,
+            "lineIndex": 0,
+            "runIndex": 7
+          },
+          "start": {
+            "blockIndex": 1,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 7
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 54,
+          "x": 24,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "一列目",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 3,
+            "lineIndex": 0,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 78,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "の",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 96,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "終",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 54,
+          "x": 114,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "わり。",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 3,
+            "lineIndex": 0,
+            "runIndex": 3
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 3
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 54,
+          "x": 168,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "二列目",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 3,
+            "lineIndex": 0,
+            "runIndex": 4
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 4
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 222,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "の",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 5
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 5
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 240,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "始",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 6
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 6
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 54,
+          "x": 258,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "まり。",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 3,
+            "lineIndex": 0,
+            "runIndex": 7
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 7
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 312,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "春",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 8
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 8
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 330,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "の",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 9
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 9
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 348,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "風",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 10
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 10
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 366,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "が",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 11
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 11
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 384,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "静",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 12
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 12
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 36,
+          "x": 402,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "かな",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 2,
+            "lineIndex": 0,
+            "runIndex": 13
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 13
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 438,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "庭",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 14
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 14
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 456,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "を",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 15
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 15
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 474,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "通",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 16
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 16
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 36,
+          "x": 492,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "る。",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 2,
+            "lineIndex": 0,
+            "runIndex": 17
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 17
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 36,
+          "x": 528,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "文字",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 2,
+            "lineIndex": 0,
+            "runIndex": 18
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 18
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 564,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "の",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 19
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 19
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 36,
+          "x": 582,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "順番",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 2,
+            "lineIndex": 0,
+            "runIndex": 20
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 20
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 618,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "を",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 21
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 21
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 636,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "確",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 22
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 22
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 72,
+          "x": 654,
+          "y": 175.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "かめる。",
+        "textRange": {
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 4,
+            "lineIndex": 0,
+            "runIndex": 23
+          },
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 23
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 36,
+          "x": 24,
+          "y": 223.41815567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "最後",
+        "textRange": {
+          "end": {
+            "blockIndex": 3,
+            "charIndex": 2,
+            "lineIndex": 0,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 3,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 18,
+          "x": 60,
+          "y": 223.41815567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "の",
+        "textRange": {
+          "end": {
+            "blockIndex": 3,
+            "charIndex": 1,
+            "lineIndex": 0,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 3,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 29.6875,
+          "width": 108,
+          "x": 78,
+          "y": 223.41815567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 2,
+        "text": "段落。終点。",
+        "textRange": {
+          "end": {
+            "blockIndex": 3,
+            "charIndex": 6,
+            "lineIndex": 0,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 3,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 2
+          }
+        }
+      }
+    ],
+    "manifestHref": "prefixed.xhtml",
+    "ratio": 2.625
+  },
+  "layout": {
+    "fontFamily": "LunarWenKai",
+    "lineHeight": 1.65,
+    "marginBottom": 64,
+    "marginLeft": 24,
+    "marginRight": 24,
+    "marginTop": 88.76190567016602,
+    "pageHeight": 914,
+    "pageWidth": 411,
+    "palette": {
+      "backgroundColor": "#F8F8FA",
+      "foregroundColor": "#202020",
+      "spreadBodyBackgroundColor": "#F8F8FA"
+    },
+    "pixelRatio": 2.625,
+    "rootFontSize": 18,
+    "spreadGap": 0,
+    "spreadMode": "single",
+    "viewportHeight": 914,
+    "viewportWidth": 411
+  },
+  "pages": [
+    {
+      "height": 914,
+      "hits": [
+        {
+          "bounds": {
+            "height": 35.625,
+            "width": 64.06560230255127,
+            "x": 38.46875,
+            "y": 88.76190567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "EPUB "
+        },
+        {
+          "bounds": {
+            "height": 35.625,
+            "width": 66.3984022140503,
+            "x": 102.53435230255127,
+            "y": 88.76190567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "Prefix "
+        },
+        {
+          "bounds": {
+            "height": 35.625,
+            "width": 49.636810302734375,
+            "x": 168.93275451660156,
+            "y": 88.76190567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "Ruby"
+        },
+        {
+          "bounds": {
+            "height": 33.34375,
+            "width": 36,
+            "x": 24,
+            "y": 124.38690567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "山道"
+        },
+        {
+          "bounds": {
+            "height": 33.34375,
+            "width": 18,
+            "x": 60,
+            "y": 124.38690567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "を"
+        },
+        {
+          "bounds": {
+            "height": 33.34375,
+            "width": 18,
+            "x": 78,
+            "y": 124.38690567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "歩"
+        },
+        {
+          "bounds": {
+            "height": 33.34375,
+            "width": 36,
+            "x": 96,
+            "y": 124.38690567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "く。"
+        },
+        {
+          "bounds": {
+            "height": 33.34375,
+            "width": 36,
+            "x": 132,
+            "y": 124.38690567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "漢字"
+        },
+        {
+          "bounds": {
+            "height": 33.34375,
+            "width": 18,
+            "x": 168,
+            "y": 124.38690567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "を"
+        },
+        {
+          "bounds": {
+            "height": 33.34375,
+            "width": 18,
+            "x": 186,
+            "y": 124.38690567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "読"
+        },
+        {
+          "bounds": {
+            "height": 33.34375,
+            "width": 36,
+            "x": 204,
+            "y": 124.38690567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "む。"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 54,
+            "x": 24,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "一列目"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 78,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "の"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 96,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "終"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 54,
+            "x": 114,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "わり。"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 54,
+            "x": 168,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "二列目"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 222,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "の"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 240,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "始"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 54,
+            "x": 258,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "まり。"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 312,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "春"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 330,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "の"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 348,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "風"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 366,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "が"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 384,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "静"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 36,
+            "x": 402,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "かな"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 438,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "庭"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 456,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "を"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 474,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "通"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 36,
+            "x": 492,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "る。"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 36,
+            "x": 528,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "文字"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 564,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "の"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 36,
+            "x": 582,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "順番"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 618,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "を"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 636,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "確"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 72,
+            "x": 654,
+            "y": 175.73065567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "かめる。"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 36,
+            "x": 24,
+            "y": 223.41815567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "最後"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 18,
+            "x": 60,
+            "y": 223.41815567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "の"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 108,
+            "x": 78,
+            "y": 223.41815567016602
+          },
+          "kind": "text",
+          "pageIndex": 2,
+          "text": "段落。終点。"
+        }
+      ],
+      "pageIndex": 2,
+      "semantics": [
+        {
+          "bounds": {
+            "height": 35.625,
+            "width": 732.300594329834,
+            "x": 38.46875,
+            "y": 88.76190567016602
+          },
+          "children": [],
+          "level": 1,
+          "role": "heading",
+          "text": "EPUB Prefix Ruby"
+        },
+        {
+          "bounds": {
+            "height": 33.34375,
+            "width": 761.238094329834,
+            "x": 24,
+            "y": 124.38690567016602
+          },
+          "children": [],
+          "role": "paragraph",
+          "text": "山道 を 歩 く。 漢字 を 読 む。"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 761.238094329834,
+            "x": 24,
+            "y": 175.73065567016602
+          },
+          "children": [],
+          "role": "paragraph",
+          "text": "一列目 の 終 わり。 二列目 の 始 まり。 春 の 風 が 静 かな 庭 を 通 る。 文字 の 順番 を 確 かめる。"
+        },
+        {
+          "bounds": {
+            "height": 29.6875,
+            "width": 761.238094329834,
+            "x": 24,
+            "y": 223.41815567016602
+          },
+          "children": [],
+          "role": "paragraph",
+          "text": "最後 の 段落。終点。"
+        }
+      ],
+      "text": "EPUB Prefix Ruby\n山道を歩く。漢字を読む。\n一列目の終わり。二列目の始まり。春の風が静かな庭を通る。文字の順番を確かめる。\n最後の段落。終点。",
+      "textLength": "79",
+      "textRuns": [
+        {
+          "blockIndex": 0,
+          "end": "5",
+          "lineIndex": 0,
+          "runIndex": 0,
+          "start": "0"
+        },
+        {
+          "blockIndex": 0,
+          "end": "12",
+          "lineIndex": 0,
+          "runIndex": 1,
+          "start": "5"
+        },
+        {
+          "blockIndex": 0,
+          "end": "16",
+          "lineIndex": 0,
+          "runIndex": 2,
+          "start": "12"
+        },
+        {
+          "blockIndex": 1,
+          "end": "19",
+          "lineIndex": 0,
+          "runIndex": 0,
+          "start": "17"
+        },
+        {
+          "blockIndex": 1,
+          "end": "20",
+          "lineIndex": 0,
+          "runIndex": 1,
+          "start": "19"
+        },
+        {
+          "blockIndex": 1,
+          "end": "21",
+          "lineIndex": 0,
+          "runIndex": 2,
+          "start": "20"
+        },
+        {
+          "blockIndex": 1,
+          "end": "23",
+          "lineIndex": 0,
+          "runIndex": 3,
+          "start": "21"
+        },
+        {
+          "blockIndex": 1,
+          "end": "25",
+          "lineIndex": 0,
+          "runIndex": 4,
+          "start": "23"
+        },
+        {
+          "blockIndex": 1,
+          "end": "26",
+          "lineIndex": 0,
+          "runIndex": 5,
+          "start": "25"
+        },
+        {
+          "blockIndex": 1,
+          "end": "27",
+          "lineIndex": 0,
+          "runIndex": 6,
+          "start": "26"
+        },
+        {
+          "blockIndex": 1,
+          "end": "29",
+          "lineIndex": 0,
+          "runIndex": 7,
+          "start": "27"
+        },
+        {
+          "blockIndex": 2,
+          "end": "33",
+          "lineIndex": 0,
+          "runIndex": 0,
+          "start": "30"
+        },
+        {
+          "blockIndex": 2,
+          "end": "34",
+          "lineIndex": 0,
+          "runIndex": 1,
+          "start": "33"
+        },
+        {
+          "blockIndex": 2,
+          "end": "35",
+          "lineIndex": 0,
+          "runIndex": 2,
+          "start": "34"
+        },
+        {
+          "blockIndex": 2,
+          "end": "38",
+          "lineIndex": 0,
+          "runIndex": 3,
+          "start": "35"
+        },
+        {
+          "blockIndex": 2,
+          "end": "41",
+          "lineIndex": 0,
+          "runIndex": 4,
+          "start": "38"
+        },
+        {
+          "blockIndex": 2,
+          "end": "42",
+          "lineIndex": 0,
+          "runIndex": 5,
+          "start": "41"
+        },
+        {
+          "blockIndex": 2,
+          "end": "43",
+          "lineIndex": 0,
+          "runIndex": 6,
+          "start": "42"
+        },
+        {
+          "blockIndex": 2,
+          "end": "46",
+          "lineIndex": 0,
+          "runIndex": 7,
+          "start": "43"
+        },
+        {
+          "blockIndex": 2,
+          "end": "47",
+          "lineIndex": 0,
+          "runIndex": 8,
+          "start": "46"
+        },
+        {
+          "blockIndex": 2,
+          "end": "48",
+          "lineIndex": 0,
+          "runIndex": 9,
+          "start": "47"
+        },
+        {
+          "blockIndex": 2,
+          "end": "49",
+          "lineIndex": 0,
+          "runIndex": 10,
+          "start": "48"
+        },
+        {
+          "blockIndex": 2,
+          "end": "50",
+          "lineIndex": 0,
+          "runIndex": 11,
+          "start": "49"
+        },
+        {
+          "blockIndex": 2,
+          "end": "51",
+          "lineIndex": 0,
+          "runIndex": 12,
+          "start": "50"
+        },
+        {
+          "blockIndex": 2,
+          "end": "53",
+          "lineIndex": 0,
+          "runIndex": 13,
+          "start": "51"
+        },
+        {
+          "blockIndex": 2,
+          "end": "54",
+          "lineIndex": 0,
+          "runIndex": 14,
+          "start": "53"
+        },
+        {
+          "blockIndex": 2,
+          "end": "55",
+          "lineIndex": 0,
+          "runIndex": 15,
+          "start": "54"
+        },
+        {
+          "blockIndex": 2,
+          "end": "56",
+          "lineIndex": 0,
+          "runIndex": 16,
+          "start": "55"
+        },
+        {
+          "blockIndex": 2,
+          "end": "58",
+          "lineIndex": 0,
+          "runIndex": 17,
+          "start": "56"
+        },
+        {
+          "blockIndex": 2,
+          "end": "60",
+          "lineIndex": 0,
+          "runIndex": 18,
+          "start": "58"
+        },
+        {
+          "blockIndex": 2,
+          "end": "61",
+          "lineIndex": 0,
+          "runIndex": 19,
+          "start": "60"
+        },
+        {
+          "blockIndex": 2,
+          "end": "63",
+          "lineIndex": 0,
+          "runIndex": 20,
+          "start": "61"
+        },
+        {
+          "blockIndex": 2,
+          "end": "64",
+          "lineIndex": 0,
+          "runIndex": 21,
+          "start": "63"
+        },
+        {
+          "blockIndex": 2,
+          "end": "65",
+          "lineIndex": 0,
+          "runIndex": 22,
+          "start": "64"
+        },
+        {
+          "blockIndex": 2,
+          "end": "69",
+          "lineIndex": 0,
+          "runIndex": 23,
+          "start": "65"
+        },
+        {
+          "blockIndex": 3,
+          "end": "72",
+          "lineIndex": 0,
+          "runIndex": 0,
+          "start": "70"
+        },
+        {
+          "blockIndex": 3,
+          "end": "73",
+          "lineIndex": 0,
+          "runIndex": 1,
+          "start": "72"
+        },
+        {
+          "blockIndex": 3,
+          "end": "79",
+          "lineIndex": 0,
+          "runIndex": 2,
+          "start": "73"
+        }
+      ],
+      "width": 411
+    }
+  ],
+  "request": {
+    "layout": {
+      "firstPageAlone": false,
+      "fontFamilyOverride": "LunarWenKai",
+      "lineHeightOverride": 1.65,
+      "marginBottom": 64,
+      "marginLeft": 24,
+      "marginRight": 24,
+      "marginTop": 88.76190567016602,
+      "renderRatio": 2.625,
+      "rootFontSize": 18,
+      "spreadGap": 0,
+      "spreadMode": "single",
+      "viewportHeight": 914,
+      "viewportWidth": 411
+    },
+    "locator": {
+      "href": "prefixed.xhtml",
+      "sourcePoint": {
+        "nodePath": [
+          0,
+          0
+        ],
+        "textOffset": "0"
+      }
+    },
+    "requestId": "1",
+    "sessionId": "1",
+    "textProfile": "platform-string-runs"
+  },
+  "snapshot": {
+    "bookId": "3504352a4242bec633742ae496411394ab54ffdfe0df830efb22121f8d3aa3e8",
+    "bookSpreadIndex": 2,
+    "chapterTitle": "EPUB Prefix Ruby",
+    "paginationComplete": true,
+    "phase": "ready",
+    "position": {
+      "bookPageIndex": 2,
+      "bookSpreadIndex": 2,
+      "locator": {
+        "chapterProgress": 0,
+        "manifestHref": "prefixed.xhtml",
+        "sourcePoint": {
+          "nodePath": [
+            0,
+            0
+          ],
+          "textOffset": 0
+        },
+        "spineIdref": "prefixed"
+      },
+      "pageIndex": 2,
+      "progression": 1,
+      "spreadIndex": 0,
+      "timestamp": 1792947967188
+    },
+    "renderId": 1,
+    "revisionId": 1,
+    "spreadIndex": 0,
+    "totalSpreads": 3
+  }
+}

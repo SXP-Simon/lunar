@@ -1,0 +1,71 @@
+{
+  "bookSha256": "3504352a4242bec633742ae496411394ab54ffdfe0df830efb22121f8d3aa3e8",
+  "pointDevicePx": {
+    "x": 872,
+    "y": 450
+  },
+  "pixelRatio": 2.625,
+  "pointPageCssPx": {
+    "x": 332.1904761904762,
+    "y": 171.42857142857142
+  },
+  "renderedKu": {
+    "clusters": [
+      {
+        "byte": 0,
+        "x": 323.875,
+        "y": 175.16190567016602
+      },
+      {
+        "byte": 3,
+        "x": 332.875,
+        "y": 182.361905670166
+      }
+    ],
+    "kind": "text",
+    "paint": {
+      "color": {
+        "alpha": 1,
+        "component0": 0,
+        "component1": 0,
+        "component2": 0,
+        "none": {
+          "alpha": false,
+          "component0": false,
+          "component1": false,
+          "component2": false
+        },
+        "space": "srgb"
+      },
+      "font": {
+        "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+        "sizePx": 18,
+        "style": "normal",
+        "weight": 400
+      },
+      "textShadows": []
+    },
+    "rect": {
+      "height": 36,
+      "width": 18,
+      "x": 323.875,
+      "y": 160.761906
+    },
+    "text": "く。"
+  },
+  "nativeKuHit": {
+    "bounds": {
+      "height": 33.34375,
+      "width": 36,
+      "x": 96,
+      "y": 124.38690567016602
+    },
+    "kind": "text",
+    "pageIndex": 2,
+    "text": "く。"
+  },
+  "lunarPassesNativeHitCoordinatesUnchanged": true,
+  "nativeHitCount": 38,
+  "nativeHitsExceedingPageRight": 11,
+  "persistedMarkTextObservedInUi": "の"
+}

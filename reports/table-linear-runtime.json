@@ -1,0 +1,2039 @@
+{
+  "status": "done",
+  "value": {
+    "hits": [
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 65.86000061035156,
+          "x": 35,
+          "y": 99.76190567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "Adobe ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 6,
+            "lineIndex": 0,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 67.63999938964844,
+          "x": 35,
+          "y": 132.74628067016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "Digital ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 8,
+            "lineIndex": 1,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 1,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 82.17999267578125,
+          "x": 35,
+          "y": 165.73065567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "Editions ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 9,
+            "lineIndex": 2,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 2,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 31,
+          "x": 35,
+          "y": 198.71503067016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "2.0",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 3,
+            "lineIndex": 3,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 3,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 141.4375,
+          "y": 99.76190567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表示",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 4,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 4,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 181.4375,
+          "y": 99.76190567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "する",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 4,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 4,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 265.6875,
+          "y": 99.76190567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表示",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 5,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 5,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 305.6875,
+          "y": 99.76190567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "する",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 5,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 5,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 68.13999938964844,
+          "x": 35,
+          "y": 253.69940567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "iBooks ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 7,
+            "lineIndex": 6,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 6,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 31,
+          "x": 35,
+          "y": 286.683780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "3.0",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 3,
+            "lineIndex": 7,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 7,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 141.4375,
+          "y": 253.69940567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表示",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 8,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 8,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 60,
+          "x": 181.4375,
+          "y": 253.69940567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "しない",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 3,
+            "lineIndex": 8,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 8,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 265.6875,
+          "y": 253.69940567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表示",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 9,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 9,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 305.6875,
+          "y": 253.69940567016602
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "する",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 9,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 9,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 53.540000915527344,
+          "x": 35,
+          "y": 341.668155670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "Kobo ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 5,
+            "lineIndex": 10,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 10,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 50,
+          "x": 35,
+          "y": 374.652530670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "2.1.4",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 5,
+            "lineIndex": 11,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 11,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 141.4375,
+          "y": 341.668155670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表示",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 12,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 12,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 181.4375,
+          "y": 341.668155670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "する",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 12,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 12,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 265.6875,
+          "y": 341.668155670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表示",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 13,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 13,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 305.6875,
+          "y": 341.668155670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "する",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 13,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 13,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 64.23999786376953,
+          "x": 35,
+          "y": 429.636905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "Kindle ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 7,
+            "lineIndex": 14,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 14,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 43,
+          "x": 35,
+          "y": 462.621280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "2.71",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 4,
+            "lineIndex": 15,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 15,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 141.4375,
+          "y": 429.636905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表示",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 16,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 16,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 60,
+          "x": 181.4375,
+          "y": 429.636905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "しない",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 3,
+            "lineIndex": 16,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 16,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 265.6875,
+          "y": 429.636905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表示",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 17,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 17,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 305.6875,
+          "y": 429.636905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "する",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 17,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 17,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 48.79999542236328,
+          "x": 24,
+          "y": 514.605655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表2･1 ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 5,
+            "lineIndex": 18,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 18,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 81.79199981689453,
+          "x": 72.79999542236328,
+          "y": 514.605655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "linear=\"no\"",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 11,
+            "lineIndex": 18,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 18,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 16,
+          "x": 154.5919952392578,
+          "y": 514.605655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "と",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 18,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 18,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 88.24000549316406,
+          "x": 170.5919952392578,
+          "y": 514.605655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "linear=\"yes\"",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 12,
+            "lineIndex": 18,
+            "runIndex": 3
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 18,
+            "runIndex": 3
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 16,
+          "x": 258.8320007324219,
+          "y": 514.605655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "で",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 18,
+            "runIndex": 4
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 18,
+            "runIndex": 4
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 41.85600280761719,
+          "x": 274.8320007324219,
+          "y": 514.605655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "EPUB",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 4,
+            "lineIndex": 18,
+            "runIndex": 5
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 18,
+            "runIndex": 5
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 16,
+          "x": 316.68770599365234,
+          "y": 514.605655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "リ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 18,
+            "runIndex": 6
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 18,
+            "runIndex": 6
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 16,
+          "x": 332.68770599365234,
+          "y": 514.605655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "ー",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 18,
+            "runIndex": 7
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 18,
+            "runIndex": 7
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 16,
+          "x": 348.68770599365234,
+          "y": 514.605655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "ダ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 18,
+            "runIndex": 8
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 18,
+            "runIndex": 8
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 16,
+          "x": 364.68798828125,
+          "y": 514.605655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "の",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 18,
+            "runIndex": 9
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 18,
+            "runIndex": 9
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 32,
+          "x": 24,
+          "y": 540.996280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表示",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 19,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 19,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 16,
+          "x": 56,
+          "y": 540.996280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "を",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 19,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 19,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 26.390625,
+          "width": 32,
+          "x": 72,
+          "y": 540.996280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "比較",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 19,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 19,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 123.55729166666667,
+          "x": 24,
+          "y": 585.386905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "先日、電流協",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 6,
+            "lineIndex": 20,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 20,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 148.26875,
+          "y": 585.386905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "の",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 20,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 20,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 52.3199987411499,
+          "x": 168.98020833333334,
+          "y": 585.386905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "EPUB",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 4,
+            "lineIndex": 20,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 20,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 222.01165205637614,
+          "y": 585.386905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "研",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 20,
+            "runIndex": 3
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 20,
+            "runIndex": 3
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40.71145833333333,
+          "x": 242.72311038970946,
+          "y": 585.386905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "究会",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 20,
+            "runIndex": 4
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 20,
+            "runIndex": 4
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 102.84583333333333,
+          "x": 284.1460270563761,
+          "y": 585.386905670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "で、このこ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 5,
+            "lineIndex": 20,
+            "runIndex": 5
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 20,
+            "runIndex": 5
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40.1764705882353,
+          "x": 24,
+          "y": 618.371280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "とを",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 21,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 21,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40.1764705882353,
+          "x": 64.35294117647058,
+          "y": 618.371280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "報告",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 21,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 21,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 161.23529411764707,
+          "x": 104.70588235294117,
+          "y": 618.371280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "しましたところ、",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 8,
+            "lineIndex": 21,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 21,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 60.35294117647059,
+          "x": 266.11764705882354,
+          "y": 618.371280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "参加者",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 3,
+            "lineIndex": 21,
+            "runIndex": 3
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 21,
+            "runIndex": 3
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 326.6470588235294,
+          "y": 618.371280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "の",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 21,
+            "runIndex": 4
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 21,
+            "runIndex": 4
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 346.8235294117647,
+          "y": 618.371280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "方",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 21,
+            "runIndex": 5
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 21,
+            "runIndex": 5
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 367,
+          "y": 618.371280670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "か",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 21,
+            "runIndex": 6
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 21,
+            "runIndex": 6
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 24,
+          "y": 651.355655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "ら",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 22,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 22,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 45.4375,
+          "y": 651.355655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "次",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 22,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 22,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 84.3125,
+          "x": 66.875,
+          "y": 651.355655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "のような",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 4,
+            "lineIndex": 22,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 22,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 84.3125,
+          "x": 152.625,
+          "y": 651.355655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "コメント",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 4,
+            "lineIndex": 22,
+            "runIndex": 3
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 22,
+            "runIndex": 3
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 148.625,
+          "x": 238.375,
+          "y": 651.355655670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "をいただきまし",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 7,
+            "lineIndex": 22,
+            "runIndex": 4
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 22,
+            "runIndex": 4
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40,
+          "x": 24,
+          "y": 684.340030670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "た。",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 23,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 23,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 26.40583308537801,
+          "x": 24,
+          "y": 735.324405670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "・l",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 24,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 24,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 103.97999715805054,
+          "x": 50.405833085378006,
+          "y": 735.324405670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "inear=\"no\" ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 11,
+            "lineIndex": 24,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 24,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 155.53165690104166,
+          "y": 735.324405670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "は",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 24,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 24,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 41.145833333333336,
+          "x": 176.677490234375,
+          "y": 735.324405670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "本文",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 24,
+            "runIndex": 3
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 24,
+            "runIndex": 3
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 218.96915690104166,
+          "y": 735.324405670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "の",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 24,
+            "runIndex": 4
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 24,
+            "runIndex": 4
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 62.291666666666664,
+          "x": 240.114990234375,
+          "y": 735.324405670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "ページ",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 3,
+            "lineIndex": 24,
+            "runIndex": 5
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 24,
+            "runIndex": 5
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 62.291666666666664,
+          "x": 303.552490234375,
+          "y": 735.324405670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "として",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 3,
+            "lineIndex": 24,
+            "runIndex": 6
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 24,
+            "runIndex": 6
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 366.989990234375,
+          "y": 735.324405670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 24,
+            "runIndex": 7
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 24,
+            "runIndex": 7
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 24,
+          "y": 768.308780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "示",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 25,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 25,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 60.35294117647059,
+          "x": 44.17647058823529,
+          "y": 768.308780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "しない",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 3,
+            "lineIndex": 25,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 25,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40.1764705882353,
+          "x": 104.70588235294117,
+          "y": 768.308780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "内容",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 25,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 25,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 145.05882352941177,
+          "y": 768.308780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "に",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 25,
+            "runIndex": 3
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 25,
+            "runIndex": 3
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 165.23529411764707,
+          "y": 768.308780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "対",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 25,
+            "runIndex": 4
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 25,
+            "runIndex": 4
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40.1764705882353,
+          "x": 185.41176470588235,
+          "y": 768.308780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "して",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 25,
+            "runIndex": 5
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 25,
+            "runIndex": 5
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 225.76470588235293,
+          "y": 768.308780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "使",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 25,
+            "runIndex": 6
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 25,
+            "runIndex": 6
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 80.52941176470588,
+          "x": 245.94117647058823,
+          "y": 768.308780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "うもの。",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 4,
+            "lineIndex": 25,
+            "runIndex": 7
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 25,
+            "runIndex": 7
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40.1764705882353,
+          "x": 326.6470588235294,
+          "y": 768.308780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "注釈",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 25,
+            "runIndex": 8
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 25,
+            "runIndex": 8
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 367,
+          "y": 768.308780670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "の",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 25,
+            "runIndex": 9
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 25,
+            "runIndex": 9
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 120.88235294117646,
+          "x": 24,
+          "y": 801.293155670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "ようなもの。",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 6,
+            "lineIndex": 26,
+            "runIndex": 0
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 26,
+            "runIndex": 0
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 40.1764705882353,
+          "x": 145.05882352941177,
+          "y": 801.293155670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "順番",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 2,
+            "lineIndex": 26,
+            "runIndex": 1
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 26,
+            "runIndex": 1
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 181.41176470588235,
+          "x": 185.41176470588235,
+          "y": 801.293155670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "にめくっていっても",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 9,
+            "lineIndex": 26,
+            "runIndex": 2
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 26,
+            "runIndex": 2
+          }
+        }
+      },
+      {
+        "bounds": {
+          "height": 32.984375,
+          "width": 20,
+          "x": 367,
+          "y": 801.293155670166
+        },
+        "footnotePending": false,
+        "pageIndex": 3,
+        "text": "表",
+        "textRange": {
+          "end": {
+            "blockIndex": 0,
+            "charIndex": 1,
+            "lineIndex": 26,
+            "runIndex": 3
+          },
+          "start": {
+            "blockIndex": 0,
+            "charIndex": 0,
+            "lineIndex": 26,
+            "runIndex": 3
+          }
+        }
+      }
+    ],
+    "snapshot": {
+      "bookId": "deaf03a1843f52cc5e4cedb226ca8659610efe1be5e810fccf615bcb549238aa",
+      "chapterTitle": "EPUBのベストプラクティス linear 属性の設定方法",
+      "paginationComplete": false,
+      "phase": "ready",
+      "position": {
+        "locator": {
+          "chapterProgress": 0,
+          "manifestHref": "0005.xhtml",
+          "sourcePoint": {
+            "nodePath": [
+              5,
+              14,
+              2,
+              0
+            ],
+            "textOffset": 5
+          },
+          "spineIdref": "id0005"
+        },
+        "pageIndex": 3,
+        "progression": 0,
+        "spreadIndex": 11,
+        "timestamp": 1792948206643
+      },
+      "renderId": 7,
+      "revisionId": 1,
+      "spreadIndex": 11
+    },
+    "text": [
+      "Adobe \nDigital \nEditions \n2.0\n表示する\n表示する\niBooks \n3.0\n表示しない\n表示する\nKobo \n2.1.4\n表示する\n表示する\nKindle \n2.71\n表示しない\n表示する\n表2･1 linear=\"no\"とlinear=\"yes\"でEPUBリーダの\n表示を比較\n先日、電流協のEPUB研究会で、このこ\nとを報告しましたところ、参加者の方か\nら次のようなコメントをいただきまし\nた。\n・linear=\"no\" は本文のページとして表\n示しない内容に対して使うもの。注釈の\nようなもの。順番にめくっていっても表"
+    ]
+  }
+}

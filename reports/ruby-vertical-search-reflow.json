@@ -1,0 +1,91 @@
+{
+  "results": {
+    "query": "山道",
+    "results": [
+      {
+        "context": "Horizontal Ruby\n山道を歩く。漢字を読む。\n一列目の終わり。二列目の始まり。春の\n...",
+        "end": {
+          "blockIndex": 1,
+          "charIndex": 2,
+          "lineIndex": 0,
+          "runIndex": 0
+        },
+        "pageIndex": 0,
+        "spreadIndex": 0,
+        "start": {
+          "blockIndex": 1,
+          "charIndex": 0,
+          "lineIndex": 0,
+          "runIndex": 0
+        }
+      },
+      {
+        "context": "Vertical Ruby\n山道を歩く。漢字を読む。\n一列目の終わり。二列目の始まり。春の風...",
+        "end": {
+          "blockIndex": 1,
+          "charIndex": 2,
+          "lineIndex": 0,
+          "runIndex": 0
+        },
+        "pageIndex": 1,
+        "spreadIndex": 1,
+        "start": {
+          "blockIndex": 1,
+          "charIndex": 0,
+          "lineIndex": 0,
+          "runIndex": 0
+        }
+      },
+      {
+        "context": "EPUB Prefix Ruby\n山道を歩く。漢字を読む。\n一列目の終わり。二列目の始まり。春の風...",
+        "end": {
+          "blockIndex": 1,
+          "charIndex": 2,
+          "lineIndex": 0,
+          "runIndex": 0
+        },
+        "pageIndex": 2,
+        "spreadIndex": 2,
+        "start": {
+          "blockIndex": 1,
+          "charIndex": 0,
+          "lineIndex": 0,
+          "runIndex": 0
+        }
+      }
+    ],
+    "searchedPageCount": 3,
+    "truncated": false
+  },
+  "snapshot": {
+    "bookId": "3504352a4242bec633742ae496411394ab54ffdfe0df830efb22121f8d3aa3e8",
+    "bookSpreadIndex": 2,
+    "chapterTitle": "EPUB Prefix Ruby",
+    "paginationComplete": true,
+    "phase": "ready",
+    "position": {
+      "bookPageIndex": 2,
+      "bookSpreadIndex": 2,
+      "locator": {
+        "chapterProgress": 0,
+        "manifestHref": "prefixed.xhtml",
+        "sourcePoint": {
+          "nodePath": [
+            0,
+            0
+          ],
+          "textOffset": 0
+        },
+        "spineIdref": "prefixed"
+      },
+      "pageIndex": 2,
+      "progression": 1,
+      "spreadIndex": 0,
+      "timestamp": 1792948069051
+    },
+    "renderId": 4,
+    "revisionId": 3,
+    "spreadIndex": 0,
+    "totalSpreads": 3
+  }
+}
