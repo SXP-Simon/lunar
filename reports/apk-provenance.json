@@ -1,0 +1,25 @@
+{
+  "commit": "8ecf3336ad73b4b73d93d1ade2d3b3847c5e9170",
+  "builds": [
+    {
+      "profile": "nightly",
+      "commit": "8ecf3336ad73b4b73d93d1ade2d3b3847c5e9170",
+      "version": "0.3.0",
+      "sha256": "ff2c7bfbd12d3775fbbefd7a66f311364e803e2807c8b84e2175f4963b4c0a0e",
+      "packageName": "com.lunarain_079.lunar",
+      "versionCode": 18,
+      "abi": "arm64-v8a",
+      "artifact": "lunar-nightly.apk"
+    },
+    {
+      "profile": "development",
+      "commit": "8ecf3336ad73b4b73d93d1ade2d3b3847c5e9170",
+      "version": "0.3.0",
+      "sha256": "3fff66355689b9dd4d753bbee78452d89d2ea2ac6e19d4bcd3d569001600be2c",
+      "packageName": "com.lunarain_079.lunar.dev",
+      "versionCode": 1,
+      "abi": "arm64-v8a",
+      "artifact": "lunar-develop.apk"
+    }
+  ]
+}

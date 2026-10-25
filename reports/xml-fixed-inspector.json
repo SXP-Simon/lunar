@@ -1,0 +1,301 @@
+{
+  "commit": "6592b871c2482ec8e76625b085f720dde7221202",
+  "diff": "",
+  "runtime": "v26.7.0",
+  "sourceRef": "working-tree",
+  "scope": "Real application metadata/cover/initial-spine functions; no native runtime or device rendering.",
+  "samples": [
+    {
+      "file": "childrens-literature.epub",
+      "sha256": "191d14d07bcaefde647e494256f73d789f265c8edc46c404320641b23c86b76a",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "Children's Literature",
+            "language": "en",
+            "identifier": "http://www.gutenberg.org/ebooks/25545",
+            "creator": "Charles Madison Curry"
+          },
+          "cover": {
+            "source": "images/cover.png",
+            "mediaType": "image/png",
+            "byteLength": 41134
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "EPUB/cover.xhtml"
+      }
+    },
+    {
+      "file": "cole-voyage-of-life.epub",
+      "sha256": "e38ed606ff604e638f737efaf66e0fd0b2997c3eab7432bcba9a00a81a925cf3",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "Thomas Cole - The Voyage of Life",
+            "language": "en-US",
+            "identifier": "code.google.com.epub-samples.cole-voyage-of-life",
+            "creator": "Jesse Dylan"
+          },
+          "cover": {
+            "source": "images/portrait.jpg",
+            "mediaType": "image/jpeg",
+            "byteLength": 12559
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "EPUB/xhtml/0-intro.xhtml"
+      }
+    },
+    {
+      "file": "haruko-html-jpeg.epub",
+      "sha256": "87b5eaff288e238864d817ea54b4600dc8c6f96789d0efb946b8545d7ad2f0c0",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "ハルコさんの彼氏",
+            "language": "ja-jp",
+            "identifier": "urn:uuid:A649F639-6C1F-1014-8CC3-F813564D7508"
+          },
+          "cover": {
+            "source": "images/01.jpg",
+            "mediaType": "image/jpeg",
+            "byteLength": 197892
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "OPS/xhtml/p01.xhtml"
+      }
+    },
+    {
+      "file": "internallinks.epub",
+      "sha256": "deaf03a1843f52cc5e4cedb226ca8659610efe1be5e810fccf615bcb549238aa",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "IDに漢字などを使用したサンプル",
+            "language": "ja",
+            "identifier": "urn:uuid:e9f75adf-f0a2-4a30-b113-b146871f16e5"
+          },
+          "cover": {
+            "source": "cover.png",
+            "mediaType": "image/png",
+            "byteLength": 35311
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "OEBPS/cover.xhtml"
+      }
+    },
+    {
+      "file": "kusamakura-japanese-vertical-writing.epub",
+      "sha256": "6d4d4ed5eda3f612e3263c54fa0f74ccfa87260f43e81bb58ea658636e52eeb7",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "草枕",
+            "language": "ja-jp",
+            "identifier": "http://www.aozora.gr.jp/cards/000148/card776.html",
+            "creator": "夏目 漱石"
+          },
+          "cover": {
+            "source": "images/夏目漱石.jpg",
+            "mediaType": "image/jpeg",
+            "byteLength": 45246
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "OPS/xhtml/表紙.xhtml"
+      }
+    },
+    {
+      "file": "moby-dick-attribute-whitespace.epub",
+      "sha256": "990cf14c096317fbfac38fe38cfadae5d33b0ab9f22f76955d33fb49fb8339ba",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "Moby-Dick",
+            "language": "en-US",
+            "identifier": "code.google.com.epub-samples.moby-dick-basic",
+            "creator": "Herman Melville",
+            "publisher": "Harper & Brothers, Publishers"
+          },
+          "cover": {
+            "source": "images/9780316000000.jpg",
+            "mediaType": "image/jpeg",
+            "byteLength": 348700
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "OPS/titlepage.xhtml"
+      }
+    },
+    {
+      "file": "moby-dick-opf-prefix.epub",
+      "sha256": "ae9ad3b5272184f3640571821d2c39f4e999e05045665b1f724213254eaa0720",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "Moby-Dick",
+            "language": "en-US",
+            "identifier": "code.google.com.epub-samples.moby-dick-basic",
+            "creator": "Herman Melville",
+            "publisher": "Harper & Brothers, Publishers"
+          },
+          "cover": {
+            "source": "images/9780316000000.jpg",
+            "mediaType": "image/jpeg",
+            "byteLength": 348700
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "OPS/titlepage.xhtml"
+      }
+    },
+    {
+      "file": "moby-dick.epub",
+      "sha256": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "Moby-Dick",
+            "language": "en-US",
+            "identifier": "code.google.com.epub-samples.moby-dick-basic",
+            "creator": "Herman Melville",
+            "publisher": "Harper & Brothers, Publishers"
+          },
+          "cover": {
+            "source": "images/9780316000000.jpg",
+            "mediaType": "image/jpeg",
+            "byteLength": 348700
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "OPS/titlepage.xhtml"
+      }
+    },
+    {
+      "file": "trees.epub",
+      "sha256": "4fbaa5713555ea104b2aed8fc6182700225416b0ab5369f0cb7293d486bb718f",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "Trees",
+            "language": "en",
+            "identifier": "code.google.com.epub-samples.trees",
+            "description": "Test of canvas element and CSS3 multi-column layout"
+          },
+          "cover": {
+            "source": "cover.jpg",
+            "mediaType": "image/jpeg",
+            "byteLength": 32681
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "EPUB/titlepage.xhtml"
+      }
+    },
+    {
+      "file": "wasteland-otf-obf.epub",
+      "sha256": "f941572da9c8c816549f68163fbcb632d6f9857af42aa0a618b86e8c9c3895be",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "The Waste Land",
+            "language": "en-US",
+            "identifier": "code.google.com.epub-samples.wasteland-otf-obfuscated",
+            "creator": "T.S. Eliot",
+            "description": "OTF font obfuscated using algorithm defined in OCF 3.0, fallback to sans-serif system font"
+          },
+          "cover": {
+            "source": "wasteland-cover.jpg",
+            "mediaType": "image/jpeg",
+            "byteLength": 103477
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "EPUB/wasteland-content.xhtml"
+      }
+    },
+    {
+      "file": "wasteland-otf.epub",
+      "sha256": "d99ea3b847d713a84cfd9cba9cccafb550fcd6af1ca6767b2dade182457deebc",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "The Waste Land",
+            "language": "en-US",
+            "identifier": "code.google.com.epub-samples.wasteland-otf",
+            "creator": "T.S. Eliot",
+            "description": "Using OTF fonts, fallback to sans-serif system font"
+          },
+          "cover": {
+            "source": "wasteland-cover.jpg",
+            "mediaType": "image/jpeg",
+            "byteLength": 103477
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "EPUB/wasteland-content.xhtml"
+      }
+    },
+    {
+      "file": "wasteland-woff.epub",
+      "sha256": "25b0775d975c3f3ef8b57c2887636c5309028d5382d73881b10c929c9c3d2cae",
+      "inspect": {
+        "ok": true,
+        "value": {
+          "metadata": {
+            "title": "The Waste Land",
+            "language": "en-US",
+            "identifier": "code.google.com.epub-samples.wasteland-woff",
+            "creator": "T.S. Eliot",
+            "description": "Using WOFF fonts, fallback to sans-serif system font"
+          },
+          "cover": {
+            "source": "wasteland-cover.jpg",
+            "mediaType": "image/jpeg",
+            "byteLength": 103477
+          }
+        }
+      },
+      "initialSpine": {
+        "ok": true,
+        "value": "EPUB/wasteland-content.xhtml"
+      }
+    }
+  ]
+}

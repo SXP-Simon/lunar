@@ -1,0 +1,501 @@
+[
+  {
+    "file": "childrens-literature.epub",
+    "sha256": "191d14d07bcaefde647e494256f73d789f265c8edc46c404320641b23c86b76a",
+    "source": "https://github.com/IDPF/epub3-samples/releases/download/20230704/childrens-literature.epub",
+    "archiveBytes": 161291,
+    "inflatedBytes": 418810,
+    "entryCount": 10,
+    "packagePath": "EPUB/package.opf",
+    "title": "Children's Literature",
+    "creators": [
+      "Charles Madison Curry",
+      "Erle Elsworth Clippinger"
+    ],
+    "rights": [
+      "Public domain in the USA."
+    ],
+    "renditionMetadata": [],
+    "spineDirection": null,
+    "spineOverrides": [],
+    "spineCount": 3,
+    "fontResources": [],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 0,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 0,
+      "float": 0,
+      "columns": 0
+    }
+  },
+  {
+    "file": "cole-voyage-of-life.epub",
+    "sha256": "e38ed606ff604e638f737efaf66e0fd0b2997c3eab7432bcba9a00a81a925cf3",
+    "source": "https://github.com/IDPF/epub3-samples/releases/download/20230704/cole-voyage-of-life.epub",
+    "archiveBytes": 970980,
+    "inflatedBytes": 979822,
+    "entryCount": 24,
+    "packagePath": "EPUB/cole.opf",
+    "title": "Thomas Cole - The Voyage of Life",
+    "creators": [
+      "Jesse Dylan"
+    ],
+    "rights": [
+      "This work is licensed under a Creative Commons Attribution-ShareAlike 3.0 Unported License."
+    ],
+    "renditionMetadata": [],
+    "spineDirection": null,
+    "spineOverrides": [
+      {
+        "idref": "s1b",
+        "properties": "rendition:layout-pre-paginated rendition:orientation-landscape rendition:spread-none"
+      },
+      {
+        "idref": "s2b",
+        "properties": "rendition:layout-pre-paginated rendition:orientation-landscape rendition:spread-none"
+      },
+      {
+        "idref": "s3b",
+        "properties": "rendition:layout-pre-paginated rendition:orientation-landscape rendition:spread-none"
+      },
+      {
+        "idref": "s4b",
+        "properties": "rendition:layout-pre-paginated rendition:orientation-landscape rendition:spread-none"
+      }
+    ],
+    "spineCount": 10,
+    "fontResources": [],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 0,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 0,
+      "float": 1,
+      "columns": 0
+    }
+  },
+  {
+    "file": "haruko-html-jpeg.epub",
+    "sha256": "87b5eaff288e238864d817ea54b4600dc8c6f96789d0efb946b8545d7ad2f0c0",
+    "source": "https://github.com/IDPF/epub3-samples/releases/download/20230704/haruko-html-jpeg.epub",
+    "archiveBytes": 2247393,
+    "inflatedBytes": 2276982,
+    "entryCount": 33,
+    "packagePath": "OPS/package.opf",
+    "title": "ハルコさんの彼氏",
+    "creators": [],
+    "rights": [],
+    "renditionMetadata": [
+      {
+        "property": "rendition:layout",
+        "text": "pre-paginated"
+      },
+      {
+        "property": "rendition:orientation",
+        "text": "portrait"
+      },
+      {
+        "property": "rendition:spread",
+        "text": "landscape"
+      }
+    ],
+    "spineDirection": "rtl",
+    "spineOverrides": [
+      {
+        "idref": "about",
+        "properties": "page-spread-left rendition:layout-reflowable"
+      }
+    ],
+    "spineCount": 13,
+    "fontResources": [],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 0,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 0,
+      "float": 0,
+      "columns": 0
+    }
+  },
+  {
+    "file": "internallinks.epub",
+    "sha256": "deaf03a1843f52cc5e4cedb226ca8659610efe1be5e810fccf615bcb549238aa",
+    "source": "https://github.com/IDPF/epub3-samples/releases/download/20230704/internallinks.epub",
+    "archiveBytes": 663694,
+    "inflatedBytes": 776916,
+    "entryCount": 39,
+    "packagePath": "OEBPS/package.opf",
+    "title": "IDに漢字などを使用したサンプル",
+    "creators": [],
+    "rights": [],
+    "renditionMetadata": [],
+    "spineDirection": null,
+    "spineOverrides": [],
+    "spineCount": 7,
+    "fontResources": [],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 0,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 3,
+      "float": 3,
+      "columns": 0
+    }
+  },
+  {
+    "file": "kusamakura-japanese-vertical-writing.epub",
+    "sha256": "6d4d4ed5eda3f612e3263c54fa0f74ccfa87260f43e81bb58ea658636e52eeb7",
+    "source": "https://github.com/IDPF/epub3-samples/releases/download/20230704/kusamakura-japanese-vertical-writing.epub",
+    "archiveBytes": 17940673,
+    "inflatedBytes": 18693031,
+    "entryCount": 30,
+    "packagePath": "OPS/package.opf",
+    "title": "草枕",
+    "creators": [
+      "夏目 漱石"
+    ],
+    "rights": [],
+    "renditionMetadata": [],
+    "spineDirection": "rtl",
+    "spineOverrides": [],
+    "spineCount": 16,
+    "fontResources": [
+      {
+        "id": "foobar",
+        "href": "fonts/foobar.ttf",
+        "media-type": "application/vnd.ms-opentype"
+      }
+    ],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 2,
+      "writingMode": 5,
+      "ruby": 4603,
+      "table": 0,
+      "float": 2,
+      "columns": 0
+    }
+  },
+  {
+    "file": "moby-dick-attribute-whitespace.epub",
+    "sha256": "990cf14c096317fbfac38fe38cfadae5d33b0ab9f22f76955d33fb49fb8339ba",
+    "source": "moby-dick.epub (controlled XML-only variation)",
+    "archiveBytes": 1628870,
+    "inflatedBytes": 2798040,
+    "entryCount": 154,
+    "packagePath": "OPS/package.opf",
+    "title": "Moby-Dick",
+    "creators": [
+      "Herman Melville"
+    ],
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ],
+    "renditionMetadata": [],
+    "spineDirection": null,
+    "spineOverrides": [],
+    "spineCount": 144,
+    "fontResources": [
+      {
+        "id": "font.stix.regular",
+        "href": "fonts/STIXGeneral.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.stix.italic",
+        "href": "fonts/STIXGeneralItalic.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.stix.bold",
+        "href": "fonts/STIXGeneralBol.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.stix.bold.italic",
+        "href": "fonts/STIXGeneralBolIta.otf",
+        "media-type": "application/vnd.ms-opentype"
+      }
+    ],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 4,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 0,
+      "float": 1,
+      "columns": 0
+    }
+  },
+  {
+    "file": "moby-dick-opf-prefix.epub",
+    "sha256": "ae9ad3b5272184f3640571821d2c39f4e999e05045665b1f724213254eaa0720",
+    "source": "moby-dick.epub (controlled XML-only variation)",
+    "archiveBytes": 1628899,
+    "inflatedBytes": 2799310,
+    "entryCount": 154,
+    "packagePath": "OPS/package.opf",
+    "title": "Moby-Dick",
+    "creators": [
+      "Herman Melville"
+    ],
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ],
+    "renditionMetadata": [],
+    "spineDirection": null,
+    "spineOverrides": [],
+    "spineCount": 144,
+    "fontResources": [
+      {
+        "id": "font.stix.regular",
+        "href": "fonts/STIXGeneral.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.stix.italic",
+        "href": "fonts/STIXGeneralItalic.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.stix.bold",
+        "href": "fonts/STIXGeneralBol.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.stix.bold.italic",
+        "href": "fonts/STIXGeneralBolIta.otf",
+        "media-type": "application/vnd.ms-opentype"
+      }
+    ],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 4,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 0,
+      "float": 1,
+      "columns": 0
+    }
+  },
+  {
+    "file": "moby-dick.epub",
+    "sha256": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+    "source": "https://github.com/IDPF/epub3-samples/releases/download/20230704/moby-dick.epub",
+    "archiveBytes": 1628868,
+    "inflatedBytes": 2798038,
+    "entryCount": 154,
+    "packagePath": "OPS/package.opf",
+    "title": "Moby-Dick",
+    "creators": [
+      "Herman Melville"
+    ],
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ],
+    "renditionMetadata": [],
+    "spineDirection": null,
+    "spineOverrides": [],
+    "spineCount": 144,
+    "fontResources": [
+      {
+        "id": "font.stix.regular",
+        "href": "fonts/STIXGeneral.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.stix.italic",
+        "href": "fonts/STIXGeneralItalic.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.stix.bold",
+        "href": "fonts/STIXGeneralBol.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.stix.bold.italic",
+        "href": "fonts/STIXGeneralBolIta.otf",
+        "media-type": "application/vnd.ms-opentype"
+      }
+    ],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 4,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 0,
+      "float": 1,
+      "columns": 0
+    }
+  },
+  {
+    "file": "trees.epub",
+    "sha256": "4fbaa5713555ea104b2aed8fc6182700225416b0ab5369f0cb7293d486bb718f",
+    "source": "https://github.com/IDPF/epub3-samples/releases/download/20230704/trees.epub",
+    "archiveBytes": 75717,
+    "inflatedBytes": 171696,
+    "entryCount": 12,
+    "packagePath": "EPUB/package.opf",
+    "title": "Trees",
+    "creators": [],
+    "rights": [],
+    "renditionMetadata": [],
+    "spineDirection": null,
+    "spineOverrides": [],
+    "spineCount": 3,
+    "fontResources": [],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 0,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 0,
+      "float": 0,
+      "columns": 2
+    }
+  },
+  {
+    "file": "wasteland-otf-obf.epub",
+    "sha256": "f941572da9c8c816549f68163fbcb632d6f9857af42aa0a618b86e8c9c3895be",
+    "source": "https://github.com/IDPF/epub3-samples/releases/download/20230704/wasteland-otf-obf.epub",
+    "archiveBytes": 745225,
+    "inflatedBytes": 1616658,
+    "entryCount": 14,
+    "packagePath": "EPUB/wasteland.opf",
+    "title": "The Waste Land",
+    "creators": [
+      "T.S. Eliot"
+    ],
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ],
+    "renditionMetadata": [],
+    "spineDirection": null,
+    "spineOverrides": [],
+    "spineCount": 1,
+    "fontResources": [
+      {
+        "id": "font.OldStandard.regular",
+        "href": "OldStandard-Regular.obf.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.OldStandard.italic",
+        "href": "OldStandard-Italic.obf.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.OldStandard.bold",
+        "href": "OldStandard-Bold.obf.otf",
+        "media-type": "application/vnd.ms-opentype"
+      }
+    ],
+    "encryptedResources": true,
+    "featureOccurrences": {
+      "fontFace": 3,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 0,
+      "float": 1,
+      "columns": 0
+    }
+  },
+  {
+    "file": "wasteland-otf.epub",
+    "sha256": "d99ea3b847d713a84cfd9cba9cccafb550fcd6af1ca6767b2dade182457deebc",
+    "source": "https://github.com/IDPF/epub3-samples/releases/download/20230704/wasteland-otf.epub",
+    "archiveBytes": 743824,
+    "inflatedBytes": 1615627,
+    "entryCount": 13,
+    "packagePath": "EPUB/wasteland.opf",
+    "title": "The Waste Land",
+    "creators": [
+      "T.S. Eliot"
+    ],
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ],
+    "renditionMetadata": [],
+    "spineDirection": null,
+    "spineOverrides": [],
+    "spineCount": 1,
+    "fontResources": [
+      {
+        "id": "font.OldStandard.regular",
+        "href": "OldStandard-Regular.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.OldStandard.italic",
+        "href": "OldStandard-Italic.otf",
+        "media-type": "application/vnd.ms-opentype"
+      },
+      {
+        "id": "font.OldStandard.bold",
+        "href": "OldStandard-Bold.otf",
+        "media-type": "application/vnd.ms-opentype"
+      }
+    ],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 3,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 0,
+      "float": 1,
+      "columns": 0
+    }
+  },
+  {
+    "file": "wasteland-woff.epub",
+    "sha256": "25b0775d975c3f3ef8b57c2887636c5309028d5382d73881b10c929c9c3d2cae",
+    "source": "https://github.com/IDPF/epub3-samples/releases/download/20230704/wasteland-woff.epub",
+    "archiveBytes": 433966,
+    "inflatedBytes": 493428,
+    "entryCount": 13,
+    "packagePath": "EPUB/wasteland.opf",
+    "title": "The Waste Land",
+    "creators": [
+      "T.S. Eliot"
+    ],
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ],
+    "renditionMetadata": [],
+    "spineDirection": null,
+    "spineOverrides": [],
+    "spineCount": 1,
+    "fontResources": [
+      {
+        "id": "font.OldStandard.regular",
+        "href": "OldStandard-Regular.woff",
+        "media-type": "application/font-woff"
+      },
+      {
+        "id": "font.OldStandard.italic",
+        "href": "OldStandard-Italic.woff",
+        "media-type": "application/font-woff"
+      },
+      {
+        "id": "font.OldStandard.bold",
+        "href": "OldStandard-Bold.woff",
+        "media-type": "application/font-woff"
+      }
+    ],
+    "encryptedResources": false,
+    "featureOccurrences": {
+      "fontFace": 3,
+      "writingMode": 0,
+      "ruby": 0,
+      "table": 0,
+      "float": 1,
+      "columns": 0
+    }
+  }
+]

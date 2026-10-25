@@ -1,0 +1,2 @@
+ff2c7bfbd12d3775fbbefd7a66f311364e803e2807c8b84e2175f4963b4c0a0e  lunar-nightly.apk
+3fff66355689b9dd4d753bbee78452d89d2ea2ac6e19d4bcd3d569001600be2c  lunar-develop.apk

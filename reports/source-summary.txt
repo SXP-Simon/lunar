@@ -1,0 +1,103 @@
+[
+  {
+    "file": "childrens-literature.epub",
+    "layout": [],
+    "spineOverrides": 0,
+    "rights": [
+      "Public domain in the USA."
+    ]
+  },
+  {
+    "file": "cole-voyage-of-life.epub",
+    "layout": [],
+    "spineOverrides": 4,
+    "rights": [
+      "This work is licensed under a Creative Commons Attribution-ShareAlike 3.0 Unported License."
+    ]
+  },
+  {
+    "file": "haruko-html-jpeg.epub",
+    "layout": [
+      {
+        "property": "rendition:layout",
+        "text": "pre-paginated"
+      },
+      {
+        "property": "rendition:orientation",
+        "text": "portrait"
+      },
+      {
+        "property": "rendition:spread",
+        "text": "landscape"
+      }
+    ],
+    "spineOverrides": 1,
+    "rights": []
+  },
+  {
+    "file": "internallinks.epub",
+    "layout": [],
+    "spineOverrides": 0,
+    "rights": []
+  },
+  {
+    "file": "kusamakura-japanese-vertical-writing.epub",
+    "layout": [],
+    "spineOverrides": 0,
+    "rights": []
+  },
+  {
+    "file": "moby-dick-attribute-whitespace.epub",
+    "layout": [],
+    "spineOverrides": 0,
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ]
+  },
+  {
+    "file": "moby-dick-opf-prefix.epub",
+    "layout": [],
+    "spineOverrides": 0,
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ]
+  },
+  {
+    "file": "moby-dick.epub",
+    "layout": [],
+    "spineOverrides": 0,
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ]
+  },
+  {
+    "file": "trees.epub",
+    "layout": [],
+    "spineOverrides": 0,
+    "rights": []
+  },
+  {
+    "file": "wasteland-otf-obf.epub",
+    "layout": [],
+    "spineOverrides": 0,
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ]
+  },
+  {
+    "file": "wasteland-otf.epub",
+    "layout": [],
+    "spineOverrides": 0,
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ]
+  },
+  {
+    "file": "wasteland-woff.epub",
+    "layout": [],
+    "spineOverrides": 0,
+    "rights": [
+      "This work is shared with the public using the Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0) license."
+    ]
+  }
+]

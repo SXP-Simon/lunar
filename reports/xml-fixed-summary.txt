@@ -1,0 +1,98 @@
+[
+  {
+    "file": "childrens-literature.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "EPUB/cover.xhtml"
+    }
+  },
+  {
+    "file": "cole-voyage-of-life.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "EPUB/xhtml/0-intro.xhtml"
+    }
+  },
+  {
+    "file": "haruko-html-jpeg.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "OPS/xhtml/p01.xhtml"
+    }
+  },
+  {
+    "file": "internallinks.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "OEBPS/cover.xhtml"
+    }
+  },
+  {
+    "file": "kusamakura-japanese-vertical-writing.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "OPS/xhtml/表紙.xhtml"
+    }
+  },
+  {
+    "file": "moby-dick-attribute-whitespace.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "OPS/titlepage.xhtml"
+    }
+  },
+  {
+    "file": "moby-dick-opf-prefix.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "OPS/titlepage.xhtml"
+    }
+  },
+  {
+    "file": "moby-dick.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "OPS/titlepage.xhtml"
+    }
+  },
+  {
+    "file": "trees.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "EPUB/titlepage.xhtml"
+    }
+  },
+  {
+    "file": "wasteland-otf-obf.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "EPUB/wasteland-content.xhtml"
+    }
+  },
+  {
+    "file": "wasteland-otf.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "EPUB/wasteland-content.xhtml"
+    }
+  },
+  {
+    "file": "wasteland-woff.epub",
+    "inspect": true,
+    "spine": {
+      "ok": true,
+      "value": "EPUB/wasteland-content.xhtml"
+    }
+  }
+]
