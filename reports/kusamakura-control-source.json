@@ -1,0 +1,73 @@
+{
+  "source": "kusamakura-japanese-vertical-writing.epub",
+  "sourceSha256": "6d4d4ed5eda3f612e3263c54fa0f74ccfa87260f43e81bb58ea658636e52eeb7",
+  "variant": "kusamakura-vertical-only.epub",
+  "variantSha256": "5eee439293bd53cb2c284a9b988e8e15013aa433a415d10427fbf7bd1bc62a0d",
+  "mutation": "Remove only alternate horizontal.css link elements; retain vertical CSS, all other resources and source attribution",
+  "changes": [
+    {
+      "path": "OPS/xhtml/一.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/七.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/三.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/九.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/二.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/五.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/八.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/六.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/十.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/十一.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/十三.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/十二.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/四.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/後付.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/目次.xhtml",
+      "removedLinks": 1
+    },
+    {
+      "path": "OPS/xhtml/表紙.xhtml",
+      "removedLinks": 1
+    }
+  ]
+}

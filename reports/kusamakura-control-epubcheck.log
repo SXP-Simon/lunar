@@ -1,0 +1,13 @@
+Validating using EPUB version 3.4 rules.
+WARNING(OPF-086c): ../lunar-epub-evidence/samples/kusamakura-vertical-only.epub/OPS/package.opf(59,51): the "xsd" reserved prefix is deprecated.
+WARNING(OPF-086c): ../lunar-epub-evidence/samples/kusamakura-vertical-only.epub/OPS/package.opf(61,42): the "xsd" reserved prefix is deprecated.
+WARNING(OPF-086c): ../lunar-epub-evidence/samples/kusamakura-vertical-only.epub/OPS/package.opf(114,68): the "xsd" reserved prefix is deprecated.
+WARNING(OPF-086c): ../lunar-epub-evidence/samples/kusamakura-vertical-only.epub/OPS/package.opf(116,68): the "xsd" reserved prefix is deprecated.
+WARNING(OPF-086c): ../lunar-epub-evidence/samples/kusamakura-vertical-only.epub/OPS/package.opf(118,68): the "xsd" reserved prefix is deprecated.
+WARNING(OPF-086c): ../lunar-epub-evidence/samples/kusamakura-vertical-only.epub/OPS/package.opf(122,68): the "xsd" reserved prefix is deprecated.
+WARNING(OPF-086c): ../lunar-epub-evidence/samples/kusamakura-vertical-only.epub/OPS/package.opf(124,67): the "xsd" reserved prefix is deprecated.
+
+Check finished with warnings
+Messages: 0 fatals / 0 errors / 7 warnings / 0 infos
+
+EPUBCheck completed
