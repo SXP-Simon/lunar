@@ -9,7 +9,11 @@
 - [上游 CI](https://github.com/Umbrae-Labs/lunar/actions/runs/40199008609/job/121185961476) 通过。
 - 两个 EPUBCheck 合规变体在基线模拟器复现、修复模拟器通过；见 `xml-device-validation.md`。
 
-## 正在验证：固定版式
+## 已完成：固定版式识别与提示
+
+代码分支 `feat/reader-fixed-layout-warning`，提交 `8101f4eed52b2773c9e120fb36b1cd3c080e73eb`。原创合规测试页实际复现右侧内容裁切；识别全局与逐 spine 覆盖，原生分页前提示并允许本次尝试阅读。纯固定、混合、普通流式对照及继续／返回／重开已验证，见 [验证报告](fixed-layout-validation.md)。本项未实现完整 FXL 渲染。
+
+以下保留早期测试环境记录，后续干净环境复测见本报告下方及复杂排版报告。
 
 Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG；about spine 项覆盖为流式。Lunar 基线实际可显示第一页完整漫画图（`device/fxl-baseline-haruko-page1-ready.png`）。不能声称所有 FXL 都无法显示；尚未验收缩放、左右页配对、RTL 翻页和最后的流式页。
 
@@ -32,7 +36,7 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 
 4GB 单应用复测已推进：Cole 可打开，固定画页完整显示；Youth 流式页的浮动图文重叠。Waste Land 与草枕被 alternate stylesheet 选择校验阻断；仅移除 Waste Land 的备用引用后可打开，且变体通过 EPUBCheck。源码根因及截图见 [复杂排版设备验证](complex-layout-device-validation.md)。以上新增问题尚未修复。
 
-1. 固定版式／混合版式识别与提示：完成干净环境复测，按证据决定实现，独立分支及 PR。
+1. 固定版式／混合版式识别与提示已实现；固定视口缩放、配页及阅读方向仍未实现。
 2. 出版方样式：基础模式已在 PR #6 实现；继续验证其他字体格式和复杂样式，不能将该 PR 当作全部样式保真通过。
 3. 锁定 Rito 的真实能力：逐项验证表格、浮动、Ruby、竖排、定位；补充覆盖样本，不能拿上游 dev 文档代替设备证据。
 4. 阅读交互：跨页文本完整性、搜索、选区／划线、改字号和重新打开定位；确认的问题分别开分支。

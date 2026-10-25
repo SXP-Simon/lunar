@@ -18,6 +18,8 @@
 
 ## 样本用途
 
+新增原创 `fixed-layout-probe.epub` 为 CC0 1.0 的最小固定视口诊断页，生成器、SHA 和设备对照见 [固定版式验证](reports/fixed-layout-validation.md)。`wasteland-otf-day-only.epub` 为仅移除备用 stylesheet 引用的 CC BY-SA 3.0 对照变体，见 [复杂排版验证](reports/complex-layout-device-validation.md)。
+
 | 文件 | 要验证的特性 |
 |---|---|
 | moby-dick | 长篇多章节、嵌入字体、重开定位 |

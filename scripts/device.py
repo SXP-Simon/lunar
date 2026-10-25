@@ -15,14 +15,18 @@ d = u.connect(SERIAL)
 d.jsonrpc.setConfigurator({'waitForIdleTimeout': 0, 'waitForSelectorTimeout': 0})
 
 def adb(*args):
-    return subprocess.check_output([ADB, '-s', SERIAL, *args])
+    return subprocess.check_output([ADB, '-s', SERIAL, *args], timeout=20)
 
 def tap(label):
     deadline = time.monotonic() + 30
     node = None
     while time.monotonic() < deadline:
-        nodes = ET.fromstring(d.dump_hierarchy()).iter('node')
-        node = next((n for n in nodes if n.get('text') == label or n.get('content-desc') == label), None)
+        nodes = list(ET.fromstring(d.dump_hierarchy()).iter('node'))
+        # Prefer the visible text of a dialog action over a same-named toolbar
+        # description that Android may still expose behind the modal overlay.
+        node = next((n for n in nodes if n.get('text') == label), None)
+        if node is None:
+            node = next((n for n in nodes if n.get('content-desc') == label), None)
         if node is not None:
             break
         time.sleep(.5)

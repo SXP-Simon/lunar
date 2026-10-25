@@ -1,0 +1,133 @@
+{
+  "commit": "8101f4eed52b2773c9e120fb36b1cd3c080e73eb",
+  "status": "",
+  "runtime": "v26.7.0",
+  "samples": [
+    {
+      "file": "childrens-literature.epub",
+      "sha256": "191d14d07bcaefde647e494256f73d789f265c8edc46c404320641b23c86b76a",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 3
+      }
+    },
+    {
+      "file": "cole-voyage-of-life.epub",
+      "sha256": "e38ed606ff604e638f737efaf66e0fd0b2997c3eab7432bcba9a00a81a925cf3",
+      "layout": {
+        "kind": "mixed",
+        "fixedLayoutSpineItems": 4,
+        "reflowableSpineItems": 6
+      }
+    },
+    {
+      "file": "fixed-layout-probe.epub",
+      "sha256": "588a5aaefd673fcb72900054f73c730daedb419158e18fd4f5ecf32726e77a88",
+      "layout": {
+        "kind": "fixed",
+        "fixedLayoutSpineItems": 1,
+        "reflowableSpineItems": 0
+      }
+    },
+    {
+      "file": "haruko-html-jpeg.epub",
+      "sha256": "87b5eaff288e238864d817ea54b4600dc8c6f96789d0efb946b8545d7ad2f0c0",
+      "layout": {
+        "kind": "mixed",
+        "fixedLayoutSpineItems": 12,
+        "reflowableSpineItems": 1
+      }
+    },
+    {
+      "file": "internallinks.epub",
+      "sha256": "deaf03a1843f52cc5e4cedb226ca8659610efe1be5e810fccf615bcb549238aa",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 7
+      }
+    },
+    {
+      "file": "kusamakura-japanese-vertical-writing.epub",
+      "sha256": "6d4d4ed5eda3f612e3263c54fa0f74ccfa87260f43e81bb58ea658636e52eeb7",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 16
+      }
+    },
+    {
+      "file": "moby-dick-attribute-whitespace.epub",
+      "sha256": "990cf14c096317fbfac38fe38cfadae5d33b0ab9f22f76955d33fb49fb8339ba",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 144
+      }
+    },
+    {
+      "file": "moby-dick-opf-prefix.epub",
+      "sha256": "ae9ad3b5272184f3640571821d2c39f4e999e05045665b1f724213254eaa0720",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 144
+      }
+    },
+    {
+      "file": "moby-dick.epub",
+      "sha256": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 144
+      }
+    },
+    {
+      "file": "trees.epub",
+      "sha256": "4fbaa5713555ea104b2aed8fc6182700225416b0ab5369f0cb7293d486bb718f",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 3
+      }
+    },
+    {
+      "file": "wasteland-otf-day-only.epub",
+      "sha256": "bb4ed8cd19394af89e3aa11019a38fb81e030f26873c266d54009fdb083f4786",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 1
+      }
+    },
+    {
+      "file": "wasteland-otf-obf.epub",
+      "sha256": "f941572da9c8c816549f68163fbcb632d6f9857af42aa0a618b86e8c9c3895be",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 1
+      }
+    },
+    {
+      "file": "wasteland-otf.epub",
+      "sha256": "d99ea3b847d713a84cfd9cba9cccafb550fcd6af1ca6767b2dade182457deebc",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 1
+      }
+    },
+    {
+      "file": "wasteland-woff.epub",
+      "sha256": "25b0775d975c3f3ef8b57c2887636c5309028d5382d73881b10c929c9c3d2cae",
+      "layout": {
+        "kind": "reflowable",
+        "fixedLayoutSpineItems": 0,
+        "reflowableSpineItems": 1
+      }
+    }
+  ]
+}
