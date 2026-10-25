@@ -1,0 +1,94 @@
+[
+  {
+    "v": 1,
+    "session": "mvnwfpv2",
+    "atMs": 1792937145525,
+    "kind": "span",
+    "name": "reader.font.read",
+    "durationMs": 17.616200000047684,
+    "startAtMs": 1792937145507.3838,
+    "artifact": "1",
+    "bytes": 443980,
+    "status": "ok"
+  },
+  {
+    "v": 1,
+    "session": "mvnwfpv2",
+    "atMs": 1792937145534,
+    "kind": "span",
+    "name": "reader.font.register",
+    "durationMs": 8.240300000063144,
+    "startAtMs": 1792937145525.7598,
+    "bytes": 443980,
+    "status": "ok"
+  },
+  {
+    "v": 1,
+    "session": "mvnwfpv2",
+    "atMs": 1792937145538,
+    "kind": "span",
+    "name": "reader.font.read",
+    "durationMs": 3.456899999990128,
+    "startAtMs": 1792937145534.5432,
+    "artifact": "1",
+    "bytes": 471892,
+    "status": "ok"
+  },
+  {
+    "v": 1,
+    "session": "mvnwfpv2",
+    "atMs": 1792937145540,
+    "kind": "span",
+    "name": "reader.font.register",
+    "durationMs": 1.355100000044331,
+    "startAtMs": 1792937145538.645,
+    "bytes": 471892,
+    "status": "ok"
+  },
+  {
+    "v": 1,
+    "session": "mvnwfpv2",
+    "atMs": 1792937197432,
+    "kind": "span",
+    "name": "reader.font.read",
+    "durationMs": 4.101600000052713,
+    "startAtMs": 1792937197427.8984,
+    "artifact": "1",
+    "bytes": 443980,
+    "status": "ok"
+  },
+  {
+    "v": 1,
+    "session": "mvnwfpv2",
+    "atMs": 1792937197437,
+    "kind": "span",
+    "name": "reader.font.register",
+    "durationMs": 4.2282000000122935,
+    "startAtMs": 1792937197432.7717,
+    "bytes": 443980,
+    "status": "ok"
+  },
+  {
+    "v": 1,
+    "session": "mvnwfpv2",
+    "atMs": 1792937197442,
+    "kind": "span",
+    "name": "reader.font.read",
+    "durationMs": 4.491800000076182,
+    "startAtMs": 1792937197437.5083,
+    "artifact": "1",
+    "bytes": 471892,
+    "status": "ok"
+  },
+  {
+    "v": 1,
+    "session": "mvnwfpv2",
+    "atMs": 1792937197451,
+    "kind": "span",
+    "name": "reader.font.register",
+    "durationMs": 8.155999999959022,
+    "startAtMs": 1792937197442.844,
+    "bytes": 471892,
+    "status": "ok"
+  }
+]
