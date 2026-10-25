@@ -1,0 +1,86 @@
+{
+  "lunarToc": [
+    {
+      "children": [],
+      "href": "OEBPS/c0.xhtml",
+      "label": "Cover"
+    },
+    {
+      "children": [],
+      "href": "OEBPS/chapter.xhtml",
+      "label": "Chapter One"
+    }
+  ],
+  "metadata": {
+    "creator": "Lunar compatibility tests",
+    "identifier": "urn:lunar:cc0:cover-navigation:broken:1",
+    "language": "en",
+    "title": "Lunar Cover Navigation Broken"
+  },
+  "nativeToc": [
+    {
+      "children": [],
+      "id": 0,
+      "label": "Cover",
+      "target": {
+        "href": "OEBPS/c0.xhtml",
+        "kind": "missing"
+      }
+    },
+    {
+      "children": [],
+      "id": 1,
+      "label": "Chapter One",
+      "target": {
+        "kind": "locator",
+        "locator": {
+          "href": "OEBPS/chapter.xhtml"
+        }
+      }
+    }
+  ],
+  "snapshot": {
+    "bookId": "a202b648185367b1e89e820fe49f602fa9e8a102b216a2bc8a22a27f1aef2eda",
+    "bookSpreadIndex": 0,
+    "paginationComplete": true,
+    "phase": "ready",
+    "position": {
+      "bookPageIndex": 0,
+      "bookSpreadIndex": 0,
+      "locator": {
+        "chapterProgress": 0,
+        "manifestHref": "titlepage.xhtml",
+        "sourcePoint": {
+          "nodePath": [
+            0,
+            0
+          ],
+          "textOffset": 0
+        },
+        "spineIdref": "cover"
+      },
+      "pageIndex": 0,
+      "progression": 0,
+      "spreadIndex": 0,
+      "timestamp": 1792945871878
+    },
+    "renderId": 1,
+    "revisionId": 1,
+    "spreadIndex": 0,
+    "totalSpreads": 2
+  },
+  "spine": [
+    {
+      "href": "titlepage.xhtml",
+      "idref": "cover",
+      "linearIndex": 0,
+      "spineIndex": 0
+    },
+    {
+      "href": "OEBPS/chapter.xhtml",
+      "idref": "chapter",
+      "linearIndex": 1,
+      "spineIndex": 1
+    }
+  ]
+}

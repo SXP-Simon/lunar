@@ -1,0 +1,12 @@
+
+ RUN  v3.2.4 C:/Helianthus/SXP-Simon/杂/anime-dev/lunar/apps/mobile
+
+ ✓ tests/unit/reader-locator-navigation.test.ts (23 tests) 68ms
+ ✓ tests/unit/panels.test.ts (13 tests) 378ms
+ ✓ tests/unit/reader-toc.test.ts (3 tests) 5ms
+
+ Test Files  3 passed (3)
+      Tests  39 passed (39)
+   Start at  00:37:55
+   Duration  2.63s (transform 714ms, setup 0ms, collect 1.38s, tests 451ms, environment 1ms, prepare 925ms)
+

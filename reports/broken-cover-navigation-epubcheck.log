@@ -1,0 +1,11 @@
+Validating using EPUB version 3.4 rules.
+Messages: 0 fatals / 5 errors / 0 warnings / 0 infos
+
+EPUBCheck completed
+ERROR(RSC-011): ../lunar-epub-evidence/samples/broken-cover-navigation.epub/OEBPS/nav.xhtml(1,219): Found a reference to a resource that is not a spine item.
+ERROR(RSC-011): ../lunar-epub-evidence/samples/broken-cover-navigation.epub/OEBPS/nav.xhtml(1,382): Found a reference to a resource that is not a spine item.
+ERROR(RSC-011): ../lunar-epub-evidence/samples/broken-cover-navigation.epub/OEBPS/nav.xhtml(1,442): Found a reference to a resource that is not a spine item.
+ERROR(RSC-007): ../lunar-epub-evidence/samples/broken-cover-navigation.epub/OEBPS/c0.xhtml(1,162): Referenced resource "OEBPS/missing.css" could not be found in the EPUB.
+ERROR(RSC-007): ../lunar-epub-evidence/samples/broken-cover-navigation.epub/OEBPS/c0.xhtml(1,226): Referenced resource "OEBPS/missing-cover.png" could not be found in the EPUB.
+
+Check finished with errors

@@ -1,0 +1,171 @@
+$ pnpm run typecheck && pnpm run test && pnpm run lint
+$ tsc --noEmit
+$ vitest run
+
+ RUN  v3.2.4 C:/Helianthus/SXP-Simon/杂/anime-dev/lunar/apps/mobile
+
+ ✓ tests/unit/reader-highlight-ranges.test.ts (14 tests) 34ms
+ ✓ tests/unit/plugin-network.test.ts (4 tests) 41ms
+ ✓ tests/unit/reader-text-selection.test.ts (12 tests) 31ms
+ ✓ tests/unit/external-epub-import.test.ts (4 tests) 76ms
+ ✓ tests/unit/release.test.ts (10 tests) 16ms
+ ✓ tests/unit/database-connection.test.ts (2 tests) 590ms
+   ✓ Lunar database connection > shares one initialized connection across concurrent callers  457ms
+ ✓ tests/unit/reader-epub-inspector.test.ts (2 tests) 119ms
+ ✓ tests/unit/reader-highlight-repository.test.ts (10 tests) 67ms
+ ✓ tests/unit/reading-time.test.ts (4 tests) 82ms
+ ✓ tests/unit/reader-system-fonts.test.ts (7 tests) 1771ms
+   ✓ system reader fonts > never reads a missing native dispose property on android  544ms
+   ✓ system reader fonts > never reads a missing native dispose property on ios  384ms
+   ✓ system reader fonts > enumerates and caches native families when the manager has no dispose method  366ms
+ ✓ tests/unit/reader-font-registry.test.ts (12 tests) 20ms
+ ✓ tests/unit/progress-panel.test.tsx (1 test) 66ms
+ ✓ tests/unit/reader-progress-navigation.test.ts (9 tests) 25ms
+ ✓ tests/unit/appearance-panel.test.tsx (5 tests) 37ms
+ ✓ tests/unit/performance.test.ts (9 tests) 21ms
+ ✓ tests/unit/reader-image-viewer-gesture.test.ts (6 tests) 25ms
+ ✓ tests/unit/reader-typography-adjustment.test.ts (4 tests) 20ms
+ ✓ tests/unit/reader-native-slide-bookmark.test.ts (9 tests) 34ms
+ ✓ tests/unit/plugin-reader-bridge.test.ts (18 tests) 95ms
+ ✓ tests/unit/reader-note-markdown.test.tsx (12 tests) 258ms
+ ✓ tests/unit/reader-session-events.test.ts (5 tests) 18ms
+ ✓ tests/unit/plugin-package.test.ts (8 tests) 107ms
+ ✓ tests/unit/reader-bookmarks.test.ts (11 tests) 35ms
+ ✓ tests/unit/plugin-updates.test.ts (8 tests) 153ms
+ ✓ tests/unit/plugin-host.test.ts (17 tests) 211ms
+ ✓ tests/unit/panels.test.ts (13 tests) 413ms
+ ✓ tests/unit/plugin-dev-session.test.ts (2 tests) 16ms
+ ✓ tests/unit/reader-interactive-handoff.test.ts (6 tests) 40ms
+ ✓ tests/unit/progress-slider.test.tsx (4 tests) 32ms
+ ✓ tests/unit/settings-persistence.test.ts (13 tests) 17ms
+ ✓ tests/unit/reader-paragraph-cache.test.ts (5 tests) 21ms
+ ✓ tests/unit/library-sort.test.ts (8 tests) 22ms
+ ✓ tests/unit/reader-locator-navigation.test.ts (23 tests) 107ms
+ ✓ tests/unit/primitive-renderer.test.ts (3 tests) 12ms
+ ✓ tests/unit/book-import-service.test.ts (4 tests) 352ms
+ ✓ tests/unit/reader-page-rasterizer.test.ts (5 tests) 12ms
+ ✓ tests/unit/reader-page-turn-gesture.test.ts (12 tests) 15ms
+ ✓ tests/unit/text-measurer.test.ts (4 tests) 11ms
+ ✓ tests/unit/reader-native-event-polling.test.ts (3 tests) 15ms
+ ✓ tests/unit/note-editor.test.tsx (12 tests) 496ms
+ ✓ tests/unit/reader-highlight-overlay.test.ts (14 tests) 27ms
+ ✓ tests/unit/reader-page-turn-timing.test.ts (10 tests) 17ms
+ ✓ tests/unit/external-plugin-install.test.ts (4 tests) 15ms
+ ✓ tests/unit/reader-page-recording-cache.test.ts (3 tests) 14ms
+ ✓ tests/unit/reader-error-toast.test.ts (8 tests) 17ms
+ ❯ tests/unit/reader-hit-entries-compiler.test.ts (2 tests | 1 failed) 5382ms
+   × compiled reader hit entries > refreshes drag coordinates across rapid page turns and same-slot render replacements 5269ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ compiled reader hit entries > withholds coordinates while the runtime is ahead of the rendered snapshot 110ms
+ ✓ tests/unit/reader-curl-geometry.test.ts (7 tests) 10ms
+ ✓ tests/unit/reader-overlay-geometry.test.ts (2 tests) 12ms
+ ❯ tests/unit/reader-selection-worklet.test.ts (1 test | 1 failed) 5592ms
+   × reader selection UI worklet > transfers the rectangle merger before a drag invokes it on the UI runtime 5590ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ✓ tests/unit/markdown-edit.test.ts (12 tests) 14ms
+ ✓ tests/unit/reader-screen-hooks.test.ts (15 tests) 40ms
+ ✓ tests/unit/reader-native-page-turn.test.ts (8 tests) 12ms
+ ✓ tests/unit/book-selection-gesture.test.ts (2 tests) 8ms
+ ✓ tests/unit/reader-selection-gesture.test.ts (3 tests) 9ms
+ ✓ tests/unit/reader-font-resolution.test.ts (7 tests) 12ms
+ ✓ tests/unit/frame-cache.test.ts (3 tests) 9ms
+ ✓ tests/unit/reader-operation-queue.test.ts (2 tests) 10ms
+ ✓ tests/unit/reader-typography.test.ts (6 tests) 13ms
+ ✓ tests/unit/reader-text-segments.test.ts (4 tests) 13ms
+ ✓ tests/unit/reader-overlay-sources.test.ts (3 tests) 8ms
+ ✓ tests/unit/reader-perf-report.test.ts (5 tests) 13ms
+ ✓ tests/unit/library-grid-selection.test.ts (5 tests) 11ms
+ ✓ tests/unit/reader-pinned-fonts.test.ts (5 tests) 10ms
+ ✓ tests/unit/reader-native-curl-stock.test.ts (2 tests) 11ms
+ ✓ tests/unit/reader-imported-fonts-store.test.ts (5 tests) 8ms
+ ❯ tests/unit/worklet-slider-compiler.test.tsx (4 tests | 1 failed) 8296ms
+   × Android slider worklets, development=true > runs mount, layout and drag callbacks after closure transfer 6461ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ Android slider worklets, development=true > keeps fractional ranges finite and restores the preview after cancellation  646ms
+   ✓ Android slider worklets, development=false > runs mount, layout and drag callbacks after closure transfer  650ms
+   ✓ Android slider worklets, development=false > keeps fractional ranges finite and restores the preview after cancellation  536ms
+ ✓ tests/unit/reader-selection-geometry.test.ts (2 tests) 9ms
+ ✓ tests/unit/reader-page-turn-concurrency.test.ts (4 tests) 9ms
+ ✓ tests/unit/reader-display-text.test.ts (4 tests) 7ms
+ ✓ tests/unit/reader-colors.test.ts (6 tests) 9ms
+ ✓ tests/unit/reader-interaction.test.ts (4 tests) 12ms
+ ✓ tests/unit/reader-font-probe.test.ts (8 tests) 11ms
+ ✓ tests/unit/reading-state-repository.test.ts (2 tests) 12ms
+ ✓ tests/unit/reader-page-picture.test.ts (4 tests) 9ms
+ ✓ tests/unit/reader-volume-keys.test.ts (3 tests) 9ms
+ ✓ tests/unit/reader-hit-testing.test.ts (1 test) 7ms
+ ✓ tests/unit/reader-toc.test.ts (3 tests) 8ms
+ ✓ tests/unit/database-schema.test.ts (1 test) 8ms
+ ✓ tests/unit/reader-surface-transform.test.ts (2 tests) 7ms
+ ✓ tests/unit/selection-layout.test.ts (6 tests) 13ms
+ ✓ tests/unit/reader-image-cache.test.ts (2 tests) 7ms
+ ✓ tests/unit/epub-document-config.test.ts (2 tests) 10ms
+ ✓ tests/unit/paragraph-direction.test.ts (2 tests) 6ms
+ ✓ tests/unit/reader-extension-decorations.test.ts (3 tests) 8ms
+ ✓ tests/unit/reader-href-resolution.test.ts (5 tests) 5ms
+(node:40464) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ tests/unit/reader-note-worklet.test.ts (10 tests) 10493ms
+ ✓ tests/unit/rito-package-integration.test.ts (1 test) 11ms
+ ✓ tests/unit/reader-curl-rendering.test.ts (7 tests) 39712ms
+   ✓ curl printed face rendering > prints the landed front and keeps the folded back opaque and blank, gesture=false  6618ms
+   ✓ curl printed face rendering > prints the landed front and keeps the folded back opaque and blank, gesture=true  6080ms
+   ✓ curl printed face rendering > lands the previous page right-side-up, gesture=false  6411ms
+   ✓ curl printed face rendering > lands the previous page right-side-up, gesture=true  6654ms
+   ✓ curl printed face rendering > starts a next-page turn with the printed face right-side-up  6962ms
+   ✓ curl printed face rendering > preserves the outgoing face in double-page backward turns  6815ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/reader-hit-entries-compiler.test.ts > compiled reader hit entries > refreshes drag coordinates across rapid page turns and same-slot render replacements
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/unit/reader-hit-entries-compiler.test.ts:64:3
+     62| 
+     63| describe('compiled reader hit entries', () => {
+     64|   it('refreshes drag coordinates across rapid page turns and same-slot…
+       |   ^
+     65|     const render = compileHook();
+     66|     let snapshot = { phase: 'ready', revisionId: 1, spreadIndex: 0, re…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/unit/reader-selection-worklet.test.ts > reader selection UI worklet > transfers the rectangle merger before a drag invokes it on the UI runtime
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/unit/reader-selection-worklet.test.ts:25:3
+     23| 
+     24| describe('reader selection UI worklet', () => {
+     25|   it('transfers the rectangle merger before a drag invokes it on the U…
+       |   ^
+     26|     const filename = resolve('src/reader/interaction/selection-geometr…
+     27|     const code = babel.transformSync(readFileSync(filename, 'utf8'), {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/unit/worklet-slider-compiler.test.tsx > Android slider worklets, development=true > runs mount, layout and drag callbacks after closure transfer
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/unit/worklet-slider-compiler.test.tsx:106:3
+    104| 
+    105| describe.each([true, false])('Android slider worklets, development=%s'…
+    106|   it('runs mount, layout and drag callbacks after closure transfer', (…
+       |   ^
+    107|     const { layout, handlers, preview, onChangeEnd, styles } = setup(i…
+    108|     layout(228);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  3 failed | 85 passed (88)
+      Tests  3 failed | 541 passed (544)
+   Start at  00:52:29
+   Duration  47.80s (transform 54.40s, setup 0ms, collect 169.35s, tests 75.50s, environment 29ms, prepare 96.39s)
+
+[ELIFECYCLE] Test failed. See above for more details.
+C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @lunar/mobile@0.3.0 check: `pnpm run typecheck && pnpm run test && pnpm run lint`
+Exit status 1
