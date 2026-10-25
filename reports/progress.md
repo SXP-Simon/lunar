@@ -53,3 +53,13 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 验证 EPUB、源文件分析、截图、日志只放本 evidence 分支；每个修复 PR 链接固定提交，不携带这些文件。不因暂时缺少证据就把某项声明为已通过。
 
 [Rito PR #42](https://github.com/Ringyuki/Rito/pull/42) 已创建，目标 `dev`，最终代码 `b88b6553c51b0228cb0caefb859df2190db5e9bf`，未合并。证据固定到 `748d27edb0c0e34e785c3932582e2011285d6a5c`。GitHub 确认 MERGEABLE，远程检查列表为空；本地 fmt、Clippy、1020 项测试及原版样书 6 项比较断言通过。Lunar #5 已补充定位与修复链接，保持打开等待版本接入和设备复验。
+
+## 2026-10-26 新增设备验证
+
+- [Lunar PR #8](https://github.com/Umbrae-Labs/lunar/pull/8)：保留 Rito 已知失效目录状态，失效行明确说明且不再可点，可用子章节保留。544 项测试、类型检查、lint、Android JS export、模拟器正反对照通过；远程 CI 通过。未合并，见 [目录报告](missing-toc-target-validation.md)。这处理 Lunar 的信息丢失，不自动修复 EPUB 源文件。
+- [表格实测](table-device-validation.md)：普通三列表格及跨页续文可读；五列表头 rowspan 降级导致列含义错误，且窄屏宽表溢出。已登记 [Lunar #9](https://github.com/Umbrae-Labs/lunar/issues/9)，尚未修复。
+- [Ruby 与竖排实测](ruby-vertical-validation.md)：简单横排 Ruby、标准及 EPUB 前缀竖排能显示；原生交互工件仍保留横排坐标，选字、标注及重排高亮错位。已提交 [Rito #43](https://github.com/Ringyuki/Rito/issues/43)，尚未修复。
+- [《草枕》重排与重启](kusamakura-reflow-validation.md)：原始字体为14pt，改根字号没有真正改变文字；边距24→40使401页变439页，原段落保留，强制结束应用后源位置和页文本恢复一致。仅对移除备用样式引用的控制变体成立，不算原版通过。
+- [同页搜索漏匹配](search-wrap-device-validation.md)：原创合规中英文连续句经过视觉折行后搜索0结果，同行短查询可找到；排除跨页和未加载。已提交 [Rito #44](https://github.com/Ringyuki/Rito/issues/44)，尚未修复。
+
+上面的交互问题证明画面出现文字并不等于范围几何正确。新问题均附公开样本和原生数据，用户提供的 EPUB、截图和日志仅本地保留。性能、更多图片逐位置覆盖和内核新版接入复测仍在后续范围内。
