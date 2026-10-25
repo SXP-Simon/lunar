@@ -19,6 +19,8 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 
 ## 尚需完成的目标
 
+4GB 单应用复测已推进：Cole 可打开，固定画页完整显示；Youth 流式页的浮动图文重叠。Waste Land 与草枕被 alternate stylesheet 选择校验阻断；仅移除 Waste Land 的备用引用后可打开，且变体通过 EPUBCheck。源码根因及截图见 [复杂排版设备验证](complex-layout-device-validation.md)。以上新增问题尚未修复。
+
 1. 固定版式／混合版式识别与提示：完成干净环境复测，按证据决定实现，独立分支及 PR。
 2. 出版方样式：比较实际嵌入字体与当前全局覆盖，验证后实现原书／自定义模式，独立分支及 PR。
 3. 锁定 Rito 的真实能力：逐项验证表格、浮动、Ruby、竖排、定位；补充覆盖样本，不能拿上游 dev 文档代替设备证据。
