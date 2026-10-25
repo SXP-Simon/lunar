@@ -1,0 +1,54 @@
+Threads: 49 total,   0 running,  49 sleeping,   0 stopped,   0 zombie
+  Mem:  2531836K total,  2482656K used,    49180K free,      704K buffers
+ Swap:  1898872K total,  1898660K used,      212K free,   160416K cached
+400%cpu   0%user   0%nice 534%sys 381%idle 140%iow   0%irq 106%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+ 5300 u0_a217      16  -4  42G 415M  42M D 46.8  16.7   0:26.04 rito-reader-1   com.lunarain_079.lunar
+ 4310 u0_a217      20   0  42G 415M  42M D  2.1  16.7   0:00.42 DefaultDispatch com.lunarain_079.lunar
+ 5299 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.00 DefaultDispatch com.lunarain_079.lunar
+ 5297 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.00 DefaultDispatch com.lunarain_079.lunar
+ 5296 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.01 DefaultDispatch com.lunarain_079.lunar
+ 5233 u0_a217      29   9  42G 415M  42M S  0.0  16.7   0:00.11 glide-source-th com.lunarain_079.lunar
+ 5197 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.00 AsyncTask #3    com.lunarain_079.lunar
+ 5195 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.03 DefaultDispatch com.lunarain_079.lunar
+ 5108 u0_a217      16  -4  42G 415M  42M S  0.0  16.7   0:00.20 mqt_v_js        com.lunarain_079.lunar
+ 5105 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.18 DefaultDispatch com.lunarain_079.lunar
+ 5058 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.07 binder:3764_7   com.lunarain_079.lunar
+ 5048 u0_a217      29   9  42G 415M  42M S  0.0  16.7   0:00.09 glide-source-th com.lunarain_079.lunar
+ 5046 u0_a217      29   9  42G 415M  42M S  0.0  16.7   0:00.06 glide-disk-cach com.lunarain_079.lunar
+ 5045 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.00 ConnectivityThr com.lunarain_079.lunar
+ 5044 u0_a217      30  10  42G 415M  42M S  0.0  16.7   0:00.00 glide-active-re com.lunarain_079.lunar
+ 4986 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.04 binder:3764_6   com.lunarain_079.lunar
+ 4270 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.05 binder:3764_5   com.lunarain_079.lunar
+ 4221 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.01 binder:3764_4   com.lunarain_079.lunar
+ 3809 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.00 binder:3764_1   com.lunarain_079.lunar
+ 3808 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.01 SurfaceSyncGrou com.lunarain_079.lunar
+ 3803 u0_a217      16  -4  42G 415M  42M S  0.0  16.7   0:00.00 mqt_v_js        com.lunarain_079.lunar
+ 3801 u0_a217      16  -4  42G 415M  42M S  0.0  16.7   0:00.00 mqt_v_js        com.lunarain_079.lunar
+ 3802 u0_a217      16  -4  42G 415M  42M S  0.0  16.7   0:00.00 hades           com.lunarain_079.lunar
+ 3800 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.00 Expo JNI deallo com.lunarain_079.lunar
+ 3799 u0_a217      16  -4  42G 415M  42M S  0.0  16.7   0:00.33 hades           com.lunarain_079.lunar
+ 3794 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.57 DefaultDispatch com.lunarain_079.lunar
+ 3792 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.41 ncFunctionQueue com.lunarain_079.lunar
+ 3791 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.01 Expo JNI deallo com.lunarain_079.lunar
+ 3789 u0_a217      20   0  42G 415M  42M D  0.0  16.7   0:01.83 hades           com.lunarain_079.lunar
+ 3788 u0_a217      18  -2  42G 415M  42M S  0.0  16.7   0:00.00 hwuiTask1       com.lunarain_079.lunar
+ 3787 u0_a217      18  -2  42G 415M  42M S  0.0  16.7   0:00.01 hwuiTask0       com.lunarain_079.lunar
+ 3786 u0_a217      10 -10  42G 415M  42M S  0.0  16.7   0:00.00 TracingMuxer    com.lunarain_079.lunar
+ 3785 u0_a217      16  -4  42G 415M  42M S  0.0  16.7   0:02.55 mqt_v_native    com.lunarain_079.lunar
+ 3784 u0_a217      16  -4  42G 415M  42M S  0.0  16.7   0:58.09 mqt_v_js        com.lunarain_079.lunar
+ 3783 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.48 pool-3-thread-1 com.lunarain_079.lunar
+ 3781 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.37 HybridData Dest com.lunarain_079.lunar
+ 3779 u0_a217      10 -10  42G 415M  42M S  0.0  16.7   0:12.26 RenderThread    com.lunarain_079.lunar
+ 3778 u0_a217      29   9  42G 415M  42M D  0.0  16.7   0:01.08 Profile Saver   com.lunarain_079.lunar
+ 3776 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.06 binder:3764_3   com.lunarain_079.lunar
+ 3775 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.09 binder:3764_2   com.lunarain_079.lunar
+ 3774 u0_a217      20   0  42G 415M  42M S  0.0  16.7   0:00.04 binder:3764_1   com.lunarain_079.lunar
+ 3770 u0_a217      24   4  42G 415M  42M S  0.0  16.7   0:02.18 HeapTaskDaemon  com.lunarain_079.lunar
+ 3773 u0_a217      24   4  42G 415M  42M S  0.0  16.7   0:00.09 FinalizerWatchd com.lunarain_079.lunar
+ 3772 u0_a217      24   4  42G 415M  42M S  0.0  16.7   0:00.07 FinalizerDaemon com.lunarain_079.lunar
+ 3771 u0_a217      24   4  42G 415M  42M S  0.0  16.7   0:00.21 ReferenceQueueD com.lunarain_079.lunar
+ 3769 u0_a217      29   9  42G 415M  42M S  0.0  16.7   0:01.01 Jit thread pool com.lunarain_079.lunar
+ 3767 u0_a217       0 -20  42G 415M  42M S  0.0  16.7   0:00.00 Signal Catcher  com.lunarain_079.lunar
+ 3768 u0_a217       0 -20  42G 415M  42M S  0.0  16.7   0:00.00 perfetto_hprof_ com.lunarain_079.lunar
+ 3764 u0_a217      10 -10  42G 415M  43M D  0.0  16.7   0:36.45 arain_079.lunar com.lunarain_079.lunar

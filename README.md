@@ -23,7 +23,7 @@
 | moby-dick | 长篇多章节、嵌入字体、重开定位 |
 | moby-dick-attribute-whitespace / moby-dick-opf-prefix | XML 等价序列化的解析兼容性 |
 | kusamakura-japanese-vertical-writing | 竖排、Ruby、日文资源路径、字体、媒体叠加 |
-| haruko-html-jpeg | 全书固定版式、右向左页序 |
+| haruko-html-jpeg | 全局固定版式、末尾 about 项覆盖为流式、右向左页序 |
 | cole-voyage-of-life | 混合版式、spine 单项 layout 覆盖 |
 | wasteland-otf / wasteland-woff / wasteland-otf-obf | 出版方字体、字体格式和字体混淆 |
 | internallinks | 书内交叉链接与返回 |

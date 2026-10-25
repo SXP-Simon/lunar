@@ -1,0 +1,155 @@
+MemTotal:        2531836 kB
+MemFree:           53644 kB
+MemAvailable:          0 kB
+Buffers:             732 kB
+Cached:           154480 kB
+SwapCached:         7760 kB
+Active:           674140 kB
+Inactive:         765816 kB
+Active(anon):     665696 kB
+Inactive(anon):   764284 kB
+Active(file):       8444 kB
+Inactive(file):     1532 kB
+Unevictable:       39092 kB
+Mlocked:           39092 kB
+SwapTotal:       1898872 kB
+SwapFree:             32 kB
+Dirty:                 0 kB
+Writeback:             0 kB
+AnonPages:       1323868 kB
+Mapped:            87708 kB
+Shmem:            107132 kB
+KReclaimable:      40728 kB
+Slab:             234956 kB
+SReclaimable:      40728 kB
+SUnreclaim:       194228 kB
+KernelStack:       43472 kB
+PageTables:       106168 kB
+SecPageTables:         0 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     3164788 kB
+Committed_AS:   213286368 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:       67600 kB
+VmallocChunk:          0 kB
+Percpu:             6464 kB
+AnonHugePages:         0 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+FileHugePages:         0 kB
+FilePmdMapped:         0 kB
+CmaTotal:              0 kB
+CmaFree:               0 kB
+DirectMap4k:       51032 kB
+DirectMap2M:     2570240 kB
+DirectMap1G:     1048576 kB
+Name:	arain_079.lunar
+Umask:	0077
+State:	D (disk sleep)
+Tgid:	3764
+Ngid:	0
+Pid:	3764
+PPid:	492
+TracerPid:	0
+Uid:	10217	10217	10217	10217
+Gid:	10217	10217	10217	10217
+FDSize:	256
+Groups:	3003 9997 20217 50217 
+Kthread:	0
+VmPeak:	67801468 kB
+VmSize:	44018916 kB
+VmLck:	       0 kB
+VmPin:	       0 kB
+VmHWM:	  523628 kB
+VmRSS:	  426620 kB
+RssAnon:	  382528 kB
+RssFile:	    2244 kB
+RssShmem:	   41848 kB
+VmData:	20108200 kB
+VmStk:	    8192 kB
+VmExe:	       8 kB
+VmLib:	  243452 kB
+VmPTE:	    3360 kB
+VmSwap:	  137736 kB
+CoreDumping:	0
+THP_enabled:	1
+untag_mask:	0xffffffffffffffff
+Threads:	49
+SigQ:	0/9868
+SigPnd:	0000000000000000
+ShdPnd:	0000000000000000
+SigBlk:	0000000080001204
+SigIgn:	0000000000000001
+SigCgt:	0000006e400084f8
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	0000000000000000
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+Seccomp:	2
+Seccomp_filters:	1
+Speculation_Store_Bypass:	vulnerable
+SpeculationIndirectBranch:	always enabled
+Cpus_allowed:	f
+Cpus_allowed_list:	0-3
+Mems_allowed:	1
+Mems_allowed_list:	0
+voluntary_ctxt_switches:	42178
+nonvoluntary_ctxt_switches:	39161
+Name:	n_079.lunar.dev
+Umask:	0077
+State:	S (sleeping)
+Tgid:	3437
+Ngid:	0
+Pid:	3437
+PPid:	492
+TracerPid:	0
+Uid:	10216	10216	10216	10216
+Gid:	10216	10216	10216	10216
+FDSize:	256
+Groups:	3003 9997 20216 50216 
+Kthread:	0
+VmPeak:	67801468 kB
+VmSize:	61338692 kB
+VmLck:	       0 kB
+VmPin:	       0 kB
+VmHWM:	 1216552 kB
+VmRSS:	  728564 kB
+RssAnon:	  714168 kB
+RssFile:	    7300 kB
+RssShmem:	    7096 kB
+VmData:	21087860 kB
+VmStk:	    8192 kB
+VmExe:	       8 kB
+VmLib:	  448852 kB
+VmPTE:	    5880 kB
+VmSwap:	  712616 kB
+CoreDumping:	0
+THP_enabled:	1
+untag_mask:	0xffffffffffffffff
+Threads:	67
+SigQ:	0/9868
+SigPnd:	0000000000000000
+ShdPnd:	0000000000000000
+SigBlk:	0000000080001204
+SigIgn:	0000000000000001
+SigCgt:	0000006e400084f8
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	0000000000000000
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+Seccomp:	2
+Seccomp_filters:	1
+Speculation_Store_Bypass:	vulnerable
+SpeculationIndirectBranch:	always enabled
+Cpus_allowed:	f
+Cpus_allowed_list:	0-3
+Mems_allowed:	1
+Mems_allowed_list:	0
+voluntary_ctxt_switches:	111639
+nonvoluntary_ctxt_switches:	31838
