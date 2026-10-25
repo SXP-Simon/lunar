@@ -13,6 +13,8 @@
 
 代码分支 `feat/reader-fixed-layout-warning`，提交 `8101f4eed52b2773c9e120fb36b1cd3c080e73eb`。原创合规测试页实际复现右侧内容裁切；识别全局与逐 spine 覆盖，原生分页前提示并允许本次尝试阅读。纯固定、混合、普通流式对照及继续／返回／重开已验证，见 [验证报告](fixed-layout-validation.md)。本项未实现完整 FXL 渲染。
 
+[PR #7](https://github.com/Umbrae-Labs/lunar/pull/7) 已创建，[CI check](https://github.com/Umbrae-Labs/lunar/actions/runs/40202533519/job/121196547057) 通过（1m53s），未合并。PR 中样书、截图和验证报告固定到 evidence 提交 `cc239128a39088fb4ca364662f1735c581445e25`。
+
 以下保留早期测试环境记录，后续干净环境复测见本报告下方及复杂排版报告。
 
 Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG；about spine 项覆盖为流式。Lunar 基线实际可显示第一页完整漫画图（`device/fxl-baseline-haruko-page1-ready.png`）。不能声称所有 FXL 都无法显示；尚未验收缩放、左右页配对、RTL 翻页和最后的流式页。
