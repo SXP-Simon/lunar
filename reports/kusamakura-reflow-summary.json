@@ -1,0 +1,50 @@
+{
+  "fontRequestBefore": 20,
+  "fontRequestAfter": 22,
+  "actualTextFontSizesBefore": [
+    18.666667938232422
+  ],
+  "actualTextFontSizesAfter": [
+    18.666667938232422
+  ],
+  "sourceFixedFontSize": "html { font-size:14pt }",
+  "fontOnlyChangeIsNotMeaningfulRepaginationProof": true,
+  "marginsBefore": 24,
+  "marginsAfter": 40,
+  "pagesBefore": 401,
+  "pagesAfter": 439,
+  "retainedPassage": "は重い天下がおぶさっている。うまい物も食わねば惜しい。少し食えば飽き足らぬ。存分食えばあとが不愉快だ。……余の考がここま",
+  "retainedOnReflowedPage": true,
+  "locatorBefore": {
+    "chapterProgress": 0.14148418491484185,
+    "manifestHref": "xhtml/一.xhtml",
+    "sourcePoint": {
+      "nodePath": [
+        2,
+        15,
+        9,
+        1
+      ],
+      "textOffset": 1
+    },
+    "spineIdref": "一"
+  },
+  "locatorAfter": {
+    "chapterProgress": 0.1340632603406326,
+    "manifestHref": "xhtml/一.xhtml",
+    "sourcePoint": {
+      "nodePath": [
+        2,
+        15,
+        6,
+        6
+      ],
+      "textOffset": 4
+    },
+    "spineIdref": "一"
+  },
+  "reopenedLocatorMatches": true,
+  "reopenedPageTextMatches": true,
+  "reopenedMargins": 40,
+  "reopenedRootFontSize": 22
+}
