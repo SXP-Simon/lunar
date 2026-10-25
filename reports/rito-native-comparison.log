@@ -1,0 +1,64 @@
+     Removed 3770 files, 8.1GiB total
+   Compiling rito-core v0.0.0 (/home/helian/.cache/lunar-rito-fixed-61aeef9/crates/rito-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 00s
+wasteland-otf.epub exit 0
+wasteland-otf-day-only.epub exit 0
+kusamakura-japanese-vertical-writing.epub exit 0
+     Removed 332 files, 850.2MiB total
+   Compiling rito-core v0.0.0 (/home/helian/.cache/lunar-rito-base-ed0284/crates/rito-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 39.42s
+wasteland-otf.epub exit 101
+wasteland-otf-day-only.epub exit 0
+kusamakura-japanese-vertical-writing.epub exit 101
+{
+  "baselineCommit": "ed0284f3703244da28b3e6efd80cf29267cf6e65",
+  "fixedCommit": "61aeef9ca1ef3e41340eae0b1cf5cb27500bb160",
+  "checks": {
+    "differentProbeBinaries": true,
+    "sameSampleHashes": true,
+    "baselineOriginalRejectedBySelection": true,
+    "baselineJapaneseRejectedBySelection": true,
+    "baselineControlSucceeds": true,
+    "fixedAllThreeSucceed": true,
+    "fixedOriginalEqualsControl": true,
+    "controlUnchangedAcrossFix": true
+  },
+  "samples": [
+    {
+      "file": "wasteland-otf.epub",
+      "sha256": "d99ea3b847d713a84cfd9cba9cccafb550fcd6af1ca6767b2dade182457deebc",
+      "chapters": [
+        {
+          "idref": "t1",
+          "error": null,
+          "textRecords": 741,
+          "pages": 35
+        }
+      ]
+    },
+    {
+      "file": "wasteland-otf-day-only.epub",
+      "sha256": "bb4ed8cd19394af89e3aa11019a38fb81e030f26873c266d54009fdb083f4786",
+      "chapters": [
+        {
+          "idref": "t1",
+          "error": null,
+          "textRecords": 741,
+          "pages": 35
+        }
+      ]
+    },
+    {
+      "file": "kusamakura-japanese-vertical-writing.epub",
+      "sha256": "6d4d4ed5eda3f612e3263c54fa0f74ccfa87260f43e81bb58ea658636e52eeb7",
+      "chapters": [
+        {
+          "idref": "一",
+          "error": null,
+          "textRecords": 1016,
+          "pages": 61
+        }
+      ]
+    }
+  ]
+}

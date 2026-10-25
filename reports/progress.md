@@ -36,7 +36,9 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 
 ## 尚需完成的目标
 
-4GB 单应用复测已推进：Cole 可打开，固定画页完整显示；Youth 流式页的浮动图文重叠。Waste Land 与草枕被 alternate stylesheet 选择校验阻断；仅移除 Waste Land 的备用引用后可打开，且变体通过 EPUBCheck。源码根因及截图见 [复杂排版设备验证](complex-layout-device-validation.md)。以上新增问题尚未修复。
+4GB 单应用复测已推进：Cole 可打开，固定画页完整显示；Youth 流式页的浮动图文重叠。Waste Land 与草枕被 alternate stylesheet 选择校验阻断；仅移除 Waste Land 的备用引用后可打开，且变体通过 EPUBCheck。源码根因及截图见 [复杂排版设备验证](complex-layout-device-validation.md)。
+
+备用 stylesheet 已在独立 Rito 分支 `fix/css-default-stylesheet-set` 修复（`61aeef9ca1ef3e41340eae0b1cf5cb27500bb160`）。Linux 原生探针完成同一上游 dev 基线前后对照，8 项断言全通过；完整 Rust 检查 1022 通过、8 忽略。见 [修复报告](alternate-stylesheet-fix.md)。Lunar 尚未升级内核，因此不代表当前安装包已修复，也不代表日文竖排或 Ruby 已验收。浮动重叠仍待定位。
 
 1. 固定版式／混合版式识别与提示已实现；固定视口缩放、配页及阅读方向仍未实现。
 2. 出版方样式：基础模式已在 PR #6 实现；继续验证其他字体格式和复杂样式，不能将该 PR 当作全部样式保真通过。
