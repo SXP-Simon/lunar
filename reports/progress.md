@@ -31,16 +31,18 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 
 ## 新确认的问题
 
-- [Lunar #5](https://github.com/Umbrae-Labs/lunar/issues/5)：Cole 流式 Youth 的右浮动图片与正文重叠，未定位到具体布局或绘制模块。
+- [Lunar #5](https://github.com/Umbrae-Labs/lunar/issues/5)：Cole 流式 Youth 的右浮动图片与正文重叠；现已定位到 Rito 全宽浮动避让，修复与证据见下文。
 - [Rito #40](https://github.com/Ringyuki/Rito/issues/40)：未激活的备用 stylesheet 使整章拒绝加载。Waste Land 控制变体已隔离该原因，草枕也首先被它阻断。
 
 ## 尚需完成的目标
 
 4GB 单应用复测已推进：Cole 可打开，固定画页完整显示；Youth 流式页的浮动图文重叠。Waste Land 与草枕被 alternate stylesheet 选择校验阻断；仅移除 Waste Land 的备用引用后可打开，且变体通过 EPUBCheck。源码根因及截图见 [复杂排版设备验证](complex-layout-device-validation.md)。
 
-备用 stylesheet 已在独立 Rito 分支 `fix/css-default-stylesheet-set` 修复（`61aeef9ca1ef3e41340eae0b1cf5cb27500bb160`）。Linux 原生探针完成同一上游 dev 基线前后对照，8 项断言全通过；完整 Rust 检查 1022 通过、8 忽略。见 [修复报告](alternate-stylesheet-fix.md)。Lunar 尚未升级内核，因此不代表当前安装包已修复，也不代表日文竖排或 Ruby 已验收。浮动重叠仍待定位。
+备用 stylesheet 已在独立 Rito 分支 `fix/css-default-stylesheet-set` 修复（`61aeef9ca1ef3e41340eae0b1cf5cb27500bb160`）。Linux 原生探针完成同一上游 dev 基线前后对照，8 项断言全通过；完整 Rust 检查 1022 通过、8 忽略。见 [修复报告](alternate-stylesheet-fix.md)。Lunar 尚未升级内核，因此不代表当前安装包已修复，也不代表日文竖排或 Ruby 已验收。浮动重叠的后续修复见下文。
 
 [Rito PR #41](https://github.com/Ringyuki/Rito/pull/41) 已创建，目标 `dev`，未合并。PR 证据固定到 `abb7ff92fad1ee42fe36a87dbbbff28a1332397b`。创建后 `statusCheckRollup` 为空；上游当前 CI 的 pull_request 触发分支仅为 master，不能把本地检查成功表述为远程 CI 已通过。
+
+浮动重叠也已定位：Android 绘制前指令本身重叠，上游原生探针脱离 RN／Skia 同样复现。原因是浮动 margin box 占满行宽时被当成“没有避让”。独立修复 `fix/float-full-width-exclusion` / `3f67bc1800c67effbc3bd8edcbc7323af530d22b` 已通过连续与分页原版 Cole 对照（9 行重叠→0，正文保留），完整 Rust 检查 1019 通过、8 忽略。详见 [定位与修复报告](float-overlap-investigation.md)。Lunar 当前 APK 尚未采用此内核修复，设备修复后验证仍未完成。
 
 1. 固定版式／混合版式识别与提示已实现；固定视口缩放、配页及阅读方向仍未实现。
 2. 出版方样式：基础模式已在 PR #6 实现；继续验证其他字体格式和复杂样式，不能将该 PR 当作全部样式保真通过。

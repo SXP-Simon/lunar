@@ -1,0 +1,19 @@
+diff --git a/apps/mobile/src/reader/skia/rendering/picture-compiler.ts b/apps/mobile/src/reader/skia/rendering/picture-compiler.ts
+index 6008554..bf2a845 100644
+--- a/apps/mobile/src/reader/skia/rendering/picture-compiler.ts
++++ b/apps/mobile/src/reader/skia/rendering/picture-compiler.ts
+@@ -29,6 +29,14 @@ export class SkiaPictureCompiler implements PictureCompiler {
+   }
+ 
+   compile(displayList: ReaderDisplayList, options: ReaderPrimitiveRenderOptions): CompiledReaderPicture {
++    // Temporary diagnostic only; removed after recording the public Cole sample.
++    if (displayList.resolvedPrimitives.commands.some((command) => command.kind === 'draw-image')) {
++      const probeId = Date.now();
++      console.info('[epub-float]', JSON.stringify({ probeId, width: displayList.width, height: displayList.height, pixelRatio: options.pixelRatio, ratio: displayList.resolvedPrimitives.ratio }));
++      displayList.resolvedPrimitives.commands.forEach((command, index) => {
++        console.info('[epub-float]', JSON.stringify({ probeId, index, command }));
++      });
++    }
+     const fontGeneration = options.paragraphs.fonts.generation;
+     if (this.paragraphFactory !== options.paragraphs || this.fontGeneration !== fontGeneration) {
+       this.clearCache();

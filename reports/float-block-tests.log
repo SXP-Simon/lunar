@@ -1,0 +1,70 @@
+   Compiling rito-block v0.0.0 (/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar/rito-rn/upstream/rito/crates/rito-block)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.01s
+     Running unittests src/lib.rs (/home/helian/.cache/lunar-rito-target/debug/deps/rito_block-483796396728c383)
+
+running 62 tests
+test tests::floats::a_float_respects_the_preceding_siblings_bottom_margin ... ok
+test tests::floats::an_unfitting_float_steps_below_the_blocking_band ... ok
+test tests::floats::a_later_float_keeps_its_flow_position_y ... ok
+test tests::floats::blocked_lines_resume_at_the_first_open_band_within_their_own_span ... ok
+test tests::floats::auto_width_floats_shrink_to_their_content ... ok
+test tests::floats::a_margined_block_after_a_cleared_spacer_keeps_its_full_margin ... ok
+test tests::floats::clearance_clears_the_floats_margin_edge ... ok
+test tests::floats::container_float_shrink_to_fit_excludes_its_own_margins ... ok
+test tests::floats::float_flow_position_includes_a_clear_paragraphs_margins ... ok
+test tests::floats::content_beside_floats_clears_below_them ... ok
+test tests::floats::full_width_float_clearance_does_not_repeat_on_the_next_page ... ok
+test tests::floats::float_shrink_to_fit_excludes_the_floats_own_margins ... ok
+test tests::floats::floats_stack_against_the_active_set_not_a_band_chain ... ok
+test tests::floats::full_width_float_delays_lines_without_moving_the_paragraph_box ... ok
+test tests::floats::negative_top_margins_hoist_floats_above_their_flow_position ... ok
+test tests::floats::padded_float_inline_flow_lays_lines_in_the_content_box ... ok
+test tests::floats::nested_float_columns_resume_side_by_side_across_pages ... ok
+test tests::margins::a_margin_meeting_an_unforced_break_is_truncated ... ok
+test tests::floats::paired_float_columns_split_and_resume_side_by_side_across_pages ... ok
+test tests::floats::paired_float_columns_sit_side_by_side ... ok
+test tests::margins::a_padded_percentage_parent_keeps_its_child_margin_inside ... ok
+test tests::margins::a_childless_container_self_collapses_its_margins ... ok
+test tests::margins::a_percentage_parent_margin_collapses_with_its_first_child_at_layout ... ok
+test tests::margins::a_snug_last_paragraph_keeps_its_full_margin ... ok
+test tests::margins::adjacent_margins_collapse_to_the_larger_one ... ok
+test tests::margins::an_empty_paragraph_self_collapses_its_margins ... ok
+test tests::margins::horizontal_padding_truncates_onto_the_layout_unit_grid ... ok
+test tests::margins::negative_margins_collapse_by_positive_max_plus_negative_min ... ok
+test tests::margins::mixed_sign_margins_collapse_as_a_set_through_empty_blocks ... ok
+test tests::margins::auto_vertical_margins_resolve_to_zero ... ok
+test tests::pagination::a_box_whose_trailing_padding_misses_moves_whole_when_it_can ... ok
+test tests::pagination::a_full_page_monolith_breaks_past_the_opener_padding ... ok
+test tests::pagination::a_page_tall_line_breaks_past_a_padding_shortened_opener ... ok
+test tests::margins::percentage_margins_resolve_against_the_inline_size ... ok
+test tests::pagination::a_monolith_taller_than_any_page_still_force_places ... ok
+test tests::pagination::cancellation_propagates ... ok
+test tests::pagination::breaks_inside_nested_containers_resume_through_the_ancestor_path ... ok
+test tests::pagination::continuous_space_never_breaks ... ok
+test tests::pagination::deferred_trailing_padding_opens_the_next_page_and_preserves_the_sibling_margin ... ok
+test tests::pagination::forced_breaks_seal_the_fragmentainer_between_children ... ok
+test tests::pagination::leaf_roots_fail_closed_and_empty_nested_containers_are_zero_height ... ok
+test tests::pagination::leading_padding_breaks_alone_when_it_squeezes_a_full_page_line ... ok
+test tests::pagination::leading_padding_breaks_even_when_the_line_overflows_a_whole_page ... ok
+test tests::pagination::missing_layout_styles_fail_closed ... ok
+test tests::pagination::line_taller_than_a_fresh_fragmentainer_still_progresses ... ok
+test tests::pagination::mixed_leaves_and_paragraphs_share_fragmentainers ... ok
+test tests::pagination::page_tall_line_pairs_paginate_one_per_page ... ok
+test tests::pagination::nested_containers_stack_in_continuous_space ... ok
+test tests::pagination::paragraph_lines_paginate_without_gaps_or_repeats ... ok
+test tests::pagination::resumption_is_deterministic ... ok
+test tests::pagination::three_levels_of_nesting_paginate_losslessly ... ok
+test tests::pagination::trailing_padding_still_defers_when_the_box_opens_the_page ... ok
+test tests::tables::a_fitting_table_places_whole_and_continuous_flow_never_fragments ... ok
+test tests::tables::a_multi_cell_row_breaks_between_rows ... ok
+test tests::tables::border_spacing_wraps_the_single_row_once_per_side ... ok
+test tests::zero_height_boxes::a_forced_break_after_an_empty_box_still_breaks ... ok
+test tests::zero_height_boxes::an_empty_box_ahead_of_a_page_tall_monolith_costs_no_page ... ok
+test tests::tables::a_page_tall_single_cell_table_fragments_between_its_paragraphs ... ok
+test tests::zero_height_boxes::an_empty_box_keeps_a_padded_wrappers_head_on_the_first_page ... ok
+test tests::zero_height_boxes::an_empty_boxs_margin_still_takes_space ... ok
+test tests::zero_height_boxes::empty_boxes_ahead_of_a_page_tall_line_cost_no_page ... ok
+test tests::pagination::real_paragraphs_paginate_losslessly_through_parley ... ok
+
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+

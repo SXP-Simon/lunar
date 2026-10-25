@@ -1,0 +1,417 @@
+{
+  "checks": {
+    "differentProbeBinaries": true,
+    "sameSample": true,
+    "deviceAlreadyOverlapsBeforeSkia": true,
+    "baselineContinuousAndPaginatedOverlap": true,
+    "fixedContinuousAndPaginatedDoNotOverlap": true,
+    "allTextPreserved": true
+  },
+  "baselineCommit": "ed0284f3703244da28b3e6efd80cf29267cf6e65",
+  "fixedCommit": "3f67bc1800c67effbc3bd8edcbc7323af530d22b",
+  "device": {
+    "imageCssRect": {
+      "x": 138.0,
+      "y": 331.0,
+      "width": 173.0,
+      "height": 130.0
+    },
+    "overlappingRuns": [
+      {
+        "text": "the ",
+        "rect": {
+          "x": 132.851,
+          "y": 333.752381,
+          "width": 41.058999,
+          "height": 19
+        }
+      },
+      {
+        "text": "youth, ",
+        "rect": {
+          "x": 173.909999,
+          "y": 333.752381,
+          "width": 73.339999,
+          "height": 19
+        }
+      },
+      {
+        "text": "the ",
+        "rect": {
+          "x": 247.249998,
+          "y": 333.752381,
+          "width": 41.062502,
+          "height": 19
+        }
+      },
+      {
+        "text": "calm ",
+        "rect": {
+          "x": 100,
+          "y": 365.752381,
+          "width": 55.746,
+          "height": 19
+        }
+      },
+      {
+        "text": "river ",
+        "rect": {
+          "x": 155.746,
+          "y": 365.752381,
+          "width": 56.734001,
+          "height": 19
+        }
+      },
+      {
+        "text": "seems ",
+        "rect": {
+          "x": 212.48,
+          "y": 365.752381,
+          "width": 71.287998,
+          "height": 19
+        }
+      },
+      {
+        "text": "to ",
+        "rect": {
+          "x": 283.767999,
+          "y": 365.752381,
+          "width": 28.732001,
+          "height": 19
+        }
+      },
+      {
+        "text": "lead ",
+        "rect": {
+          "x": 100,
+          "y": 396.990476,
+          "width": 51.413999,
+          "height": 19
+        }
+      },
+      {
+        "text": "straight ",
+        "rect": {
+          "x": 151.413999,
+          "y": 396.990476,
+          "width": 89.983997,
+          "height": 19
+        }
+      },
+      {
+        "text": "to ",
+        "rect": {
+          "x": 241.397996,
+          "y": 396.990476,
+          "width": 28.728,
+          "height": 19
+        }
+      },
+      {
+        "text": "the ",
+        "rect": {
+          "x": 270.125996,
+          "y": 396.990476,
+          "width": 41.061504,
+          "height": 19
+        }
+      },
+      {
+        "text": "castle, ",
+        "rect": {
+          "x": 100,
+          "y": 427.847619,
+          "width": 78.298998,
+          "height": 19
+        }
+      },
+      {
+        "text": "but ",
+        "rect": {
+          "x": 178.298998,
+          "y": 427.847619,
+          "width": 41.666999,
+          "height": 19
+        }
+      },
+      {
+        "text": "at ",
+        "rect": {
+          "x": 219.965997,
+          "y": 427.847619,
+          "width": 28.974999,
+          "height": 19
+        }
+      },
+      {
+        "text": "the ",
+        "rect": {
+          "x": 248.940997,
+          "y": 427.847619,
+          "width": 41.059003,
+          "height": 19
+        }
+      },
+      {
+        "text": "far ",
+        "rect": {
+          "x": 100,
+          "y": 459.847619,
+          "width": 38.855,
+          "height": 19
+        }
+      },
+      {
+        "text": "right ",
+        "rect": {
+          "x": 138.855,
+          "y": 459.847619,
+          "width": 57.968998,
+          "height": 19
+        }
+      },
+      {
+        "text": "of ",
+        "rect": {
+          "x": 196.823998,
+          "y": 459.847619,
+          "width": 28.917999,
+          "height": 19
+        }
+      },
+      {
+        "text": "the ",
+        "rect": {
+          "x": 225.741997,
+          "y": 459.847619,
+          "width": 41.070503,
+          "height": 19
+        }
+      }
+    ]
+  },
+  "baseline": [
+    {
+      "fragmentainer": null,
+      "image": {
+        "text": "",
+        "page": 0,
+        "x": 96.0,
+        "y": 404.09375,
+        "width": 203.0,
+        "height": 152.25,
+        "source": 2
+      },
+      "overlappingTextLines": [
+        {
+          "text": "To the youth, the calm river ",
+          "page": 0,
+          "x": 64.0,
+          "y": 400.90625,
+          "width": 213.33216762542725,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "seems to lead straight to the ",
+          "page": 0,
+          "x": 64.0,
+          "y": 418.90625,
+          "width": 215.29966640472412,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "castle, but at the far right of ",
+          "page": 0,
+          "x": 64.0,
+          "y": 436.90625,
+          "width": 216.94560146331787,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "the painting one can just ",
+          "page": 0,
+          "x": 64.0,
+          "y": 454.90625,
+          "width": 188.40623378753662,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "glimpse the river as it ",
+          "page": 0,
+          "x": 64.0,
+          "y": 472.90625,
+          "width": 168.07279872894287,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "becomes rough, choppy, and ",
+          "page": 0,
+          "x": 64.0,
+          "y": 490.90625,
+          "width": 215.7487325668335,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "full of rocks. Cole comments ",
+          "page": 0,
+          "x": 64.0,
+          "y": 508.90625,
+          "width": 222.02748012542725,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "on the landscape and the ",
+          "page": 0,
+          "x": 64.0,
+          "y": 526.90625,
+          "width": 187.99342250823975,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "youth's ambitions: \"The ",
+          "page": 0,
+          "x": 64.0,
+          "y": 544.90625,
+          "width": 181.95561122894287,
+          "height": 18.0,
+          "source": 3
+        }
+      ],
+      "text": "YouthThe second painting, Youth, shows the same rich, green landscape, but here the view widens as does the voyager's experience. Now the youth grabs the tiller firmly as the angel watches and waves from the shore, allowing him to take control. The boy's enthusiasm and energy is evident in his forward-thrusting pose and billowing clothes. In the distance, a ghostly castle hovers in the sky, a white and shimmering beacon that represents the ambitions and dreams of man.To the youth, the calm river seems to lead straight to the castle, but at the far right of the painting one can just glimpse the river as it becomes rough, choppy, and full of rocks. Cole comments on the landscape and the youth's ambitions: \"The scenery of the picture--its clear stream, its lofty trees, its towering mountains, its unbounded distance, and transparent atmosphere--figure forth the romantic beauty of youthful imaginings, when the mind elevates the Mean and Common into the Magnificent, before experience teaches what is the Real.\""
+    },
+    {
+      "fragmentainer": 592,
+      "image": {
+        "text": "",
+        "page": 0,
+        "x": 96.0,
+        "y": 404.09375,
+        "width": 203.0,
+        "height": 152.25,
+        "source": 2
+      },
+      "overlappingTextLines": [
+        {
+          "text": "To the youth, the calm river ",
+          "page": 0,
+          "x": 64.0,
+          "y": 400.90625,
+          "width": 213.33216762542725,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "seems to lead straight to the ",
+          "page": 0,
+          "x": 64.0,
+          "y": 418.90625,
+          "width": 215.29966640472412,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "castle, but at the far right of ",
+          "page": 0,
+          "x": 64.0,
+          "y": 436.90625,
+          "width": 216.94560146331787,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "the painting one can just ",
+          "page": 0,
+          "x": 64.0,
+          "y": 454.90625,
+          "width": 188.40623378753662,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "glimpse the river as it ",
+          "page": 0,
+          "x": 64.0,
+          "y": 472.90625,
+          "width": 168.07279872894287,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "becomes rough, choppy, and ",
+          "page": 0,
+          "x": 64.0,
+          "y": 490.90625,
+          "width": 215.7487325668335,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "full of rocks. Cole comments ",
+          "page": 0,
+          "x": 64.0,
+          "y": 508.90625,
+          "width": 222.02748012542725,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "on the landscape and the ",
+          "page": 0,
+          "x": 64.0,
+          "y": 526.90625,
+          "width": 187.99342250823975,
+          "height": 18.0,
+          "source": 3
+        },
+        {
+          "text": "youth's ambitions: \"The ",
+          "page": 0,
+          "x": 64.0,
+          "y": 544.90625,
+          "width": 181.95561122894287,
+          "height": 18.0,
+          "source": 3
+        }
+      ],
+      "text": "YouthThe second painting, Youth, shows the same rich, green landscape, but here the view widens as does the voyager's experience. Now the youth grabs the tiller firmly as the angel watches and waves from the shore, allowing him to take control. The boy's enthusiasm and energy is evident in his forward-thrusting pose and billowing clothes. In the distance, a ghostly castle hovers in the sky, a white and shimmering beacon that represents the ambitions and dreams of man.To the youth, the calm river seems to lead straight to the castle, but at the far right of the painting one can just glimpse the river as it becomes rough, choppy, and full of rocks. Cole comments on the landscape and the youth's ambitions: \"The scenery of the picture--its clear stream, its lofty trees, its towering mountains, its unbounded distance, and transparent atmosphere--figure forth the romantic beauty of youthful imaginings, when the mind elevates the Mean and Common into the Magnificent, before experience teaches what is the Real.\""
+    }
+  ],
+  "fixed": [
+    {
+      "fragmentainer": null,
+      "image": {
+        "text": "",
+        "page": 0,
+        "x": 96.0,
+        "y": 404.09375,
+        "width": 203.0,
+        "height": 152.25,
+        "source": 2
+      },
+      "overlappingTextLines": [],
+      "text": "YouthThe second painting, Youth, shows the same rich, green landscape, but here the view widens as does the voyager's experience. Now the youth grabs the tiller firmly as the angel watches and waves from the shore, allowing him to take control. The boy's enthusiasm and energy is evident in his forward-thrusting pose and billowing clothes. In the distance, a ghostly castle hovers in the sky, a white and shimmering beacon that represents the ambitions and dreams of man.To the youth, the calm river seems to lead straight to the castle, but at the far right of the painting one can just glimpse the river as it becomes rough, choppy, and full of rocks. Cole comments on the landscape and the youth's ambitions: \"The scenery of the picture--its clear stream, its lofty trees, its towering mountains, its unbounded distance, and transparent atmosphere--figure forth the romantic beauty of youthful imaginings, when the mind elevates the Mean and Common into the Magnificent, before experience teaches what is the Real.\""
+    },
+    {
+      "fragmentainer": 592,
+      "image": {
+        "text": "",
+        "page": 0,
+        "x": 96.0,
+        "y": 404.09375,
+        "width": 203.0,
+        "height": 152.25,
+        "source": 2
+      },
+      "overlappingTextLines": [],
+      "text": "YouthThe second painting, Youth, shows the same rich, green landscape, but here the view widens as does the voyager's experience. Now the youth grabs the tiller firmly as the angel watches and waves from the shore, allowing him to take control. The boy's enthusiasm and energy is evident in his forward-thrusting pose and billowing clothes. In the distance, a ghostly castle hovers in the sky, a white and shimmering beacon that represents the ambitions and dreams of man.To the youth, the calm river seems to lead straight to the castle, but at the far right of the painting one can just glimpse the river as it becomes rough, choppy, and full of rocks. Cole comments on the landscape and the youth's ambitions: \"The scenery of the picture--its clear stream, its lofty trees, its towering mountains, its unbounded distance, and transparent atmosphere--figure forth the romantic beauty of youthful imaginings, when the mind elevates the Mean and Common into the Magnificent, before experience teaches what is the Real.\""
+    }
+  ]
+}

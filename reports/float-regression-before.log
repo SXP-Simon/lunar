@@ -1,0 +1,33 @@
+   Compiling rito-block v0.0.0 (/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar/rito-rn/upstream/rito/crates/rito-block)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.82s
+     Running unittests src/lib.rs (/home/helian/.cache/lunar-rito-target/debug/deps/rito_block-483796396728c383)
+
+running 2 tests
+test tests::floats::full_width_float_clearance_does_not_repeat_on_the_next_page ... FAILED
+test tests::floats::full_width_float_delays_lines_without_moving_the_paragraph_box ... FAILED
+
+failures:
+
+---- tests::floats::full_width_float_clearance_does_not_repeat_on_the_next_page stdout ----
+
+thread 'tests::floats::full_width_float_clearance_does_not_repeat_on_the_next_page' (893) panicked at crates/rito-block/src/tests/floats.rs:74:5:
+assertion `left == right` failed
+  left: 1
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- tests::floats::full_width_float_delays_lines_without_moving_the_paragraph_box stdout ----
+
+thread 'tests::floats::full_width_float_delays_lines_without_moving_the_paragraph_box' (894) panicked at crates/rito-block/src/tests/floats.rs:61:13:
+assertion `left == right` failed: first line clears the float
+  left: 0.0
+ right: 40.0
+
+
+failures:
+    tests::floats::full_width_float_clearance_does_not_repeat_on_the_next_page
+    tests::floats::full_width_float_delays_lines_without_moving_the_paragraph_box
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 59 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p rito-block --lib`

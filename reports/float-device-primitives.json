@@ -1,0 +1,5826 @@
+[
+  {
+    "probeId": 1792940992653,
+    "width": 411,
+    "height": 914,
+    "pixelRatio": 1,
+    "ratio": 2.625
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 0,
+    "command": {
+      "kind": "fill-rect",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1078.875,
+        "height": 2399.25
+      },
+      "color": {
+        "space": "srgb",
+        "component0": 1,
+        "component1": 1,
+        "component2": 1,
+        "alpha": 1,
+        "none": {
+          "component0": false,
+          "component1": false,
+          "component2": false,
+          "alpha": false
+        }
+      },
+      "ground": "page"
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 1,
+    "command": {
+      "kind": "push-state"
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 2,
+    "command": {
+      "kind": "translate",
+      "dx": 0,
+      "dy": 0
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 3,
+    "command": {
+      "kind": "fill-rect",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1078.875,
+        "height": 2399.25
+      },
+      "color": {
+        "space": "srgb",
+        "component0": 1,
+        "component1": 1,
+        "component2": 0.9019607901573181,
+        "alpha": 1,
+        "none": {
+          "component0": false,
+          "component1": false,
+          "component2": false,
+          "alpha": false
+        }
+      },
+      "ground": "page"
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 4,
+    "command": {
+      "kind": "push-state"
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 5,
+    "command": {
+      "kind": "clip-path",
+      "path": [
+        {
+          "op": "rect",
+          "x": 63,
+          "y": 233.00000325,
+          "width": 1015.875,
+          "height": 1998.24999675
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 6,
+    "command": {
+      "kind": "text",
+      "text": "distance, ",
+      "rect": {
+        "x": 100,
+        "y": 95.657143,
+        "width": 103.435997,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 1,
+          "x": 112.44498825073242,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 2,
+          "x": 118.96198272705078,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 3,
+          "x": 130.17197036743164,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 4,
+          "x": 138.53196716308594,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 5,
+          "x": 150.97695541381836,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 6,
+          "x": 163.66895294189453,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 7,
+          "x": 175.25894165039062,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 8,
+          "x": 187.09593200683594,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 9,
+          "x": 195.26593017578125,
+          "y": 110.85714285714286
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 7,
+    "command": {
+      "kind": "text",
+      "text": "a ",
+      "rect": {
+        "x": 203.435997,
+        "y": 95.657143,
+        "width": 20.615,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 203.4359974861145,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 1,
+          "x": 215.88098573684692,
+          "y": 110.85714285714286
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 8,
+    "command": {
+      "kind": "text",
+      "text": "ghostly ",
+      "rect": {
+        "x": 224.050997,
+        "y": 95.657143,
+        "width": 82.714628,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 224.05099725723267,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 1,
+          "x": 236.5909867286682,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 2,
+          "x": 249.28298425674438,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 3,
+          "x": 261.4809784889221,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 4,
+          "x": 272.690966129303,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 5,
+          "x": 281.0509629249573,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 6,
+          "x": 287.56795740127563,
+          "y": 110.85714285714286
+        },
+        {
+          "byte": 7,
+          "x": 298.58795404434204,
+          "y": 110.85714285714286
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 9,
+    "command": {
+      "kind": "text",
+      "text": "castle ",
+      "rect": {
+        "x": 100,
+        "y": 126.895238,
+        "width": 70.128998,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 1,
+          "x": 111.58999252319336,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 2,
+          "x": 124.03498077392578,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 3,
+          "x": 135.24496841430664,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 4,
+          "x": 143.60496520996094,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 5,
+          "x": 150.1219596862793,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 6,
+          "x": 161.95894622802734,
+          "y": 142.0952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 10,
+    "command": {
+      "kind": "text",
+      "text": "hovers ",
+      "rect": {
+        "x": 170.128998,
+        "y": 126.895238,
+        "width": 76.626999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 170.12899827957153,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 1,
+          "x": 182.8209958076477,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 2,
+          "x": 195.01899003982544,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 3,
+          "x": 205.84898805618286,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 4,
+          "x": 217.6859745979309,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 5,
+          "x": 227.3759732246399,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 6,
+          "x": 238.58596086502075,
+          "y": 142.0952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 11,
+    "command": {
+      "kind": "text",
+      "text": "in ",
+      "rect": {
+        "x": 246.755997,
+        "y": 126.895238,
+        "width": 27.378999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 246.75599718093872,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 1,
+          "x": 253.27299118041992,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 2,
+          "x": 265.96498918533325,
+          "y": 142.0952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 12,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 274.134996,
+        "y": 126.895238,
+        "width": 41.068129,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 274.13499641418457,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 1,
+          "x": 282.49499320983887,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 2,
+          "x": 295.18699073791504,
+          "y": 142.0952380952381
+        },
+        {
+          "byte": 3,
+          "x": 307.0239772796631,
+          "y": 142.0952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 13,
+    "command": {
+      "kind": "text",
+      "text": "sky, ",
+      "rect": {
+        "x": 100,
+        "y": 157.752381,
+        "width": 49.779999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 111.20998764038086,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 122.41997528076172,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 133.4399757385254,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 4,
+          "x": 141.60997009277344,
+          "y": 172.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 14,
+    "command": {
+      "kind": "text",
+      "text": "a ",
+      "rect": {
+        "x": 149.779999,
+        "y": 157.752381,
+        "width": 20.615,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 149.77999877929688,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 162.2249870300293,
+          "y": 172.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 15,
+    "command": {
+      "kind": "text",
+      "text": "white ",
+      "rect": {
+        "x": 170.394999,
+        "y": 157.752381,
+        "width": 62.965998,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 170.39499855041504,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 185.7849941253662,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 198.47699165344238,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 204.99398612976074,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 4,
+          "x": 213.35398292541504,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 5,
+          "x": 225.1909694671631,
+          "y": 172.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 16,
+    "command": {
+      "kind": "text",
+      "text": "and ",
+      "rect": {
+        "x": 233.360997,
+        "y": 157.752381,
+        "width": 45.764003,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 233.36099672317505,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 245.80598497390747,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 258.49798250198364,
+          "y": 172.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 270.94297075271606,
+          "y": 172.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 17,
+    "command": {
+      "kind": "text",
+      "text": "shimmering ",
+      "rect": {
+        "x": 100,
+        "y": 189.752381,
+        "width": 125.912997,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 111.20998764038086,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 123.90198516845703,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 130.4189796447754,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 4,
+          "x": 147.44297790527344,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 5,
+          "x": 164.46697998046875,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 6,
+          "x": 176.30397033691406,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 7,
+          "x": 185.9939727783203,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 8,
+          "x": 192.5109634399414,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 9,
+          "x": 205.2029571533203,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 10,
+          "x": 217.74295043945312,
+          "y": 204.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 18,
+    "command": {
+      "kind": "text",
+      "text": "beacon ",
+      "rect": {
+        "x": 225.912997,
+        "y": 189.752381,
+        "width": 81.352628,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 225.91299724578857,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 238.31999111175537,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 250.15697765350342,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 262.60196590423584,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 4,
+          "x": 274.1919584274292,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 5,
+          "x": 286.38995265960693,
+          "y": 204.95238095238096
+        },
+        {
+          "byte": 6,
+          "x": 299.0819501876831,
+          "y": 204.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 19,
+    "command": {
+      "kind": "text",
+      "text": "that ",
+      "rect": {
+        "x": 100,
+        "y": 220.990476,
+        "width": 50.026999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 1,
+          "x": 108.3599967956543,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 2,
+          "x": 121.05199432373047,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 3,
+          "x": 133.4969825744629,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 4,
+          "x": 141.8569793701172,
+          "y": 236.1904761904762
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 20,
+    "command": {
+      "kind": "text",
+      "text": "represents ",
+      "rect": {
+        "x": 150.026999,
+        "y": 220.990476,
+        "width": 118.920999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 150.02699851989746,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 1,
+          "x": 159.71699714660645,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 2,
+          "x": 171.5539836883545,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 3,
+          "x": 183.94198036193848,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 4,
+          "x": 193.63197898864746,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 5,
+          "x": 205.4689655303955,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 6,
+          "x": 216.67895317077637,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 7,
+          "x": 228.51593589782715,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 8,
+          "x": 241.2079372406006,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 9,
+          "x": 249.56793785095215,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 10,
+          "x": 260.7779293060303,
+          "y": 236.1904761904762
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 21,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 268.947997,
+        "y": 220.990476,
+        "width": 41.067628,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 268.9479970932007,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 1,
+          "x": 277.307993888855,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 2,
+          "x": 289.99999141693115,
+          "y": 236.1904761904762
+        },
+        {
+          "byte": 3,
+          "x": 301.8369779586792,
+          "y": 236.1904761904762
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 22,
+    "command": {
+      "kind": "text",
+      "text": "ambitions ",
+      "rect": {
+        "x": 100,
+        "y": 251.847619,
+        "width": 107.539997,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 112.44498825073242,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 129.46898651123047,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 3,
+          "x": 141.87598037719727,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 4,
+          "x": 148.39297485351562,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 5,
+          "x": 156.75297164916992,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 6,
+          "x": 163.26996612548828,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 7,
+          "x": 175.46795654296875,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 8,
+          "x": 188.1599578857422,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 9,
+          "x": 199.3699493408203,
+          "y": 267.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 23,
+    "command": {
+      "kind": "text",
+      "text": "and ",
+      "rect": {
+        "x": 207.539997,
+        "y": 251.847619,
+        "width": 45.756878,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 207.53999710083008,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 219.9849853515625,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 232.67698287963867,
+          "y": 267.04761904761904
+        },
+        {
+          "byte": 3,
+          "x": 245.1219711303711,
+          "y": 267.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 24,
+    "command": {
+      "kind": "text",
+      "text": "dreams ",
+      "rect": {
+        "x": 100,
+        "y": 283.847619,
+        "width": 82.820999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 112.44498825073242,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 122.1349868774414,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 3,
+          "x": 133.97197341918945,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 4,
+          "x": 146.41696166992188,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 5,
+          "x": 163.44095993041992,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 6,
+          "x": 174.65094757080078,
+          "y": 299.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 25,
+    "command": {
+      "kind": "text",
+      "text": "of ",
+      "rect": {
+        "x": 182.820999,
+        "y": 283.847619,
+        "width": 28.917999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 182.8209991455078,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 195.01899337768555,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 203.5689926147461,
+          "y": 299.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 26,
+    "command": {
+      "kind": "text",
+      "text": "man.",
+      "rect": {
+        "x": 211.738998,
+        "y": 283.847619,
+        "width": 50.339127,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 211.73899841308594,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 228.76299667358398,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 241.2079849243164,
+          "y": 299.04761904761904
+        },
+        {
+          "byte": 3,
+          "x": 253.89998245239258,
+          "y": 299.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 27,
+    "command": {
+      "kind": "image-fallback",
+      "src": "../images/2-youth-320.jpg",
+      "state": "loading",
+      "block": {
+        "x": 362.25,
+        "y": 868.875,
+        "width": 454.125,
+        "height": 341.25
+      },
+      "blockInk": 0.06,
+      "iconInk": 0.4,
+      "pieces": [
+        {
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "path": [
+            {
+              "op": "move-to",
+              "x": 570.9375,
+              "y": 1016.203125
+            },
+            {
+              "op": "line-to",
+              "x": 607.6875,
+              "y": 1016.203125
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1023.75,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": -1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 615.234375,
+              "y": 1055.25
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1055.25,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": 0,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 570.9375,
+              "y": 1062.796875
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1055.25,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": 1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 563.390625,
+              "y": 1023.75
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1023.75,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": 3.141592653589793,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "close"
+            },
+            {
+              "op": "move-to",
+              "x": 570.9375,
+              "y": 1020.796875
+            },
+            {
+              "op": "line-to",
+              "x": 607.6875,
+              "y": 1020.796875
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1023.75,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": -1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 610.640625,
+              "y": 1055.25
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1055.25,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": 0,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 570.9375,
+              "y": 1058.203125
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1055.25,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": 1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 567.984375,
+              "y": 1023.75
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1023.75,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": 3.141592653589793,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "close"
+            },
+            {
+              "op": "ellipse",
+              "cx": 580.125,
+              "cy": 1031.625,
+              "rx": 4.59375,
+              "ry": 4.59375
+            },
+            {
+              "op": "move-to",
+              "x": 568.3125,
+              "y": 1055.7749999999999
+            },
+            {
+              "op": "line-to",
+              "x": 581.9625,
+              "y": 1041.075
+            },
+            {
+              "op": "line-to",
+              "x": 590.8874999999999,
+              "y": 1050
+            },
+            {
+              "op": "line-to",
+              "x": 598.5,
+              "y": 1042.3875
+            },
+            {
+              "op": "line-to",
+              "x": 610.3125,
+              "y": 1055.7749999999999
+            },
+            {
+              "op": "close"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 28,
+    "command": {
+      "kind": "image-fallback",
+      "src": "../images/2-youth-320.jpg",
+      "state": "broken",
+      "block": {
+        "x": 362.25,
+        "y": 868.875,
+        "width": 454.125,
+        "height": 341.25
+      },
+      "blockInk": 0.06,
+      "iconInk": 0.4,
+      "pieces": [
+        {
+          "offset": {
+            "x": -2.8875,
+            "y": -2.1
+          },
+          "clip": [
+            {
+              "op": "move-to",
+              "x": 555.1875,
+              "y": 1008
+            },
+            {
+              "op": "line-to",
+              "x": 591.4125,
+              "y": 1008
+            },
+            {
+              "op": "line-to",
+              "x": 589.0500000000001,
+              "y": 1014.825
+            },
+            {
+              "op": "line-to",
+              "x": 584.0625,
+              "y": 1029
+            },
+            {
+              "op": "line-to",
+              "x": 590.8874999999999,
+              "y": 1037.1375
+            },
+            {
+              "op": "line-to",
+              "x": 584.3249999999999,
+              "y": 1046.325
+            },
+            {
+              "op": "line-to",
+              "x": 589.8375,
+              "y": 1053.1499999999999
+            },
+            {
+              "op": "line-to",
+              "x": 585.6374999999999,
+              "y": 1064.7
+            },
+            {
+              "op": "line-to",
+              "x": 583.5375,
+              "y": 1071
+            },
+            {
+              "op": "line-to",
+              "x": 555.1875,
+              "y": 1071
+            },
+            {
+              "op": "close"
+            }
+          ],
+          "path": [
+            {
+              "op": "move-to",
+              "x": 570.9375,
+              "y": 1016.203125
+            },
+            {
+              "op": "line-to",
+              "x": 607.6875,
+              "y": 1016.203125
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1023.75,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": -1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 615.234375,
+              "y": 1055.25
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1055.25,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": 0,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 570.9375,
+              "y": 1062.796875
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1055.25,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": 1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 563.390625,
+              "y": 1023.75
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1023.75,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": 3.141592653589793,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "close"
+            },
+            {
+              "op": "move-to",
+              "x": 570.9375,
+              "y": 1020.796875
+            },
+            {
+              "op": "line-to",
+              "x": 607.6875,
+              "y": 1020.796875
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1023.75,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": -1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 610.640625,
+              "y": 1055.25
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1055.25,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": 0,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 570.9375,
+              "y": 1058.203125
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1055.25,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": 1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 567.984375,
+              "y": 1023.75
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1023.75,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": 3.141592653589793,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "close"
+            },
+            {
+              "op": "ellipse",
+              "cx": 580.125,
+              "cy": 1031.625,
+              "rx": 4.59375,
+              "ry": 4.59375
+            },
+            {
+              "op": "move-to",
+              "x": 568.3125,
+              "y": 1055.7749999999999
+            },
+            {
+              "op": "line-to",
+              "x": 581.9625,
+              "y": 1041.075
+            },
+            {
+              "op": "line-to",
+              "x": 590.8874999999999,
+              "y": 1050
+            },
+            {
+              "op": "line-to",
+              "x": 598.5,
+              "y": 1042.3875
+            },
+            {
+              "op": "line-to",
+              "x": 610.3125,
+              "y": 1055.7749999999999
+            },
+            {
+              "op": "close"
+            }
+          ]
+        },
+        {
+          "offset": {
+            "x": 2.8875,
+            "y": 2.1
+          },
+          "clip": [
+            {
+              "op": "move-to",
+              "x": 623.4375,
+              "y": 1008
+            },
+            {
+              "op": "line-to",
+              "x": 595.0875,
+              "y": 1008
+            },
+            {
+              "op": "line-to",
+              "x": 592.725,
+              "y": 1014.825
+            },
+            {
+              "op": "line-to",
+              "x": 587.7375000000001,
+              "y": 1029
+            },
+            {
+              "op": "line-to",
+              "x": 594.5625,
+              "y": 1037.1375
+            },
+            {
+              "op": "line-to",
+              "x": 588,
+              "y": 1046.325
+            },
+            {
+              "op": "line-to",
+              "x": 593.5124999999999,
+              "y": 1053.1499999999999
+            },
+            {
+              "op": "line-to",
+              "x": 589.3125,
+              "y": 1064.7
+            },
+            {
+              "op": "line-to",
+              "x": 587.2125,
+              "y": 1071
+            },
+            {
+              "op": "line-to",
+              "x": 623.4375,
+              "y": 1071
+            },
+            {
+              "op": "close"
+            }
+          ],
+          "path": [
+            {
+              "op": "move-to",
+              "x": 570.9375,
+              "y": 1016.203125
+            },
+            {
+              "op": "line-to",
+              "x": 607.6875,
+              "y": 1016.203125
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1023.75,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": -1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 615.234375,
+              "y": 1055.25
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1055.25,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": 0,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 570.9375,
+              "y": 1062.796875
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1055.25,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": 1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 563.390625,
+              "y": 1023.75
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1023.75,
+              "rx": 7.546875,
+              "ry": 7.546875,
+              "start": 3.141592653589793,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "close"
+            },
+            {
+              "op": "move-to",
+              "x": 570.9375,
+              "y": 1020.796875
+            },
+            {
+              "op": "line-to",
+              "x": 607.6875,
+              "y": 1020.796875
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1023.75,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": -1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 610.640625,
+              "y": 1055.25
+            },
+            {
+              "op": "arc",
+              "cx": 607.6875,
+              "cy": 1055.25,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": 0,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 570.9375,
+              "y": 1058.203125
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1055.25,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": 1.5707963267948966,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "line-to",
+              "x": 567.984375,
+              "y": 1023.75
+            },
+            {
+              "op": "arc",
+              "cx": 570.9375,
+              "cy": 1023.75,
+              "rx": 2.953125,
+              "ry": 2.953125,
+              "start": 3.141592653589793,
+              "sweep": 1.5707963267948966
+            },
+            {
+              "op": "close"
+            },
+            {
+              "op": "ellipse",
+              "cx": 580.125,
+              "cy": 1031.625,
+              "rx": 4.59375,
+              "ry": 4.59375
+            },
+            {
+              "op": "move-to",
+              "x": 568.3125,
+              "y": 1055.7749999999999
+            },
+            {
+              "op": "line-to",
+              "x": 581.9625,
+              "y": 1041.075
+            },
+            {
+              "op": "line-to",
+              "x": 590.8874999999999,
+              "y": 1050
+            },
+            {
+              "op": "line-to",
+              "x": 598.5,
+              "y": 1042.3875
+            },
+            {
+              "op": "line-to",
+              "x": 610.3125,
+              "y": 1055.7749999999999
+            },
+            {
+              "op": "close"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 29,
+    "command": {
+      "kind": "draw-image",
+      "src": "../images/2-youth-320.jpg",
+      "dest": {
+        "x": 362.25,
+        "y": 868.875,
+        "width": 454.125,
+        "height": 341.25
+      }
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 30,
+    "command": {
+      "kind": "text",
+      "text": "To ",
+      "rect": {
+        "x": 100,
+        "y": 333.752381,
+        "width": 32.851,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 112.48299789428711,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 124.68099212646484,
+          "y": 348.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 31,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 132.851,
+        "y": 333.752381,
+        "width": 41.058999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 132.85099983215332,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 141.21099662780762,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 153.9029941558838,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 165.73998069763184,
+          "y": 348.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 32,
+    "command": {
+      "kind": "text",
+      "text": "youth, ",
+      "rect": {
+        "x": 173.909999,
+        "y": 333.752381,
+        "width": 73.339999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 173.9099988937378,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 184.92999935150146,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 197.1279935836792,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 209.857985496521,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 4,
+          "x": 218.2179822921753,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 5,
+          "x": 230.90997982025146,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 6,
+          "x": 239.0799741744995,
+          "y": 348.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 33,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 247.249998,
+        "y": 333.752381,
+        "width": 41.062502,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 247.24999809265137,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 255.60999488830566,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 268.30199241638184,
+          "y": 348.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 280.1389789581299,
+          "y": 348.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 34,
+    "command": {
+      "kind": "text",
+      "text": "calm ",
+      "rect": {
+        "x": 100,
+        "y": 365.752381,
+        "width": 55.746,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 111.58999252319336,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 124.03498077392578,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 130.55197525024414,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 4,
+          "x": 147.5759735107422,
+          "y": 380.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 35,
+    "command": {
+      "kind": "text",
+      "text": "river ",
+      "rect": {
+        "x": 155.746,
+        "y": 365.752381,
+        "width": 56.734001,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 155.74599981307983,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 165.43599843978882,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 171.95299291610718,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 182.7829909324646,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 4,
+          "x": 194.61997747421265,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 5,
+          "x": 204.30997610092163,
+          "y": 380.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 36,
+    "command": {
+      "kind": "text",
+      "text": "seems ",
+      "rect": {
+        "x": 212.48,
+        "y": 365.752381,
+        "width": 71.287998,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 212.48000049591064,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 223.6899881362915,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 235.52697467803955,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 3,
+          "x": 247.3639612197876,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 4,
+          "x": 264.38795948028564,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 5,
+          "x": 275.5979471206665,
+          "y": 380.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 37,
+    "command": {
+      "kind": "text",
+      "text": "to ",
+      "rect": {
+        "x": 283.767999,
+        "y": 365.752381,
+        "width": 28.732001,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 283.76799869537354,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 1,
+          "x": 292.12799549102783,
+          "y": 380.95238095238096
+        },
+        {
+          "byte": 2,
+          "x": 304.32598972320557,
+          "y": 380.95238095238096
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 38,
+    "command": {
+      "kind": "text",
+      "text": "lead ",
+      "rect": {
+        "x": 100,
+        "y": 396.990476,
+        "width": 51.413999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 1,
+          "x": 106.5169939994812,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 2,
+          "x": 118.3539810180664,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 3,
+          "x": 130.79896926879883,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 4,
+          "x": 143.24395751953125,
+          "y": 412.1904761904762
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 39,
+    "command": {
+      "kind": "text",
+      "text": "straight ",
+      "rect": {
+        "x": 151.413999,
+        "y": 396.990476,
+        "width": 89.983997,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 151.41399908065796,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 1,
+          "x": 162.62398672103882,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 2,
+          "x": 170.98398351669312,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 3,
+          "x": 180.6739821434021,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 4,
+          "x": 193.11897039413452,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 5,
+          "x": 199.63596487045288,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 6,
+          "x": 212.17595434188843,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 7,
+          "x": 224.86794805526733,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 8,
+          "x": 233.2279486656189,
+          "y": 412.1904761904762
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 40,
+    "command": {
+      "kind": "text",
+      "text": "to ",
+      "rect": {
+        "x": 241.397996,
+        "y": 396.990476,
+        "width": 28.728,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 241.3979959487915,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 1,
+          "x": 249.7579927444458,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 2,
+          "x": 261.95598697662354,
+          "y": 412.1904761904762
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 41,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 270.125996,
+        "y": 396.990476,
+        "width": 41.061504,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 270.1259956359863,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 1,
+          "x": 278.4859924316406,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 2,
+          "x": 291.1779899597168,
+          "y": 412.1904761904762
+        },
+        {
+          "byte": 3,
+          "x": 303.01497650146484,
+          "y": 412.1904761904762
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 42,
+    "command": {
+      "kind": "text",
+      "text": "castle, ",
+      "rect": {
+        "x": 100,
+        "y": 427.847619,
+        "width": 78.298998,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 111.58999252319336,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 124.03498077392578,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 3,
+          "x": 135.24496841430664,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 4,
+          "x": 143.60496520996094,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 5,
+          "x": 150.1219596862793,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 6,
+          "x": 161.95894622802734,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 7,
+          "x": 170.12893676757812,
+          "y": 443.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 43,
+    "command": {
+      "kind": "text",
+      "text": "but ",
+      "rect": {
+        "x": 178.298998,
+        "y": 427.847619,
+        "width": 41.666999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 178.29899835586548,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 190.70599222183228,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 203.43598413467407,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 3,
+          "x": 211.79598093032837,
+          "y": 443.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 44,
+    "command": {
+      "kind": "text",
+      "text": "at ",
+      "rect": {
+        "x": 219.965997,
+        "y": 427.847619,
+        "width": 28.974999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 219.9659972190857,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 232.41098546981812,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 240.7709822654724,
+          "y": 443.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 45,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 248.940997,
+        "y": 427.847619,
+        "width": 41.059003,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 248.9409966468811,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 257.3009934425354,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 269.9929909706116,
+          "y": 443.04761904761904
+        },
+        {
+          "byte": 3,
+          "x": 281.8299775123596,
+          "y": 443.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 46,
+    "command": {
+      "kind": "text",
+      "text": "far ",
+      "rect": {
+        "x": 100,
+        "y": 459.847619,
+        "width": 38.855,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 108.54999923706055,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 120.99498748779297,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 3,
+          "x": 130.68498611450195,
+          "y": 475.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 47,
+    "command": {
+      "kind": "text",
+      "text": "right ",
+      "rect": {
+        "x": 138.855,
+        "y": 459.847619,
+        "width": 57.968998,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 138.85499954223633,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 148.5449981689453,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 155.06199264526367,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 3,
+          "x": 167.60198211669922,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 4,
+          "x": 180.2939796447754,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 5,
+          "x": 188.6539764404297,
+          "y": 475.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 48,
+    "command": {
+      "kind": "text",
+      "text": "of ",
+      "rect": {
+        "x": 196.823998,
+        "y": 459.847619,
+        "width": 28.917999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 196.82399797439575,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 209.0219922065735,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 217.57199144363403,
+          "y": 475.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 49,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 225.741997,
+        "y": 459.847619,
+        "width": 41.070503,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 225.74199724197388,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 1,
+          "x": 234.10199403762817,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 2,
+          "x": 246.79399156570435,
+          "y": 475.04761904761904
+        },
+        {
+          "byte": 3,
+          "x": 258.6309781074524,
+          "y": 475.04761904761904
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 50,
+    "command": {
+      "kind": "text",
+      "text": "painting ",
+      "rect": {
+        "x": 100,
+        "y": 490.704762,
+        "width": 92.320997,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 1,
+          "x": 112.38799667358398,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 2,
+          "x": 124.8329849243164,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 3,
+          "x": 131.34997940063477,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 4,
+          "x": 144.04197692871094,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 5,
+          "x": 152.40197372436523,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 6,
+          "x": 158.9189682006836,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 7,
+          "x": 171.6109619140625,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 8,
+          "x": 184.1509552001953,
+          "y": 505.9047619047619
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 51,
+    "command": {
+      "kind": "text",
+      "text": "one ",
+      "rect": {
+        "x": 192.320997,
+        "y": 490.704762,
+        "width": 44.896999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 192.32099723815918,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 1,
+          "x": 204.5189914703369,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 2,
+          "x": 217.2109889984131,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 3,
+          "x": 229.04797554016113,
+          "y": 505.9047619047619
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 52,
+    "command": {
+      "kind": "text",
+      "text": "can ",
+      "rect": {
+        "x": 237.217997,
+        "y": 490.704762,
+        "width": 44.907003,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 237.21799659729004,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 1,
+          "x": 248.8079891204834,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 2,
+          "x": 261.2529773712158,
+          "y": 505.9047619047619
+        },
+        {
+          "byte": 3,
+          "x": 273.944974899292,
+          "y": 505.9047619047619
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 53,
+    "command": {
+      "kind": "text",
+      "text": "just ",
+      "rect": {
+        "x": 100,
+        "y": 521.942857,
+        "width": 47.708998,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 1,
+          "x": 107.23899412155151,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 2,
+          "x": 119.96898651123047,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 3,
+          "x": 131.17897415161133,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 4,
+          "x": 139.53897094726562,
+          "y": 537.1428571428571
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 54,
+    "command": {
+      "kind": "text",
+      "text": "glimpse ",
+      "rect": {
+        "x": 147.708998,
+        "y": 521.942857,
+        "width": 86.202998,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 147.7089982032776,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 1,
+          "x": 160.24898767471313,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 2,
+          "x": 166.7659821510315,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 3,
+          "x": 173.28297662734985,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 4,
+          "x": 190.3069748878479,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 5,
+          "x": 202.69497156143188,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 6,
+          "x": 213.90495920181274,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 7,
+          "x": 225.74194192886353,
+          "y": 537.1428571428571
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 55,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 233.911996,
+        "y": 521.942857,
+        "width": 41.072379,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 233.9119963645935,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 1,
+          "x": 242.2719931602478,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 2,
+          "x": 254.96399068832397,
+          "y": 537.1428571428571
+        },
+        {
+          "byte": 3,
+          "x": 266.800977230072,
+          "y": 537.1428571428571
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 56,
+    "command": {
+      "kind": "text",
+      "text": "river ",
+      "rect": {
+        "x": 100,
+        "y": 553.942857,
+        "width": 56.734001,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 1,
+          "x": 109.68999862670898,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 2,
+          "x": 116.20699310302734,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 3,
+          "x": 127.03699111938477,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 4,
+          "x": 138.8739776611328,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 5,
+          "x": 148.5639762878418,
+          "y": 569.1428571428571
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 57,
+    "command": {
+      "kind": "text",
+      "text": "as ",
+      "rect": {
+        "x": 156.734001,
+        "y": 553.942857,
+        "width": 31.824999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 156.7340006828308,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 1,
+          "x": 169.17898893356323,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 2,
+          "x": 180.3889765739441,
+          "y": 569.1428571428571
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 58,
+    "command": {
+      "kind": "text",
+      "text": "it ",
+      "rect": {
+        "x": 188.559,
+        "y": 553.942857,
+        "width": 23.046999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 188.55899953842163,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 1,
+          "x": 195.07599353790283,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 2,
+          "x": 203.4359908103943,
+          "y": 569.1428571428571
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 59,
+    "command": {
+      "kind": "text",
+      "text": "becomes ",
+      "rect": {
+        "x": 211.605999,
+        "y": 553.942857,
+        "width": 96.284626,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 211.60599899291992,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 1,
+          "x": 224.01299285888672,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 2,
+          "x": 235.84997940063477,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 3,
+          "x": 247.43997192382812,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 4,
+          "x": 259.63796615600586,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 5,
+          "x": 276.6619682312012,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 6,
+          "x": 288.4989585876465,
+          "y": 569.1428571428571
+        },
+        {
+          "byte": 7,
+          "x": 299.7089500427246,
+          "y": 569.1428571428571
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 60,
+    "command": {
+      "kind": "text",
+      "text": "rough, ",
+      "rect": {
+        "x": 100,
+        "y": 584.8,
+        "width": 76.189999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 600
+        },
+        {
+          "byte": 1,
+          "x": 109.68999862670898,
+          "y": 600
+        },
+        {
+          "byte": 2,
+          "x": 121.88799285888672,
+          "y": 600
+        },
+        {
+          "byte": 3,
+          "x": 134.61798477172852,
+          "y": 600
+        },
+        {
+          "byte": 4,
+          "x": 147.15797424316406,
+          "y": 600
+        },
+        {
+          "byte": 5,
+          "x": 159.84997177124023,
+          "y": 600
+        },
+        {
+          "byte": 6,
+          "x": 168.01996612548828,
+          "y": 600
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 61,
+    "command": {
+      "kind": "text",
+      "text": "choppy, ",
+      "rect": {
+        "x": 176.189999,
+        "y": 584.8,
+        "width": 88.616001,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 176.18999862670898,
+          "y": 600
+        },
+        {
+          "byte": 1,
+          "x": 187.77999114990234,
+          "y": 600
+        },
+        {
+          "byte": 2,
+          "x": 200.47198867797852,
+          "y": 600
+        },
+        {
+          "byte": 3,
+          "x": 212.66998291015625,
+          "y": 600
+        },
+        {
+          "byte": 4,
+          "x": 225.05797958374023,
+          "y": 600
+        },
+        {
+          "byte": 5,
+          "x": 237.44597625732422,
+          "y": 600
+        },
+        {
+          "byte": 6,
+          "x": 248.4659767150879,
+          "y": 600
+        },
+        {
+          "byte": 7,
+          "x": 256.6359672546387,
+          "y": 600
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 62,
+    "command": {
+      "kind": "text",
+      "text": "and ",
+      "rect": {
+        "x": 264.806,
+        "y": 584.8,
+        "width": 45.7565,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 264.8059997558594,
+          "y": 600
+        },
+        {
+          "byte": 1,
+          "x": 277.2509880065918,
+          "y": 600
+        },
+        {
+          "byte": 2,
+          "x": 289.94298553466797,
+          "y": 600
+        },
+        {
+          "byte": 3,
+          "x": 302.3879737854004,
+          "y": 600
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 63,
+    "command": {
+      "kind": "text",
+      "text": "full ",
+      "rect": {
+        "x": 100,
+        "y": 615.657143,
+        "width": 42.483998,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 1,
+          "x": 108.54999923706055,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 2,
+          "x": 121.27999114990234,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 3,
+          "x": 127.7969856262207,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 4,
+          "x": 134.31398010253906,
+          "y": 630.8571428571429
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 64,
+    "command": {
+      "kind": "text",
+      "text": "of ",
+      "rect": {
+        "x": 142.483998,
+        "y": 615.657143,
+        "width": 28.917999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 142.48399829864502,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 1,
+          "x": 154.68199253082275,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 2,
+          "x": 163.2319917678833,
+          "y": 630.8571428571429
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 65,
+    "command": {
+      "kind": "text",
+      "text": "rocks. ",
+      "rect": {
+        "x": 171.401998,
+        "y": 615.657143,
+        "width": 72.237999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 171.40199756622314,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 1,
+          "x": 181.09199619293213,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 2,
+          "x": 193.28999042510986,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 3,
+          "x": 204.87998294830322,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 4,
+          "x": 216.08997058868408,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 5,
+          "x": 227.29995822906494,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 6,
+          "x": 235.469952583313,
+          "y": 630.8571428571429
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 66,
+    "command": {
+      "kind": "text",
+      "text": "Cole ",
+      "rect": {
+        "x": 243.639997,
+        "y": 615.657143,
+        "width": 53.610003,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 243.6399965286255,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 1,
+          "x": 258.5169916152954,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 2,
+          "x": 270.71498584747314,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 3,
+          "x": 277.2319803237915,
+          "y": 630.8571428571429
+        },
+        {
+          "byte": 4,
+          "x": 289.06896686553955,
+          "y": 630.8571428571429
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 67,
+    "command": {
+      "kind": "text",
+      "text": "comments ",
+      "rect": {
+        "x": 100,
+        "y": 647.657143,
+        "width": 110.104999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 1,
+          "x": 111.58999252319336,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 2,
+          "x": 123.7879867553711,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 3,
+          "x": 140.81198501586914,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 4,
+          "x": 157.8359832763672,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 5,
+          "x": 169.6729736328125,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 6,
+          "x": 182.36497497558594,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 7,
+          "x": 190.7249755859375,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 8,
+          "x": 201.93496704101562,
+          "y": 662.8571428571429
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 68,
+    "command": {
+      "kind": "text",
+      "text": "on ",
+      "rect": {
+        "x": 210.104999,
+        "y": 647.657143,
+        "width": 33.059999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 210.104998588562,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 1,
+          "x": 222.30299282073975,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 2,
+          "x": 234.99499034881592,
+          "y": 662.8571428571429
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 69,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 243.164998,
+        "y": 647.657143,
+        "width": 41.069377,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 243.1649980545044,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 1,
+          "x": 251.5249948501587,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 2,
+          "x": 264.21699237823486,
+          "y": 662.8571428571429
+        },
+        {
+          "byte": 3,
+          "x": 276.0539789199829,
+          "y": 662.8571428571429
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 70,
+    "command": {
+      "kind": "text",
+      "text": "landscape ",
+      "rect": {
+        "x": 100,
+        "y": 678.895238,
+        "width": 111.738998,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 1,
+          "x": 106.5169939994812,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 2,
+          "x": 118.96198272705078,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 3,
+          "x": 131.65398025512695,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 4,
+          "x": 144.09896850585938,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 5,
+          "x": 155.30895614624023,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 6,
+          "x": 166.8989486694336,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 7,
+          "x": 179.34393310546875,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 8,
+          "x": 191.73193359375,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 9,
+          "x": 203.5689239501953,
+          "y": 694.0952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 71,
+    "command": {
+      "kind": "text",
+      "text": "and ",
+      "rect": {
+        "x": 211.738998,
+        "y": 678.895238,
+        "width": 45.751999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 211.73899793624878,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 1,
+          "x": 224.1839861869812,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 2,
+          "x": 236.87598371505737,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 3,
+          "x": 249.3209719657898,
+          "y": 694.0952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 72,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 257.490997,
+        "y": 678.895238,
+        "width": 41.071503,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 257.49099683761597,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 1,
+          "x": 265.85099363327026,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 2,
+          "x": 278.54299116134644,
+          "y": 694.0952380952381
+        },
+        {
+          "byte": 3,
+          "x": 290.3799777030945,
+          "y": 694.0952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 73,
+    "command": {
+      "kind": "text",
+      "text": "youth's ",
+      "rect": {
+        "x": 100,
+        "y": 709.752381,
+        "width": 84.549998,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 1,
+          "x": 111.02000045776367,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 2,
+          "x": 123.2179946899414,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 3,
+          "x": 135.9479866027832,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 4,
+          "x": 144.3079833984375,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 5,
+          "x": 156.99998092651367,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 6,
+          "x": 165.16997528076172,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 7,
+          "x": 176.3799591064453,
+          "y": 724.952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 74,
+    "command": {
+      "kind": "text",
+      "text": "ambitions: ",
+      "rect": {
+        "x": 184.549998,
+        "y": 709.752381,
+        "width": 115.715627,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 184.54999828338623,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 1,
+          "x": 196.99498653411865,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 2,
+          "x": 214.0189847946167,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 3,
+          "x": 226.4259786605835,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 4,
+          "x": 232.94297313690186,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 5,
+          "x": 241.30296993255615,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 6,
+          "x": 247.8199644088745,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 7,
+          "x": 260.017954826355,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 8,
+          "x": 272.7099561691284,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 9,
+          "x": 283.91994762420654,
+          "y": 724.952380952381
+        },
+        {
+          "byte": 10,
+          "x": 292.08994579315186,
+          "y": 724.952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 75,
+    "command": {
+      "kind": "text",
+      "text": "\"The ",
+      "rect": {
+        "x": 100,
+        "y": 741.752381,
+        "width": 53.351999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 1,
+          "x": 108.16999435424805,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 2,
+          "x": 120.65299224853516,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 3,
+          "x": 133.34498977661133,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 4,
+          "x": 145.18197631835938,
+          "y": 756.952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 76,
+    "command": {
+      "kind": "text",
+      "text": "scenery ",
+      "rect": {
+        "x": 153.351999,
+        "y": 741.752381,
+        "width": 88.046,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 153.3519992828369,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 1,
+          "x": 164.56198692321777,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 2,
+          "x": 176.15197944641113,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 3,
+          "x": 187.98896598815918,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 4,
+          "x": 200.68096351623535,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 5,
+          "x": 212.5179500579834,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 6,
+          "x": 222.20794868469238,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 7,
+          "x": 233.2279453277588,
+          "y": 756.952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 77,
+    "command": {
+      "kind": "text",
+      "text": "of ",
+      "rect": {
+        "x": 241.397999,
+        "y": 741.752381,
+        "width": 28.917999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 241.39799880981445,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 1,
+          "x": 253.5959930419922,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 2,
+          "x": 262.14599227905273,
+          "y": 756.952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 78,
+    "command": {
+      "kind": "text",
+      "text": "the ",
+      "rect": {
+        "x": 270.315998,
+        "y": 741.752381,
+        "width": 41.059002,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 270.3159980773926,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 1,
+          "x": 278.6759948730469,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 2,
+          "x": 291.36799240112305,
+          "y": 756.952380952381
+        },
+        {
+          "byte": 3,
+          "x": 303.2049789428711,
+          "y": 756.952380952381
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 79,
+    "command": {
+      "kind": "text",
+      "text": "picture--its ",
+      "rect": {
+        "x": 100,
+        "y": 772.990476,
+        "width": 123.708999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 1,
+          "x": 112.38799667358398,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 2,
+          "x": 118.90499114990234,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 3,
+          "x": 130.4949836730957,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 4,
+          "x": 138.85498046875,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 5,
+          "x": 151.5849723815918,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 6,
+          "x": 161.27497100830078,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 7,
+          "x": 173.11195373535156,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 8,
+          "x": 181.28195190429688,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 9,
+          "x": 189.4519500732422,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 10,
+          "x": 195.96894073486328,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 11,
+          "x": 204.3289337158203,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 12,
+          "x": 215.53892517089844,
+          "y": 788.1904761904761
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 80,
+    "command": {
+      "kind": "text",
+      "text": "clear ",
+      "rect": {
+        "x": 223.708999,
+        "y": 772.990476,
+        "width": 60.259751,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 223.70899868011475,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 1,
+          "x": 235.2989912033081,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 2,
+          "x": 241.81598567962646,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 3,
+          "x": 253.6529722213745,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 4,
+          "x": 266.09796047210693,
+          "y": 788.1904761904761
+        },
+        {
+          "byte": 5,
+          "x": 275.7879590988159,
+          "y": 788.1904761904761
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 81,
+    "command": {
+      "kind": "text",
+      "text": "stream, ",
+      "rect": {
+        "x": 100,
+        "y": 803.847619,
+        "width": 86.905999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 100,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 1,
+          "x": 111.20998764038086,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 2,
+          "x": 119.56998443603516,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 3,
+          "x": 129.25998306274414,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 4,
+          "x": 141.0969696044922,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 5,
+          "x": 153.5419578552246,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 6,
+          "x": 170.56595611572266,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 7,
+          "x": 178.73594665527344,
+          "y": 819.047619047619
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 82,
+    "command": {
+      "kind": "text",
+      "text": "its ",
+      "rect": {
+        "x": 186.905999,
+        "y": 803.847619,
+        "width": 34.256999,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 186.90599918365479,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 1,
+          "x": 193.422993183136,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 2,
+          "x": 201.78299045562744,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 3,
+          "x": 212.9929780960083,
+          "y": 819.047619047619
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 83,
+    "command": {
+      "kind": "text",
+      "text": "lofty ",
+      "rect": {
+        "x": 221.162998,
+        "y": 803.847619,
+        "width": 54.821377,
+        "height": 19
+      },
+      "paint": {
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 19,
+          "weight": 400,
+          "style": "normal"
+        },
+        "color": {
+          "space": "srgb",
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "alpha": 1,
+          "none": {
+            "component0": false,
+            "component1": false,
+            "component2": false,
+            "alpha": false
+          }
+        },
+        "textShadows": []
+      },
+      "lineHeightPx": 31.34375,
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 221.16299772262573,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 1,
+          "x": 227.67999172210693,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 2,
+          "x": 239.87798643112183,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 3,
+          "x": 248.42798566818237,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 4,
+          "x": 256.78798246383667,
+          "y": 819.047619047619
+        },
+        {
+          "byte": 5,
+          "x": 267.80798292160034,
+          "y": 819.047619047619
+        }
+      ]
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 84,
+    "command": {
+      "kind": "pop-state"
+    }
+  },
+  {
+    "probeId": 1792940992653,
+    "index": 85,
+    "command": {
+      "kind": "pop-state"
+    }
+  }
+]

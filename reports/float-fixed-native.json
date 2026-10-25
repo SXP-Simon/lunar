@@ -1,0 +1,774 @@
+{
+  "sourceCommit": "3f67bc1800c67effbc3bd8edcbc7323af530d22b",
+  "probeSha256": "87d9781e651fdff89c214c36ba91183d2f5b634b10e5ee877250382cb86701f1",
+  "sampleSha256": "e38ed606ff604e638f737efaf66e0fd0b2997c3eab7432bcba9a00a81a925cf3",
+  "results": [
+    {
+      "request": {
+        "epubPath": "/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar-epub-evidence/samples/cole-voyage-of-life.epub",
+        "fontPaths": [
+          "/home/helian/.cache/lunar-rito-float-3f67bc1/apps/reader/src/assets/fonts/Tinos-Regular.ttf"
+        ],
+        "contentWidthPx": 363,
+        "chapterIdrefs": [
+          "s2a"
+        ]
+      },
+      "exitCode": 0,
+      "stderr": "",
+      "output": {
+        "chapters": [
+          {
+            "idref": "s2a",
+            "lines": [
+              {
+                "text": "Youth",
+                "page": 0,
+                "x": 64.0,
+                "y": 32.0,
+                "width": 76.79765319824219,
+                "height": 27.0,
+                "source": 0
+              },
+              {
+                "text": "The second painting, Youth, ",
+                "page": 0,
+                "x": 64.0,
+                "y": 78.90625,
+                "width": 214.10685634613037,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "shows the same rich, green ",
+                "page": 0,
+                "x": 64.0,
+                "y": 96.90625,
+                "width": 206.1159200668335,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "landscape, but here the view ",
+                "page": 0,
+                "x": 64.0,
+                "y": 114.90625,
+                "width": 217.54310512542725,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "widens as does the voyager's ",
+                "page": 0,
+                "x": 64.0,
+                "y": 132.90625,
+                "width": 220.01185512542725,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "experience. Now the youth ",
+                "page": 0,
+                "x": 64.0,
+                "y": 150.90625,
+                "width": 204.38279628753662,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "grabs the tiller firmly as the ",
+                "page": 0,
+                "x": 64.0,
+                "y": 168.90625,
+                "width": 215.681227684021,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "angel watches and waves from ",
+                "page": 0,
+                "x": 64.0,
+                "y": 186.90625,
+                "width": 232.20716762542725,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "the shore, allowing him to ",
+                "page": 0,
+                "x": 64.0,
+                "y": 204.90625,
+                "width": 200.8112325668335,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "take control. The boy's ",
+                "page": 0,
+                "x": 64.0,
+                "y": 222.90625,
+                "width": 175.10404872894287,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "enthusiasm and energy is ",
+                "page": 0,
+                "x": 64.0,
+                "y": 240.90625,
+                "width": 191.72779750823975,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "evident in his forward-",
+                "page": 0,
+                "x": 64.0,
+                "y": 258.90625,
+                "width": 175.6196746826172,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "thrusting pose and billowing ",
+                "page": 0,
+                "x": 64.0,
+                "y": 276.90625,
+                "width": 218.49623012542725,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "clothes. In the distance, a ",
+                "page": 0,
+                "x": 64.0,
+                "y": 294.90625,
+                "width": 196.27873134613037,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "ghostly castle hovers in the ",
+                "page": 0,
+                "x": 64.0,
+                "y": 312.90625,
+                "width": 210.02748012542725,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "sky, a white and shimmering ",
+                "page": 0,
+                "x": 64.0,
+                "y": 330.90625,
+                "width": 217.93498134613037,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "beacon that represents the ",
+                "page": 0,
+                "x": 64.0,
+                "y": 348.90625,
+                "width": 198.9831075668335,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "ambitions and dreams of man.",
+                "page": 0,
+                "x": 64.0,
+                "y": 366.90625,
+                "width": 229.12904357910156,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 96.0,
+                "y": 404.09375,
+                "width": 203.0,
+                "height": 152.25,
+                "source": 2
+              },
+              {
+                "text": "To the youth, the calm river ",
+                "page": 0,
+                "x": 64.0,
+                "y": 570.734375,
+                "width": 213.33216762542725,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "seems to lead straight to the ",
+                "page": 0,
+                "x": 64.0,
+                "y": 588.734375,
+                "width": 215.29966640472412,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "castle, but at the far right of ",
+                "page": 0,
+                "x": 64.0,
+                "y": 606.734375,
+                "width": 216.94560146331787,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "the painting one can just ",
+                "page": 0,
+                "x": 64.0,
+                "y": 624.734375,
+                "width": 188.40623378753662,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "glimpse the river as it ",
+                "page": 0,
+                "x": 64.0,
+                "y": 642.734375,
+                "width": 168.07279872894287,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "becomes rough, choppy, and ",
+                "page": 0,
+                "x": 64.0,
+                "y": 660.734375,
+                "width": 215.7487325668335,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "full of rocks. Cole comments ",
+                "page": 0,
+                "x": 64.0,
+                "y": 678.734375,
+                "width": 222.02748012542725,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "on the landscape and the ",
+                "page": 0,
+                "x": 64.0,
+                "y": 696.734375,
+                "width": 187.99342250823975,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "youth's ambitions: \"The ",
+                "page": 0,
+                "x": 64.0,
+                "y": 714.734375,
+                "width": 181.95561122894287,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "scenery of the picture--its ",
+                "page": 0,
+                "x": 64.0,
+                "y": 732.734375,
+                "width": 198.48966884613037,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "clear stream, its lofty trees, ",
+                "page": 0,
+                "x": 64.0,
+                "y": 750.734375,
+                "width": 211.665602684021,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "its towering mountains, its ",
+                "page": 0,
+                "x": 64.0,
+                "y": 768.734375,
+                "width": 204.33341884613037,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "unbounded distance, and ",
+                "page": 0,
+                "x": 64.0,
+                "y": 786.734375,
+                "width": 188.06498622894287,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "transparent atmosphere--",
+                "page": 0,
+                "x": 64.0,
+                "y": 804.734375,
+                "width": 190.20436096191406,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "figure forth the romantic ",
+                "page": 0,
+                "x": 64.0,
+                "y": 822.734375,
+                "width": 189.71873378753662,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "beauty of youthful ",
+                "page": 0,
+                "x": 64.0,
+                "y": 840.734375,
+                "width": 141.2353048324585,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "imaginings, when the mind ",
+                "page": 0,
+                "x": 64.0,
+                "y": 858.734375,
+                "width": 206.20310878753662,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "elevates the Mean and ",
+                "page": 0,
+                "x": 64.0,
+                "y": 876.734375,
+                "width": 169.48155117034912,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "Common into the Magnificent, ",
+                "page": 0,
+                "x": 64.0,
+                "y": 894.734375,
+                "width": 234.03529262542725,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "before experience teaches ",
+                "page": 0,
+                "x": 64.0,
+                "y": 912.734375,
+                "width": 197.21873378753662,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "what is the Real.\"",
+                "page": 0,
+                "x": 64.0,
+                "y": 930.734375,
+                "width": 136.2118682861328,
+                "height": 18.0,
+                "source": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "epubPath": "/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar-epub-evidence/samples/cole-voyage-of-life.epub",
+        "fontPaths": [
+          "/home/helian/.cache/lunar-rito-float-3f67bc1/apps/reader/src/assets/fonts/Tinos-Regular.ttf"
+        ],
+        "contentWidthPx": 363,
+        "chapterIdrefs": [
+          "s2a"
+        ],
+        "fragmentainerSize": 592
+      },
+      "exitCode": 0,
+      "stderr": "",
+      "output": {
+        "chapters": [
+          {
+            "idref": "s2a",
+            "lines": [
+              {
+                "text": "Youth",
+                "page": 0,
+                "x": 64.0,
+                "y": 32.0,
+                "width": 76.79765319824219,
+                "height": 27.0,
+                "source": 0
+              },
+              {
+                "text": "The second painting, Youth, ",
+                "page": 0,
+                "x": 64.0,
+                "y": 78.90625,
+                "width": 214.10685634613037,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "shows the same rich, green ",
+                "page": 0,
+                "x": 64.0,
+                "y": 96.90625,
+                "width": 206.1159200668335,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "landscape, but here the view ",
+                "page": 0,
+                "x": 64.0,
+                "y": 114.90625,
+                "width": 217.54310512542725,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "widens as does the voyager's ",
+                "page": 0,
+                "x": 64.0,
+                "y": 132.90625,
+                "width": 220.01185512542725,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "experience. Now the youth ",
+                "page": 0,
+                "x": 64.0,
+                "y": 150.90625,
+                "width": 204.38279628753662,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "grabs the tiller firmly as the ",
+                "page": 0,
+                "x": 64.0,
+                "y": 168.90625,
+                "width": 215.681227684021,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "angel watches and waves from ",
+                "page": 0,
+                "x": 64.0,
+                "y": 186.90625,
+                "width": 232.20716762542725,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "the shore, allowing him to ",
+                "page": 0,
+                "x": 64.0,
+                "y": 204.90625,
+                "width": 200.8112325668335,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "take control. The boy's ",
+                "page": 0,
+                "x": 64.0,
+                "y": 222.90625,
+                "width": 175.10404872894287,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "enthusiasm and energy is ",
+                "page": 0,
+                "x": 64.0,
+                "y": 240.90625,
+                "width": 191.72779750823975,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "evident in his forward-",
+                "page": 0,
+                "x": 64.0,
+                "y": 258.90625,
+                "width": 175.6196746826172,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "thrusting pose and billowing ",
+                "page": 0,
+                "x": 64.0,
+                "y": 276.90625,
+                "width": 218.49623012542725,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "clothes. In the distance, a ",
+                "page": 0,
+                "x": 64.0,
+                "y": 294.90625,
+                "width": 196.27873134613037,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "ghostly castle hovers in the ",
+                "page": 0,
+                "x": 64.0,
+                "y": 312.90625,
+                "width": 210.02748012542725,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "sky, a white and shimmering ",
+                "page": 0,
+                "x": 64.0,
+                "y": 330.90625,
+                "width": 217.93498134613037,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "beacon that represents the ",
+                "page": 0,
+                "x": 64.0,
+                "y": 348.90625,
+                "width": 198.9831075668335,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "ambitions and dreams of man.",
+                "page": 0,
+                "x": 64.0,
+                "y": 366.90625,
+                "width": 229.12904357910156,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 96.0,
+                "y": 404.09375,
+                "width": 203.0,
+                "height": 152.25,
+                "source": 2
+              },
+              {
+                "text": "To the youth, the calm river ",
+                "page": 1,
+                "x": 64.0,
+                "y": 0.0,
+                "width": 213.33216762542725,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "seems to lead straight to the ",
+                "page": 1,
+                "x": 64.0,
+                "y": 18.0,
+                "width": 215.29966640472412,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "castle, but at the far right of ",
+                "page": 1,
+                "x": 64.0,
+                "y": 36.0,
+                "width": 216.94560146331787,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "the painting one can just ",
+                "page": 1,
+                "x": 64.0,
+                "y": 54.0,
+                "width": 188.40623378753662,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "glimpse the river as it ",
+                "page": 1,
+                "x": 64.0,
+                "y": 72.0,
+                "width": 168.07279872894287,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "becomes rough, choppy, and ",
+                "page": 1,
+                "x": 64.0,
+                "y": 90.0,
+                "width": 215.7487325668335,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "full of rocks. Cole comments ",
+                "page": 1,
+                "x": 64.0,
+                "y": 108.0,
+                "width": 222.02748012542725,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "on the landscape and the ",
+                "page": 1,
+                "x": 64.0,
+                "y": 126.0,
+                "width": 187.99342250823975,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "youth's ambitions: \"The ",
+                "page": 1,
+                "x": 64.0,
+                "y": 144.0,
+                "width": 181.95561122894287,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "scenery of the picture--its ",
+                "page": 1,
+                "x": 64.0,
+                "y": 162.0,
+                "width": 198.48966884613037,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "clear stream, its lofty trees, ",
+                "page": 1,
+                "x": 64.0,
+                "y": 180.0,
+                "width": 211.665602684021,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "its towering mountains, its ",
+                "page": 1,
+                "x": 64.0,
+                "y": 198.0,
+                "width": 204.33341884613037,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "unbounded distance, and ",
+                "page": 1,
+                "x": 64.0,
+                "y": 216.0,
+                "width": 188.06498622894287,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "transparent atmosphere--",
+                "page": 1,
+                "x": 64.0,
+                "y": 234.0,
+                "width": 190.20436096191406,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "figure forth the romantic ",
+                "page": 1,
+                "x": 64.0,
+                "y": 252.0,
+                "width": 189.71873378753662,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "beauty of youthful ",
+                "page": 1,
+                "x": 64.0,
+                "y": 270.0,
+                "width": 141.2353048324585,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "imaginings, when the mind ",
+                "page": 1,
+                "x": 64.0,
+                "y": 288.0,
+                "width": 206.20310878753662,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "elevates the Mean and ",
+                "page": 1,
+                "x": 64.0,
+                "y": 306.0,
+                "width": 169.48155117034912,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "Common into the Magnificent, ",
+                "page": 1,
+                "x": 64.0,
+                "y": 324.0,
+                "width": 234.03529262542725,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "before experience teaches ",
+                "page": 1,
+                "x": 64.0,
+                "y": 342.0,
+                "width": 197.21873378753662,
+                "height": 18.0,
+                "source": 3
+              },
+              {
+                "text": "what is the Real.\"",
+                "page": 1,
+                "x": 64.0,
+                "y": 360.0,
+                "width": 136.2118682861328,
+                "height": 18.0,
+                "source": 3
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
