@@ -1,0 +1,157 @@
+{
+  "fullCjkWithinSinglePage": true,
+  "fullEnglishWithinSinglePage": true,
+  "layout": {
+    "fontFamily": "LunarWenKai",
+    "lineHeight": 1.65,
+    "marginBottom": 64,
+    "marginLeft": 40,
+    "marginRight": 40,
+    "marginTop": 88.76190567016602,
+    "pageHeight": 914,
+    "pageWidth": 411,
+    "palette": {
+      "backgroundColor": "#F8F8FA",
+      "foregroundColor": "#202020",
+      "spreadBodyBackgroundColor": "#F8F8FA"
+    },
+    "pixelRatio": 2.625,
+    "rootFontSize": 22,
+    "spreadGap": 0,
+    "spreadMode": "single",
+    "viewportHeight": 914,
+    "viewportWidth": 411
+  },
+  "pages": [
+    {
+      "pageIndex": 0,
+      "text": "自动换行与搜索\n清晨的微风掠过窗台，书页上的文\n字随着视线缓缓向前延伸，读者应\n当能够搜索跨越自动换行的完整句\n子。\nA reader should find this \ncomplete sentence even when \nnarrow pages wrap it onto \nseveral visual lines.\n硬换行前的句子\n\n硬换行后的句子\n段落分隔控制甲\n段落分隔控制乙"
+    }
+  ],
+  "snapshot": {
+    "bookId": "3217b1cb335c9b10d84e7816b88d70a05ab767b28411f287b9fbca78884faabb",
+    "bookSpreadIndex": 0,
+    "chapterTitle": "自动换行与搜索",
+    "paginationComplete": true,
+    "phase": "ready",
+    "position": {
+      "bookPageIndex": 0,
+      "bookSpreadIndex": 0,
+      "locator": {
+        "chapterProgress": 0,
+        "manifestHref": "text.xhtml",
+        "sourcePoint": {
+          "nodePath": [
+            0,
+            0
+          ],
+          "textOffset": 0
+        },
+        "spineIdref": "text"
+      },
+      "pageIndex": 0,
+      "progression": 0,
+      "spreadIndex": 0,
+      "timestamp": 1792948877271
+    },
+    "renderId": 1,
+    "revisionId": 1,
+    "spreadIndex": 0,
+    "totalSpreads": 1
+  },
+  "tests": [
+    {
+      "query": "清晨的微风掠过窗台，书页上的文字随着视线缓缓向前延伸，读者应当能够搜索跨越自动换行的完整句子。",
+      "results": [],
+      "searchedPageCount": 1,
+      "truncated": false
+    },
+    {
+      "query": "A reader should find this complete sentence even when narrow pages wrap it onto several visual lines.",
+      "results": [],
+      "searchedPageCount": 1,
+      "truncated": false
+    },
+    {
+      "query": "清晨的微风",
+      "results": [
+        {
+          "context": "自动换行与搜索\n清晨的微风掠过窗台，书页上的文\n字随着视线缓缓向前延伸，读者应\n当能够...",
+          "end": {
+            "blockIndex": 1,
+            "charIndex": 5,
+            "lineIndex": 0,
+            "runIndex": 0
+          },
+          "locator": {
+            "chapterProgress": 0,
+            "manifestHref": "text.xhtml",
+            "sourceRange": {
+              "end": {
+                "nodePath": [
+                  1,
+                  0
+                ],
+                "textOffset": 5
+              },
+              "start": {
+                "nodePath": [
+                  1,
+                  0
+                ],
+                "textOffset": 0
+              }
+            },
+            "spineIdref": "text"
+          },
+          "pageIndex": 0,
+          "spreadIndex": 0,
+          "start": {
+            "blockIndex": 1,
+            "charIndex": 0,
+            "lineIndex": 0,
+            "runIndex": 0
+          }
+        }
+      ],
+      "searchedPageCount": 1,
+      "truncated": false
+    },
+    {
+      "query": "visual lines.",
+      "results": [
+        {
+          "context": "...w pages wrap it onto \nseveral visual lines.\n硬换行前的句子\n\n硬换行后的句子\n段落分隔控制甲\n段落分隔...",
+          "end": {
+            "blockIndex": 2,
+            "charIndex": 6,
+            "lineIndex": 3,
+            "runIndex": 2
+          },
+          "pageIndex": 0,
+          "spreadIndex": 0,
+          "start": {
+            "blockIndex": 2,
+            "charIndex": 0,
+            "lineIndex": 3,
+            "runIndex": 1
+          }
+        }
+      ],
+      "searchedPageCount": 1,
+      "truncated": false
+    },
+    {
+      "query": "硬换行前的句子硬换行后的句子",
+      "results": [],
+      "searchedPageCount": 1,
+      "truncated": false
+    },
+    {
+      "query": "段落分隔控制甲段落分隔控制乙",
+      "results": [],
+      "searchedPageCount": 1,
+      "truncated": false
+    }
+  ]
+}
