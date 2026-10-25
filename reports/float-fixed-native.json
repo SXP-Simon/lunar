@@ -1,13 +1,13 @@
 {
-  "sourceCommit": "3f67bc1800c67effbc3bd8edcbc7323af530d22b",
-  "probeSha256": "87d9781e651fdff89c214c36ba91183d2f5b634b10e5ee877250382cb86701f1",
+  "sourceCommit": "b88b6553c51b0228cb0caefb859df2190db5e9bf",
+  "probeSha256": "2087775557fc9041e81ed219ce5de54339feafe27ada7a705fb5d6700b3d18d0",
   "sampleSha256": "e38ed606ff604e638f737efaf66e0fd0b2997c3eab7432bcba9a00a81a925cf3",
   "results": [
     {
       "request": {
         "epubPath": "/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar-epub-evidence/samples/cole-voyage-of-life.epub",
         "fontPaths": [
-          "/home/helian/.cache/lunar-rito-float-3f67bc1/apps/reader/src/assets/fonts/Tinos-Regular.ttf"
+          "/home/helian/.cache/lunar-rito-float-final/apps/reader/src/assets/fonts/Tinos-Regular.ttf"
         ],
         "contentWidthPx": 363,
         "chapterIdrefs": [
@@ -390,7 +390,7 @@
       "request": {
         "epubPath": "/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar-epub-evidence/samples/cole-voyage-of-life.epub",
         "fontPaths": [
-          "/home/helian/.cache/lunar-rito-float-3f67bc1/apps/reader/src/assets/fonts/Tinos-Regular.ttf"
+          "/home/helian/.cache/lunar-rito-float-final/apps/reader/src/assets/fonts/Tinos-Regular.ttf"
         ],
         "contentWidthPx": 363,
         "chapterIdrefs": [

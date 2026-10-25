@@ -1,0 +1,25 @@
+   Compiling rito-inline v0.0.0 (/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar/rito-rn/upstream/rito/crates/rito-inline)
+   Compiling rito-block v0.0.0 (/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar/rito-rn/upstream/rito/crates/rito-block)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.92s
+     Running unittests src/lib.rs (/home/helian/.cache/lunar-rito-target/debug/deps/rito_block-483796396728c383)
+
+running 1 test
+test tests::floats::full_width_float_exclusion_reaches_nested_paragraphs ... FAILED
+
+failures:
+
+---- tests::floats::full_width_float_exclusion_reaches_nested_paragraphs stdout ----
+
+thread 'tests::floats::full_width_float_exclusion_reaches_nested_paragraphs' (1148) panicked at crates/rito-block/src/tests/floats.rs:155:9:
+assertion `left == right` failed
+  left: 0.0
+ right: 40.0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::floats::full_width_float_exclusion_reaches_nested_paragraphs
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 62 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p rito-block --lib`

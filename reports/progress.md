@@ -42,7 +42,7 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 
 [Rito PR #41](https://github.com/Ringyuki/Rito/pull/41) 已创建，目标 `dev`，未合并。PR 证据固定到 `abb7ff92fad1ee42fe36a87dbbbff28a1332397b`。创建后 `statusCheckRollup` 为空；上游当前 CI 的 pull_request 触发分支仅为 master，不能把本地检查成功表述为远程 CI 已通过。
 
-浮动重叠也已定位：Android 绘制前指令本身重叠，上游原生探针脱离 RN／Skia 同样复现。原因是浮动 margin box 占满行宽时被当成“没有避让”。独立修复 `fix/float-full-width-exclusion` / `3f67bc1800c67effbc3bd8edcbc7323af530d22b` 已通过连续与分页原版 Cole 对照（9 行重叠→0，正文保留），完整 Rust 检查 1019 通过、8 忽略。详见 [定位与修复报告](float-overlap-investigation.md)。Lunar 当前 APK 尚未采用此内核修复，设备修复后验证仍未完成。
+浮动重叠也已定位：Android 绘制前指令本身重叠，上游原生探针脱离 RN／Skia 同样复现。原因是浮动 margin box 占满行宽时被当成“没有避让”。独立修复 `fix/float-full-width-exclusion` / `b88b6553c51b0228cb0caefb859df2190db5e9bf` 已通过连续与分页原版 Cole 对照（9 行重叠→0，正文保留），完整 Rust 检查 1020 通过、8 忽略。详见 [定位与修复报告](float-overlap-investigation.md)。Lunar 当前 APK 尚未采用此内核修复，设备修复后验证仍未完成。
 
 1. 固定版式／混合版式识别与提示已实现；固定视口缩放、配页及阅读方向仍未实现。
 2. 出版方样式：基础模式已在 PR #6 实现；继续验证其他字体格式和复杂样式，不能将该 PR 当作全部样式保真通过。
