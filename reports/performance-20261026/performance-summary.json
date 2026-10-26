@@ -1,0 +1,422 @@
+{
+  "environment": {
+    "appCommit": "85a007495bfc10a90dea72b3da44722279bc190f",
+    "apkSha256": "3fff66355689b9dd4d753bbee78452d89d2ea2ac6e19d4bcd3d569001600be2c",
+    "ritoRn": "0.3.0-lunar.1",
+    "engineCommit": "9c9111ca2fc57f63ce81c65d3c4f80cb513610ae",
+    "api": 36,
+    "avd": "handwrite-api36",
+    "ramMiB": 4096,
+    "systemAbi": "x86_64",
+    "apkAbi": "arm64-v8a via translation",
+    "build": "development, Metro, Hermes inspector connected",
+    "viewportCssPx": [
+      411,
+      914
+    ],
+    "fontSize": 18,
+    "horizontalMargins": 24,
+    "lineHeightOverride": 1.65
+  },
+  "imports": [
+    {
+      "run": "moby-fresh-1",
+      "durationMs": 3206.020600000047,
+      "zipMs": 1982.3559999999125,
+      "zipShare": 0.6183229140822998,
+      "sourceBytes": 1628868,
+      "startedAtMs": 1792982417966,
+      "endedAtMs": 1792982421172,
+      "baselineRssMiB": 1077.03515625,
+      "peakSampledRssMiB": 1077.03515625
+    },
+    {
+      "run": "moby-reimport-2",
+      "durationMs": 3035.2907000000123,
+      "zipMs": 1830.175300000119,
+      "zipShare": 0.6029654095405463,
+      "sourceBytes": 1628868,
+      "startedAtMs": 1792982450445,
+      "endedAtMs": 1792982453481,
+      "baselineRssMiB": 1088.61328125,
+      "peakSampledRssMiB": 1088.87890625
+    },
+    {
+      "run": "moby-reimport-3",
+      "durationMs": 3140.204999999958,
+      "zipMs": 1976.813700000057,
+      "zipShare": 0.6295174041185475,
+      "sourceBytes": 1628868,
+      "startedAtMs": 1792982455496,
+      "endedAtMs": 1792982458636,
+      "baselineRssMiB": 1080.6953125,
+      "peakSampledRssMiB": 1106.3046875
+    },
+    {
+      "run": "kusa-fresh-1",
+      "durationMs": 13931.474000000046,
+      "zipMs": 13270.283999999752,
+      "zipShare": 0.9525398389287242,
+      "sourceBytes": 17940208,
+      "startedAtMs": 1792982460650,
+      "endedAtMs": 1792982474581,
+      "baselineRssMiB": 1080.5,
+      "peakSampledRssMiB": 1134.234375
+    },
+    {
+      "run": "kusa-reimport-2",
+      "durationMs": 13652.225699999952,
+      "zipMs": 13094.123999999836,
+      "zipShare": 0.9591200942422071,
+      "sourceBytes": 17940208,
+      "startedAtMs": 1792982476596,
+      "endedAtMs": 1792982490248,
+      "baselineRssMiB": 1112.15234375,
+      "peakSampledRssMiB": 1127.95703125
+    },
+    {
+      "run": "kusa-reimport-3",
+      "durationMs": 13657.821699999971,
+      "zipMs": 13032.099500000011,
+      "zipShare": 0.9541857981642884,
+      "sourceBytes": 17940208,
+      "startedAtMs": 1792982492261,
+      "endedAtMs": 1792982505919,
+      "baselineRssMiB": 1113.89453125,
+      "peakSampledRssMiB": 1183.3125
+    }
+  ],
+  "openComparisons": [
+    {
+      "kind": "store",
+      "round": 1,
+      "durationMs": 7235.276500000036,
+      "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f",
+      "pageTexts": [
+        ""
+      ]
+    },
+    {
+      "kind": "original",
+      "round": 1,
+      "durationMs": 8079.960500000045,
+      "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f",
+      "pageTexts": [
+        ""
+      ]
+    },
+    {
+      "kind": "store",
+      "round": 2,
+      "durationMs": 7663.71100000001,
+      "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f",
+      "pageTexts": [
+        ""
+      ]
+    },
+    {
+      "kind": "original",
+      "round": 2,
+      "durationMs": 8059.329299999983,
+      "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f",
+      "pageTexts": [
+        ""
+      ]
+    },
+    {
+      "kind": "store",
+      "round": 3,
+      "durationMs": 6577.086400000029,
+      "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f",
+      "pageTexts": [
+        ""
+      ]
+    },
+    {
+      "kind": "original",
+      "round": 3,
+      "durationMs": 6615.196700000088,
+      "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f",
+      "pageTexts": [
+        ""
+      ]
+    }
+  ],
+  "firstMobyUiRuntimeOpenMs": 7353.510799999931,
+  "operations": {
+    "beforeReflow": {
+      "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+      "bookSpreadIndex": 44,
+      "chapterTitle": "Chapter 1. Loomings.",
+      "paginationComplete": true,
+      "phase": "ready",
+      "position": {
+        "bookPageIndex": 44,
+        "bookSpreadIndex": 44,
+        "locator": {
+          "chapterProgress": 0.13995244732311224,
+          "manifestHref": "chapter_001.xhtml",
+          "sourcePoint": {
+            "nodePath": [
+              1,
+              7,
+              0,
+              0
+            ],
+            "textOffset": 187
+          },
+          "spineIdref": "xchapter_001"
+        },
+        "pageIndex": 44,
+        "progression": 0.03142857142857143,
+        "spreadIndex": 2,
+        "timestamp": 1792982809896
+      },
+      "renderId": 24,
+      "revisionId": 8,
+      "spreadIndex": 2,
+      "totalSpreads": 1401
+    },
+    "operations": [
+      {
+        "durationMs": 479.68660000001546,
+        "href": "chapter_001.xhtml",
+        "operation": "toc",
+        "snapshot": {
+          "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+          "chapterTitle": "Chapter 1. Loomings.",
+          "paginationComplete": false,
+          "phase": "ready",
+          "position": {
+            "locator": {
+              "chapterProgress": 0,
+              "manifestHref": "chapter_001.xhtml",
+              "spineIdref": "xchapter_001"
+            },
+            "pageIndex": 0,
+            "progression": 0,
+            "spreadIndex": 0,
+            "timestamp": 1792982802377
+          },
+          "renderId": 15,
+          "revisionId": 8,
+          "spreadIndex": 0
+        }
+      },
+      {
+        "durationMs": 411.0590000000084,
+        "href": "chapter_002.xhtml",
+        "operation": "toc",
+        "snapshot": {
+          "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+          "chapterTitle": "Chapter 2. The Carpet-Bag.",
+          "paginationComplete": false,
+          "phase": "ready",
+          "position": {
+            "locator": {
+              "chapterProgress": 0,
+              "manifestHref": "chapter_002.xhtml",
+              "spineIdref": "xchapter_002"
+            },
+            "pageIndex": 0,
+            "progression": 0,
+            "spreadIndex": 0,
+            "timestamp": 1792982804315
+          },
+          "renderId": 18,
+          "revisionId": 8,
+          "spreadIndex": 0
+        }
+      },
+      {
+        "durationMs": 278.8536000000313,
+        "href": "chapter_003.xhtml",
+        "operation": "toc",
+        "snapshot": {
+          "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+          "chapterTitle": "Chapter 3. The Spouter-Inn.",
+          "paginationComplete": false,
+          "phase": "ready",
+          "position": {
+            "locator": {
+              "chapterProgress": 0,
+              "manifestHref": "chapter_003.xhtml",
+              "spineIdref": "xchapter_003"
+            },
+            "pageIndex": 0,
+            "progression": 0,
+            "spreadIndex": 0,
+            "timestamp": 1792982806167
+          },
+          "renderId": 21,
+          "revisionId": 8,
+          "spreadIndex": 0
+        }
+      },
+      {
+        "durationMs": 214.35530000005383,
+        "href": "chapter_001.xhtml",
+        "operation": "toc",
+        "snapshot": {
+          "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+          "chapterTitle": "Chapter 1. Loomings.",
+          "paginationComplete": false,
+          "phase": "ready",
+          "position": {
+            "locator": {
+              "chapterProgress": 0,
+              "manifestHref": "chapter_001.xhtml",
+              "spineIdref": "xchapter_001"
+            },
+            "pageIndex": 0,
+            "progression": 0,
+            "spreadIndex": 0,
+            "timestamp": 1792982807898
+          },
+          "renderId": 15,
+          "revisionId": 8,
+          "spreadIndex": 0
+        }
+      },
+      {
+        "durationMs": 6250.101099999971,
+        "fontSize": 20,
+        "operation": "reflow",
+        "pageTexts": [
+          "is the battery, where that noble mole \nis washed by waves, and cooled by \nbreezes, which a few hours previous \nwere out of sight of land. Look at the \ncrowds of water-gazers there.\nCircumambulate the city of a \ndreamy Sabbath afternoon. Go from \nCorlears Hook to Coenties Slip, and \nfrom thence, by Whitehall, northward. \nWhat do you see?—Posted like silent \nsentinels all around the town, stand \nthousands upon thousands of mortal \nmen fixed in ocean reveries. Some \nleaning against the spiles; some \nseated upon the pier-heads; some \nlooking over the bulwarks of ships \nfrom China; some high aloft in the \nrigging, as if striving to get a still \nbetter seaward peep. But these are \nall landsmen; of week days pent up in \nlath and plaster—tied to counters, \nnailed to benches, clinched to desks. "
+        ],
+        "snapshot": {
+          "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+          "chapterTitle": "Chapter 1. Loomings.",
+          "paginationComplete": false,
+          "phase": "ready",
+          "position": {
+            "locator": {
+              "chapterProgress": 0,
+              "manifestHref": "chapter_001.xhtml",
+              "sourcePoint": {
+                "nodePath": [
+                  1,
+                  7,
+                  0,
+                  0
+                ],
+                "textOffset": 187
+              },
+              "spineIdref": "xchapter_001"
+            },
+            "pageIndex": 2,
+            "progression": 0,
+            "spreadIndex": 0,
+            "timestamp": 1792982813621
+          },
+          "renderId": 25,
+          "revisionId": 9,
+          "spreadIndex": 0
+        }
+      },
+      {
+        "durationMs": 6297.199300000095,
+        "fontSize": 22,
+        "operation": "reflow",
+        "pageTexts": [
+          "all around the town, stand \nthousands upon thousands of \nmortal men fixed in ocean \nreveries. Some leaning against the \nspiles; some seated upon the pier-\nheads; some looking over the \nbulwarks of ships from China; \nsome high aloft in the rigging, as \nif striving to get a still better \nseaward peep. But these are all \nlandsmen; of week days pent up in \nlath and plaster—tied to counters, \nnailed to benches, clinched to \ndesks. How then is this? Are the \ngreen fields gone? What do they \nhere?\nBut look! here come more \ncrowds, pacing straight for the \nwater, and seemingly bound for a \ndive. Strange! Nothing will content "
+        ],
+        "snapshot": {
+          "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+          "chapterTitle": "Chapter 1. Loomings.",
+          "paginationComplete": false,
+          "phase": "ready",
+          "position": {
+            "locator": {
+              "chapterProgress": 0,
+              "manifestHref": "chapter_001.xhtml",
+              "sourcePoint": {
+                "nodePath": [
+                  1,
+                  7,
+                  0,
+                  0
+                ],
+                "textOffset": 187
+              },
+              "spineIdref": "xchapter_001"
+            },
+            "pageIndex": 3,
+            "progression": 0,
+            "spreadIndex": 0,
+            "timestamp": 1792982821588
+          },
+          "renderId": 26,
+          "revisionId": 10,
+          "spreadIndex": 0
+        }
+      },
+      {
+        "durationMs": 7291.85670000012,
+        "fontSize": 18,
+        "operation": "reflow",
+        "pageTexts": [
+          "around the town, stand thousands upon \nthousands of mortal men fixed in ocean \nreveries. Some leaning against the spiles; \nsome seated upon the pier-heads; some \nlooking over the bulwarks of ships from \nChina; some high aloft in the rigging, as if \nstriving to get a still better seaward peep. \nBut these are all landsmen; of week days \npent up in lath and plaster—tied to \ncounters, nailed to benches, clinched to \ndesks. How then is this? Are the green \nfields gone? What do they here?\nBut look! here come more crowds, \npacing straight for the water, and \nseemingly bound for a dive. Strange! \nNothing will content them but the \nextremest limit of the land; loitering under \nthe shady lee of yonder warehouses will \nnot suffice. No. They must get just as \nnigh the water as they possibly can \nwithout falling in. And there they stand—\nmiles of them—leagues. Inlanders all, they \ncome from lanes and alleys, streets and \navenues—north, east, south, and west. \nYet here they all unite. Tell me, does the "
+        ],
+        "snapshot": {
+          "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+          "chapterTitle": "Chapter 1. Loomings.",
+          "paginationComplete": false,
+          "phase": "ready",
+          "position": {
+            "locator": {
+              "chapterProgress": 0,
+              "manifestHref": "chapter_001.xhtml",
+              "sourcePoint": {
+                "nodePath": [
+                  1,
+                  7,
+                  0,
+                  0
+                ],
+                "textOffset": 187
+              },
+              "spineIdref": "xchapter_001"
+            },
+            "pageIndex": 2,
+            "progression": 0,
+            "spreadIndex": 0,
+            "timestamp": 1792982830587
+          },
+          "renderId": 29,
+          "revisionId": 11,
+          "spreadIndex": 0
+        }
+      }
+    ]
+  },
+  "storage": [
+    {
+      "sample": "moby-dick.epub",
+      "originalBytes": 1628868,
+      "storeArchiveBytes": 2816280,
+      "managedDirectoryAllocatedKiB": 6844
+    },
+    {
+      "sample": "kusamakura-vertical-only.epub",
+      "originalBytes": 17940208,
+      "storeArchiveBytes": 18694557,
+      "managedDirectoryAllocatedKiB": 36832
+    }
+  ],
+  "memory": {
+    "pid": 3348,
+    "sampleIntervalTargetMs": 1000,
+    "sampleCount": 556,
+    "minSampledRssMiB": 1067.578125,
+    "maxSampledRssMiB": 2237.8203125
+  },
+  "limits": [
+    "Fresh managed import then two reimports per book, same process; source in app-private files, no picker/provider latency.",
+    "Runtime completion is not glass-to-glass latency; background work and inspector remain enabled.",
+    "Three samples per open mode; overlapping ranges are not evidence of equivalent performance or of a STORE advantage.",
+    "RSS/PSS are process metrics, not JS heap; development build, allocator caches and ARM translation prevent a production leak conclusion.",
+    "Invalid transfer warm-up and later failed optional stage-probe excluded."
+  ]
+}

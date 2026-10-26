@@ -1,0 +1,176 @@
+[
+  {
+    "durationMs": 7235.276500000036,
+    "kind": "store",
+    "pageTexts": [
+      ""
+    ],
+    "round": 1,
+    "snapshot": {
+      "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+      "chapterTitle": "Moby-Dick",
+      "paginationComplete": false,
+      "phase": "ready",
+      "position": {
+        "locator": {
+          "chapterProgress": 0,
+          "manifestHref": "titlepage.xhtml",
+          "spineIdref": "titlepage"
+        },
+        "pageIndex": 0,
+        "progression": 0,
+        "spreadIndex": 0,
+        "timestamp": 1792982699227
+      },
+      "renderId": 4,
+      "revisionId": 2,
+      "spreadIndex": 0
+    },
+    "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f"
+  },
+  {
+    "durationMs": 8079.960500000045,
+    "kind": "original",
+    "pageTexts": [
+      ""
+    ],
+    "round": 1,
+    "snapshot": {
+      "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+      "chapterTitle": "Moby-Dick",
+      "paginationComplete": false,
+      "phase": "ready",
+      "position": {
+        "locator": {
+          "chapterProgress": 0,
+          "manifestHref": "titlepage.xhtml",
+          "spineIdref": "titlepage"
+        },
+        "pageIndex": 0,
+        "progression": 0,
+        "spreadIndex": 0,
+        "timestamp": 1792982709434
+      },
+      "renderId": 5,
+      "revisionId": 3,
+      "spreadIndex": 0
+    },
+    "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f"
+  },
+  {
+    "durationMs": 7663.71100000001,
+    "kind": "store",
+    "pageTexts": [
+      ""
+    ],
+    "round": 2,
+    "snapshot": {
+      "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+      "chapterTitle": "Moby-Dick",
+      "paginationComplete": false,
+      "phase": "ready",
+      "position": {
+        "locator": {
+          "chapterProgress": 0,
+          "manifestHref": "titlepage.xhtml",
+          "spineIdref": "titlepage"
+        },
+        "pageIndex": 0,
+        "progression": 0,
+        "spreadIndex": 0,
+        "timestamp": 1792982718610
+      },
+      "renderId": 7,
+      "revisionId": 4,
+      "spreadIndex": 0
+    },
+    "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f"
+  },
+  {
+    "durationMs": 8059.329299999983,
+    "kind": "original",
+    "pageTexts": [
+      ""
+    ],
+    "round": 2,
+    "snapshot": {
+      "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+      "chapterTitle": "Moby-Dick",
+      "paginationComplete": false,
+      "phase": "ready",
+      "position": {
+        "locator": {
+          "chapterProgress": 0,
+          "manifestHref": "titlepage.xhtml",
+          "spineIdref": "titlepage"
+        },
+        "pageIndex": 0,
+        "progression": 0,
+        "spreadIndex": 0,
+        "timestamp": 1792982728456
+      },
+      "renderId": 8,
+      "revisionId": 5,
+      "spreadIndex": 0
+    },
+    "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f"
+  },
+  {
+    "durationMs": 6577.086400000029,
+    "kind": "store",
+    "pageTexts": [
+      ""
+    ],
+    "round": 3,
+    "snapshot": {
+      "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+      "chapterTitle": "Moby-Dick",
+      "paginationComplete": false,
+      "phase": "ready",
+      "position": {
+        "locator": {
+          "chapterProgress": 0,
+          "manifestHref": "titlepage.xhtml",
+          "spineIdref": "titlepage"
+        },
+        "pageIndex": 0,
+        "progression": 0,
+        "spreadIndex": 0,
+        "timestamp": 1792982736996
+      },
+      "renderId": 10,
+      "revisionId": 6,
+      "spreadIndex": 0
+    },
+    "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f"
+  },
+  {
+    "durationMs": 6615.196700000088,
+    "kind": "original",
+    "pageTexts": [
+      ""
+    ],
+    "round": 3,
+    "snapshot": {
+      "bookId": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+      "chapterTitle": "Moby-Dick",
+      "paginationComplete": false,
+      "phase": "ready",
+      "position": {
+        "locator": {
+          "chapterProgress": 0,
+          "manifestHref": "titlepage.xhtml",
+          "spineIdref": "titlepage"
+        },
+        "pageIndex": 0,
+        "progression": 0,
+        "spreadIndex": 0,
+        "timestamp": 1792982745315
+      },
+      "renderId": 11,
+      "revisionId": 7,
+      "spreadIndex": 0
+    },
+    "commandSha256": "edcd8d8267ca4848ab94aea0258e943b284a7305bf8a67383d9a1461a71b5a0f"
+  }
+]

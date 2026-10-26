@@ -1,0 +1,46 @@
+[
+  {
+    "atMs": 1792983386507,
+    "durationMs": 1.817500000121072,
+    "name": "font.dispose",
+    "run": "kusa-fresh-process-open",
+    "status": "ok"
+  },
+  {
+    "atMs": 1792983392430,
+    "durationMs": 0.15200000000186265,
+    "name": "font.preparePinned",
+    "run": "kusa-fresh-process-open",
+    "status": "ok"
+  },
+  {
+    "atMs": 1792983392480,
+    "durationMs": 49.95999999996275,
+    "name": "font.loadBuiltin",
+    "run": "kusa-fresh-process-open",
+    "status": "ok"
+  },
+  {
+    "atMs": 1792983392760,
+    "durationMs": 0.6515999999828637,
+    "inputBytes": 18694557,
+    "name": "zip.unzipSync",
+    "run": "kusa-fresh-process-open",
+    "status": "ok"
+  },
+  {
+    "atMs": 1792983392761,
+    "durationMs": 0.5378000000491738,
+    "inputBytes": 18694557,
+    "name": "zip.unzipSync",
+    "run": "kusa-fresh-process-open",
+    "status": "ok"
+  },
+  {
+    "atMs": 1792983394724,
+    "durationMs": 2874.749899999937,
+    "name": "runtime.open",
+    "run": "kusa-fresh-process-open",
+    "status": "ok"
+  }
+]

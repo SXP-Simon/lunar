@@ -1,0 +1,881 @@
+records=680 spans=382
+Durations are inclusive wall time; nested stages overlap. Animation duration and gesture holding are not CPU blocking time.
+
+Stage totals, ordered by maximum duration:
+ max ms   mean ms  count  stage
+11417.40   2248.15     26  reader.runtime.operation
+11154.82   1557.28     33  reader.adjacent.resolve
+7979.81   7190.31      8  reader.open
+5595.46    372.42     39  reader.backend.adjacent
+4763.66   1488.75     11  reader.backend.open
+ 888.53    366.12     10  reader.image.read
+ 234.90     16.81     26  reader.runtime.queue
+ 186.86     10.84     54  reader.frame.convert
+ 184.63     10.26     80  reader.frame.resolve
+ 164.80     32.07     31  reader.picture.compile
+ 145.34     18.51     31  reader.text.shape
+  21.06      3.28     33  reader.images.acquire
+
+Work warm:mvon54a3:1:
+    5573.21 ms  reader.runtime.operation [warm]
+    5334.97 ms  reader.adjacent.resolve
+     164.80 ms  reader.picture.compile
+     145.34 ms  reader.text.shape
+       2.15 ms  reader.runtime.queue [warm]
+       0.10 ms  reader.frame.resolve
+       0.10 ms  reader.frame.resolve
+       0.06 ms  reader.images.acquire
+  text cache: hits=99 misses=63 evictions=0
+
+Work warm:mvon54a3:2:
+     477.47 ms  reader.runtime.operation [warm]
+     262.37 ms  reader.adjacent.resolve
+     130.47 ms  reader.adjacent.resolve
+       8.81 ms  reader.images.acquire
+       5.22 ms  reader.runtime.queue [warm]
+       1.73 ms  reader.picture.compile
+       0.18 ms  reader.frame.resolve
+       0.18 ms  reader.frame.resolve
+       0.16 ms  reader.frame.resolve
+       0.10 ms  reader.frame.resolve
+       0.00 ms  reader.text.shape
+  text cache: hits=0 misses=0 evictions=0
+
+Work warm:mvon54a3:3:
+     126.42 ms  reader.runtime.operation [warm]
+      32.47 ms  reader.adjacent.resolve
+      31.52 ms  reader.adjacent.resolve
+       0.15 ms  reader.frame.resolve
+       0.10 ms  reader.frame.resolve
+       0.09 ms  reader.frame.resolve
+       0.09 ms  reader.frame.resolve
+       0.04 ms  reader.runtime.queue [warm]
+
+Work warm:mvon54a3:4:
+   10088.88 ms  reader.runtime.operation [warm]
+    9782.03 ms  reader.adjacent.resolve
+     178.65 ms  reader.frame.resolve
+     120.11 ms  reader.frame.resolve
+      12.64 ms  reader.images.acquire
+       6.92 ms  reader.picture.compile
+       0.12 ms  reader.frame.resolve
+       0.08 ms  reader.images.acquire
+       0.07 ms  reader.runtime.queue [warm]
+       0.00 ms  reader.text.shape
+  text cache: hits=0 misses=0 evictions=0
+
+Work warm:mvon54a3:5:
+     302.91 ms  reader.runtime.operation [warm]
+     188.38 ms  reader.runtime.queue [warm]
+     156.76 ms  reader.adjacent.resolve
+      92.79 ms  reader.picture.compile
+      84.13 ms  reader.text.shape
+       0.25 ms  reader.frame.resolve
+       0.10 ms  reader.frame.resolve
+       0.08 ms  reader.images.acquire
+  text cache: hits=99 misses=63 evictions=0
+
+Work warm:mvon54a3:6:
+   10020.15 ms  reader.runtime.operation [warm]
+    9776.95 ms  reader.adjacent.resolve
+     118.59 ms  reader.frame.resolve
+     114.29 ms  reader.frame.resolve
+      16.91 ms  reader.images.acquire
+       1.94 ms  reader.picture.compile
+       0.14 ms  reader.frame.resolve
+       0.14 ms  reader.images.acquire
+       0.04 ms  reader.runtime.queue [warm]
+       0.00 ms  reader.text.shape
+  text cache: hits=0 misses=0 evictions=0
+
+Work warm:mvon54a3:7:
+     254.71 ms  reader.runtime.operation [warm]
+     234.90 ms  reader.runtime.queue [warm]
+     139.58 ms  reader.picture.compile
+     118.09 ms  reader.text.shape
+      58.28 ms  reader.adjacent.resolve
+       0.17 ms  reader.frame.resolve
+       0.16 ms  reader.frame.resolve
+       0.12 ms  reader.images.acquire
+  text cache: hits=99 misses=63 evictions=0
+
+Work warm:mvon54a3:8:
+   11417.40 ms  reader.runtime.operation [warm]
+   11154.82 ms  reader.adjacent.resolve
+       0.98 ms  reader.picture.compile
+       0.47 ms  reader.images.acquire
+       0.26 ms  reader.frame.resolve
+       0.13 ms  reader.runtime.queue [warm]
+       0.00 ms  reader.text.shape
+  text cache: hits=0 misses=0 evictions=0
+
+Work warm:mvon54a3:9:
+    4210.03 ms  reader.runtime.operation [warm]
+    3815.78 ms  reader.adjacent.resolve
+     258.38 ms  reader.adjacent.resolve
+      47.09 ms  reader.picture.compile
+      33.42 ms  reader.text.shape
+      12.58 ms  reader.images.acquire
+       2.07 ms  reader.picture.compile
+       0.32 ms  reader.frame.resolve
+       0.20 ms  reader.frame.resolve
+       0.13 ms  reader.frame.resolve
+       0.12 ms  reader.frame.resolve
+       0.11 ms  reader.images.acquire
+       0.04 ms  reader.runtime.queue [warm]
+       0.00 ms  reader.text.shape
+  text cache: hits=99 misses=63 evictions=0
+  text cache: hits=0 misses=0 evictions=0
+
+Work warm:mvon54a3:10:
+     182.35 ms  reader.runtime.operation [warm]
+      63.94 ms  reader.adjacent.resolve
+      44.08 ms  reader.adjacent.resolve
+       4.87 ms  reader.runtime.queue [warm]
+       0.25 ms  reader.frame.resolve
+       0.17 ms  reader.frame.resolve
+       0.13 ms  reader.frame.resolve
+       0.11 ms  reader.frame.resolve
+
+Work warm:mvon54a3:11:
+     124.10 ms  reader.runtime.operation [warm]
+      34.29 ms  reader.adjacent.resolve
+       9.56 ms  reader.adjacent.resolve
+       0.19 ms  reader.frame.resolve
+       0.17 ms  reader.frame.resolve
+       0.16 ms  reader.frame.resolve
+       0.09 ms  reader.frame.resolve
+       0.05 ms  reader.runtime.queue [warm]
+
+Work navigate:mvon54a3:12:
+     431.62 ms  reader.runtime.operation [navigate]
+      63.42 ms  reader.picture.compile
+      25.70 ms  reader.text.shape
+       0.24 ms  reader.frame.resolve
+       0.14 ms  reader.runtime.queue [navigate]
+       0.12 ms  reader.images.acquire
+  text cache: hits=735 misses=20 evictions=0
+
+Work warm:mvon54a3:13:
+     394.04 ms  reader.runtime.operation [warm]
+      99.00 ms  reader.adjacent.resolve
+      98.49 ms  reader.adjacent.resolve
+      42.70 ms  reader.picture.compile
+      34.91 ms  reader.picture.compile
+      32.21 ms  reader.text.shape
+       6.98 ms  reader.text.shape
+       1.05 ms  reader.frame.resolve
+       0.36 ms  reader.frame.resolve
+       0.29 ms  reader.frame.resolve
+       0.25 ms  reader.images.acquire
+       0.22 ms  reader.frame.resolve
+       0.14 ms  reader.images.acquire
+       0.07 ms  reader.runtime.queue [warm]
+  text cache: hits=940 misses=6 evictions=0
+  text cache: hits=67 misses=15 evictions=0
+
+Work navigate:mvon54a3:14:
+     380.47 ms  reader.runtime.operation [navigate]
+      45.05 ms  reader.picture.compile
+       9.11 ms  reader.text.shape
+       0.20 ms  reader.images.acquire
+       0.11 ms  reader.frame.resolve
+       0.04 ms  reader.runtime.queue [navigate]
+  text cache: hits=735 misses=6 evictions=0
+
+Work warm:mvon54a3:15:
+     330.62 ms  reader.runtime.operation [warm]
+     181.64 ms  reader.adjacent.resolve
+      15.50 ms  reader.picture.compile
+      15.46 ms  reader.adjacent.resolve
+       1.80 ms  reader.picture.compile
+       0.19 ms  reader.frame.resolve
+       0.17 ms  reader.images.acquire
+       0.13 ms  reader.frame.resolve
+       0.12 ms  reader.frame.resolve
+       0.11 ms  reader.runtime.queue [warm]
+       0.10 ms  reader.frame.resolve
+       0.07 ms  reader.images.acquire
+       0.00 ms  reader.text.shape
+       0.00 ms  reader.text.shape
+  text cache: hits=938 misses=0 evictions=0
+  text cache: hits=67 misses=0 evictions=0
+
+Work navigate:mvon54a3:16:
+     261.77 ms  reader.runtime.operation [navigate]
+      12.87 ms  reader.picture.compile
+       2.03 ms  reader.text.shape
+       0.13 ms  reader.frame.resolve
+       0.07 ms  reader.images.acquire
+       0.04 ms  reader.runtime.queue [navigate]
+  text cache: hits=728 misses=4 evictions=0
+
+Work warm:mvon54a3:17:
+     210.72 ms  reader.runtime.operation [warm]
+      66.36 ms  reader.adjacent.resolve
+      39.36 ms  reader.adjacent.resolve
+      15.12 ms  reader.picture.compile
+      14.49 ms  reader.picture.compile
+       0.99 ms  reader.text.shape
+       0.95 ms  reader.text.shape
+       0.14 ms  reader.runtime.queue [warm]
+       0.14 ms  reader.frame.resolve
+       0.11 ms  reader.frame.resolve
+       0.11 ms  reader.frame.resolve
+       0.09 ms  reader.frame.resolve
+       0.07 ms  reader.images.acquire
+       0.05 ms  reader.images.acquire
+  text cache: hits=970 misses=1 evictions=0
+  text cache: hits=417 misses=1 evictions=0
+
+Work navigate:mvon54a3:18:
+     185.46 ms  reader.runtime.operation [navigate]
+       0.09 ms  reader.frame.resolve
+       0.04 ms  reader.runtime.queue [navigate]
+
+Work warm:mvon54a3:19:
+     162.38 ms  reader.runtime.operation [warm]
+      63.15 ms  reader.adjacent.resolve
+      36.99 ms  reader.adjacent.resolve
+       0.10 ms  reader.frame.resolve
+       0.10 ms  reader.frame.resolve
+       0.10 ms  reader.frame.resolve
+       0.09 ms  reader.frame.resolve
+       0.04 ms  reader.runtime.queue [warm]
+
+Work navigate:mvon54a3:20:
+     150.09 ms  reader.runtime.operation [navigate]
+      86.66 ms  reader.frame.resolve
+       0.05 ms  reader.runtime.queue [navigate]
+
+Work navigate:mvon54a3:21:
+     283.19 ms  reader.runtime.operation [navigate]
+     184.63 ms  reader.frame.resolve
+      18.89 ms  reader.picture.compile
+       1.71 ms  reader.text.shape
+       0.10 ms  reader.images.acquire
+       0.03 ms  reader.runtime.queue [navigate]
+  text cache: hits=978 misses=2 evictions=0
+
+Work warm:mvon54a3:22:
+    7722.16 ms  reader.runtime.operation [warm]
+    5138.60 ms  reader.adjacent.resolve
+      42.12 ms  reader.picture.compile
+      29.98 ms  reader.text.shape
+       0.20 ms  reader.frame.resolve
+       0.14 ms  reader.frame.resolve
+       0.07 ms  reader.images.acquire
+       0.03 ms  reader.runtime.queue [warm]
+  text cache: hits=568 misses=38 evictions=0
+
+Work warm:mvon54a3:23:
+     362.77 ms  reader.runtime.operation [warm]
+     102.17 ms  reader.adjacent.resolve
+      83.67 ms  reader.adjacent.resolve
+      27.91 ms  reader.picture.compile
+      16.90 ms  reader.picture.compile
+       3.95 ms  reader.text.shape
+       3.88 ms  reader.text.shape
+       0.24 ms  reader.frame.resolve
+       0.21 ms  reader.frame.resolve
+       0.19 ms  reader.frame.resolve
+       0.14 ms  reader.images.acquire
+       0.14 ms  reader.images.acquire
+       0.14 ms  reader.frame.resolve
+       0.05 ms  reader.runtime.queue [warm]
+  text cache: hits=618 misses=5 evictions=0
+  text cache: hits=599 misses=6 evictions=0
+
+Work warm:mvon54a3:24:
+    4316.49 ms  reader.runtime.operation [warm]
+    4086.16 ms  reader.adjacent.resolve
+      85.36 ms  reader.adjacent.resolve
+      34.90 ms  reader.picture.compile
+      19.94 ms  reader.picture.compile
+       2.24 ms  reader.text.shape
+       2.05 ms  reader.text.shape
+       0.25 ms  reader.frame.resolve
+       0.15 ms  reader.frame.resolve
+       0.15 ms  reader.frame.resolve
+       0.13 ms  reader.frame.resolve
+       0.10 ms  reader.images.acquire
+       0.08 ms  reader.runtime.queue [warm]
+       0.06 ms  reader.images.acquire
+  text cache: hits=946 misses=3 evictions=0
+  text cache: hits=941 misses=5 evictions=0
+
+Work warm:mvon54a3:25:
+     225.36 ms  reader.runtime.operation [warm]
+      77.96 ms  reader.adjacent.resolve
+      75.93 ms  reader.adjacent.resolve
+       0.18 ms  reader.frame.resolve
+       0.13 ms  reader.frame.resolve
+       0.12 ms  reader.frame.resolve
+       0.11 ms  reader.frame.resolve
+       0.04 ms  reader.runtime.queue [warm]
+
+Work warm:mvon54a3:26:
+     257.14 ms  reader.runtime.operation [warm]
+     119.87 ms  reader.adjacent.resolve
+      73.22 ms  reader.adjacent.resolve
+       0.44 ms  reader.frame.resolve
+       0.32 ms  reader.runtime.queue [warm]
+       0.26 ms  reader.frame.resolve
+       0.14 ms  reader.frame.resolve
+       0.09 ms  reader.frame.resolve
+
+Activity windows; missing counters mean no observed activity. JS timer lag is not a dropped-frame count.
+  at=1792982585288 window=2509 ms
+    surface.commit: count=2 total=0.00 ms max=0.00 ms latest={"revision":0,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+    native.ready-probe: count=1 total=0.00 ms max=0.00 ms
+    js.timer-lag: count=7 total=2255.41 ms max=2255.41 ms
+  at=1792982587543 window=2134 ms
+    js.timer-lag: count=9 total=520.51 ms max=266.24 ms
+    surface.commit: count=3 total=0.00 ms max=0.00 ms latest={"revision":1,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"opening","revision":1,"spread":0}
+  at=1792982592345 window=4488 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"paginating","revision":1,"spread":0}
+    surface.commit: count=1 total=0.00 ms max=0.00 ms latest={"revision":1,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+    js.timer-lag: count=9 total=3650.49 ms max=1433.71 ms
+  at=1792982594619 window=2273 ms
+    js.timer-lag: count=17 total=1572.37 ms max=1265.36 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":1,"spread":0}
+    surface.commit: count=4 total=0.00 ms max=0.00 ms latest={"revision":1,"spread":0,"renderId":1,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=1 total=645.23 ms max=645.23 ms
+  at=1792982596728 window=2107 ms
+    js.timer-lag: count=9 total=443.94 ms max=139.14 ms
+    reading-state.save: count=1 total=2044.52 ms max=2044.52 ms
+  at=1792982599480 window=2260 ms
+    js.timer-lag: count=8 total=874.13 ms max=242.17 ms
+    background.frame.convert: count=1 total=0.14 ms max=0.14 ms
+    backend.background: count=1 total=5100.93 ms max=5100.93 ms
+    background.quantum: count=1 total=5101.79 ms max=5101.79 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":1,"spread":0}
+    surface.commit: count=2 total=0.00 ms max=0.00 ms latest={"revision":1,"spread":0,"renderId":1,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=1 total=19.32 ms max=19.32 ms
+  at=1792982601548 window=2035 ms
+    js.timer-lag: count=9 total=172.09 ms max=90.38 ms
+    reading-state.save: count=3 total=1191.14 ms max=652.43 ms
+    reading-state.queue: count=2 total=715.70 ms max=671.81 ms
+    backend.background: count=1 total=40.09 ms max=40.09 ms
+    background.quantum: count=1 total=40.21 ms max=40.21 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":1,"spread":0}
+    surface.commit: count=2 total=0.00 ms max=0.00 ms latest={"revision":1,"spread":0,"renderId":1,"effect":"slide","interactive":false,"automatic":0}
+  at=1792982603732 window=2017 ms
+    js.timer-lag: count=8 total=167.92 ms max=76.59 ms
+  at=1792982605873 window=2020 ms
+    js.timer-lag: count=8 total=123.70 ms max=28.57 ms
+  at=1792982608015 window=2018 ms
+    js.timer-lag: count=8 total=145.20 ms max=35.03 ms
+  at=1792982610138 window=2018 ms
+    js.timer-lag: count=8 total=131.13 ms max=25.36 ms
+  at=1792982612281 window=2034 ms
+    js.timer-lag: count=8 total=129.04 ms max=37.18 ms
+  at=1792982614510 window=2116 ms
+    js.timer-lag: count=8 total=138.10 ms max=30.15 ms
+  at=1792982616558 window=2019 ms
+    js.timer-lag: count=8 total=123.59 ms max=33.77 ms
+  at=1792982618671 window=2016 ms
+    js.timer-lag: count=8 total=133.46 ms max=28.73 ms
+  at=1792982620805 window=2027 ms
+    js.timer-lag: count=8 total=140.51 ms max=25.90 ms
+  at=1792982622937 window=2023 ms
+    js.timer-lag: count=8 total=135.50 ms max=34.94 ms
+  at=1792982625121 window=2053 ms
+    js.timer-lag: count=8 total=328.91 ms max=157.70 ms
+  at=1792982627298 window=2019 ms
+    js.timer-lag: count=8 total=129.42 ms max=53.25 ms
+  at=1792982629427 window=2033 ms
+    js.timer-lag: count=8 total=128.16 ms max=38.47 ms
+  at=1792982631557 window=2025 ms
+    js.timer-lag: count=8 total=141.06 ms max=36.73 ms
+  at=1792982633691 window=2029 ms
+    js.timer-lag: count=8 total=168.71 ms max=30.20 ms
+  at=1792982635834 window=2011 ms
+    js.timer-lag: count=8 total=137.98 ms max=27.03 ms
+  at=1792982637986 window=2021 ms
+    js.timer-lag: count=8 total=132.87 ms max=30.03 ms
+  at=1792982640113 window=2035 ms
+    js.timer-lag: count=8 total=151.06 ms max=38.33 ms
+  at=1792982642276 window=2016 ms
+    js.timer-lag: count=8 total=140.89 ms max=34.35 ms
+  at=1792982644401 window=2035 ms
+    js.timer-lag: count=8 total=166.77 ms max=52.97 ms
+  at=1792982646558 window=2034 ms
+    js.timer-lag: count=8 total=121.35 ms max=47.71 ms
+  at=1792982648720 window=2064 ms
+    js.timer-lag: count=8 total=157.63 ms max=44.42 ms
+  at=1792982650840 window=2036 ms
+    js.timer-lag: count=8 total=119.50 ms max=33.52 ms
+  at=1792982653036 window=2087 ms
+    js.timer-lag: count=8 total=163.44 ms max=53.08 ms
+  at=1792982655122 window=2042 ms
+    js.timer-lag: count=8 total=206.11 ms max=88.69 ms
+  at=1792982657201 window=2017 ms
+    js.timer-lag: count=8 total=149.50 ms max=36.92 ms
+  at=1792982659362 window=2034 ms
+    js.timer-lag: count=8 total=123.87 ms max=30.59 ms
+  at=1792982661496 window=2026 ms
+    js.timer-lag: count=8 total=142.18 ms max=28.43 ms
+  at=1792982663630 window=2023 ms
+    js.timer-lag: count=8 total=138.91 ms max=27.42 ms
+  at=1792982665756 window=2042 ms
+    js.timer-lag: count=8 total=137.18 ms max=32.09 ms
+  at=1792982667870 window=2015 ms
+    js.timer-lag: count=8 total=129.55 ms max=28.70 ms
+  at=1792982670009 window=2022 ms
+    js.timer-lag: count=8 total=130.24 ms max=28.20 ms
+  at=1792982672165 window=2039 ms
+    js.timer-lag: count=8 total=134.80 ms max=22.50 ms
+  at=1792982674300 window=2036 ms
+    js.timer-lag: count=8 total=124.29 ms max=31.01 ms
+  at=1792982676420 window=2023 ms
+    js.timer-lag: count=8 total=145.26 ms max=29.61 ms
+  at=1792982678557 window=2031 ms
+    js.timer-lag: count=8 total=123.19 ms max=30.14 ms
+  at=1792982680671 window=2012 ms
+    js.timer-lag: count=8 total=138.97 ms max=32.43 ms
+  at=1792982682812 window=2016 ms
+    js.timer-lag: count=8 total=150.46 ms max=36.37 ms
+  at=1792982684945 window=2028 ms
+    js.timer-lag: count=8 total=115.46 ms max=28.13 ms
+  at=1792982687068 window=2016 ms
+    js.timer-lag: count=8 total=131.60 ms max=30.03 ms
+  at=1792982689206 window=2027 ms
+    js.timer-lag: count=8 total=149.10 ms max=50.85 ms
+  at=1792982691352 window=2026 ms
+    js.timer-lag: count=8 total=147.99 ms max=29.15 ms
+  at=1792982693477 window=2018 ms
+    js.timer-lag: count=8 total=124.15 ms max=30.63 ms
+  at=1792982698174 window=4583 ms
+    js.timer-lag: count=8 total=3111.66 ms max=2899.30 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"paginating","revision":2,"spread":0}
+    surface.commit: count=3 total=0.00 ms max=0.00 ms latest={"revision":2,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+  at=1792982702293 window=4116 ms
+    js.timer-lag: count=17 total=3035.79 ms max=2990.90 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":2,"spread":0}
+    surface.commit: count=4 total=0.00 ms max=0.00 ms latest={"revision":2,"spread":0,"renderId":4,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=1 total=2776.88 ms max=2776.88 ms
+  at=1792982707244 window=4950 ms
+    js.timer-lag: count=15 total=3169.26 ms max=2731.65 ms
+    reading-state.save: count=3 total=400.05 ms max=382.28 ms
+    reading-state.queue: count=2 total=6326.50 ms max=3167.41 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"paginating","revision":3,"spread":0}
+    surface.commit: count=3 total=0.00 ms max=0.00 ms latest={"revision":3,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+  at=1792982712096 window=4850 ms
+    js.timer-lag: count=19 total=3706.81 ms max=3014.27 ms
+    background.frame.convert: count=1 total=105.31 ms max=105.31 ms
+    backend.background: count=1 total=6533.52 ms max=6533.52 ms
+    background.quantum: count=1 total=6533.64 ms max=6533.64 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":3,"spread":0}
+    surface.commit: count=2 total=0.00 ms max=0.00 ms latest={"revision":3,"spread":0,"renderId":5,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=1 total=2495.06 ms max=2495.06 ms
+  at=1792982716993 window=4837 ms
+    surface.commit: count=5 total=0.00 ms max=0.00 ms latest={"revision":4,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+    js.timer-lag: count=18 total=3052.33 ms max=2565.26 ms
+    reading-state.save: count=1 total=404.11 ms max=404.11 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"paginating","revision":4,"spread":0}
+  at=1792982721530 window=4535 ms
+    js.timer-lag: count=18 total=3376.05 ms max=3346.39 ms
+    background.frame.convert: count=1 total=71.26 ms max=71.26 ms
+    backend.background: count=1 total=5820.93 ms max=5820.93 ms
+    background.quantum: count=1 total=5821.02 ms max=5821.02 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":4,"spread":0}
+    surface.commit: count=4 total=0.00 ms max=0.00 ms latest={"revision":4,"spread":0,"renderId":7,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=1 total=2675.00 ms max=2675.00 ms
+  at=1792982727054 window=5520 ms
+    js.timer-lag: count=17 total=4202.62 ms max=3654.06 ms
+    reading-state.save: count=1 total=381.90 ms max=381.90 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"paginating","revision":5,"spread":0}
+    surface.commit: count=3 total=0.00 ms max=0.00 ms latest={"revision":5,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+  at=1792982731321 window=4265 ms
+    js.timer-lag: count=21 total=3239.84 ms max=3138.59 ms
+    background.frame.convert: count=1 total=70.33 ms max=70.33 ms
+    backend.background: count=1 total=6873.44 ms max=6873.44 ms
+    background.quantum: count=1 total=6873.50 ms max=6873.50 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":5,"spread":0}
+    surface.commit: count=4 total=0.00 ms max=0.00 ms latest={"revision":5,"spread":0,"renderId":8,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=1 total=2615.51 ms max=2615.51 ms
+  at=1792982736375 window=5054 ms
+    js.timer-lag: count=15 total=3383.58 ms max=2937.78 ms
+    reading-state.save: count=1 total=375.83 ms max=375.83 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"paginating","revision":6,"spread":0}
+    surface.commit: count=3 total=0.00 ms max=0.00 ms latest={"revision":6,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+  at=1792982739672 window=3293 ms
+    js.timer-lag: count=19 total=2567.04 ms max=2464.39 ms
+    background.frame.convert: count=1 total=62.30 ms max=62.30 ms
+    backend.background: count=1 total=5015.15 ms max=5015.15 ms
+    background.quantum: count=1 total=5015.39 ms max=5015.39 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":6,"spread":0}
+    surface.commit: count=4 total=0.00 ms max=0.00 ms latest={"revision":6,"spread":0,"renderId":10,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=1 total=2443.18 ms max=2443.18 ms
+  at=1792982744523 window=4849 ms
+    js.timer-lag: count=13 total=3206.95 ms max=2764.61 ms
+    reading-state.save: count=1 total=381.54 ms max=381.54 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"paginating","revision":7,"spread":0}
+    surface.commit: count=3 total=0.00 ms max=0.00 ms latest={"revision":7,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+  at=1792982750877 window=6351 ms
+    js.timer-lag: count=18 total=5481.24 ms max=5401.94 ms
+    background.frame.convert: count=1 total=62.13 ms max=62.13 ms
+    backend.background: count=1 total=5565.61 ms max=5565.61 ms
+    background.quantum: count=1 total=5565.69 ms max=5565.69 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"opening","revision":8,"spread":0}
+    surface.commit: count=4 total=0.00 ms max=0.00 ms latest={"revision":8,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=1 total=2420.39 ms max=2420.39 ms
+  at=1792982754654 window=3775 ms
+    js.timer-lag: count=24 total=2730.13 ms max=2730.13 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":8,"spread":0}
+    surface.commit: count=5 total=0.00 ms max=0.00 ms latest={"revision":8,"spread":0,"renderId":12,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.save: count=1 total=3527.27 ms max=3527.27 ms
+    reading-state.queue: count=1 total=2511.60 ms max=2511.60 ms
+  at=1792982756959 window=2304 ms
+    js.timer-lag: count=14 total=977.27 ms max=565.32 ms
+    reading-state.save: count=1 total=401.64 ms max=401.64 ms
+  at=1792982759040 window=2044 ms
+    js.timer-lag: count=9 total=217.38 ms max=90.89 ms
+    background.frame.convert: count=1 total=0.52 ms max=0.52 ms
+    backend.background: count=1 total=3732.56 ms max=3732.56 ms
+    background.quantum: count=1 total=3732.76 ms max=3732.76 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":8,"spread":0}
+    surface.commit: count=2 total=0.00 ms max=0.00 ms latest={"revision":8,"spread":0,"renderId":12,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=2 total=494.70 ms max=474.70 ms
+    reading-state.save: count=1 total=454.72 ms max=454.72 ms
+  at=1792982761089 window=2019 ms
+    reading-state.save: count=2 total=370.17 ms max=189.10 ms
+    backend.background: count=1 total=21.48 ms max=21.48 ms
+    background.quantum: count=1 total=21.56 ms max=21.56 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":8,"spread":0}
+    surface.commit: count=2 total=0.00 ms max=0.00 ms latest={"revision":8,"spread":0,"renderId":12,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=1 total=26.23 ms max=26.23 ms
+    js.timer-lag: count=7 total=111.38 ms max=30.92 ms
+  at=1792982763170 window=2025 ms
+    js.timer-lag: count=8 total=140.52 ms max=28.70 ms
+  at=1792982765289 window=2024 ms
+    js.timer-lag: count=8 total=133.61 ms max=26.45 ms
+  at=1792982767452 window=2038 ms
+    js.timer-lag: count=8 total=126.52 ms max=24.06 ms
+  at=1792982769585 window=2032 ms
+    js.timer-lag: count=8 total=135.76 ms max=30.52 ms
+  at=1792982771697 window=2023 ms
+    js.timer-lag: count=8 total=147.10 ms max=31.00 ms
+  at=1792982773826 window=2019 ms
+    js.timer-lag: count=8 total=118.31 ms max=24.20 ms
+  at=1792982775963 window=2033 ms
+    js.timer-lag: count=8 total=131.70 ms max=26.31 ms
+  at=1792982778096 window=2025 ms
+    js.timer-lag: count=8 total=145.78 ms max=26.65 ms
+  at=1792982780245 window=2031 ms
+    js.timer-lag: count=8 total=120.51 ms max=26.34 ms
+  at=1792982782373 window=2026 ms
+    js.timer-lag: count=8 total=204.27 ms max=77.31 ms
+  at=1792982784497 window=2021 ms
+    js.timer-lag: count=8 total=115.94 ms max=29.39 ms
+  at=1792982786623 window=2017 ms
+    js.timer-lag: count=8 total=130.50 ms max=24.44 ms
+  at=1792982788760 window=2019 ms
+    js.timer-lag: count=8 total=136.87 ms max=26.50 ms
+  at=1792982790901 window=2026 ms
+    js.timer-lag: count=8 total=130.50 ms max=23.35 ms
+  at=1792982793023 window=2018 ms
+    js.timer-lag: count=8 total=134.66 ms max=35.51 ms
+  at=1792982795169 window=2019 ms
+    js.timer-lag: count=8 total=152.30 ms max=35.27 ms
+  at=1792982797290 window=2019 ms
+    js.timer-lag: count=8 total=112.71 ms max=34.80 ms
+  at=1792982799462 window=2048 ms
+    js.timer-lag: count=8 total=142.44 ms max=30.59 ms
+  at=1792982801756 window=2218 ms
+    js.timer-lag: count=8 total=124.46 ms max=21.06 ms
+  at=1792982803833 window=2067 ms
+    js.timer-lag: count=8 total=369.31 ms max=115.65 ms
+    runtime.snapshot: count=3 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":8,"spread":0}
+    surface.commit: count=6 total=0.00 ms max=0.00 ms latest={"revision":8,"spread":0,"renderId":15,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=4 total=2011.73 ms max=789.20 ms
+    background.frame.convert: count=1 total=2.29 ms max=2.29 ms
+    backend.background: count=2 total=281.27 ms max=240.92 ms
+    background.quantum: count=2 total=281.59 ms max=241.05 ms
+    reading-state.save: count=3 total=1126.59 ms max=574.55 ms
+  at=1792982805902 window=2014 ms
+    js.timer-lag: count=8 total=281.66 ms max=160.29 ms
+    reading-state.save: count=7 total=1706.23 ms max=355.41 ms
+    reading-state.queue: count=6 total=3272.02 ms max=879.49 ms
+    runtime.snapshot: count=3 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":8,"spread":0}
+    surface.commit: count=6 total=0.00 ms max=0.00 ms latest={"revision":8,"spread":0,"renderId":18,"effect":"slide","interactive":false,"automatic":0}
+    background.frame.convert: count=1 total=0.61 ms max=0.61 ms
+    backend.background: count=2 total=195.22 ms max=164.29 ms
+    background.quantum: count=2 total=195.69 ms max=164.71 ms
+  at=1792982808008 window=2017 ms
+    js.timer-lag: count=8 total=161.87 ms max=42.39 ms
+    runtime.snapshot: count=4 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":8,"spread":0}
+    surface.commit: count=8 total=0.00 ms max=0.00 ms latest={"revision":8,"spread":0,"renderId":15,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=6 total=1268.41 ms max=332.31 ms
+    background.frame.convert: count=1 total=0.47 ms max=0.47 ms
+    backend.background: count=2 total=174.03 ms max=147.81 ms
+    background.quantum: count=2 total=174.55 ms max=147.90 ms
+    reading-state.save: count=5 total=625.88 ms max=291.83 ms
+  at=1792982812924 window=4859 ms
+    background.frame.convert: count=1 total=0.62 ms max=0.62 ms
+    backend.background: count=2 total=131.56 ms max=127.39 ms
+    background.quantum: count=2 total=131.75 ms max=127.45 ms
+    runtime.snapshot: count=5 total=0.00 ms max=0.00 ms latest={"phase":"reflowing","revision":9,"spread":2}
+    surface.commit: count=12 total=0.00 ms max=0.00 ms latest={"revision":9,"spread":2,"renderId":24,"effect":"slide","interactive":false,"automatic":0}
+    js.timer-lag: count=8 total=3136.67 ms max=2873.61 ms
+    reading-state.save: count=5 total=536.79 ms max=300.68 ms
+    reading-state.queue: count=5 total=1119.73 ms max=350.08 ms
+  at=1792982816352 window=3428 ms
+    js.timer-lag: count=18 total=2627.47 ms max=2594.47 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":9,"spread":0}
+    surface.commit: count=5 total=0.00 ms max=0.00 ms latest={"revision":9,"spread":0,"renderId":25,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.save: count=2 total=3745.06 ms max=3456.07 ms
+    reading-state.queue: count=2 total=5674.24 ms max=3193.06 ms
+  at=1792982820894 window=4540 ms
+    js.timer-lag: count=13 total=3200.52 ms max=3077.83 ms
+    reading-state.save: count=3 total=440.11 ms max=334.86 ms
+    reading-state.queue: count=2 total=5732.13 ms max=2916.08 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"reflowing","revision":10,"spread":0}
+    surface.commit: count=2 total=0.00 ms max=0.00 ms latest={"revision":10,"spread":0,"renderId":25,"effect":"slide","interactive":false,"automatic":0}
+  at=1792982824235 window=3339 ms
+    js.timer-lag: count=17 total=2569.45 ms max=2569.45 ms
+    background.frame.convert: count=1 total=0.84 ms max=0.84 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":10,"spread":0}
+    surface.commit: count=5 total=0.00 ms max=0.00 ms latest={"revision":10,"spread":0,"renderId":26,"effect":"slide","interactive":false,"automatic":0}
+    backend.background: count=1 total=5068.11 ms max=5068.11 ms
+    background.quantum: count=1 total=5068.22 ms max=5068.22 ms
+    reading-state.queue: count=1 total=2324.71 ms max=2324.71 ms
+  at=1792982829606 window=5369 ms
+    js.timer-lag: count=12 total=3803.32 ms max=3761.53 ms
+    reading-state.save: count=1 total=672.16 ms max=672.16 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"reflowing","revision":11,"spread":0}
+    surface.commit: count=2 total=0.00 ms max=0.00 ms latest={"revision":11,"spread":0,"renderId":26,"effect":"slide","interactive":false,"automatic":0}
+  at=1792982833642 window=4034 ms
+    js.timer-lag: count=20 total=2980.10 ms max=2942.56 ms
+    background.frame.convert: count=1 total=0.63 ms max=0.63 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":11,"spread":0}
+    surface.commit: count=5 total=0.00 ms max=0.00 ms latest={"revision":11,"spread":0,"renderId":29,"effect":"slide","interactive":false,"automatic":0}
+    backend.background: count=1 total=5638.70 ms max=5638.70 ms
+    background.quantum: count=1 total=5638.84 ms max=5638.84 ms
+    reading-state.queue: count=1 total=2779.57 ms max=2779.57 ms
+  at=1792982836145 window=2502 ms
+    js.timer-lag: count=15 total=681.16 ms max=591.86 ms
+    reading-state.save: count=1 total=534.78 ms max=534.78 ms
+  at=1792982838213 window=2068 ms
+    js.timer-lag: count=10 total=594.54 ms max=348.88 ms
+    background.frame.convert: count=1 total=0.61 ms max=0.61 ms
+    backend.background: count=1 total=3956.02 ms max=3956.02 ms
+    background.quantum: count=1 total=3956.16 ms max=3956.16 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":11,"spread":0}
+    surface.commit: count=2 total=0.00 ms max=0.00 ms latest={"revision":11,"spread":0,"renderId":29,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=2 total=434.06 ms max=393.96 ms
+    reading-state.save: count=1 total=353.84 ms max=353.84 ms
+  at=1792982840255 window=2014 ms
+    reading-state.save: count=2 total=442.47 ms max=223.52 ms
+    backend.background: count=1 total=1.91 ms max=1.91 ms
+    background.quantum: count=1 total=2.12 ms max=2.12 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"ready","revision":11,"spread":0}
+    surface.commit: count=2 total=0.00 ms max=0.00 ms latest={"revision":11,"spread":0,"renderId":29,"effect":"slide","interactive":false,"automatic":0}
+    reading-state.queue: count=1 total=19.31 ms max=19.31 ms
+    js.timer-lag: count=7 total=106.17 ms max=39.48 ms
+  at=1792982842313 window=2019 ms
+    js.timer-lag: count=8 total=131.82 ms max=28.90 ms
+  at=1792982844435 window=2022 ms
+    js.timer-lag: count=8 total=148.98 ms max=33.41 ms
+  at=1792982846562 window=2014 ms
+    js.timer-lag: count=8 total=119.10 ms max=31.59 ms
+  at=1792982848715 window=2011 ms
+    js.timer-lag: count=8 total=140.36 ms max=41.24 ms
+  at=1792982850855 window=2027 ms
+    js.timer-lag: count=8 total=130.45 ms max=25.57 ms
+  at=1792982852970 window=2022 ms
+    js.timer-lag: count=8 total=144.49 ms max=32.50 ms
+  at=1792982855106 window=2015 ms
+    js.timer-lag: count=8 total=133.22 ms max=41.20 ms
+  at=1792982857247 window=2029 ms
+    js.timer-lag: count=8 total=126.47 ms max=25.64 ms
+  at=1792982859379 window=2018 ms
+    js.timer-lag: count=8 total=129.53 ms max=36.93 ms
+  at=1792982861502 window=2024 ms
+    js.timer-lag: count=8 total=135.05 ms max=27.31 ms
+  at=1792982863630 window=2018 ms
+    js.timer-lag: count=8 total=137.29 ms max=30.44 ms
+  at=1792982865765 window=2020 ms
+    js.timer-lag: count=8 total=140.94 ms max=41.12 ms
+  at=1792982867899 window=2021 ms
+    js.timer-lag: count=8 total=126.28 ms max=27.94 ms
+  at=1792982870035 window=2011 ms
+    js.timer-lag: count=8 total=129.66 ms max=28.42 ms
+  at=1792982872253 window=2028 ms
+    js.timer-lag: count=8 total=272.24 ms max=97.41 ms
+  at=1792982874401 window=2073 ms
+    js.timer-lag: count=8 total=163.61 ms max=58.74 ms
+  at=1792982876480 window=2009 ms
+    js.timer-lag: count=8 total=119.95 ms max=38.13 ms
+  at=1792982878561 window=2015 ms
+    js.timer-lag: count=8 total=128.08 ms max=25.03 ms
+  at=1792982880741 window=2047 ms
+    js.timer-lag: count=8 total=129.93 ms max=31.66 ms
+  at=1792982882850 window=2037 ms
+    js.timer-lag: count=8 total=133.68 ms max=36.14 ms
+  at=1792982884989 window=2027 ms
+    js.timer-lag: count=8 total=139.51 ms max=31.06 ms
+  at=1792982887101 window=2015 ms
+    js.timer-lag: count=8 total=132.70 ms max=29.18 ms
+  at=1792982889230 window=2018 ms
+    js.timer-lag: count=8 total=135.11 ms max=34.87 ms
+  at=1792982891368 window=2023 ms
+    js.timer-lag: count=8 total=154.47 ms max=38.59 ms
+  at=1792982893496 window=2012 ms
+    js.timer-lag: count=8 total=111.85 ms max=22.80 ms
+  at=1792982895628 window=2011 ms
+    js.timer-lag: count=8 total=151.11 ms max=23.93 ms
+  at=1792982897770 window=2015 ms
+    js.timer-lag: count=8 total=125.84 ms max=25.51 ms
+  at=1792982899913 window=2017 ms
+    js.timer-lag: count=8 total=127.26 ms max=25.62 ms
+  at=1792982902140 window=2024 ms
+    js.timer-lag: count=8 total=217.61 ms max=115.29 ms
+  at=1792982904167 window=2021 ms
+    js.timer-lag: count=8 total=141.63 ms max=39.96 ms
+  at=1792982906306 window=2019 ms
+    js.timer-lag: count=8 total=140.19 ms max=26.96 ms
+  at=1792982908429 window=2015 ms
+    js.timer-lag: count=8 total=132.84 ms max=29.69 ms
+  at=1792982910572 window=2021 ms
+    js.timer-lag: count=8 total=133.98 ms max=26.42 ms
+  at=1792982912704 window=2019 ms
+    js.timer-lag: count=8 total=135.78 ms max=29.26 ms
+  at=1792982914830 window=2013 ms
+    js.timer-lag: count=8 total=130.64 ms max=32.92 ms
+  at=1792982916981 window=2021 ms
+    js.timer-lag: count=8 total=132.53 ms max=24.67 ms
+  at=1792982919099 window=2018 ms
+    js.timer-lag: count=8 total=133.46 ms max=43.38 ms
+  at=1792982921237 window=2025 ms
+    js.timer-lag: count=8 total=129.72 ms max=25.64 ms
+  at=1792982923368 window=2019 ms
+    js.timer-lag: count=8 total=142.72 ms max=32.02 ms
+  at=1792982925512 window=2034 ms
+    js.timer-lag: count=8 total=123.32 ms max=31.74 ms
+  at=1792982927645 window=2016 ms
+    js.timer-lag: count=8 total=142.97 ms max=32.94 ms
+  at=1792982929768 window=2016 ms
+    js.timer-lag: count=8 total=123.08 ms max=31.46 ms
+  at=1792982931900 window=2012 ms
+    js.timer-lag: count=8 total=150.01 ms max=36.32 ms
+  at=1792982934030 window=2018 ms
+    js.timer-lag: count=8 total=116.24 ms max=23.72 ms
+  at=1792982936179 window=2019 ms
+    js.timer-lag: count=8 total=139.05 ms max=34.19 ms
+  at=1792982938313 window=2030 ms
+    js.timer-lag: count=8 total=134.87 ms max=23.00 ms
+  at=1792982940430 window=2011 ms
+    js.timer-lag: count=8 total=144.83 ms max=25.69 ms
+  at=1792982942578 window=2021 ms
+    js.timer-lag: count=8 total=124.69 ms max=37.79 ms
+  at=1792982944713 window=2035 ms
+    js.timer-lag: count=8 total=137.81 ms max=30.17 ms
+  at=1792982946833 window=2012 ms
+    js.timer-lag: count=8 total=140.99 ms max=27.53 ms
+  at=1792982948979 window=2028 ms
+    js.timer-lag: count=8 total=124.26 ms max=31.14 ms
+  at=1792982951100 window=2012 ms
+    js.timer-lag: count=8 total=137.97 ms max=24.85 ms
+  at=1792982953230 window=2017 ms
+    js.timer-lag: count=8 total=133.23 ms max=27.52 ms
+  at=1792982955363 window=2011 ms
+    js.timer-lag: count=8 total=135.65 ms max=32.72 ms
+  at=1792982957517 window=2024 ms
+    js.timer-lag: count=8 total=166.64 ms max=43.93 ms
+  at=1792982959633 window=2009 ms
+    js.timer-lag: count=8 total=133.40 ms max=28.02 ms
+  at=1792982961769 window=2012 ms
+    js.timer-lag: count=8 total=132.35 ms max=33.87 ms
+  at=1792982963912 window=2026 ms
+    js.timer-lag: count=8 total=135.22 ms max=31.20 ms
+  at=1792982966034 window=2018 ms
+    js.timer-lag: count=8 total=136.86 ms max=30.52 ms
+  at=1792982968176 window=2031 ms
+    js.timer-lag: count=8 total=148.16 ms max=35.26 ms
+  at=1792982970305 window=2019 ms
+    js.timer-lag: count=8 total=128.50 ms max=32.77 ms
+  at=1792982972436 window=2022 ms
+    js.timer-lag: count=8 total=141.15 ms max=41.10 ms
+  at=1792982974571 window=2017 ms
+    js.timer-lag: count=8 total=131.98 ms max=26.37 ms
+  at=1792982976707 window=2026 ms
+    js.timer-lag: count=8 total=147.01 ms max=39.73 ms
+  at=1792982978831 window=2010 ms
+    js.timer-lag: count=8 total=110.91 ms max=27.35 ms
+  at=1792982980993 window=2029 ms
+    js.timer-lag: count=8 total=131.45 ms max=32.46 ms
+  at=1792982983101 window=2022 ms
+    js.timer-lag: count=8 total=144.37 ms max=27.90 ms
+  at=1792982985233 window=2018 ms
+    js.timer-lag: count=8 total=138.58 ms max=40.50 ms
+  at=1792982987373 window=2026 ms
+    js.timer-lag: count=8 total=116.79 ms max=33.21 ms
+  at=1792982989504 window=2022 ms
+    js.timer-lag: count=8 total=144.06 ms max=33.36 ms
+  at=1792982991630 window=2018 ms
+    js.timer-lag: count=8 total=126.09 ms max=34.96 ms
+  at=1792982993786 window=2040 ms
+    js.timer-lag: count=8 total=143.85 ms max=40.36 ms
+  at=1792982995915 window=2019 ms
+    js.timer-lag: count=8 total=141.84 ms max=33.19 ms
+  at=1792982998057 window=2027 ms
+    js.timer-lag: count=8 total=127.82 ms max=26.30 ms
+  at=1792983000178 window=2011 ms
+    js.timer-lag: count=8 total=163.55 ms max=40.78 ms
+  at=1792983002306 window=2022 ms
+    js.timer-lag: count=8 total=128.90 ms max=32.29 ms
+  at=1792983004437 window=2022 ms
+    js.timer-lag: count=8 total=132.80 ms max=29.41 ms
+  at=1792983006588 window=2043 ms
+    js.timer-lag: count=8 total=122.13 ms max=30.43 ms
+  at=1792983008722 window=2025 ms
+    js.timer-lag: count=8 total=135.76 ms max=36.79 ms
+  at=1792983010863 window=2030 ms
+    js.timer-lag: count=8 total=212.39 ms max=112.07 ms
+  at=1792983012972 window=2027 ms
+    js.timer-lag: count=8 total=136.92 ms max=37.89 ms
+  at=1792983015102 window=2024 ms
+    js.timer-lag: count=8 total=135.47 ms max=36.18 ms
+  at=1792983017230 window=2016 ms
+    js.timer-lag: count=8 total=145.24 ms max=32.76 ms
+  at=1792983019371 window=2017 ms
+    js.timer-lag: count=8 total=133.06 ms max=26.48 ms
+  at=1792983021506 window=2028 ms
+    js.timer-lag: count=8 total=126.82 ms max=38.28 ms
+  at=1792983023641 window=2027 ms
+    js.timer-lag: count=8 total=141.67 ms max=35.90 ms
+  at=1792983025789 window=2019 ms
+    js.timer-lag: count=8 total=153.15 ms max=46.64 ms
+  at=1792983027895 window=2010 ms
+    js.timer-lag: count=8 total=130.11 ms max=25.62 ms
+  at=1792983030030 window=2013 ms
+    js.timer-lag: count=8 total=135.69 ms max=26.26 ms
+  at=1792983032161 window=2015 ms
+    js.timer-lag: count=8 total=126.93 ms max=23.79 ms
+  at=1792983034304 window=2020 ms
+    js.timer-lag: count=8 total=134.95 ms max=28.86 ms
+  at=1792983036436 window=2011 ms
+    js.timer-lag: count=8 total=130.25 ms max=27.27 ms
+  at=1792983038578 window=2019 ms
+    js.timer-lag: count=8 total=145.41 ms max=37.30 ms
+  at=1792983040699 window=2017 ms
+    js.timer-lag: count=8 total=125.59 ms max=31.62 ms
+  at=1792983042829 window=2009 ms
+    js.timer-lag: count=8 total=159.70 ms max=31.85 ms
+  at=1792983044966 window=2019 ms
+    js.timer-lag: count=8 total=132.46 ms max=33.77 ms
+  at=1792983047107 window=2019 ms
+    js.timer-lag: count=8 total=121.69 ms max=25.47 ms
+  at=1792983050778 window=3564 ms
+    js.timer-lag: count=7 total=2806.02 ms max=2537.97 ms
+    runtime.snapshot: count=2 total=0.00 ms max=0.00 ms latest={"phase":"idle","revision":12,"spread":0}
+    surface.commit: count=3 total=0.00 ms max=0.00 ms latest={"revision":12,"spread":0,"effect":"slide","interactive":false,"automatic":0}
+  at=1792983053272 window=2493 ms
+    js.timer-lag: count=14 total=854.62 ms max=414.44 ms
+  at=1792983054899 window=1626 ms
+    js.timer-lag: count=7 total=75.48 ms max=26.76 ms
+  at=1792983058945 window=2013 ms
+    runtime.snapshot: count=1 total=0.00 ms max=0.00 ms latest={"phase":"idle","revision":13,"spread":0}

@@ -1,0 +1,16 @@
+[
+  {
+    "file": "moby-dick.epub",
+    "bytes": 1628868,
+    "sha256": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+    "deviceSourceSha256": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+    "matches": true
+  },
+  {
+    "file": "kusamakura-vertical-only.epub",
+    "bytes": 17940208,
+    "sha256": "5eee439293bd53cb2c284a9b988e8e15013aa433a415d10427fbf7bd1bc62a0d",
+    "deviceSourceSha256": "5eee439293bd53cb2c284a9b988e8e15013aa433a415d10427fbf7bd1bc62a0d",
+    "matches": true
+  }
+]
