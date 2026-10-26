@@ -87,3 +87,5 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 同一合规CC0三章样书经生产ReaderSession API验证：两种竖排正确选中“く”和“山道”，18→20px后标注仍覆盖对应字形；横排的命中与选区／标注响应不变，六个画面的绘制列表SHA与页文本均不变。见 [完整验证](vertical-interaction-fix/README.md)。
 
 协议7不能表达横向插入符条，因此保留竖排caret源位置与地址并省略其bar geometry；选区与标注矩形完整返回。没有发布适配器、更新锁文件或接入APK，本次是Linux主机验证。
+
+[Rito PR #46](https://github.com/Ringyuki/Rito/pull/46) 已创建，目标dev，代码head为 `5fa3f60e4b702eb7aa89c025ee890d0c4fb62053`，未合并。证据固定到 `ffa7006ceca0416ddc50a44005c90f8098fdcf10`；GitHub为MERGEABLE、远程检查列表为空，不把本地成功表述为远程CI通过。

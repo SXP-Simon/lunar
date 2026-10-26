@@ -2,6 +2,8 @@
 
 问题跟踪：[Rito #43](https://github.com/Ringyuki/Rito/issues/43)。内核独立分支 `fix/vertical-interaction-geometry`，基于上游 `dev` 的 `ed0284f3703244da28b3e6efd80cf29267cf6e65`；修复提交 `5fa3f60e4b702eb7aa89c025ee890d0c4fb62053`。此分支没有包含搜索或浮动修复。
 
+[独立 PR #46](https://github.com/Ringyuki/Rito/pull/46) 已创建，目标 `dev`，未合并。GitHub确认head与上述修复提交一致、MERGEABLE；远程 `statusCheckRollup` 为空。上游CI的PR触发分支仅为master，因此此处只报告本地检查通过。PR证据固定到 `ffa7006ceca0416ddc50a44005c90f8098fdcf10`。
+
 ## 结果与环境
 
 使用此前模拟器复现的同一本原创 CC0 [Ruby／writing-mode 对照 EPUB](../../samples/ruby-writing-mode-probe.epub)，文件未改，SHA-256 `3504352a4242bec633742ae496411394ab54ffdfe0df830efb22121f8d3aa3e8`，已有 EPUBCheck 0 错误、0 警告。
