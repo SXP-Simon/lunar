@@ -1,0 +1,41 @@
+{
+  "sourceCommit": "620a00fa531688fdc7277eef6a7afe3f475349b0",
+  "runtimeIdenticalToMain": "4641589621f24d0df7d5a0811a3e26b1856c64cf",
+  "sampleSha256": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+  "status": "diagnostic-only; native session reuse not implemented in runtime",
+  "coldRuntimeOpenMs": 6776.090000000782,
+  "trials": [
+    {
+      "fontSize": 20,
+      "candidateRequestAndDetailsMs": 382.8636999996379,
+      "fullRuntimeMs": 1174.3358000004664,
+      "sameText": true,
+      "sameSemanticDigest": true,
+      "candidateSessionId": "1",
+      "freshSessionId": "2"
+    },
+    {
+      "fontSize": 22,
+      "candidateRequestAndDetailsMs": 79.32740000076592,
+      "fullRuntimeMs": 630.946600000374,
+      "sameText": true,
+      "sameSemanticDigest": true,
+      "candidateSessionId": "2",
+      "freshSessionId": "3"
+    },
+    {
+      "fontSize": 18,
+      "candidateRequestAndDetailsMs": 66.11579999979585,
+      "fullRuntimeMs": 739.2889000000432,
+      "sameText": true,
+      "sameSemanticDigest": true,
+      "candidateSessionId": "3",
+      "freshSessionId": "4"
+    }
+  ],
+  "executedFilesSha256": {
+    "scripts/reader-reflow-diagnostic.js": "64d5e6f35ce996ebbe10fd2c810b091273a4039cfeb00c763bbba439ab73927e",
+    "reports/reflow-feasibility/fresh-process-result.json": "0ef86744f40970525a82eba63c78352e8c02d06a0ced64ba4ce96aead42e01b9",
+    "reports/reflow-feasibility/diagnostics/invalid-initial-setup.json": "32ea2be55d7abc741737bf2da510ff86e4d7b812e4a8bb6f82265d3b7f9fd1f6"
+  }
+}

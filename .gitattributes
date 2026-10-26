@@ -5,3 +5,5 @@
 /scripts/reader-close-input.js -text
 /scripts/compare-reader-close.mjs -text
 /reports/reader-close-pending/** -text
+/scripts/reader-reflow-diagnostic.js -text
+/reports/reflow-feasibility/** -text
