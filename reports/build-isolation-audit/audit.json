@@ -1,0 +1,60 @@
+{
+  "sourceByteComparison": "git -c core.autocrlf=false archive COMMIT",
+  "cleanWorkspaceBeforeEachVersion": true,
+  "rustVersion": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "platform": "Ubuntu 22.04 / WSL Linux x86_64 host; not Android",
+  "extraExamples": [
+    "search_wrap_native.rs",
+    "vertical_interaction_native.rs"
+  ],
+  "builds": [
+    {
+      "label": "baseline",
+      "commit": "ed0284f3703244da28b3e6efd80cf29267cf6e65",
+      "trackedFilesVerified": 1552,
+      "trackedContentManifestSha256": "d66021d9f4b2eb8a535320a25cc5c2e503e24700b31ddebfc4a6c144d72eb0d9",
+      "workspaceTestsPassed": 1016,
+      "workspaceTestsIgnored": 8,
+      "testSummaryGroups": 39,
+      "fmt": true,
+      "clippyWarningsDenied": true,
+      "binaries": {
+        "chapter": "7e664e6f404fa8afa7c36bb9830d82173080461120298dbc0105304ea8cc01d7",
+        "search": "f6dd89820de83053b35dbb8b74fa95467f7bc31b6a8ad7e418623e8fa1e24460",
+        "vertical": "88a20b18d2c8fc0ad5e1fe8da1122b71925f4e025f299b65bb1c26cd024f5852"
+      }
+    },
+    {
+      "label": "search",
+      "commit": "376e939fa70f03f218ae7d19cdd3490aacd170ca",
+      "trackedFilesVerified": 1553,
+      "trackedContentManifestSha256": "eb313f88799d723b55c735f6de0229b63dc8f57d22bdd82e9edb2bf31c1a6972",
+      "workspaceTestsPassed": 1024,
+      "workspaceTestsIgnored": 8,
+      "testSummaryGroups": 39,
+      "fmt": true,
+      "clippyWarningsDenied": true,
+      "binaries": {
+        "chapter": "ff6b61079dd4b8d511fa62ac3530747436f7ca6c2e864d60d107e82472b26bdc",
+        "search": "554c71efc377528e1425db9297fd49816b645957e612e2977d3b291b13d482d9",
+        "vertical": "b2b2a4bc283aa257f80483e7ba5eb543fc9dfd49ce3afad8ef29e1f85c400893"
+      }
+    },
+    {
+      "label": "vertical",
+      "commit": "5fa3f60e4b702eb7aa89c025ee890d0c4fb62053",
+      "trackedFilesVerified": 1554,
+      "trackedContentManifestSha256": "374191bbca794d9516da21835b44e9e6c0887fdf74fa8f935478cab4bc27c040",
+      "workspaceTestsPassed": 1022,
+      "workspaceTestsIgnored": 8,
+      "testSummaryGroups": 39,
+      "fmt": true,
+      "clippyWarningsDenied": true,
+      "binaries": {
+        "chapter": "41eb71958a4381a205c5989b2ef8056ccd27630506a0ef039a4731fd4b8de439",
+        "search": "c449188e8e4503df09335bb0b32cd589cab21bb4969bc1f7d940b86c08258d26",
+        "vertical": "e369f529be0d133896a8d10a27fa40bd1bd528e4ea2b678c7722337d168e9ffe"
+      }
+    }
+  ]
+}

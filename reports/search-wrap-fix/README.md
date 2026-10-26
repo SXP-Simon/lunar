@@ -1,8 +1,10 @@
 # 软换行搜索修复：主机原生对照
 
+> 构建记录更正：初版的1028项计数含有其他分支遗留的4项测试；只清理 rito-core 不足以隔离整个 workspace。本次重新构建及原生探针对照通过，正确计数为1024通过、8忽略，详见[构建隔离复核](../build-isolation-audit/README.md)。初版固定提交保留历史记录，当前结果由本次复核取代。
+
 关联 [Rito #44](https://github.com/Ringyuki/Rito/issues/44)。这修复阅读器搜索索引的问题，不修改书籍，也不重建失效目录锚点。
 
-[修复 PR #45](https://github.com/Ringyuki/Rito/pull/45) 已创建，目标 `dev`，未合并。GitHub 确认 head 为下列代码提交、状态 MERGEABLE；`statusCheckRollup` 为空，不能将本地主机检查表述为远程 CI 通过。PR 证据固定到 `080a5d3f48b34fdc16608241cec2c8784f5c958c`。
+[修复 PR #45](https://github.com/Ringyuki/Rito/pull/45) 已创建，目标 `dev`，未合并。GitHub 确认 head 为下列代码提交、状态 MERGEABLE；`statusCheckRollup` 为空，不能将本地主机检查表述为远程 CI 通过。初版 PR 证据固定到 `080a5d3f48b34fdc16608241cec2c8784f5c958c`。
 
 ## 构建与范围
 
@@ -12,7 +14,7 @@
 - 原创 CC0 的 [search-wrap-probe.epub](../../samples/search-wrap-probe.epub)，SHA-256 `3217b1cb335c9b10d84e7816b88d70a05ab767b28411f287b9fbca78884faabb`，已有 EPUBCheck 0 错误、0 警告。
 - 两版本使用相同 411×914、22px 字号、左右40px边距，Tinos 与 SourceHanSerifCN 固定字体输入；字体不等于此前模拟器的 WenKai。前后对照输入相同，全部内容在一页。
 
-基线与修复源码分别放在独立目录；共用依赖构建缓存，但每次切换源码前执行 `cargo clean -p rito-core`，强制重建核心与探针，避免同名包复用错误产物。未经该清理的中间运行已丢弃，不作为结果。JSON 的运行时调用均为公开 `ReaderSession` API。
+本次将基线与修复按 Git 原始字节导出到独立目录，使用新的 target 顺序构建；每次切换源码前执行 `cargo clean --workspace`，重建全部 workspace 包。JSON 的运行时调用均为公开 `ReaderSession` API。
 
 ## 结果
 
@@ -33,7 +35,7 @@
 
 新增4项索引测试与4项运行时集成测试，覆盖 CJK、英文空格、内联元素、真实结构边界、非 BMP 字符、大小写展开、完整源范围和高亮投影。相同4项集成测试在基线为3失败、1通过，修复版全部通过。原始记录：[基线回归](base-tests.log)、[最终全量检查](checks.log)。
 
-最终检查：`cargo fmt --all -- --check`、`cargo clippy --locked --workspace --all-targets -- -D warnings`、`cargo test --locked --workspace`；1028项通过、8项忽略。未修改 wire 协议、适配器锁文件、预编译库或 Lunar 依赖。不同页面间的拼接搜索、竖排交互坐标和复杂表格均不在此修复范围。
+最终检查：`cargo fmt --all -- --check`、`cargo clippy --locked --workspace --all-targets -- -D warnings`、`cargo test --locked --workspace`；1024项通过、8项忽略。未修改 wire 协议、适配器锁文件、预编译库或 Lunar 依赖。不同页面间的拼接搜索、竖排交互坐标和复杂表格均不在此修复范围。
 
 ## 复现
 
@@ -41,7 +43,7 @@
 
 ```sh
 export CARGO_TARGET_DIR=/your/shared-target CARGO_BUILD_JOBS=2
-cargo clean -p rito-core
+cargo clean --workspace
 cargo run --locked -p rito-core --example search_wrap_native -- \
   /evidence/samples/search-wrap-probe.epub \
   apps/reader/src/assets/fonts/Tinos-Regular.ttf \

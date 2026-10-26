@@ -1,0 +1,65 @@
+   Compiling rito-style-contract v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-style-contract)
+   Compiling rito-source v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-source)
+   Compiling rito-fragment v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-fragment)
+   Compiling rito-inline v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-inline)
+   Compiling rito-block v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-block)
+   Compiling rito-stylo v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-stylo)
+   Compiling rito-core v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 41.75s
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_core-f5b7d893e0a538b3)
+
+running 6 tests
+
+thread 'runtime::tests::vertical_interaction_tests::vertical_interaction_inline_image_and_link_hits_follow_paint' (53230) panicked at crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs:49:5:
+24 != 368
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'runtime::reader_session::interaction_tests::vertical_interaction_protocol_keeps_source_and_ranges_without_a_wrong_caret_bar' (53228) panicked at crates/rito-core/src/runtime/reader_session/interaction_tests.rs:38:5:
+protocol 7 must not invent a vertical caret bar
+test runtime::tests::vertical_interaction_tests::vertical_interaction_inline_image_and_link_hits_follow_paint ... FAILED
+test runtime::reader_session::interaction_tests::vertical_interaction_protocol_keeps_source_and_ranges_without_a_wrong_caret_bar ... FAILED
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::vertical_interaction_tests::vertical_interaction_hits_share_the_painted_glyph_column' (53229) panicked at crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs:49:5:
+0 != 352.5
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+test runtime::tests::vertical_interaction_tests::vertical_interaction_hits_share_the_painted_glyph_column ... ICU4X data error: FAILEDNo segmentation model for language: ja
+
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::vertical_interaction_tests::vertical_interaction_ruby_base_annotation_reprojects_after_reflow' (53233) panicked at crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs:169:5:
+assertion `left == right` failed
+  left: ""
+ right: "甲乙"
+test runtime::tests::vertical_interaction_tests::vertical_interaction_ruby_base_annotation_reprojects_after_reflow ... FAILED
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::vertical_interaction_tests::vertical_interaction_pointer_range_selects_the_painted_character' (53232) panicked at crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs:94:5:
+assertion `left == right` failed
+  left: Some(RuntimeSourcePoint { node_path: [0, 0], text_offset: 3 })
+ right: Some(RuntimeSourcePoint { node_path: [0, 0], text_offset: 1 })
+test runtime::tests::vertical_interaction_tests::vertical_interaction_pointer_range_selects_the_painted_character ... FAILED
+
+thread 'runtime::tests::vertical_interaction_tests::vertical_interaction_latin_and_non_bmp_glyphs_keep_utf16_boundaries' (53231) panicked at crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs:244:9:
+assertion `left == right` failed
+  left: 2
+ right: 0
+test runtime::tests::vertical_interaction_tests::vertical_interaction_latin_and_non_bmp_glyphs_keep_utf16_boundaries ... FAILED
+
+failures:
+
+failures:
+    runtime::reader_session::interaction_tests::vertical_interaction_protocol_keeps_source_and_ranges_without_a_wrong_caret_bar
+    runtime::tests::vertical_interaction_tests::vertical_interaction_hits_share_the_painted_glyph_column
+    runtime::tests::vertical_interaction_tests::vertical_interaction_inline_image_and_link_hits_follow_paint
+    runtime::tests::vertical_interaction_tests::vertical_interaction_latin_and_non_bmp_glyphs_keep_utf16_boundaries
+    runtime::tests::vertical_interaction_tests::vertical_interaction_pointer_range_selects_the_painted_character
+    runtime::tests::vertical_interaction_tests::vertical_interaction_ruby_base_annotation_reprojects_after_reflow
+
+test result: FAILED. 0 passed; 6 failed; 0 ignored; 0 measured; 569 filtered out; finished in 0.62s
+
+error: test failed, to rerun pass `-p rito-core --lib`

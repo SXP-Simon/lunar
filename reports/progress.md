@@ -74,7 +74,7 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 
 ## 2026-10-26 搜索软换行修复
 
-独立分支 `fix/search-soft-line-wraps`，提交 `376e939fa70f03f218ae7d19cdd3490aacd170ca`，基于上游 dev `ed0284f3703244da28b3e6efd80cf29267cf6e65`。同一 CC0 样书的 Linux 生产 ReaderSession 对照：中文／英文整句由0→1，同行查询保留，硬换行／段落反例仍为0；完整源范围与多行高亮可投影，页文本和绘制列表一致。8项新增回归、fmt、Clippy、全量1028通过／8忽略，见 [修复报告](search-wrap-fix/README.md)。
+独立分支 `fix/search-soft-line-wraps`，提交 `376e939fa70f03f218ae7d19cdd3490aacd170ca`，基于上游 dev `ed0284f3703244da28b3e6efd80cf29267cf6e65`。同一 CC0 样书的 Linux 生产 ReaderSession 对照：中文／英文整句由0→1，同行查询保留，硬换行／段落反例仍为0；完整源范围与多行高亮可投影，页文本和绘制列表一致。8项新增回归、fmt、Clippy、全量1024通过／8忽略，见 [修复报告](search-wrap-fix/README.md)。
 
 未发布适配器、未更改锁定版本，当前 Android 安装包仍有该问题；竖排交互坐标、rowspan 与宽表显示策略、同步ZIP性能也未在本项中修复。
 
@@ -82,10 +82,15 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 
 ## 2026-10-26 竖排交互坐标修复
 
-独立分支 `fix/vertical-interaction-geometry`，提交 `5fa3f60e4b702eb7aa89c025ee890d0c4fb62053`，基于上游 dev ed0284f。共享竖排绘制／交互几何，修正文字命中、指针范围、图片与链接，以及源范围／标注投影。6项新增回归在基线全失败、修复后通过；完整fmt、Clippy和workspace测试1026通过／8忽略。
+独立分支 `fix/vertical-interaction-geometry`，提交 `5fa3f60e4b702eb7aa89c025ee890d0c4fb62053`，基于上游 dev ed0284f。共享竖排绘制／交互几何，修正文字命中、指针范围、图片与链接，以及源范围／标注投影。6项新增回归在基线全失败、修复后通过；完整fmt、Clippy和workspace测试1022通过／8忽略。
 
 同一合规CC0三章样书经生产ReaderSession API验证：两种竖排正确选中“く”和“山道”，18→20px后标注仍覆盖对应字形；横排的命中与选区／标注响应不变，六个画面的绘制列表SHA与页文本均不变。见 [完整验证](vertical-interaction-fix/README.md)。
 
 协议7不能表达横向插入符条，因此保留竖排caret源位置与地址并省略其bar geometry；选区与标注矩形完整返回。没有发布适配器、更新锁文件或接入APK，本次是Linux主机验证。
 
 [Rito PR #46](https://github.com/Ringyuki/Rito/pull/46) 已创建，目标dev，代码head为 `5fa3f60e4b702eb7aa89c025ee890d0c4fb62053`，未合并。证据固定到 `ffa7006ceca0416ddc50a44005c90f8098fdcf10`；GitHub为MERGEABLE、远程检查列表为空，不把本地成功表述为远程CI通过。
+
+
+## 2026-10-26 构建隔离复核
+
+此前搜索／竖排报告仅清理 rito-core，导致 workspace 总计含有其他分支遗留的4项测试。现已按 Git 原始字节校验三个独立导出，新的 target 每切换版本清理整个 workspace：基线1016、搜索1024、竖排1022通过，均8忽略。重新运行生产 ReaderSession 探针，搜索与竖排选区／重排标注的前后结论保持一致；两个 PR 的代码 head 均未改变，未接入 APK。详见[复核与原始日志](build-isolation-audit/README.md)。

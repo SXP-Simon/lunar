@@ -7,12 +7,19 @@
     "Tinos-Regular.ttf": "60a0e8ef0c04dd5dd69ffe91025fa2ae5836cbd35600a82ba031977557e2cb61",
     "SourceHanSerifCN-Regular.otf": "3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d"
   },
-  "coreRebuiltBeforeEachVersion": true,
   "checks": {
     "fmt": true,
     "clippyWarningsDenied": true,
-    "workspaceTestsPassed": 1028,
+    "workspaceTestsPassed": 1024,
     "workspaceTestsIgnored": 8
   },
-  "androidAdoptionVerified": false
+  "androidAdoptionVerified": false,
+  "workspaceCleanBeforeEachVersion": true,
+  "binaries": {
+    "base": "f6dd89820de83053b35dbb8b74fa95467f7bc31b6a8ad7e418623e8fa1e24460",
+    "fixed": "554c71efc377528e1425db9297fd49816b645957e612e2977d3b291b13d482d9"
+  },
+  "supersedesEvidenceCommit": "080a5d3f48b34fdc16608241cec2c8784f5c958c",
+  "sourceByteVerified": true,
+  "audit": "../build-isolation-audit/audit.json"
 }

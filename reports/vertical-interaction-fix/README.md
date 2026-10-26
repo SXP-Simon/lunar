@@ -1,8 +1,10 @@
 # Rito #43：竖排选区与重排后标注的修复验证
 
+> 构建记录更正：初版的1026项计数含有其他分支遗留的4项测试；只清理 rito-core 不足以隔离整个 workspace。本次重新构建及原生探针对照通过，正确计数为1022通过、8忽略，详见[构建隔离复核](../build-isolation-audit/README.md)。初版固定提交保留历史记录，当前结果由本次复核取代。
+
 问题跟踪：[Rito #43](https://github.com/Ringyuki/Rito/issues/43)。内核独立分支 `fix/vertical-interaction-geometry`，基于上游 `dev` 的 `ed0284f3703244da28b3e6efd80cf29267cf6e65`；修复提交 `5fa3f60e4b702eb7aa89c025ee890d0c4fb62053`。此分支没有包含搜索或浮动修复。
 
-[独立 PR #46](https://github.com/Ringyuki/Rito/pull/46) 已创建，目标 `dev`，未合并。GitHub确认head与上述修复提交一致、MERGEABLE；远程 `statusCheckRollup` 为空。上游CI的PR触发分支仅为master，因此此处只报告本地检查通过。PR证据固定到 `ffa7006ceca0416ddc50a44005c90f8098fdcf10`。
+[独立 PR #46](https://github.com/Ringyuki/Rito/pull/46) 已创建，目标 `dev`，未合并。GitHub确认head与上述修复提交一致、MERGEABLE；远程 `statusCheckRollup` 为空。上游CI的PR触发分支仅为master，因此此处只报告本地检查通过。初版 PR 证据固定到 `ffa7006ceca0416ddc50a44005c90f8098fdcf10`。
 
 ## 结果与环境
 
@@ -35,9 +37,9 @@
 
 - `cargo fmt --all -- --check`
 - `cargo clippy --locked --workspace --all-targets -- -D warnings`
-- `cargo test --locked --workspace`：1026通过、8忽略。
+- `cargo test --locked --workspace`：1022通过、8忽略。
 
-原始记录：[基线失败](base-tests.log)、[最终检查](checks.log)、[构建身份](build.json)。两个源码目录顺序构建；切换版本前 `cargo clean -p rito-core`，强制重新编译核心，两个探针另存为不同可执行文件。使用上游同一提交自带的 primitive decoder 读取格式4，而非当前 Lunar 适配器的旧格式2 decoder。整个修复没有修改协议版本、适配器、锁文件或预编译库。
+原始记录：[基线失败](base-tests.log)、[最终检查](checks.log)、[构建身份](build.json)。本次以 Git 原始字节导出源码，使用新的 target 顺序构建；切换版本前 `cargo clean --workspace`，重建全部 workspace 包，两个探针另存为不同可执行文件。使用上游同一提交自带的 primitive decoder 读取格式4，而非当前 Lunar 适配器的旧格式2 decoder。整个修复没有修改协议版本、适配器、锁文件或预编译库。
 
 ## 复现
 
@@ -45,7 +47,7 @@
 
 ```sh
 export CARGO_TARGET_DIR=/your/shared-target CARGO_BUILD_JOBS=2
-cargo clean -p rito-core
+cargo clean --workspace
 cargo build --locked -p rito-core --example vertical_interaction_native
 cp /your/shared-target/debug/examples/vertical_interaction_native /your/label-probe
 ```
@@ -53,8 +55,8 @@ cp /your/shared-target/debug/examples/vertical_interaction_native /your/label-pr
 在 Windows Lunar 工作目录运行控制器（使用 WSL 的二进制）：
 
 ```sh
-node /evidence/scripts/vertical-interaction-audit.mjs . base /your/base-probe
-node /evidence/scripts/vertical-interaction-audit.mjs . fixed /your/fixed-probe
+node /evidence/scripts/vertical-interaction-audit.mjs . base /your/base-probe /your/base-export/apps/reader/src/assets/fonts/SourceHanSerifCN-Regular.otf
+node /evidence/scripts/vertical-interaction-audit.mjs . fixed /your/fixed-probe /your/fixed-export/apps/reader/src/assets/fonts/SourceHanSerifCN-Regular.otf
 python /evidence/scripts/compare-vertical-interaction.py
 ```
 

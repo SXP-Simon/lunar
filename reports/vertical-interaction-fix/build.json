@@ -5,18 +5,21 @@
   "rustVersion": "rustc 1.95.0 (59807616e 2026-04-14)",
   "fontSha256": "3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d",
   "binaries": {
-    "base": "103861f064a5b6e05d654ab4dbd5e50a22501e5dfababa580c958369d4dcb9b0",
-    "fixed": "992a3dbaa086eefa2b5e0852cae2c520e214f24b00b3f1d88b02df6857bd758d"
+    "base": "88a20b18d2c8fc0ad5e1fe8da1122b71925f4e025f299b65bb1c26cd024f5852",
+    "fixed": "e369f529be0d133896a8d10a27fa40bd1bd528e4ea2b678c7722337d168e9ffe"
   },
-  "coreCleanBeforeEachVersion": true,
   "newBaselineRegressionFailures": 6,
   "checks": {
     "fmt": true,
     "clippyWarningsDenied": true,
-    "workspaceTestsPassed": 1026,
+    "workspaceTestsPassed": 1022,
     "workspaceTestsIgnored": 8
   },
   "androidAdoptionVerified": false,
   "protocolVersionUnchanged": 7,
-  "primitiveListVersionUnchanged": 4
+  "primitiveListVersionUnchanged": 4,
+  "workspaceCleanBeforeEachVersion": true,
+  "supersedesEvidenceCommit": "ffa7006ceca0416ddc50a44005c90f8098fdcf10",
+  "sourceByteVerified": true,
+  "audit": "../build-isolation-audit/audit.json"
 }

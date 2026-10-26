@@ -1,5 +1,5 @@
 // Public ReaderSession host probe + the matching upstream primitive decoder.
-// node vertical-interaction-audit.mjs LUNAR_ROOT base|fixed LINUX_BINARY
+// node vertical-interaction-audit.mjs LUNAR_ROOT base|fixed LINUX_BINARY [LINUX_FONT]
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -8,7 +8,8 @@ import readline from 'node:readline';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 
-const [lunarArg,label,binary] = process.argv.slice(2);
+const [lunarArg,label,binary,fontArg] = process.argv.slice(2);
+assert(label==='base'||label==='fixed','label must be base or fixed');
 const lunar=path.resolve(lunarArg);
 const evidence=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const decoderPath=path.join(lunar,'rito-rn/upstream/rito/packages/rito-core-wasm/src/reader-session-primitive-decoder-runtime.js');
@@ -16,7 +17,10 @@ const {decodeRitoReaderPrimitiveList}=await import(pathToFileURL(decoderPath));
 const linux=p=>'/mnt/'+p[0].toLowerCase()+p.slice(2).replaceAll('\\','/');
 const sample=path.join(evidence,'samples/ruby-writing-mode-probe.epub');
 const child=spawn('wsl',['-d','Ubuntu-22.04','--',binary,linux(sample),
-  '/home/helian/rito-vertical-fixed/apps/reader/src/assets/fonts/SourceHanSerifCN-Regular.otf'],{stdio:['pipe','pipe','pipe']});
+  fontArg??'/home/helian/rito-vertical-fixed/apps/reader/src/assets/fonts/SourceHanSerifCN-Regular.otf'],{stdio:['pipe','pipe','pipe']});
+const completed=new Promise((resolve,reject)=>{
+  child.once('error',reject);child.once('close',code=>resolve(code));
+});
 let errors='';child.stderr.on('data',c=>errors+=c.toString());
 const lines=readline.createInterface({input:child.stdout})[Symbol.asyncIterator]();
 async function query(v){child.stdin.write(JSON.stringify(v)+'\n');
@@ -72,7 +76,7 @@ try {
     }
   }
 }finally{child.stdin.end();}
-await new Promise(resolve=>child.once('exit',resolve));
+assert.equal(await completed,0,errors);
 const out=path.join(evidence,'reports/vertical-interaction-fix');fs.mkdirSync(out,{recursive:true});
 fs.writeFileSync(path.join(out,label+'.json'),JSON.stringify({label,
   sampleSha256:crypto.createHash('sha256').update(fs.readFileSync(sample)).digest('hex'),

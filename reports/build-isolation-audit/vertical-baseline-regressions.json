@@ -1,0 +1,12 @@
+{
+  "exitCode": 101,
+  "passed": 0,
+  "failed": 6,
+  "productionCodeChanged": false,
+  "testInstrumentationRestored": true,
+  "testFilesSha256": {
+    "crates/rito-core/src/runtime/tests.rs": "70b61c01372142c2466a4c475fad5076716a1674715c6e6acfe6dd3b0483e804",
+    "crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs": "bacf833db2d20053ef292de8728b789c9d6d79153a9fdde43f83caa0c140f973",
+    "crates/rito-core/src/runtime/reader_session/interaction_tests.rs": "d7fa6048ce16b1957668fac94605fe63977dd53fe9b3693b0b5a7d2ba7c766dd"
+  }
+}
