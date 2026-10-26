@@ -49,6 +49,7 @@ Android API 36 `handwrite-api36`，4 GiB、1080×2400、420dpi，x86_64／ARM64 
 4. 在实际书库打开这本公开书，用生产 store 的 `updateTypography` 触发阅读 Hook，检查 18→24→20→18px。后台分页和正常页面逻辑保持运行；原生 session 不变，持久化黄色高亮覆盖正确单词，恢复 18px 后几何与原位置相同。此步骤不是性能计时，也不等于验证所有选区拖动手势。
 5. 另在实际页面比较 20px 复用重排与显式完整 reopen：Native session 确实改变，正文区域 `[0,310,1080,2200]` 的 PNG 像素完全相同（排除系统时钟、工具栏和页脚），包括已有高亮。截图保留原图，未裁剪、重绘或修饰。
 6. 另选非首页的 `phantom` 源范围：18px 时位于零基第 5 页，24px 后移到第 10 页，仍为同一 session，选文和非空矩形正确。保存新位置、关闭并重新打开，恢复第 10 页，矩形与重排结果完全一致。见 [middle-position.json](middle-position.json)；避免只用首页标注支撑整项定位结论。
+7. 补充 600×700／2 倍像素比视口、行高 2／新边距的 API 检查，复用结果与完整打开的文字、绘制语义和标注几何一致，见 [layout-matrix.json](layout-matrix.json)。也对比了 `double` 请求，但这个检查点实际只有一个页索引，**不作为真正双页画面支持的证据**；只证明该请求下两条加载路径结果一致。
 
 最初 UI 恢复在章内第 3 页，`Ishmael` 的源范围解析成功但在该页无矩形；这属于离屏标注，不是丢标注。原记录 [reflow-ui-before.json](ui/reflow-ui-before.json) 保留，随后明确跳到标注源位置才比较。没有把离屏结果算作通过，也没有改书修复它。
 
@@ -95,5 +96,7 @@ node /evidence/scripts/compare-reflow-cold.mjs 15efd33e545716707abbd2beb03f88580
 UI 复现需先将原始公开书导入书库，确认 bookId 为其 SHA。按顺序运行 `reflow-ui-open.js`、`reflow-ui-position.js`、`reflow-ui-adjust.js` 两次，然后 `reflow-ui-restore.js`；首次搜索源范围后明确定位，检查 sameSession、选文和矩形。已有黄色标注来自独立导入测试保存的公开 `Ishmael` 标注；新环境可通过正常选区 UI 建立同词标注。截图原生 `adb exec-out screencap -p`。像素对照另外按 `open → position → set20 → 截图 → fresh20 → 截图 → restore` 执行，比较上述区域；Python 的 Pillow 可复算，时钟等排除区不参与比较。
 
 非首页检查在阅读器已关闭的进程中，先加载同一输入脚本，再用 Hermes 运行 `reflow-middle-position.js --async`；它搜索并定位公开书的 `phantom`，重排和重开后检查源范围，结束关闭自己的会话。这是位置与几何检查，不纳入耗时统计。
+
+同样先加载输入后运行 `reflow-layout-matrix.js --async` 可复现补充布局对照；这里只检查所列具体请求，不是竖排、跨平台或全部双页兼容验收。
 
 `scripts/verify-reader-session-reflow.py` 校核保存原始记录、源码／脚本指纹、六次正确性及 UI 几何／像素数据；它不能替代重新运行 Android。指纹清单和汇总见 [summary.json](summary.json)，未经提交的初次工作区实验只保留在 diagnostics，不参与正式统计。

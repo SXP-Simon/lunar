@@ -93,6 +93,15 @@ assert reflowed['snapshot']['position']['pageIndex'] == reopened['snapshot']['po
 assert old['sessionId'] == reflowed['sessionId'] != reopened['sessionId']
 assert reflowed['geometry'] == reopened['geometry']
 assert all(step['geometry']['selectedText'] == 'phantom' and step['geometry']['rects'] for step in (old, reflowed, reopened))
+matrix = load(report / 'layout-matrix.json')['result']['value']
+assert matrix['status'] == 'done' and matrix['value']['status'] == 'done'
+assert [case['name'] for case in matrix['value']['cases']] == ['double', 'viewport', 'spacing']
+for case in matrix['value']['cases']:
+    assert case['matched']
+    a, b = case['reflowed'], case['fresh']
+    assert a['sessionId'] != b['sessionId']
+    assert all(a[key] == b[key] for key in ('text', 'semanticDigest', 'geometry'))
+assert load(report / 'final-settings.json')['result']['value'] == {'before': True, 'restored': True}
 assert '32 passed (32)' in (report / 'checks/targeted-tests.log').read_text(encoding='utf-8-sig')
 assert '547 passed (547)' in (report / 'checks/full-tests.log').read_text(encoding='utf-8-sig')
 assert '1 failed | 1 passed | 30 skipped (32)' in (report / 'checks/final-baseline-negative.log').read_text(encoding='utf-8-sig')
