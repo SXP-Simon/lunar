@@ -1,0 +1,104 @@
+{
+  "workspaceTestsPassed": 1019,
+  "workspaceTestsIgnored": 8,
+  "baselineRegressionsFailed": 3,
+  "horizontalPaintUnchanged": true,
+  "pageTextUnchanged": true,
+  "nativeCompositionIncludesPaintFix": true,
+  "androidFixedKernelAdopted": false,
+  "changes": [
+    {
+      "chapter": "horizontal",
+      "before": [
+        {
+          "x": 76,
+          "y": 134,
+          "width": 48,
+          "height": 32
+        },
+        {
+          "x": 76,
+          "y": 190,
+          "width": 48,
+          "height": 32
+        }
+      ],
+      "after": [
+        {
+          "x": 76,
+          "y": 134,
+          "width": 48,
+          "height": 32
+        },
+        {
+          "x": 76,
+          "y": 190,
+          "width": 48,
+          "height": 32
+        }
+      ]
+    },
+    {
+      "chapter": "vertical",
+      "before": [
+        {
+          "x": 288,
+          "y": 124.761906,
+          "width": 32,
+          "height": 21.328125
+        },
+        {
+          "x": 216,
+          "y": 124.761906,
+          "width": 48,
+          "height": 32
+        }
+      ],
+      "after": [
+        {
+          "x": 272,
+          "y": 124.761906,
+          "width": 48,
+          "height": 32
+        },
+        {
+          "x": 200,
+          "y": 124.761906,
+          "width": 48,
+          "height": 32
+        }
+      ]
+    },
+    {
+      "chapter": "prefixed",
+      "before": [
+        {
+          "x": 288,
+          "y": 124.761906,
+          "width": 32,
+          "height": 21.328125
+        },
+        {
+          "x": 216,
+          "y": 124.761906,
+          "width": 48,
+          "height": 32
+        }
+      ],
+      "after": [
+        {
+          "x": 272,
+          "y": 124.761906,
+          "width": 48,
+          "height": 32
+        },
+        {
+          "x": 200,
+          "y": 124.761906,
+          "width": 48,
+          "height": 32
+        }
+      ]
+    }
+  ]
+}

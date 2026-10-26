@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 const [lunarArg, label, binary, fontArg] = process.argv
   .slice(2)
-  .filter((arg) => arg !== "--kusamakura");
+  .filter((arg) => arg !== "--kusamakura" && !arg.startsWith("--out="));
 assert(["base", "fixed"].includes(label));
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."),
   lunar = path.resolve(lunarArg);
@@ -97,7 +97,11 @@ try {
   child.stdin.end();
 }
 assert.equal(await done, 0, stderr);
-const out = path.join(root, "reports/kusamakura-image-pagination");
+const outputArg = process.argv.find((arg) => arg.startsWith("--out="));
+const out = outputArg
+  ? path.resolve(outputArg.slice("--out=".length))
+  : path.join(root, "reports/kusamakura-image-pagination");
+fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(
   path.join(
     out,

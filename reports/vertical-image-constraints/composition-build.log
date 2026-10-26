@@ -1,0 +1,9 @@
+   Compiling rito-style-contract v0.0.0 (/home/helian/rito-vertical-image/crates/rito-style-contract)
+   Compiling rito-source v0.0.0 (/home/helian/rito-vertical-image/crates/rito-source)
+   Compiling rito-fragment v0.0.0 (/home/helian/rito-vertical-image/crates/rito-fragment)
+   Compiling parley v0.11.0 (/home/helian/rito-vertical-image/crates/vendor/parley)
+   Compiling rito-block v0.0.0 (/home/helian/rito-vertical-image/crates/rito-block)
+   Compiling rito-stylo v0.0.0 (/home/helian/rito-vertical-image/crates/rito-stylo)
+   Compiling rito-inline v0.0.0 (/home/helian/rito-vertical-image/crates/rito-inline)
+   Compiling rito-core v0.0.0 (/home/helian/rito-vertical-image/crates/rito-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 26.78s

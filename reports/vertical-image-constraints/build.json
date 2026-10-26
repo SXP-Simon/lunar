@@ -1,0 +1,17 @@
+{
+  "trackedFilesVerified": 1553,
+  "manifestSha256": "8a3919569ff6648520197a658ec8065e69ac1473a75c254faecaa9cd65d82a38",
+  "baselineCommit": "ed0284f3703244da28b3e6efd80cf29267cf6e65",
+  "fixedCommit": "123a1fbebb7ca00c34f1aded03a390eef0309527",
+  "paintOverlayCommit": "dbef76cdf15dabd48bb83d03f3c2ddf82b263b9e",
+  "paintOverlayFile": "crates/rito-core/src/fragment_paint/vertical.rs",
+  "paintOverlaySha256": "9410497134aa1d127aa53a56ecf1cd4f2ca17c93f73d0bb8af5c8e041486197f",
+  "probeSha256": "3354edfd3cc7de5239887b8d4b3cd1e1be2fcc21abdf52f2b9ba5c44eed307e0",
+  "paintOnlyProbeSha256": "41196dfdd0993d3c1363005b39cf2fd2f49b14416d8e1b8c8dc07a60cad1d8c6",
+  "fontSha256": "3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d",
+  "workspaceTestsPassed": 1019,
+  "workspaceTestsIgnored": 8,
+  "fmt": true,
+  "clippyWarningsDenied": true,
+  "androidFixedKernelAdopted": false
+}

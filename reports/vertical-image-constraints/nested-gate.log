@@ -1,0 +1,24 @@
+   Compiling rito-inline v0.0.0 (/home/helian/rito-vertical-image/crates/rito-inline)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.77s
+     Running unittests src/lib.rs (/home/helian/rito-inline-block-target/debug/deps/rito_inline-be1871f43e0f0949)
+
+running 3 tests
+test tests::vertical_images::vertical_image_percentage_width_uses_physical_width ... ok
+test tests::vertical_images::vertical_image_page_clamp_uses_physical_axes ... FAILED
+test tests::vertical_images::vertical_boxed_landscape_image_keeps_author_dimensions ... ok
+
+failures:
+
+---- tests::vertical_images::vertical_image_page_clamp_uses_physical_axes stdout ----
+
+thread 'tests::vertical_images::vertical_image_page_clamp_uses_physical_axes' (8158) panicked at crates/rito-inline/src/tests/vertical_images.rs:95:5:
+width FragmentRect { x: 0.0, y: 0.0, width: 180.0, height: 320.0 }, expected 56.25
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::vertical_images::vertical_image_page_clamp_uses_physical_axes
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 77 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p rito-inline --lib`

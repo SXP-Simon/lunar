@@ -1,0 +1,38 @@
+   Compiling rito-style-contract v0.0.0 (/home/helian/rito-vertical-image/crates/rito-style-contract)
+   Compiling rito-fragment v0.0.0 (/home/helian/rito-vertical-image/crates/rito-fragment)
+   Compiling rito-inline v0.0.0 (/home/helian/rito-vertical-image/crates/rito-inline)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.20s
+     Running unittests src/lib.rs (/home/helian/rito-inline-block-target/debug/deps/rito_inline-be1871f43e0f0949)
+
+running 3 tests
+test tests::vertical_images::vertical_image_percentage_width_uses_physical_width ... FAILED
+test tests::vertical_images::vertical_image_page_clamp_uses_physical_axes ... FAILED
+test tests::vertical_images::vertical_boxed_landscape_image_keeps_author_dimensions ... FAILED
+
+failures:
+
+---- tests::vertical_images::vertical_image_percentage_width_uses_physical_width stdout ----
+
+thread 'tests::vertical_images::vertical_image_percentage_width_uses_physical_width' (15898) panicked at crates/rito-inline/src/tests/vertical_images.rs:95:5:
+width FragmentRect { x: 0.0, y: 0.0, width: 50.0, height: 100.0 }, expected 25
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- tests::vertical_images::vertical_image_page_clamp_uses_physical_axes stdout ----
+
+thread 'tests::vertical_images::vertical_image_page_clamp_uses_physical_axes' (15897) panicked at crates/rito-inline/src/tests/vertical_images.rs:95:5:
+width FragmentRect { x: 0.0, y: 0.0, width: 100.0, height: 177.765625 }, expected 56.25
+
+---- tests::vertical_images::vertical_boxed_landscape_image_keeps_author_dimensions stdout ----
+
+thread 'tests::vertical_images::vertical_boxed_landscape_image_keeps_author_dimensions' (15896) panicked at crates/rito-inline/src/tests/vertical_images.rs:95:5:
+width FragmentRect { x: 0.0, y: 0.0, width: 13.328125, height: 20.0 }, expected 20
+
+
+failures:
+    tests::vertical_images::vertical_boxed_landscape_image_keeps_author_dimensions
+    tests::vertical_images::vertical_image_page_clamp_uses_physical_axes
+    tests::vertical_images::vertical_image_percentage_width_uses_physical_width
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 77 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p rito-inline --lib`
