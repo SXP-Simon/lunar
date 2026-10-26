@@ -2,6 +2,8 @@
 
 关联 [Rito #44](https://github.com/Ringyuki/Rito/issues/44)。这修复阅读器搜索索引的问题，不修改书籍，也不重建失效目录锚点。
 
+[修复 PR #45](https://github.com/Ringyuki/Rito/pull/45) 已创建，目标 `dev`，未合并。GitHub 确认 head 为下列代码提交、状态 MERGEABLE；`statusCheckRollup` 为空，不能将本地主机检查表述为远程 CI 通过。PR 证据固定到 `080a5d3f48b34fdc16608241cec2c8784f5c958c`。
+
 ## 构建与范围
 
 - 上游 `dev` 基线：`ed0284f3703244da28b3e6efd80cf29267cf6e65`。

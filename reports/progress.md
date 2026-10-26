@@ -77,3 +77,5 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 独立分支 `fix/search-soft-line-wraps`，提交 `376e939fa70f03f218ae7d19cdd3490aacd170ca`，基于上游 dev `ed0284f3703244da28b3e6efd80cf29267cf6e65`。同一 CC0 样书的 Linux 生产 ReaderSession 对照：中文／英文整句由0→1，同行查询保留，硬换行／段落反例仍为0；完整源范围与多行高亮可投影，页文本和绘制列表一致。8项新增回归、fmt、Clippy、全量1028通过／8忽略，见 [修复报告](search-wrap-fix/README.md)。
 
 未发布适配器、未更改锁定版本，当前 Android 安装包仍有该问题；竖排交互坐标、rowspan 与宽表显示策略、同步ZIP性能也未在本项中修复。
+
+[Rito PR #45](https://github.com/Ringyuki/Rito/pull/45) 已创建，目标 dev，head `376e939fa70f03f218ae7d19cdd3490aacd170ca`，未合并；证据固定到 `080a5d3f48b34fdc16608241cec2c8784f5c958c`。GitHub 为 MERGEABLE，远程检查列表为空，本地检查通过不等于远程 CI 通过。
