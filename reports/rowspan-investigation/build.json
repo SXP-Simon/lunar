@@ -1,0 +1,28 @@
+{
+  "baseCommit": "ed0284f3703244da28b3e6efd80cf29267cf6e65",
+  "fixedCommit": "f6c498a68e24d0fe0d9336c0e12a348ed75c33e5",
+  "branch": "feat/table-rowspan-grid",
+  "platform": "Ubuntu 22.04 / WSL Linux x86_64; not Android",
+  "rustVersion": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "workspaceCleanAtStartOfValidationSequence": true,
+  "singleCheckoutDuringFinalEdits": true,
+  "checks": {
+    "fmt": true,
+    "clippyWarningsDenied": true,
+    "workspaceTestsPassed": 1033,
+    "workspaceTestsIgnored": 8,
+    "testSummaryGroups": 39,
+    "newRegressions": 17
+  },
+  "probeSha256": "cf1052392dc0f85234c394716e23712be41aaa65352469ceafee0482f322df78",
+  "baselineProbeSha256": "7e664e6f404fa8afa7c36bb9830d82173080461120298dbc0105304ea8cc01d7",
+  "fontSha256": {
+    "Tinos-Regular.ttf": "60a0e8ef0c04dd5dd69ffe91025fa2ae5836cbd35600a82ba031977557e2cb61",
+    "SourceHanSerifCN-Regular.otf": "3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d"
+  },
+  "fragmentContinuationExtensionTag": 2,
+  "ordinaryContinuationEncodingUnchanged": true,
+  "readerSessionProtocolChanged": false,
+  "primitiveListFormatChanged": false,
+  "androidAdoptionVerified": false
+}

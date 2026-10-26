@@ -29,6 +29,7 @@
 | cole-voyage-of-life | 混合版式、spine 单项 layout 覆盖 |
 | wasteland-otf / wasteland-woff / wasteland-otf-obf | 出版方字体、字体格式和字体混淆 |
 | internallinks | 书内交叉链接与返回 |
+| rowspan-pagination-probe / rowspan-parallel-probe | 原创 CC0：长跨行组、两列独立断行与分页完整性 |
 | trees | CSS 多栏和分页边界 |
 | childrens-literature | 目录、隐藏内容及普通流式对照 |
 
@@ -59,3 +60,5 @@ java -jar epubcheck.jar samples/moby-dick-opf-prefix.epub --json reports/moby-di
 基线：10 本原始样书的元数据和首章节查找通过；空白变体导入失败；前缀变体导入时封面丢失、打开时找不到首章节。修复后的解析报告：12 本均通过，两个变体的元数据、封面和首章节与原书一致。
 
 设备画面、交互和耗时的验证结果另行记录；没有对应结果的项目不得视为通过。
+
+两本 rowspan 原创样书的生成器为 `scripts/rowspan-pagination-probe.py`（第二本加 `--parallel`），全部文字和标记由本次测试编写并按 CC0 1.0 提供；没有改写 IDPF 原书。见 [Rito 跨行表格验证](reports/rowspan-investigation/README.md)。

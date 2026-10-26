@@ -1,0 +1,18 @@
+[
+  {
+    "file": "rowspan-pagination-probe.epub",
+    "sha256": "61ef0cf2657350ff4d3ad5e450eddb1f9022688792062f74695e12725765e772",
+    "epubcheck": "5.4.0",
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  {
+    "file": "rowspan-parallel-probe.epub",
+    "sha256": "1bca0370853f157bd67ff9c8e241ee89203b7b6b5b21c1c3b49ea19b38c64146",
+    "epubcheck": "5.4.0",
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0
+  }
+]

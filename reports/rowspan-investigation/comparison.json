@@ -1,0 +1,112 @@
+[
+  {
+    "sampleSha256": "deaf03a1843f52cc5e4cedb226ca8659610efe1be5e810fccf615bcb549238aa",
+    "fragmentainerSize": null,
+    "chapters": [
+      {
+        "idref": "id0001",
+        "sameTextPerSourceNode": true,
+        "textLines": 68,
+        "pages": 1,
+        "secondRowHeader": {
+          "before": {
+            "text": "MS明朝",
+            "page": 0,
+            "x": 10.328125,
+            "y": 603.484375,
+            "width": 55.125,
+            "height": 23.0,
+            "source": 14
+          },
+          "after": {
+            "text": "MS明朝",
+            "page": 0,
+            "x": 240.78125,
+            "y": 544.484375,
+            "width": 55.125,
+            "height": 23.0,
+            "source": 14
+          }
+        }
+      },
+      {
+        "idref": "id0005",
+        "sameTextPerSourceNode": true,
+        "textLines": 99,
+        "pages": 1,
+        "identicalOrdinaryTable": true
+      }
+    ]
+  },
+  {
+    "sampleSha256": "deaf03a1843f52cc5e4cedb226ca8659610efe1be5e810fccf615bcb549238aa",
+    "fragmentainerSize": 592,
+    "chapters": [
+      {
+        "idref": "id0001",
+        "sameTextPerSourceNode": true,
+        "textLines": 68,
+        "pages": 8,
+        "secondRowHeader": {
+          "before": {
+            "text": "MS明朝",
+            "page": 1,
+            "x": 10.328125,
+            "y": 140.0,
+            "width": 55.125,
+            "height": 23.0,
+            "source": 14
+          },
+          "after": {
+            "text": "MS明朝",
+            "page": 1,
+            "x": 240.78125,
+            "y": 81.0,
+            "width": 55.125,
+            "height": 23.0,
+            "source": 14
+          }
+        },
+        "outsideLinesBefore": 0,
+        "outsideLinesAfter": 0
+      },
+      {
+        "idref": "id0005",
+        "sameTextPerSourceNode": true,
+        "textLines": 99,
+        "pages": 6,
+        "identicalOrdinaryTable": true,
+        "outsideLinesBefore": 0,
+        "outsideLinesAfter": 0
+      }
+    ]
+  },
+  {
+    "sampleSha256": "61ef0cf2657350ff4d3ad5e450eddb1f9022688792062f74695e12725765e772",
+    "fragmentainerSize": 50,
+    "chapters": [
+      {
+        "idref": "text",
+        "sameTextPerSourceNode": true,
+        "textLines": 31,
+        "pages": 15,
+        "outsideLinesBefore": 0,
+        "outsideLinesAfter": 0
+      }
+    ]
+  },
+  {
+    "sampleSha256": "1bca0370853f157bd67ff9c8e241ee89203b7b6b5b21c1c3b49ea19b38c64146",
+    "fragmentainerSize": 80,
+    "chapters": [
+      {
+        "idref": "text",
+        "sameTextPerSourceNode": true,
+        "textLines": 60,
+        "pages": 15,
+        "outsideLinesBefore": 27,
+        "outsideLinesAfter": 0
+      }
+    ]
+  }
+]

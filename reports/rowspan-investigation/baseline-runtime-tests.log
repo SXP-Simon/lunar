@@ -1,0 +1,51 @@
+   Compiling rito-style-contract v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-style-contract)
+   Compiling rito-source v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-source)
+   Compiling rito-fragment v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-fragment)
+   Compiling rito-stylo v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-stylo)
+   Compiling rito-block v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-block)
+   Compiling rito-inline v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-inline)
+   Compiling rito-core v0.0.0 (/home/helian/rito-baseline-audit/crates/rito-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 27.41s
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_core-f5b7d893e0a538b3)
+
+running 6 tests
+test runtime::tests::table_rowspan_tests::rowspan_and_colspan_reserve_their_entire_rectangle ... FAILED
+test runtime::tests::table_rowspan_tests::zero_rowspan_stops_at_its_row_group ... FAILED
+test runtime::tests::table_rowspan_tests::rowspan_nested_in_a_wrapper_table_keeps_inline_images_and_following_text ... ok
+test runtime::tests::table_rowspan_tests::rowspan_header_keeps_the_second_row_under_the_fourth_column ... FAILED
+test runtime::tests::table_rowspan_tests::rowspan_parallel_text_with_different_line_positions_remains_readable ... FAILED
+test runtime::tests::table_rowspan_tests::rowspan_continuation_preserves_source_selection_and_marks_after_reflow ... ok
+
+failures:
+
+---- runtime::tests::table_rowspan_tests::rowspan_and_colspan_reserve_their_entire_rectangle stdout ----
+
+thread 'runtime::tests::table_rowspan_tests::rowspan_and_colspan_reserve_their_entire_rectangle' (7934) panicked at crates/rito-core/src/runtime/tests/table_rowspan_tests.rs:57:5:
+assertion failed: (cell(&cells, "Lower").x - cell(&cells, "C").x).abs() < 1e-6
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- runtime::tests::table_rowspan_tests::zero_rowspan_stops_at_its_row_group stdout ----
+
+thread 'runtime::tests::table_rowspan_tests::zero_rowspan_stops_at_its_row_group' (7939) panicked at crates/rito-core/src/runtime/tests/table_rowspan_tests.rs:65:5:
+assertion failed: (cell(&cells, "First").x - cell(&cells, "Second").x).abs() < 1e-6
+
+---- runtime::tests::table_rowspan_tests::rowspan_header_keeps_the_second_row_under_the_fourth_column stdout ----
+
+thread 'runtime::tests::table_rowspan_tests::rowspan_header_keeps_the_second_row_under_the_fourth_column' (7936) panicked at crates/rito-core/src/runtime/tests/table_rowspan_tests.rs:43:5:
+second-row header must stay in column four
+
+---- runtime::tests::table_rowspan_tests::rowspan_parallel_text_with_different_line_positions_remains_readable stdout ----
+
+thread 'runtime::tests::table_rowspan_tests::rowspan_parallel_text_with_different_line_positions_remains_readable' (7938) panicked at crates/rito-core/src/runtime/tests/table_rowspan_tests.rs:324:17:
+parallel text outside page: Span 03
+
+
+failures:
+    runtime::tests::table_rowspan_tests::rowspan_and_colspan_reserve_their_entire_rectangle
+    runtime::tests::table_rowspan_tests::rowspan_header_keeps_the_second_row_under_the_fourth_column
+    runtime::tests::table_rowspan_tests::rowspan_parallel_text_with_different_line_positions_remains_readable
+    runtime::tests::table_rowspan_tests::zero_rowspan_stops_at_its_row_group
+
+test result: FAILED. 2 passed; 4 failed; 0 ignored; 0 measured; 569 filtered out; finished in 0.47s
+
+error: test failed, to rerun pass `-p rito-core --lib`

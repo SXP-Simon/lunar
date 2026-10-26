@@ -1,0 +1,7 @@
+{
+  "commit": "f6c498a68e24d0fe0d9336c0e12a348ed75c33e5",
+  "allTrackedOrdinaryFilesMatchGitBytes": true,
+  "filesVerified": 1554,
+  "contentManifestSha256": "eb0e7a8269d1bc1bb680c6a2e3dcc103463481d5ba8a8b9ce446e92cec851956",
+  "method": "git -c core.autocrlf=false archive COMMIT"
+}

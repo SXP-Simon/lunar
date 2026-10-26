@@ -1,0 +1,9 @@
+    Checking rito-fragment v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-fragment)
+    Checking rito-inline v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-inline)
+    Checking rito-block v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-block)
+    Checking rito-core v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-core)
+    Checking rito-inline-spike v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-inline-spike)
+    Checking rito-ffi v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-ffi)
+    Checking rito-wasm v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-wasm)
+    Checking rito-pack v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-pack)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.99s

@@ -1,0 +1,3947 @@
+{
+  "sourceCommit": "ed0284f3703244da28b3e6efd80cf29267cf6e65",
+  "sampleSha256": "deaf03a1843f52cc5e4cedb226ca8659610efe1be5e810fccf615bcb549238aa",
+  "probeSha256": "7e664e6f404fa8afa7c36bb9830d82173080461120298dbc0105304ea8cc01d7",
+  "results": [
+    {
+      "request": {
+        "epubPath": "/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar-epub-evidence/samples/internallinks.epub",
+        "fontPaths": [
+          "/home/helian/rito-baseline-audit/apps/reader/src/assets/fonts/Tinos-Regular.ttf",
+          "/home/helian/rito-baseline-audit/apps/reader/src/assets/fonts/SourceHanSerifCN-Regular.otf"
+        ],
+        "contentWidthPx": 363,
+        "chapterIdrefs": [
+          "id0001",
+          "id0005"
+        ]
+      },
+      "sampleSha256": "deaf03a1843f52cc5e4cedb226ca8659610efe1be5e810fccf615bcb549238aa",
+      "exitCode": 0,
+      "stderr": "ICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\n",
+      "output": {
+        "chapters": [
+          {
+            "idref": "id0001",
+            "lines": [
+              {
+                "text": "1 EPUBリーダの数式サポート",
+                "page": 0,
+                "x": 19.0,
+                "y": 70.0,
+                "width": 317.3230323791504,
+                "height": 29.0,
+                "source": 0
+              },
+              {
+                "text": "―iBooks3.0のMathML表示がか",
+                "page": 0,
+                "x": 19.0,
+                "y": 99.0,
+                "width": 341.0964651107788,
+                "height": 29.0,
+                "source": 0
+              },
+              {
+                "text": "なり進化",
+                "page": 0,
+                "x": 19.0,
+                "y": 128.0,
+                "width": 92.79999923706055,
+                "height": 29.0,
+                "source": 0
+              },
+              {
+                "text": "10月の主要EPUBリーダの新版登場でひとつ注目し",
+                "page": 0,
+                "x": 0.0,
+                "y": 199.0,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 1
+              },
+              {
+                "text": "たいのが数式のサポート強化です。Readiumは3月",
+                "page": 0,
+                "x": 0.0,
+                "y": 227.796875,
+                "width": 362.9856119155884,
+                "height": 28.796875,
+                "source": 1
+              },
+              {
+                "text": "にMathJaxを使ったMathML表示をサポートしまし",
+                "page": 0,
+                "x": 0.0,
+                "y": 256.59375,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 1
+              },
+              {
+                "text": "た[1]。",
+                "page": 0,
+                "x": 0.0,
+                "y": 285.390625,
+                "width": 47.546875,
+                "height": 34.125,
+                "source": 1
+              },
+              {
+                "text": "これに対して、iBooksはMathMLの直接レンダリン",
+                "page": 0,
+                "x": 0.0,
+                "y": 333.90625,
+                "width": 362.6715488433838,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "グを強化したようです。表1･1 メジャーなEPUBリ",
+                "page": 0,
+                "x": 0.0,
+                "y": 362.703125,
+                "width": 362.9871615861591,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "ーダのMathJaxサポートは、主要なEPUBリーダの",
+                "page": 0,
+                "x": 0.0,
+                "y": 391.5,
+                "width": 362.9949448529412,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "MathMLレンダリングサポート状況です。",
+                "page": 0,
+                "x": 0.0,
+                "y": 420.296875,
+                "width": 295.13339042663574,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "項目",
+                "page": 0,
+                "x": 21.890625,
+                "y": 472.484375,
+                "width": 32.0,
+                "height": 23.0,
+                "source": 3
+              },
+              {
+                "text": "iBooks3.0 ",
+                "page": 0,
+                "x": 84.78125,
+                "y": 472.484375,
+                "width": 65.34375,
+                "height": 18.0,
+                "source": 5
+              },
+              {
+                "text": "(iOS6)",
+                "page": 0,
+                "x": 95.671875,
+                "y": 490.484375,
+                "width": 43.5546875,
+                "height": 18.0,
+                "source": 5
+              },
+              {
+                "text": "Adobe ",
+                "page": 0,
+                "x": 173.46875,
+                "y": 472.484375,
+                "width": 42.65625,
+                "height": 18.0,
+                "source": 7
+              },
+              {
+                "text": "Digita\n",
+                "page": 0,
+                "x": 174.796875,
+                "y": 490.484375,
+                "width": 39.9921875,
+                "height": 18.0,
+                "source": 7
+              },
+              {
+                "text": "Editions ",
+                "page": 0,
+                "x": 168.125,
+                "y": 508.484375,
+                "width": 53.3359375,
+                "height": 18.0,
+                "source": 7
+              },
+              {
+                "text": "2.0",
+                "page": 0,
+                "x": 184.796875,
+                "y": 526.484375,
+                "width": 20.0,
+                "height": 18.0,
+                "source": 7
+              },
+              {
+                "text": "Readium ",
+                "page": 0,
+                "x": 239.46875,
+                "y": 472.484375,
+                "width": 57.765625,
+                "height": 18.0,
+                "source": 9
+              },
+              {
+                "text": "0.5.3",
+                "page": 0,
+                "x": 252.34375,
+                "y": 490.484375,
+                "width": 32.0,
+                "height": 18.0,
+                "source": 9
+              },
+              {
+                "text": "Kindle ",
+                "page": 0,
+                "x": 329.453125,
+                "y": 472.484375,
+                "width": 43.546875,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "Previewer ",
+                "page": 0,
+                "x": 318.796875,
+                "y": 490.484375,
+                "width": 64.859375,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "2.7\n",
+                "page": 0,
+                "x": 341.21875,
+                "y": 508.484375,
+                "width": 20.0,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "(Kindle ",
+                "page": 0,
+                "x": 326.78125,
+                "y": 526.484375,
+                "width": 48.875,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "Paperwhite ",
+                "page": 0,
+                "x": 315.234375,
+                "y": 544.484375,
+                "width": 71.9765625,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "モード）",
+                "page": 0,
+                "x": 319.53125,
+                "y": 562.484375,
+                "width": 63.3599853515625,
+                "height": 23.0,
+                "source": 11
+              },
+              {
+                "text": "MS明朝",
+                "page": 0,
+                "x": 10.328125,
+                "y": 603.484375,
+                "width": 55.125,
+                "height": 23.0,
+                "source": 14
+              },
+              {
+                "text": "MathML",
+                "page": 0,
+                "x": 9.0,
+                "y": 644.484375,
+                "width": 57.7734375,
+                "height": 18.0,
+                "source": 17
+              },
+              {
+                "text": "サポー",
+                "page": 0,
+                "x": 9.0,
+                "y": 662.484375,
+                "width": 48.0,
+                "height": 23.0,
+                "source": 17
+              },
+              {
+                "text": "ト",
+                "page": 0,
+                "x": 9.0,
+                "y": 685.484375,
+                "width": 16.0,
+                "height": 23.0,
+                "source": 17
+              },
+              {
+                "text": "MathML",
+                "page": 0,
+                "x": 84.78125,
+                "y": 644.484375,
+                "width": 57.7734375,
+                "height": 18.0,
+                "source": 19
+              },
+              {
+                "text": "直接描画",
+                "page": 0,
+                "x": 84.78125,
+                "y": 662.484375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 19
+              },
+              {
+                "text": "未サポ",
+                "page": 0,
+                "x": 168.125,
+                "y": 644.484375,
+                "width": 48.0,
+                "height": 23.0,
+                "source": 21
+              },
+              {
+                "text": "ート",
+                "page": 0,
+                "x": 168.125,
+                "y": 667.484375,
+                "width": 32.0,
+                "height": 23.0,
+                "source": 21
+              },
+              {
+                "text": "MathJax",
+                "page": 0,
+                "x": 239.46875,
+                "y": 644.484375,
+                "width": 55.1015625,
+                "height": 18.0,
+                "source": 23
+              },
+              {
+                "text": "による",
+                "page": 0,
+                "x": 239.46875,
+                "y": 662.484375,
+                "width": 48.0,
+                "height": 23.0,
+                "source": 23
+              },
+              {
+                "text": "未サポー",
+                "page": 0,
+                "x": 315.234375,
+                "y": 644.484375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 25
+              },
+              {
+                "text": "ト",
+                "page": 0,
+                "x": 315.234375,
+                "y": 667.484375,
+                "width": 16.0,
+                "height": 23.0,
+                "source": 25
+              },
+              {
+                "text": "表1･1 メジャーなEPUBリーダのMathJaxサポート",
+                "page": 0,
+                "x": 0.0,
+                "y": 723.875,
+                "width": 278.14393162727356,
+                "height": 19.0,
+                "source": 30
+              },
+              {
+                "text": "1–1 iBooks3.0による表示例",
+                "page": 0,
+                "x": 19.0,
+                "y": 786.875,
+                "width": 219.74373710155487,
+                "height": 23.0,
+                "source": 32
+              },
+              {
+                "text": "(1) 図1･1 サンプル数式のiBooks3.0による表示１の",
+                "page": 0,
+                "x": 0.0,
+                "y": 824.265625,
+                "width": 363.015625,
+                "height": 28.796875,
+                "source": 33
+              },
+              {
+                "text": "一番上の数式では最初の()が上下に伸びすぎていま",
+                "page": 0,
+                "x": 0.0,
+                "y": 853.0625,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 33
+              },
+              {
+                "text": "す。二つ目の数式では「・」が親文字と離れすぎ",
+                "page": 0,
+                "x": 0.0,
+                "y": 881.859375,
+                "width": 362.9856119155884,
+                "height": 28.796875,
+                "source": 33
+              },
+              {
+                "text": "です。この2点を除くと大体使えると思います。",
+                "page": 0,
+                "x": 0.0,
+                "y": 910.65625,
+                "width": 341.43997287750244,
+                "height": 28.796875,
+                "source": 33
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 0.0,
+                "y": 953.265625,
+                "width": 363.0,
+                "height": 489.65625,
+                "source": 34
+              },
+              {
+                "text": "図1･1 サンプル数式のiBooks3.0による表示１",
+                "page": 0,
+                "x": 0.0,
+                "y": 1449.3125,
+                "width": 252.72293996810913,
+                "height": 19.0,
+                "source": 35
+              },
+              {
+                "text": "(2) 図1･2 サンプル数式のiBooks3.0による表示２に",
+                "page": 0,
+                "x": 0.0,
+                "y": 1482.703125,
+                "width": 362.6956253051758,
+                "height": 28.796875,
+                "source": 37
+              },
+              {
+                "text": "ついても（）が上下に伸びすぎている点を除くと",
+                "page": 0,
+                "x": 0.0,
+                "y": 1511.5,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 37
+              },
+              {
+                "text": "使えると思います。",
+                "page": 0,
+                "x": 0.0,
+                "y": 1540.296875,
+                "width": 142.71998596191406,
+                "height": 28.796875,
+                "source": 37
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 0.0,
+                "y": 1582.90625,
+                "width": 363.0,
+                "height": 489.65625,
+                "source": 38
+              },
+              {
+                "text": "図1･2 サンプル数式のiBooks3.0による表示２",
+                "page": 0,
+                "x": 0.0,
+                "y": 2078.953125,
+                "width": 252.72293996810913,
+                "height": 19.0,
+                "source": 39
+              },
+              {
+                "text": "1–2 ReadiumによるMathMLの表示",
+                "page": 0,
+                "x": 19.0,
+                "y": 2141.953125,
+                "width": 276.3390625715256,
+                "height": 23.0,
+                "source": 42
+              },
+              {
+                "text": "ReadiumはMathJaxで数式を表示しています。",
+                "page": 0,
+                "x": 0.0,
+                "y": 2179.34375,
+                "width": 362.9934377670288,
+                "height": 28.796875,
+                "source": 43
+              },
+              {
+                "text": "Readiumによる表示を次に示します。こちらの方は",
+                "page": 0,
+                "x": 0.0,
+                "y": 2208.140625,
+                "width": 362.9856119155884,
+                "height": 28.796875,
+                "source": 43
+              },
+              {
+                "text": "すべての数式が綺麗に表示されています。",
+                "page": 0,
+                "x": 0.0,
+                "y": 2236.9375,
+                "width": 302.3999710083008,
+                "height": 28.796875,
+                "source": 43
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 0.0,
+                "y": 2279.546875,
+                "width": 363.0,
+                "height": 496.515625,
+                "source": 44
+              },
+              {
+                "text": "図1･3 サンプル数式のReadiumによる表示１",
+                "page": 0,
+                "x": 0.0,
+                "y": 2782.453125,
+                "width": 246.6604402065277,
+                "height": 19.0,
+                "source": 45
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 0.0,
+                "y": 2815.265625,
+                "width": 363.0,
+                "height": 494.984375,
+                "source": 47
+              },
+              {
+                "text": "図1･4 サンプル数式のReadiumによる表示２",
+                "page": 0,
+                "x": 0.0,
+                "y": 3316.640625,
+                "width": 246.6604402065277,
+                "height": 19.0,
+                "source": 48
+              },
+              {
+                "text": "1–3 総合的にみて",
+                "page": 0,
+                "x": 19.0,
+                "y": 3379.640625,
+                "width": 140.00000262260437,
+                "height": 23.0,
+                "source": 51
+              },
+              {
+                "text": "EPUB3.0になって数式MathMLの表示がEPUB3.0リ",
+                "page": 0,
+                "x": 0.0,
+                "y": 3417.03125,
+                "width": 362.9921875,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "ーダの標準機能になりました。まだ、EPUB3.0リ",
+                "page": 0,
+                "x": 0.0,
+                "y": 3445.828125,
+                "width": 362.9921875,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "ーダによる数式表示機能の実装は全体として遅れ",
+                "page": 0,
+                "x": 0.0,
+                "y": 3474.625,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "ています。しかし、iBooksが数式のMathML表示を",
+                "page": 0,
+                "x": 0.0,
+                "y": 3503.421875,
+                "width": 362.9934244155884,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "サポートしつつあることが分かります。現状では",
+                "page": 0,
+                "x": 0.0,
+                "y": 3532.21875,
+                "width": 362.9856119155884,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "まだすべての数式をサポートできていないようで",
+                "page": 0,
+                "x": 0.0,
+                "y": 3561.015625,
+                "width": 362.9924850463867,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "すが、このペースですとあと半年もあればMathJax",
+                "page": 0,
+                "x": 0.0,
+                "y": 3589.8125,
+                "width": 362.989070892334,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "並みになりそうで、かなり期待が持てます。",
+                "page": 0,
+                "x": 0.0,
+                "y": 3618.609375,
+                "width": 318.3999710083008,
+                "height": 28.796875,
+                "source": 52
+              }
+            ]
+          },
+          {
+            "idref": "id0005",
+            "lines": [
+              {
+                "text": "2 EPUBのベストプラクティス ",
+                "page": 0,
+                "x": 19.0,
+                "y": 70.0,
+                "width": 315.1230163574219,
+                "height": 29.0,
+                "source": 0
+              },
+              {
+                "text": "linear 属性の設定方法",
+                "page": 0,
+                "x": 19.0,
+                "y": 99.0,
+                "width": 235.3273401260376,
+                "height": 29.0,
+                "source": 0
+              },
+              {
+                "text": "2–1 EPUB2",
+                "page": 0,
+                "x": 19.0,
+                "y": 174.0,
+                "width": 91.29843139648438,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "EPUB2に、先頭ページに表紙（カバー）画像を登",
+                "page": 0,
+                "x": 0.0,
+                "y": 206.390625,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "録して、spine要素のitemrefにlinear=\"no\"を設定せ",
+                "page": 0,
+                "x": 0.0,
+                "y": 235.1875,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "よ、というのベストプラクティスがありました",
+                "page": 0,
+                "x": 0.0,
+                "y": 263.984375,
+                "width": 362.9899797439575,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "[1]。",
+                "page": 0,
+                "x": 0.0,
+                "y": 292.78125,
+                "width": 31.546875,
+                "height": 34.125,
+                "source": 2
+              },
+              {
+                "text": "次のような内容です。",
+                "page": 0,
+                "x": 0.0,
+                "y": 341.296875,
+                "width": 158.71998596191406,
+                "height": 28.796875,
+                "source": 3
+              },
+              {
+                "text": "(1) 表紙のHTMLファイルを作り、manifestに次のよ",
+                "page": 0,
+                "x": 0.0,
+                "y": 384.484375,
+                "width": 362.99249267578125,
+                "height": 28.796875,
+                "source": 4
+              },
+              {
+                "text": "うに設定：",
+                "page": 0,
+                "x": 0.0,
+                "y": 413.28125,
+                "width": 80.0,
+                "height": 28.796875,
+                "source": 4
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 20.1875,
+                "y": 462.265625,
+                "width": 0.0,
+                "height": 19.1875,
+                "source": 6
+              },
+              {
+                "text": "<item id=\"cover\"  href=\"cover.xhtml\" media-",
+                "page": 0,
+                "x": 20.1875,
+                "y": 481.453125,
+                "width": 233.41867065429688,
+                "height": 19.1875,
+                "source": 6
+              },
+              {
+                "text": "type=\"application/xhtml+xml\"/>\n",
+                "page": 0,
+                "x": 20.1875,
+                "y": 500.640625,
+                "width": 167.90626525878906,
+                "height": 19.1875,
+                "source": 6
+              },
+              {
+                "text": "#",
+                "page": 0,
+                "x": 339.17699909210205,
+                "y": 460.11987590789795,
+                "width": 15.359999656677246,
+                "height": 36.859375,
+                "source": 5
+              },
+              {
+                "text": "(2) spineに次のように設定：",
+                "page": 0,
+                "x": 0.0,
+                "y": 544.8125,
+                "width": 200.4296875,
+                "height": 28.796875,
+                "source": 8
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 20.1875,
+                "y": 593.796875,
+                "width": 0.0,
+                "height": 19.1875,
+                "source": 10
+              },
+              {
+                "text": "<itemref idref=\"cover\" linear=\"no\"/>\n",
+                "page": 0,
+                "x": 20.1875,
+                "y": 612.984375,
+                "width": 191.2124786376953,
+                "height": 19.1875,
+                "source": 10
+              },
+              {
+                "text": "#",
+                "page": 0,
+                "x": 339.17699909210205,
+                "y": 591.651125907898,
+                "width": 15.359999656677246,
+                "height": 36.859375,
+                "source": 9
+              },
+              {
+                "text": "これはEPUB3でも採用できるでしょうか？",
+                "page": 0,
+                "x": 0.0,
+                "y": 657.15625,
+                "width": 304.7384338378906,
+                "height": 28.796875,
+                "source": 12
+              },
+              {
+                "text": "１年半程前（2011年春）、表紙をどうしようかと思",
+                "page": 0,
+                "x": 0.0,
+                "y": 700.34375,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 13
+              },
+              {
+                "text": "案して、EPUBリーダの挙動を調べました。",
+                "page": 0,
+                "x": 0.0,
+                "y": 729.140625,
+                "width": 312.57843017578125,
+                "height": 28.796875,
+                "source": 13
+              },
+              {
+                "text": "しかし、iBooks2ではlinear=\"no\"を指定したページ",
+                "page": 0,
+                "x": 0.0,
+                "y": 772.328125,
+                "width": 363.0003128051758,
+                "height": 28.796875,
+                "source": 14
+              },
+              {
+                "text": "を表示するが、Adobe Digital Editionsの旧バージョ",
+                "page": 0,
+                "x": 0.0,
+                "y": 801.125,
+                "width": 362.99281311035156,
+                "height": 28.796875,
+                "source": 14
+              },
+              {
+                "text": "ン（確か1.5）では、linear=\"no\"を指定したページ",
+                "page": 0,
+                "x": 0.0,
+                "y": 829.921875,
+                "width": 363.0003128051758,
+                "height": 28.796875,
+                "source": 14
+              },
+              {
+                "text": "を表示しない、という挙動の相違があったため設",
+                "page": 0,
+                "x": 0.0,
+                "y": 858.71875,
+                "width": 362.99624156951904,
+                "height": 28.796875,
+                "source": 14
+              },
+              {
+                "text": "定を見送っていました。",
+                "page": 0,
+                "x": 0.0,
+                "y": 887.515625,
+                "width": 176.0,
+                "height": 28.796875,
+                "source": 14
+              },
+              {
+                "text": "2–2 EPUB3",
+                "page": 0,
+                "x": 19.0,
+                "y": 960.3125,
+                "width": 91.29843139648438,
+                "height": 18.0,
+                "source": 16
+              },
+              {
+                "text": "最近、EPUBリーダが新しくなりましたので、何か",
+                "page": 0,
+                "x": 0.0,
+                "y": 992.703125,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 17
+              },
+              {
+                "text": "変わったかと思い、もう一度調べてみました。次",
+                "page": 0,
+                "x": 0.0,
+                "y": 1021.5,
+                "width": 362.99624156951904,
+                "height": 28.796875,
+                "source": 17
+              },
+              {
+                "text": "のようなコードのEPUBで試してみました。",
+                "page": 0,
+                "x": 0.0,
+                "y": 1050.296875,
+                "width": 312.8984375,
+                "height": 28.796875,
+                "source": 17
+              },
+              {
+                "text": "manifest：",
+                "page": 0,
+                "x": 0.0,
+                "y": 1093.484375,
+                "width": 71.09375,
+                "height": 28.796875,
+                "source": 18
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 20.1875,
+                "y": 1142.46875,
+                "width": 0.0,
+                "height": 19.1875,
+                "source": 20
+              },
+              {
+                "text": "<item href=\"Text/opening.xhtml\" id=\"idopening\" media-",
+                "page": 0,
+                "x": 20.1875,
+                "y": 1161.65625,
+                "width": 292.62493896484375,
+                "height": 19.1875,
+                "source": 20
+              },
+              {
+                "text": "type=\"application/xhtml+xml\" />\n",
+                "page": 0,
+                "x": 20.1875,
+                "y": 1180.84375,
+                "width": 171.10626220703125,
+                "height": 19.1875,
+                "source": 20
+              },
+              {
+                "text": "#",
+                "page": 0,
+                "x": 339.17699909210205,
+                "y": 1140.323000907898,
+                "width": 15.359999656677246,
+                "height": 36.859375,
+                "source": 19
+              },
+              {
+                "text": "spine：",
+                "page": 0,
+                "x": 0.0,
+                "y": 1225.015625,
+                "width": 49.7734375,
+                "height": 28.796875,
+                "source": 22
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 20.1875,
+                "y": 1274.0,
+                "width": 0.0,
+                "height": 19.1875,
+                "source": 24
+              },
+              {
+                "text": "<itemref idref=\"idopening\" linear=\"no\" />　",
+                "page": 0,
+                "x": 20.1875,
+                "y": 1293.1875,
+                "width": 229.9812135696411,
+                "height": 19.1875,
+                "source": 24
+              },
+              {
+                "text": "#",
+                "page": 0,
+                "x": 339.17699909210205,
+                "y": 1271.854250907898,
+                "width": 15.359999656677246,
+                "height": 36.859375,
+                "source": 23
+              },
+              {
+                "text": "さらに linear=\"yes\" とした版も用意しました。2種",
+                "page": 0,
+                "x": 0.0,
+                "y": 1337.359375,
+                "width": 362.9921875,
+                "height": 28.796875,
+                "source": 26
+              },
+              {
+                "text": "類のEPUB3を作成して、linear=\"no\"とlinear=\"yes\"で",
+                "page": 0,
+                "x": 0.0,
+                "y": 1366.15625,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 26
+              },
+              {
+                "text": "EPUBリーダの表示を比較した表を作成しました。",
+                "page": 0,
+                "x": 0.0,
+                "y": 1394.953125,
+                "width": 362.9921875,
+                "height": 28.796875,
+                "source": 26
+              },
+              {
+                "text": "やはり、EPUBリーダによって挙動がまちまちで",
+                "page": 0,
+                "x": 0.0,
+                "y": 1423.75,
+                "width": 362.9884386062622,
+                "height": 28.796875,
+                "source": 26
+              },
+              {
+                "text": "す。",
+                "page": 0,
+                "x": 0.0,
+                "y": 1452.546875,
+                "width": 30.719985961914062,
+                "height": 28.796875,
+                "source": 26
+              },
+              {
+                "text": "linear=\"no\"",
+                "page": 0,
+                "x": 179.421875,
+                "y": 1504.734375,
+                "width": 74.5078125,
+                "height": 18.0,
+                "source": 28
+              },
+              {
+                "text": "linear=\"yes\"",
+                "page": 0,
+                "x": 274.140625,
+                "y": 1504.734375,
+                "width": 79.8359375,
+                "height": 18.0,
+                "source": 30
+              },
+              {
+                "text": "Readium 0.5",
+                "page": 0,
+                "x": 9.0,
+                "y": 1540.734375,
+                "width": 81.765625,
+                "height": 18.0,
+                "source": 33
+              },
+              {
+                "text": "表示しな",
+                "page": 0,
+                "x": 177.21875,
+                "y": 1540.734375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 35
+              },
+              {
+                "text": "い",
+                "page": 0,
+                "x": 177.21875,
+                "y": 1563.734375,
+                "width": 16.0,
+                "height": 23.0,
+                "source": 35
+              },
+              {
+                "text": "表示する",
+                "page": 0,
+                "x": 274.140625,
+                "y": 1540.734375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 37
+              },
+              {
+                "text": "Adobe Digital Editions ",
+                "page": 0,
+                "x": 9.0,
+                "y": 1604.734375,
+                "width": 148.4296875,
+                "height": 18.0,
+                "source": 40
+              },
+              {
+                "text": "2.0",
+                "page": 0,
+                "x": 9.0,
+                "y": 1622.734375,
+                "width": 20.0,
+                "height": 18.0,
+                "source": 40
+              },
+              {
+                "text": "表示する",
+                "page": 0,
+                "x": 177.21875,
+                "y": 1604.734375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 42
+              },
+              {
+                "text": "表示する",
+                "page": 0,
+                "x": 274.140625,
+                "y": 1604.734375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 44
+              },
+              {
+                "text": "iBooks 3.0",
+                "page": 0,
+                "x": 9.0,
+                "y": 1658.734375,
+                "width": 69.34375,
+                "height": 18.0,
+                "source": 47
+              },
+              {
+                "text": "表示しな",
+                "page": 0,
+                "x": 177.21875,
+                "y": 1658.734375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 49
+              },
+              {
+                "text": "い",
+                "page": 0,
+                "x": 177.21875,
+                "y": 1681.734375,
+                "width": 16.0,
+                "height": 23.0,
+                "source": 49
+              },
+              {
+                "text": "表示する",
+                "page": 0,
+                "x": 274.140625,
+                "y": 1658.734375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 51
+              },
+              {
+                "text": "Kobo 2.1.4",
+                "page": 0,
+                "x": 9.0,
+                "y": 1722.734375,
+                "width": 71.5546875,
+                "height": 18.0,
+                "source": 54
+              },
+              {
+                "text": "表示する",
+                "page": 0,
+                "x": 177.21875,
+                "y": 1722.734375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 56
+              },
+              {
+                "text": "表示する",
+                "page": 0,
+                "x": 274.140625,
+                "y": 1722.734375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 58
+              },
+              {
+                "text": "Kindle 2.71",
+                "page": 0,
+                "x": 9.0,
+                "y": 1763.734375,
+                "width": 75.546875,
+                "height": 18.0,
+                "source": 61
+              },
+              {
+                "text": "表示しな",
+                "page": 0,
+                "x": 177.21875,
+                "y": 1763.734375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 63
+              },
+              {
+                "text": "い",
+                "page": 0,
+                "x": 177.21875,
+                "y": 1786.734375,
+                "width": 16.0,
+                "height": 23.0,
+                "source": 63
+              },
+              {
+                "text": "表示する",
+                "page": 0,
+                "x": 274.140625,
+                "y": 1763.734375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 65
+              },
+              {
+                "text": "表2･1 linear=\"no\"とlinear=\"yes\"でEPUBリーダの表示を比較",
+                "page": 0,
+                "x": 0.0,
+                "y": 1825.125,
+                "width": 332.19359850883484,
+                "height": 19.0,
+                "source": 69
+              },
+              {
+                "text": "先日、電流協のEPUB研究会で、このことを報告し",
+                "page": 0,
+                "x": 0.0,
+                "y": 1858.515625,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 71
+              },
+              {
+                "text": "ましたところ、参加者の方から次のようなコメン",
+                "page": 0,
+                "x": 0.0,
+                "y": 1887.3125,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 71
+              },
+              {
+                "text": "トをいただきました。",
+                "page": 0,
+                "x": 0.0,
+                "y": 1916.109375,
+                "width": 160.0,
+                "height": 28.796875,
+                "source": 71
+              },
+              {
+                "text": "・linear=\"no\" は本文のページとして表示しない内",
+                "page": 0,
+                "x": 0.0,
+                "y": 1959.296875,
+                "width": 363.00030517578125,
+                "height": 28.796875,
+                "source": 72
+              },
+              {
+                "text": "容に対して使うもの。注釈のようなもの。順番に",
+                "page": 0,
+                "x": 0.0,
+                "y": 1988.09375,
+                "width": 362.985595703125,
+                "height": 28.796875,
+                "source": 72
+              },
+              {
+                "text": "めくっていっても表示されない。ページとして扱",
+                "page": 0,
+                "x": 0.0,
+                "y": 2016.890625,
+                "width": 363.00059509277344,
+                "height": 28.796875,
+                "source": 72
+              },
+              {
+                "text": "わないものに設定するのだろう。",
+                "page": 0,
+                "x": 0.0,
+                "y": 2045.6875,
+                "width": 240.0,
+                "height": 28.796875,
+                "source": 72
+              },
+              {
+                "text": "ところでEPUB3仕様におけるitemref要素のlinear属",
+                "page": 0,
+                "x": 0.0,
+                "y": 2088.875,
+                "width": 362.99624156951904,
+                "height": 28.796875,
+                "source": 73
+              },
+              {
+                "text": "性についての説明は次の2箇所にしかありません。",
+                "page": 0,
+                "x": 0.0,
+                "y": 2117.671875,
+                "width": 360.63997650146484,
+                "height": 28.796875,
+                "source": 73
+              },
+              {
+                "text": "3.4.13 itemref要素より抜粋",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2184.3125,
+                "width": 178.74739146232605,
+                "height": 27.640625,
+                "source": 76
+              },
+              {
+                "text": "linear属性は参照された項目が主要素なの",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2225.765625,
+                "width": 288.9593291282654,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "か付随要素なのかを示す。これによりRS",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2253.40625,
+                "width": 288.95993423461914,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "は本体コンテンツの表示を補足コンテン",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2281.046875,
+                "width": 288.9596347808838,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "ツと区別するために使っても良い。後者",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2308.6875,
+                "width": 288.9643840789795,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "は、例えばポップアップ・ウインドウに",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2336.328125,
+                "width": 288.95961475372314,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "したり、音声レンダリングで省略したり",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2363.96875,
+                "width": 288.95565128326416,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "されるかもしれない。",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2391.609375,
+                "width": 153.60000610351562,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "3.14.12 spine要素より抜粋",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2433.0625,
+                "width": 174.50241541862488,
+                "height": 27.640625,
+                "source": 78
+              },
+              {
+                "text": "RSは、spine中の先頭にある主項目",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2474.515625,
+                "width": 288.9674515724182,
+                "height": 27.640625,
+                "source": 79
+              },
+              {
+                "text": "（linear=\"yes\")を出版物の主たる閲読順序",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2502.15625,
+                "width": 288.96862745285034,
+                "height": 27.640625,
+                "source": 79
+              },
+              {
+                "text": "の始まりとする。そして、spineの中の主",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2529.796875,
+                "width": 288.9690041542053,
+                "height": 27.640625,
+                "source": 79
+              },
+              {
+                "text": "項目を順番に可視化する。",
+                "page": 0,
+                "x": 30.03125,
+                "y": 2557.4375,
+                "width": 184.32000064849854,
+                "height": 27.640625,
+                "source": 79
+              },
+              {
+                "text": "“",
+                "page": 0,
+                "x": -7.372799873352051,
+                "y": 2154.297975063324,
+                "width": 6.81749963760376,
+                "height": 18.4375,
+                "source": 74
+              },
+              {
+                "text": "”",
+                "page": 0,
+                "x": 336.4873991012573,
+                "y": 2168.1219758987427,
+                "width": 16.360225677490234,
+                "height": 44.234375,
+                "source": 75
+              },
+              {
+                "text": "説明もサンプルも少ないので、これでは解釈統一",
+                "page": 0,
+                "x": 0.0,
+                "y": 2611.984375,
+                "width": 362.98996353149414,
+                "height": 28.796875,
+                "source": 81
+              },
+              {
+                "text": "のしようがないように思えますね。困ったもので",
+                "page": 0,
+                "x": 0.0,
+                "y": 2640.78125,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 81
+              },
+              {
+                "text": "す。",
+                "page": 0,
+                "x": 0.0,
+                "y": 2669.578125,
+                "width": 30.719985961914062,
+                "height": 28.796875,
+                "source": 81
+              },
+              {
+                "text": "ある方から、EPUB2.0では、guide機能があって、",
+                "page": 0,
+                "x": 0.0,
+                "y": 2712.765625,
+                "width": 362.996563911438,
+                "height": 28.796875,
+                "source": 82
+              },
+              {
+                "text": "guideに登録することでlinear=\"no\"を指定したペー",
+                "page": 0,
+                "x": 0.0,
+                "y": 2741.5625,
+                "width": 362.6721878051758,
+                "height": 28.796875,
+                "source": 82
+              },
+              {
+                "text": "ジにもジャンプできたが、EPUB3.0でguideが廃止",
+                "page": 0,
+                "x": 0.0,
+                "y": 2770.359375,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 82
+              },
+              {
+                "text": "されてしまったためlinear=\"no\"を指定したページを",
+                "page": 0,
+                "x": 0.0,
+                "y": 2799.15625,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 82
+              },
+              {
+                "text": "表示する方法がリンクぐらいしかなくなっている",
+                "page": 0,
+                "x": 0.0,
+                "y": 2827.953125,
+                "width": 362.9924850463867,
+                "height": 28.796875,
+                "source": 82
+              },
+              {
+                "text": "という指摘がありました。",
+                "page": 0,
+                "x": 0.0,
+                "y": 2856.75,
+                "width": 192.0,
+                "height": 28.796875,
+                "source": 82
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "epubPath": "/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar-epub-evidence/samples/internallinks.epub",
+        "fontPaths": [
+          "/home/helian/rito-baseline-audit/apps/reader/src/assets/fonts/Tinos-Regular.ttf",
+          "/home/helian/rito-baseline-audit/apps/reader/src/assets/fonts/SourceHanSerifCN-Regular.otf"
+        ],
+        "contentWidthPx": 363,
+        "chapterIdrefs": [
+          "id0001",
+          "id0005"
+        ],
+        "fragmentainerSize": 592
+      },
+      "sampleSha256": "deaf03a1843f52cc5e4cedb226ca8659610efe1be5e810fccf615bcb549238aa",
+      "exitCode": 0,
+      "stderr": "ICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\nICU4X data error: No segmentation model for language: ja\n",
+      "output": {
+        "chapters": [
+          {
+            "idref": "id0001",
+            "lines": [
+              {
+                "text": "1 EPUBリーダの数式サポート",
+                "page": 0,
+                "x": 19.0,
+                "y": 70.0,
+                "width": 317.3230323791504,
+                "height": 29.0,
+                "source": 0
+              },
+              {
+                "text": "―iBooks3.0のMathML表示がか",
+                "page": 0,
+                "x": 19.0,
+                "y": 99.0,
+                "width": 341.0964651107788,
+                "height": 29.0,
+                "source": 0
+              },
+              {
+                "text": "なり進化",
+                "page": 0,
+                "x": 19.0,
+                "y": 128.0,
+                "width": 92.79999923706055,
+                "height": 29.0,
+                "source": 0
+              },
+              {
+                "text": "10月の主要EPUBリーダの新版登場でひとつ注目し",
+                "page": 0,
+                "x": 0.0,
+                "y": 199.0,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 1
+              },
+              {
+                "text": "たいのが数式のサポート強化です。Readiumは3月",
+                "page": 0,
+                "x": 0.0,
+                "y": 227.796875,
+                "width": 362.9856119155884,
+                "height": 28.796875,
+                "source": 1
+              },
+              {
+                "text": "にMathJaxを使ったMathML表示をサポートしまし",
+                "page": 0,
+                "x": 0.0,
+                "y": 256.59375,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 1
+              },
+              {
+                "text": "た[1]。",
+                "page": 0,
+                "x": 0.0,
+                "y": 285.390625,
+                "width": 47.546875,
+                "height": 34.125,
+                "source": 1
+              },
+              {
+                "text": "これに対して、iBooksはMathMLの直接レンダリン",
+                "page": 0,
+                "x": 0.0,
+                "y": 333.90625,
+                "width": 362.6715488433838,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "グを強化したようです。表1･1 メジャーなEPUBリ",
+                "page": 0,
+                "x": 0.0,
+                "y": 362.703125,
+                "width": 362.9871615861591,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "ーダのMathJaxサポートは、主要なEPUBリーダの",
+                "page": 0,
+                "x": 0.0,
+                "y": 391.5,
+                "width": 362.9949448529412,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "MathMLレンダリングサポート状況です。",
+                "page": 0,
+                "x": 0.0,
+                "y": 420.296875,
+                "width": 295.13339042663574,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "項目",
+                "page": 1,
+                "x": 21.890625,
+                "y": 9.0,
+                "width": 32.0,
+                "height": 23.0,
+                "source": 3
+              },
+              {
+                "text": "iBooks3.0 ",
+                "page": 1,
+                "x": 84.78125,
+                "y": 9.0,
+                "width": 65.34375,
+                "height": 18.0,
+                "source": 5
+              },
+              {
+                "text": "(iOS6)",
+                "page": 1,
+                "x": 95.671875,
+                "y": 27.0,
+                "width": 43.5546875,
+                "height": 18.0,
+                "source": 5
+              },
+              {
+                "text": "Adobe ",
+                "page": 1,
+                "x": 173.46875,
+                "y": 9.0,
+                "width": 42.65625,
+                "height": 18.0,
+                "source": 7
+              },
+              {
+                "text": "Digita\n",
+                "page": 1,
+                "x": 174.796875,
+                "y": 27.0,
+                "width": 39.9921875,
+                "height": 18.0,
+                "source": 7
+              },
+              {
+                "text": "Editions ",
+                "page": 1,
+                "x": 168.125,
+                "y": 45.0,
+                "width": 53.3359375,
+                "height": 18.0,
+                "source": 7
+              },
+              {
+                "text": "2.0",
+                "page": 1,
+                "x": 184.796875,
+                "y": 63.0,
+                "width": 20.0,
+                "height": 18.0,
+                "source": 7
+              },
+              {
+                "text": "Readium ",
+                "page": 1,
+                "x": 239.46875,
+                "y": 9.0,
+                "width": 57.765625,
+                "height": 18.0,
+                "source": 9
+              },
+              {
+                "text": "0.5.3",
+                "page": 1,
+                "x": 252.34375,
+                "y": 27.0,
+                "width": 32.0,
+                "height": 18.0,
+                "source": 9
+              },
+              {
+                "text": "Kindle ",
+                "page": 1,
+                "x": 329.453125,
+                "y": 9.0,
+                "width": 43.546875,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "Previewer ",
+                "page": 1,
+                "x": 318.796875,
+                "y": 27.0,
+                "width": 64.859375,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "2.7\n",
+                "page": 1,
+                "x": 341.21875,
+                "y": 45.0,
+                "width": 20.0,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "(Kindle ",
+                "page": 1,
+                "x": 326.78125,
+                "y": 63.0,
+                "width": 48.875,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "Paperwhite ",
+                "page": 1,
+                "x": 315.234375,
+                "y": 81.0,
+                "width": 71.9765625,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "モード）",
+                "page": 1,
+                "x": 319.53125,
+                "y": 99.0,
+                "width": 63.3599853515625,
+                "height": 23.0,
+                "source": 11
+              },
+              {
+                "text": "MS明朝",
+                "page": 1,
+                "x": 10.328125,
+                "y": 140.0,
+                "width": 55.125,
+                "height": 23.0,
+                "source": 14
+              },
+              {
+                "text": "MathML",
+                "page": 1,
+                "x": 9.0,
+                "y": 181.0,
+                "width": 57.7734375,
+                "height": 18.0,
+                "source": 17
+              },
+              {
+                "text": "サポー",
+                "page": 1,
+                "x": 9.0,
+                "y": 199.0,
+                "width": 48.0,
+                "height": 23.0,
+                "source": 17
+              },
+              {
+                "text": "ト",
+                "page": 1,
+                "x": 9.0,
+                "y": 222.0,
+                "width": 16.0,
+                "height": 23.0,
+                "source": 17
+              },
+              {
+                "text": "MathML",
+                "page": 1,
+                "x": 84.78125,
+                "y": 181.0,
+                "width": 57.7734375,
+                "height": 18.0,
+                "source": 19
+              },
+              {
+                "text": "直接描画",
+                "page": 1,
+                "x": 84.78125,
+                "y": 199.0,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 19
+              },
+              {
+                "text": "未サポ",
+                "page": 1,
+                "x": 168.125,
+                "y": 181.0,
+                "width": 48.0,
+                "height": 23.0,
+                "source": 21
+              },
+              {
+                "text": "ート",
+                "page": 1,
+                "x": 168.125,
+                "y": 204.0,
+                "width": 32.0,
+                "height": 23.0,
+                "source": 21
+              },
+              {
+                "text": "MathJax",
+                "page": 1,
+                "x": 239.46875,
+                "y": 181.0,
+                "width": 55.1015625,
+                "height": 18.0,
+                "source": 23
+              },
+              {
+                "text": "による",
+                "page": 1,
+                "x": 239.46875,
+                "y": 199.0,
+                "width": 48.0,
+                "height": 23.0,
+                "source": 23
+              },
+              {
+                "text": "未サポー",
+                "page": 1,
+                "x": 315.234375,
+                "y": 181.0,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 25
+              },
+              {
+                "text": "ト",
+                "page": 1,
+                "x": 315.234375,
+                "y": 204.0,
+                "width": 16.0,
+                "height": 23.0,
+                "source": 25
+              },
+              {
+                "text": "表1･1 メジャーなEPUBリーダのMathJaxサポート",
+                "page": 1,
+                "x": 0.0,
+                "y": 260.390625,
+                "width": 278.14393162727356,
+                "height": 19.0,
+                "source": 30
+              },
+              {
+                "text": "1–1 iBooks3.0による表示例",
+                "page": 1,
+                "x": 19.0,
+                "y": 323.390625,
+                "width": 219.74373710155487,
+                "height": 23.0,
+                "source": 32
+              },
+              {
+                "text": "(1) 図1･1 サンプル数式のiBooks3.0による表示１の",
+                "page": 1,
+                "x": 0.0,
+                "y": 360.78125,
+                "width": 363.015625,
+                "height": 28.796875,
+                "source": 33
+              },
+              {
+                "text": "一番上の数式では最初の()が上下に伸びすぎていま",
+                "page": 1,
+                "x": 0.0,
+                "y": 389.578125,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 33
+              },
+              {
+                "text": "す。二つ目の数式では「・」が親文字と離れすぎ",
+                "page": 1,
+                "x": 0.0,
+                "y": 418.375,
+                "width": 362.9856119155884,
+                "height": 28.796875,
+                "source": 33
+              },
+              {
+                "text": "です。この2点を除くと大体使えると思います。",
+                "page": 1,
+                "x": 0.0,
+                "y": 447.171875,
+                "width": 341.43997287750244,
+                "height": 28.796875,
+                "source": 33
+              },
+              {
+                "text": "",
+                "page": 2,
+                "x": 0.0,
+                "y": 0.0,
+                "width": 363.0,
+                "height": 489.65625,
+                "source": 34
+              },
+              {
+                "text": "図1･1 サンプル数式のiBooks3.0による表示１",
+                "page": 2,
+                "x": 0.0,
+                "y": 496.046875,
+                "width": 252.72293996810913,
+                "height": 19.0,
+                "source": 35
+              },
+              {
+                "text": "(2) 図1･2 サンプル数式のiBooks3.0による表示２に",
+                "page": 2,
+                "x": 0.0,
+                "y": 529.4375,
+                "width": 362.6956253051758,
+                "height": 28.796875,
+                "source": 37
+              },
+              {
+                "text": "ついても（）が上下に伸びすぎている点を除くと",
+                "page": 2,
+                "x": 0.0,
+                "y": 558.234375,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 37
+              },
+              {
+                "text": "使えると思います。",
+                "page": 3,
+                "x": 0.0,
+                "y": 0.0,
+                "width": 142.71998596191406,
+                "height": 28.796875,
+                "source": 37
+              },
+              {
+                "text": "",
+                "page": 3,
+                "x": 0.0,
+                "y": 42.609375,
+                "width": 363.0,
+                "height": 489.65625,
+                "source": 38
+              },
+              {
+                "text": "図1･2 サンプル数式のiBooks3.0による表示２",
+                "page": 3,
+                "x": 0.0,
+                "y": 538.65625,
+                "width": 252.72293996810913,
+                "height": 19.0,
+                "source": 39
+              },
+              {
+                "text": "1–2 ReadiumによるMathMLの表示",
+                "page": 4,
+                "x": 19.0,
+                "y": 0.0,
+                "width": 276.3390625715256,
+                "height": 23.0,
+                "source": 42
+              },
+              {
+                "text": "ReadiumはMathJaxで数式を表示しています。",
+                "page": 4,
+                "x": 0.0,
+                "y": 37.390625,
+                "width": 362.9934377670288,
+                "height": 28.796875,
+                "source": 43
+              },
+              {
+                "text": "Readiumによる表示を次に示します。こちらの方は",
+                "page": 4,
+                "x": 0.0,
+                "y": 66.1875,
+                "width": 362.9856119155884,
+                "height": 28.796875,
+                "source": 43
+              },
+              {
+                "text": "すべての数式が綺麗に表示されています。",
+                "page": 4,
+                "x": 0.0,
+                "y": 94.984375,
+                "width": 302.3999710083008,
+                "height": 28.796875,
+                "source": 43
+              },
+              {
+                "text": "",
+                "page": 5,
+                "x": 0.0,
+                "y": 0.0,
+                "width": 363.0,
+                "height": 496.515625,
+                "source": 44
+              },
+              {
+                "text": "図1･3 サンプル数式のReadiumによる表示１",
+                "page": 5,
+                "x": 0.0,
+                "y": 502.90625,
+                "width": 246.6604402065277,
+                "height": 19.0,
+                "source": 45
+              },
+              {
+                "text": "",
+                "page": 6,
+                "x": 0.0,
+                "y": 0.0,
+                "width": 363.0,
+                "height": 494.984375,
+                "source": 47
+              },
+              {
+                "text": "図1･4 サンプル数式のReadiumによる表示２",
+                "page": 6,
+                "x": 0.0,
+                "y": 501.375,
+                "width": 246.6604402065277,
+                "height": 19.0,
+                "source": 48
+              },
+              {
+                "text": "1–3 総合的にみて",
+                "page": 6,
+                "x": 19.0,
+                "y": 564.375,
+                "width": 140.00000262260437,
+                "height": 23.0,
+                "source": 51
+              },
+              {
+                "text": "EPUB3.0になって数式MathMLの表示がEPUB3.0リ",
+                "page": 7,
+                "x": 0.0,
+                "y": 0.0,
+                "width": 362.9921875,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "ーダの標準機能になりました。まだ、EPUB3.0リ",
+                "page": 7,
+                "x": 0.0,
+                "y": 28.796875,
+                "width": 362.9921875,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "ーダによる数式表示機能の実装は全体として遅れ",
+                "page": 7,
+                "x": 0.0,
+                "y": 57.59375,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "ています。しかし、iBooksが数式のMathML表示を",
+                "page": 7,
+                "x": 0.0,
+                "y": 86.390625,
+                "width": 362.9934244155884,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "サポートしつつあることが分かります。現状では",
+                "page": 7,
+                "x": 0.0,
+                "y": 115.1875,
+                "width": 362.9856119155884,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "まだすべての数式をサポートできていないようで",
+                "page": 7,
+                "x": 0.0,
+                "y": 143.984375,
+                "width": 362.9924850463867,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "すが、このペースですとあと半年もあればMathJax",
+                "page": 7,
+                "x": 0.0,
+                "y": 172.78125,
+                "width": 362.989070892334,
+                "height": 28.796875,
+                "source": 52
+              },
+              {
+                "text": "並みになりそうで、かなり期待が持てます。",
+                "page": 7,
+                "x": 0.0,
+                "y": 201.578125,
+                "width": 318.3999710083008,
+                "height": 28.796875,
+                "source": 52
+              }
+            ]
+          },
+          {
+            "idref": "id0005",
+            "lines": [
+              {
+                "text": "2 EPUBのベストプラクティス ",
+                "page": 0,
+                "x": 19.0,
+                "y": 70.0,
+                "width": 315.1230163574219,
+                "height": 29.0,
+                "source": 0
+              },
+              {
+                "text": "linear 属性の設定方法",
+                "page": 0,
+                "x": 19.0,
+                "y": 99.0,
+                "width": 235.3273401260376,
+                "height": 29.0,
+                "source": 0
+              },
+              {
+                "text": "2–1 EPUB2",
+                "page": 0,
+                "x": 19.0,
+                "y": 174.0,
+                "width": 91.29843139648438,
+                "height": 18.0,
+                "source": 1
+              },
+              {
+                "text": "EPUB2に、先頭ページに表紙（カバー）画像を登",
+                "page": 0,
+                "x": 0.0,
+                "y": 206.390625,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "録して、spine要素のitemrefにlinear=\"no\"を設定せ",
+                "page": 0,
+                "x": 0.0,
+                "y": 235.1875,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "よ、というのベストプラクティスがありました",
+                "page": 0,
+                "x": 0.0,
+                "y": 263.984375,
+                "width": 362.9899797439575,
+                "height": 28.796875,
+                "source": 2
+              },
+              {
+                "text": "[1]。",
+                "page": 0,
+                "x": 0.0,
+                "y": 292.78125,
+                "width": 31.546875,
+                "height": 34.125,
+                "source": 2
+              },
+              {
+                "text": "次のような内容です。",
+                "page": 0,
+                "x": 0.0,
+                "y": 341.296875,
+                "width": 158.71998596191406,
+                "height": 28.796875,
+                "source": 3
+              },
+              {
+                "text": "(1) 表紙のHTMLファイルを作り、manifestに次のよ",
+                "page": 0,
+                "x": 0.0,
+                "y": 384.484375,
+                "width": 362.99249267578125,
+                "height": 28.796875,
+                "source": 4
+              },
+              {
+                "text": "うに設定：",
+                "page": 0,
+                "x": 0.0,
+                "y": 413.28125,
+                "width": 80.0,
+                "height": 28.796875,
+                "source": 4
+              },
+              {
+                "text": "",
+                "page": 0,
+                "x": 20.1875,
+                "y": 462.265625,
+                "width": 0.0,
+                "height": 19.1875,
+                "source": 6
+              },
+              {
+                "text": "<item id=\"cover\"  href=\"cover.xhtml\" media-",
+                "page": 0,
+                "x": 20.1875,
+                "y": 481.453125,
+                "width": 233.41867065429688,
+                "height": 19.1875,
+                "source": 6
+              },
+              {
+                "text": "type=\"application/xhtml+xml\"/>\n",
+                "page": 0,
+                "x": 20.1875,
+                "y": 500.640625,
+                "width": 167.90626525878906,
+                "height": 19.1875,
+                "source": 6
+              },
+              {
+                "text": "#",
+                "page": 0,
+                "x": 339.17699909210205,
+                "y": 460.11987590789795,
+                "width": 15.359999656677246,
+                "height": 36.859375,
+                "source": 5
+              },
+              {
+                "text": "(2) spineに次のように設定：",
+                "page": 0,
+                "x": 0.0,
+                "y": 544.8125,
+                "width": 200.4296875,
+                "height": 28.796875,
+                "source": 8
+              },
+              {
+                "text": "",
+                "page": 1,
+                "x": 20.1875,
+                "y": 10.59375,
+                "width": 0.0,
+                "height": 19.1875,
+                "source": 10
+              },
+              {
+                "text": "<itemref idref=\"cover\" linear=\"no\"/>\n",
+                "page": 1,
+                "x": 20.1875,
+                "y": 29.78125,
+                "width": 191.2124786376953,
+                "height": 19.1875,
+                "source": 10
+              },
+              {
+                "text": "#",
+                "page": 1,
+                "x": 339.17699909210205,
+                "y": 8.44800090789795,
+                "width": 15.359999656677246,
+                "height": 36.859375,
+                "source": 9
+              },
+              {
+                "text": "これはEPUB3でも採用できるでしょうか？",
+                "page": 1,
+                "x": 0.0,
+                "y": 73.953125,
+                "width": 304.7384338378906,
+                "height": 28.796875,
+                "source": 12
+              },
+              {
+                "text": "１年半程前（2011年春）、表紙をどうしようかと思",
+                "page": 1,
+                "x": 0.0,
+                "y": 117.140625,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 13
+              },
+              {
+                "text": "案して、EPUBリーダの挙動を調べました。",
+                "page": 1,
+                "x": 0.0,
+                "y": 145.9375,
+                "width": 312.57843017578125,
+                "height": 28.796875,
+                "source": 13
+              },
+              {
+                "text": "しかし、iBooks2ではlinear=\"no\"を指定したページ",
+                "page": 1,
+                "x": 0.0,
+                "y": 189.125,
+                "width": 363.0003128051758,
+                "height": 28.796875,
+                "source": 14
+              },
+              {
+                "text": "を表示するが、Adobe Digital Editionsの旧バージョ",
+                "page": 1,
+                "x": 0.0,
+                "y": 217.921875,
+                "width": 362.99281311035156,
+                "height": 28.796875,
+                "source": 14
+              },
+              {
+                "text": "ン（確か1.5）では、linear=\"no\"を指定したページ",
+                "page": 1,
+                "x": 0.0,
+                "y": 246.71875,
+                "width": 363.0003128051758,
+                "height": 28.796875,
+                "source": 14
+              },
+              {
+                "text": "を表示しない、という挙動の相違があったため設",
+                "page": 1,
+                "x": 0.0,
+                "y": 275.515625,
+                "width": 362.99624156951904,
+                "height": 28.796875,
+                "source": 14
+              },
+              {
+                "text": "定を見送っていました。",
+                "page": 1,
+                "x": 0.0,
+                "y": 304.3125,
+                "width": 176.0,
+                "height": 28.796875,
+                "source": 14
+              },
+              {
+                "text": "2–2 EPUB3",
+                "page": 1,
+                "x": 19.0,
+                "y": 377.109375,
+                "width": 91.29843139648438,
+                "height": 18.0,
+                "source": 16
+              },
+              {
+                "text": "最近、EPUBリーダが新しくなりましたので、何か",
+                "page": 1,
+                "x": 0.0,
+                "y": 409.5,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 17
+              },
+              {
+                "text": "変わったかと思い、もう一度調べてみました。次",
+                "page": 1,
+                "x": 0.0,
+                "y": 438.296875,
+                "width": 362.99624156951904,
+                "height": 28.796875,
+                "source": 17
+              },
+              {
+                "text": "のようなコードのEPUBで試してみました。",
+                "page": 1,
+                "x": 0.0,
+                "y": 467.09375,
+                "width": 312.8984375,
+                "height": 28.796875,
+                "source": 17
+              },
+              {
+                "text": "manifest：",
+                "page": 1,
+                "x": 0.0,
+                "y": 510.28125,
+                "width": 71.09375,
+                "height": 28.796875,
+                "source": 18
+              },
+              {
+                "text": "",
+                "page": 2,
+                "x": 20.1875,
+                "y": 10.59375,
+                "width": 0.0,
+                "height": 19.1875,
+                "source": 20
+              },
+              {
+                "text": "<item href=\"Text/opening.xhtml\" id=\"idopening\" media-",
+                "page": 2,
+                "x": 20.1875,
+                "y": 29.78125,
+                "width": 292.62493896484375,
+                "height": 19.1875,
+                "source": 20
+              },
+              {
+                "text": "type=\"application/xhtml+xml\" />\n",
+                "page": 2,
+                "x": 20.1875,
+                "y": 48.96875,
+                "width": 171.10626220703125,
+                "height": 19.1875,
+                "source": 20
+              },
+              {
+                "text": "#",
+                "page": 2,
+                "x": 339.17699909210205,
+                "y": 8.44800090789795,
+                "width": 15.359999656677246,
+                "height": 36.859375,
+                "source": 19
+              },
+              {
+                "text": "spine：",
+                "page": 2,
+                "x": 0.0,
+                "y": 93.140625,
+                "width": 49.7734375,
+                "height": 28.796875,
+                "source": 22
+              },
+              {
+                "text": "",
+                "page": 2,
+                "x": 20.1875,
+                "y": 142.125,
+                "width": 0.0,
+                "height": 19.1875,
+                "source": 24
+              },
+              {
+                "text": "<itemref idref=\"idopening\" linear=\"no\" />　",
+                "page": 2,
+                "x": 20.1875,
+                "y": 161.3125,
+                "width": 229.9812135696411,
+                "height": 19.1875,
+                "source": 24
+              },
+              {
+                "text": "#",
+                "page": 2,
+                "x": 339.17699909210205,
+                "y": 139.97925090789795,
+                "width": 15.359999656677246,
+                "height": 36.859375,
+                "source": 23
+              },
+              {
+                "text": "さらに linear=\"yes\" とした版も用意しました。2種",
+                "page": 2,
+                "x": 0.0,
+                "y": 205.484375,
+                "width": 362.9921875,
+                "height": 28.796875,
+                "source": 26
+              },
+              {
+                "text": "類のEPUB3を作成して、linear=\"no\"とlinear=\"yes\"で",
+                "page": 2,
+                "x": 0.0,
+                "y": 234.28125,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 26
+              },
+              {
+                "text": "EPUBリーダの表示を比較した表を作成しました。",
+                "page": 2,
+                "x": 0.0,
+                "y": 263.078125,
+                "width": 362.9921875,
+                "height": 28.796875,
+                "source": 26
+              },
+              {
+                "text": "やはり、EPUBリーダによって挙動がまちまちで",
+                "page": 2,
+                "x": 0.0,
+                "y": 291.875,
+                "width": 362.9884386062622,
+                "height": 28.796875,
+                "source": 26
+              },
+              {
+                "text": "す。",
+                "page": 2,
+                "x": 0.0,
+                "y": 320.671875,
+                "width": 30.719985961914062,
+                "height": 28.796875,
+                "source": 26
+              },
+              {
+                "text": "linear=\"no\"",
+                "page": 2,
+                "x": 179.421875,
+                "y": 372.859375,
+                "width": 74.5078125,
+                "height": 18.0,
+                "source": 28
+              },
+              {
+                "text": "linear=\"yes\"",
+                "page": 2,
+                "x": 274.140625,
+                "y": 372.859375,
+                "width": 79.8359375,
+                "height": 18.0,
+                "source": 30
+              },
+              {
+                "text": "Readium 0.5",
+                "page": 2,
+                "x": 9.0,
+                "y": 408.859375,
+                "width": 81.765625,
+                "height": 18.0,
+                "source": 33
+              },
+              {
+                "text": "表示しな",
+                "page": 2,
+                "x": 177.21875,
+                "y": 408.859375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 35
+              },
+              {
+                "text": "い",
+                "page": 2,
+                "x": 177.21875,
+                "y": 431.859375,
+                "width": 16.0,
+                "height": 23.0,
+                "source": 35
+              },
+              {
+                "text": "表示する",
+                "page": 2,
+                "x": 274.140625,
+                "y": 408.859375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 37
+              },
+              {
+                "text": "Adobe Digital Editions ",
+                "page": 2,
+                "x": 9.0,
+                "y": 472.859375,
+                "width": 148.4296875,
+                "height": 18.0,
+                "source": 40
+              },
+              {
+                "text": "2.0",
+                "page": 2,
+                "x": 9.0,
+                "y": 490.859375,
+                "width": 20.0,
+                "height": 18.0,
+                "source": 40
+              },
+              {
+                "text": "表示する",
+                "page": 2,
+                "x": 177.21875,
+                "y": 472.859375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 42
+              },
+              {
+                "text": "表示する",
+                "page": 2,
+                "x": 274.140625,
+                "y": 472.859375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 44
+              },
+              {
+                "text": "iBooks 3.0",
+                "page": 2,
+                "x": 9.0,
+                "y": 526.859375,
+                "width": 69.34375,
+                "height": 18.0,
+                "source": 47
+              },
+              {
+                "text": "表示しな",
+                "page": 2,
+                "x": 177.21875,
+                "y": 526.859375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 49
+              },
+              {
+                "text": "い",
+                "page": 2,
+                "x": 177.21875,
+                "y": 549.859375,
+                "width": 16.0,
+                "height": 23.0,
+                "source": 49
+              },
+              {
+                "text": "表示する",
+                "page": 2,
+                "x": 274.140625,
+                "y": 526.859375,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 51
+              },
+              {
+                "text": "Kobo 2.1.4",
+                "page": 3,
+                "x": 9.0,
+                "y": 9.0,
+                "width": 71.5546875,
+                "height": 18.0,
+                "source": 54
+              },
+              {
+                "text": "表示する",
+                "page": 3,
+                "x": 177.21875,
+                "y": 9.0,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 56
+              },
+              {
+                "text": "表示する",
+                "page": 3,
+                "x": 274.140625,
+                "y": 9.0,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 58
+              },
+              {
+                "text": "Kindle 2.71",
+                "page": 3,
+                "x": 9.0,
+                "y": 50.0,
+                "width": 75.546875,
+                "height": 18.0,
+                "source": 61
+              },
+              {
+                "text": "表示しな",
+                "page": 3,
+                "x": 177.21875,
+                "y": 50.0,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 63
+              },
+              {
+                "text": "い",
+                "page": 3,
+                "x": 177.21875,
+                "y": 73.0,
+                "width": 16.0,
+                "height": 23.0,
+                "source": 63
+              },
+              {
+                "text": "表示する",
+                "page": 3,
+                "x": 274.140625,
+                "y": 50.0,
+                "width": 64.0,
+                "height": 23.0,
+                "source": 65
+              },
+              {
+                "text": "表2･1 linear=\"no\"とlinear=\"yes\"でEPUBリーダの表示を比較",
+                "page": 3,
+                "x": 0.0,
+                "y": 111.390625,
+                "width": 332.19359850883484,
+                "height": 19.0,
+                "source": 69
+              },
+              {
+                "text": "先日、電流協のEPUB研究会で、このことを報告し",
+                "page": 3,
+                "x": 0.0,
+                "y": 144.78125,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 71
+              },
+              {
+                "text": "ましたところ、参加者の方から次のようなコメン",
+                "page": 3,
+                "x": 0.0,
+                "y": 173.578125,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 71
+              },
+              {
+                "text": "トをいただきました。",
+                "page": 3,
+                "x": 0.0,
+                "y": 202.375,
+                "width": 160.0,
+                "height": 28.796875,
+                "source": 71
+              },
+              {
+                "text": "・linear=\"no\" は本文のページとして表示しない内",
+                "page": 3,
+                "x": 0.0,
+                "y": 245.5625,
+                "width": 363.00030517578125,
+                "height": 28.796875,
+                "source": 72
+              },
+              {
+                "text": "容に対して使うもの。注釈のようなもの。順番に",
+                "page": 3,
+                "x": 0.0,
+                "y": 274.359375,
+                "width": 362.985595703125,
+                "height": 28.796875,
+                "source": 72
+              },
+              {
+                "text": "めくっていっても表示されない。ページとして扱",
+                "page": 3,
+                "x": 0.0,
+                "y": 303.15625,
+                "width": 363.00059509277344,
+                "height": 28.796875,
+                "source": 72
+              },
+              {
+                "text": "わないものに設定するのだろう。",
+                "page": 3,
+                "x": 0.0,
+                "y": 331.953125,
+                "width": 240.0,
+                "height": 28.796875,
+                "source": 72
+              },
+              {
+                "text": "ところでEPUB3仕様におけるitemref要素のlinear属",
+                "page": 3,
+                "x": 0.0,
+                "y": 375.140625,
+                "width": 362.99624156951904,
+                "height": 28.796875,
+                "source": 73
+              },
+              {
+                "text": "性についての説明は次の2箇所にしかありません。",
+                "page": 3,
+                "x": 0.0,
+                "y": 403.9375,
+                "width": 360.63997650146484,
+                "height": 28.796875,
+                "source": 73
+              },
+              {
+                "text": "3.4.13 itemref要素より抜粋",
+                "page": 3,
+                "x": 30.03125,
+                "y": 470.578125,
+                "width": 178.74739146232605,
+                "height": 27.640625,
+                "source": 76
+              },
+              {
+                "text": "linear属性は参照された項目が主要素なの",
+                "page": 3,
+                "x": 30.03125,
+                "y": 512.03125,
+                "width": 288.9593291282654,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "か付随要素なのかを示す。これによりRS",
+                "page": 3,
+                "x": 30.03125,
+                "y": 539.671875,
+                "width": 288.95993423461914,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "“",
+                "page": 3,
+                "x": -7.372799873352051,
+                "y": 440.563600063324,
+                "width": 6.81749963760376,
+                "height": 18.4375,
+                "source": 74
+              },
+              {
+                "text": "は本体コンテンツの表示を補足コンテン",
+                "page": 4,
+                "x": 30.03125,
+                "y": 0.0,
+                "width": 288.9596347808838,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "ツと区別するために使っても良い。後者",
+                "page": 4,
+                "x": 30.03125,
+                "y": 27.640625,
+                "width": 288.9643840789795,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "は、例えばポップアップ・ウインドウに",
+                "page": 4,
+                "x": 30.03125,
+                "y": 55.28125,
+                "width": 288.95961475372314,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "したり、音声レンダリングで省略したり",
+                "page": 4,
+                "x": 30.03125,
+                "y": 82.921875,
+                "width": 288.95565128326416,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "されるかもしれない。",
+                "page": 4,
+                "x": 30.03125,
+                "y": 110.5625,
+                "width": 153.60000610351562,
+                "height": 27.640625,
+                "source": 77
+              },
+              {
+                "text": "3.14.12 spine要素より抜粋",
+                "page": 4,
+                "x": 30.03125,
+                "y": 152.015625,
+                "width": 174.50241541862488,
+                "height": 27.640625,
+                "source": 78
+              },
+              {
+                "text": "RSは、spine中の先頭にある主項目",
+                "page": 4,
+                "x": 30.03125,
+                "y": 193.46875,
+                "width": 288.9674515724182,
+                "height": 27.640625,
+                "source": 79
+              },
+              {
+                "text": "（linear=\"yes\")を出版物の主たる閲読順序",
+                "page": 4,
+                "x": 30.03125,
+                "y": 221.109375,
+                "width": 288.96862745285034,
+                "height": 27.640625,
+                "source": 79
+              },
+              {
+                "text": "の始まりとする。そして、spineの中の主",
+                "page": 4,
+                "x": 30.03125,
+                "y": 248.75,
+                "width": 288.9690041542053,
+                "height": 27.640625,
+                "source": 79
+              },
+              {
+                "text": "項目を順番に可視化する。",
+                "page": 4,
+                "x": 30.03125,
+                "y": 276.390625,
+                "width": 184.32000064849854,
+                "height": 27.640625,
+                "source": 79
+              },
+              {
+                "text": "”",
+                "page": 4,
+                "x": 336.4873991012573,
+                "y": 10.137600898742676,
+                "width": 16.360225677490234,
+                "height": 44.234375,
+                "source": 75
+              },
+              {
+                "text": "説明もサンプルも少ないので、これでは解釈統一",
+                "page": 4,
+                "x": 0.0,
+                "y": 330.9375,
+                "width": 362.98996353149414,
+                "height": 28.796875,
+                "source": 81
+              },
+              {
+                "text": "のしようがないように思えますね。困ったもので",
+                "page": 4,
+                "x": 0.0,
+                "y": 359.734375,
+                "width": 363.0,
+                "height": 28.796875,
+                "source": 81
+              },
+              {
+                "text": "す。",
+                "page": 4,
+                "x": 0.0,
+                "y": 388.53125,
+                "width": 30.719985961914062,
+                "height": 28.796875,
+                "source": 81
+              },
+              {
+                "text": "ある方から、EPUB2.0では、guide機能があって、",
+                "page": 4,
+                "x": 0.0,
+                "y": 431.71875,
+                "width": 362.996563911438,
+                "height": 28.796875,
+                "source": 82
+              },
+              {
+                "text": "guideに登録することでlinear=\"no\"を指定したペー",
+                "page": 4,
+                "x": 0.0,
+                "y": 460.515625,
+                "width": 362.6721878051758,
+                "height": 28.796875,
+                "source": 82
+              },
+              {
+                "text": "ジにもジャンプできたが、EPUB3.0でguideが廃止",
+                "page": 4,
+                "x": 0.0,
+                "y": 489.3125,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 82
+              },
+              {
+                "text": "されてしまったためlinear=\"no\"を指定したページを",
+                "page": 4,
+                "x": 0.0,
+                "y": 518.109375,
+                "width": 363.0002975463867,
+                "height": 28.796875,
+                "source": 82
+              },
+              {
+                "text": "表示する方法がリンクぐらいしかなくなっている",
+                "page": 5,
+                "x": 0.0,
+                "y": 0.0,
+                "width": 362.9924850463867,
+                "height": 28.796875,
+                "source": 82
+              },
+              {
+                "text": "という指摘がありました。",
+                "page": 5,
+                "x": 0.0,
+                "y": 28.796875,
+                "width": 192.0,
+                "height": 28.796875,
+                "source": 82
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "epubPath": "/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar-epub-evidence/samples/rowspan-pagination-probe.epub",
+        "fontPaths": [
+          "/home/helian/rito-baseline-audit/apps/reader/src/assets/fonts/Tinos-Regular.ttf",
+          "/home/helian/rito-baseline-audit/apps/reader/src/assets/fonts/SourceHanSerifCN-Regular.otf"
+        ],
+        "contentWidthPx": 363,
+        "chapterIdrefs": [
+          "text"
+        ],
+        "fragmentainerSize": 50
+      },
+      "sampleSha256": "61ef0cf2657350ff4d3ad5e450eddb1f9022688792062f74695e12725765e772",
+      "exitCode": 0,
+      "stderr": "",
+      "output": {
+        "chapters": [
+          {
+            "idref": "text",
+            "lines": [
+              {
+                "text": "Group",
+                "page": 0,
+                "x": 3.0,
+                "y": 3.0,
+                "width": 40.8828125,
+                "height": 18.0,
+                "source": 0
+              },
+              {
+                "text": "Row 00",
+                "page": 0,
+                "x": 59.234375,
+                "y": 3.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 2
+              },
+              {
+                "text": "Row 01",
+                "page": 0,
+                "x": 3.0,
+                "y": 27.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 5
+              },
+              {
+                "text": "Row 02",
+                "page": 1,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 8
+              },
+              {
+                "text": "Row 03",
+                "page": 1,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 11
+              },
+              {
+                "text": "Row 04",
+                "page": 2,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 14
+              },
+              {
+                "text": "Row 05",
+                "page": 2,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 17
+              },
+              {
+                "text": "Row 06",
+                "page": 3,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 20
+              },
+              {
+                "text": "Row 07",
+                "page": 3,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 23
+              },
+              {
+                "text": "Row 08",
+                "page": 4,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 26
+              },
+              {
+                "text": "Row 09",
+                "page": 4,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 29
+              },
+              {
+                "text": "Row 10",
+                "page": 5,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 32
+              },
+              {
+                "text": "Row 11",
+                "page": 5,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 49.6328125,
+                "height": 18.0,
+                "source": 35
+              },
+              {
+                "text": "Row 12",
+                "page": 6,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 38
+              },
+              {
+                "text": "Row 13",
+                "page": 6,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 41
+              },
+              {
+                "text": "Row 14",
+                "page": 7,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 44
+              },
+              {
+                "text": "Row 15",
+                "page": 7,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 47
+              },
+              {
+                "text": "Row 16",
+                "page": 8,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 50
+              },
+              {
+                "text": "Row 17",
+                "page": 8,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 53
+              },
+              {
+                "text": "Row 18",
+                "page": 9,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 56
+              },
+              {
+                "text": "Row 19",
+                "page": 9,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 59
+              },
+              {
+                "text": "Row 20",
+                "page": 10,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 62
+              },
+              {
+                "text": "Row 21",
+                "page": 10,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 65
+              },
+              {
+                "text": "Row 22",
+                "page": 11,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 68
+              },
+              {
+                "text": "Row 23",
+                "page": 11,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 71
+              },
+              {
+                "text": "Row 24",
+                "page": 12,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 74
+              },
+              {
+                "text": "Row 25",
+                "page": 12,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 77
+              },
+              {
+                "text": "Row 26",
+                "page": 13,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 80
+              },
+              {
+                "text": "Row 27",
+                "page": 13,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 83
+              },
+              {
+                "text": "Row 28",
+                "page": 14,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 86
+              },
+              {
+                "text": "Row 29",
+                "page": 14,
+                "x": 3.0,
+                "y": 24.0,
+                "width": 50.2265625,
+                "height": 18.0,
+                "source": 89
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "epubPath": "/mnt/c/Helianthus/SXP-Simon/杂/anime-dev/lunar-epub-evidence/samples/rowspan-parallel-probe.epub",
+        "fontPaths": [
+          "/home/helian/rito-baseline-audit/apps/reader/src/assets/fonts/Tinos-Regular.ttf",
+          "/home/helian/rito-baseline-audit/apps/reader/src/assets/fonts/SourceHanSerifCN-Regular.otf"
+        ],
+        "contentWidthPx": 363,
+        "chapterIdrefs": [
+          "text"
+        ],
+        "fragmentainerSize": 80
+      },
+      "sampleSha256": "1bca0370853f157bd67ff9c8e241ee89203b7b6b5b21c1c3b49ea19b38c64146",
+      "exitCode": 0,
+      "stderr": "",
+      "output": {
+        "chapters": [
+          {
+            "idref": "text",
+            "lines": [
+              {
+                "text": "Span 00",
+                "page": 0,
+                "x": 3.0,
+                "y": 3.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 0
+              },
+              {
+                "text": "Span 01",
+                "page": 0,
+                "x": 3.0,
+                "y": 26.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 1
+              },
+              {
+                "text": "Span 02",
+                "page": 0,
+                "x": 3.0,
+                "y": 49.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 2
+              },
+              {
+                "text": "Span 03",
+                "page": 0,
+                "x": 3.0,
+                "y": 72.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 3
+              },
+              {
+                "text": "Span 04",
+                "page": 0,
+                "x": 3.0,
+                "y": 95.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 4
+              },
+              {
+                "text": "Span 05",
+                "page": 0,
+                "x": 3.0,
+                "y": 118.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 5
+              },
+              {
+                "text": "Span 06",
+                "page": 0,
+                "x": 3.0,
+                "y": 141.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 6
+              },
+              {
+                "text": "Span 07",
+                "page": 0,
+                "x": 3.0,
+                "y": 164.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 7
+              },
+              {
+                "text": "Span 08",
+                "page": 0,
+                "x": 3.0,
+                "y": 187.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 8
+              },
+              {
+                "text": "Span 09",
+                "page": 0,
+                "x": 3.0,
+                "y": 210.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 9
+              },
+              {
+                "text": "Span 10",
+                "page": 0,
+                "x": 3.0,
+                "y": 233.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 10
+              },
+              {
+                "text": "Span 11",
+                "page": 0,
+                "x": 3.0,
+                "y": 256.0,
+                "width": 64.2578125,
+                "height": 23.0,
+                "source": 11
+              },
+              {
+                "text": "Span 12",
+                "page": 0,
+                "x": 3.0,
+                "y": 279.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 12
+              },
+              {
+                "text": "Span 13",
+                "page": 0,
+                "x": 3.0,
+                "y": 302.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 13
+              },
+              {
+                "text": "Span 14",
+                "page": 0,
+                "x": 3.0,
+                "y": 325.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 14
+              },
+              {
+                "text": "Span 15",
+                "page": 0,
+                "x": 3.0,
+                "y": 348.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 15
+              },
+              {
+                "text": "Span 16",
+                "page": 0,
+                "x": 3.0,
+                "y": 371.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 16
+              },
+              {
+                "text": "Span 17",
+                "page": 0,
+                "x": 3.0,
+                "y": 394.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 17
+              },
+              {
+                "text": "Span 18",
+                "page": 0,
+                "x": 3.0,
+                "y": 417.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 18
+              },
+              {
+                "text": "Span 19",
+                "page": 0,
+                "x": 3.0,
+                "y": 440.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 19
+              },
+              {
+                "text": "Span 20",
+                "page": 0,
+                "x": 3.0,
+                "y": 463.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 20
+              },
+              {
+                "text": "Span 21",
+                "page": 0,
+                "x": 3.0,
+                "y": 486.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 21
+              },
+              {
+                "text": "Span 22",
+                "page": 0,
+                "x": 3.0,
+                "y": 509.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 22
+              },
+              {
+                "text": "Span 23",
+                "page": 0,
+                "x": 3.0,
+                "y": 532.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 23
+              },
+              {
+                "text": "Span 24",
+                "page": 0,
+                "x": 3.0,
+                "y": 555.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 24
+              },
+              {
+                "text": "Span 25",
+                "page": 0,
+                "x": 3.0,
+                "y": 578.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 25
+              },
+              {
+                "text": "Span 26",
+                "page": 0,
+                "x": 3.0,
+                "y": 601.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 26
+              },
+              {
+                "text": "Span 27",
+                "page": 0,
+                "x": 3.0,
+                "y": 624.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 27
+              },
+              {
+                "text": "Span 28",
+                "page": 0,
+                "x": 3.0,
+                "y": 647.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 28
+              },
+              {
+                "text": "Span 29",
+                "page": 0,
+                "x": 3.0,
+                "y": 670.0,
+                "width": 65.0,
+                "height": 23.0,
+                "source": 29
+              },
+              {
+                "text": "Row 00",
+                "page": 0,
+                "x": 74.0,
+                "y": 3.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 31
+              },
+              {
+                "text": "Row 01",
+                "page": 1,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 34
+              },
+              {
+                "text": "Row 02",
+                "page": 1,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 37
+              },
+              {
+                "text": "Row 03",
+                "page": 2,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 40
+              },
+              {
+                "text": "Row 04",
+                "page": 2,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 43
+              },
+              {
+                "text": "Row 05",
+                "page": 3,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 46
+              },
+              {
+                "text": "Row 06",
+                "page": 3,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 49
+              },
+              {
+                "text": "Row 07",
+                "page": 4,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 52
+              },
+              {
+                "text": "Row 08",
+                "page": 4,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 55
+              },
+              {
+                "text": "Row 09",
+                "page": 5,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 58
+              },
+              {
+                "text": "Row 10",
+                "page": 5,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 61
+              },
+              {
+                "text": "Row 11",
+                "page": 6,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.041015625,
+                "height": 23.0,
+                "source": 64
+              },
+              {
+                "text": "Row 12",
+                "page": 6,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 67
+              },
+              {
+                "text": "Row 13",
+                "page": 7,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 70
+              },
+              {
+                "text": "Row 14",
+                "page": 7,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 73
+              },
+              {
+                "text": "Row 15",
+                "page": 8,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 76
+              },
+              {
+                "text": "Row 16",
+                "page": 8,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 79
+              },
+              {
+                "text": "Row 17",
+                "page": 9,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 82
+              },
+              {
+                "text": "Row 18",
+                "page": 9,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 85
+              },
+              {
+                "text": "Row 19",
+                "page": 10,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 88
+              },
+              {
+                "text": "Row 20",
+                "page": 10,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 91
+              },
+              {
+                "text": "Row 21",
+                "page": 11,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 94
+              },
+              {
+                "text": "Row 22",
+                "page": 11,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 97
+              },
+              {
+                "text": "Row 23",
+                "page": 12,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 100
+              },
+              {
+                "text": "Row 24",
+                "page": 12,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 103
+              },
+              {
+                "text": "Row 25",
+                "page": 13,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 106
+              },
+              {
+                "text": "Row 26",
+                "page": 13,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 109
+              },
+              {
+                "text": "Row 27",
+                "page": 14,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 112
+              },
+              {
+                "text": "Row 28",
+                "page": 14,
+                "x": 3.0,
+                "y": 29.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 115
+              },
+              {
+                "text": "Row 29",
+                "page": 15,
+                "x": 3.0,
+                "y": 0.0,
+                "width": 62.783203125,
+                "height": 23.0,
+                "source": 118
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

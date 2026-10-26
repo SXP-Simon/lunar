@@ -1,0 +1,1284 @@
+   Compiling rito-fragment v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-fragment)
+   Compiling rito-inline v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-inline)
+   Compiling rito-block v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-block)
+   Compiling rito-core v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-core)
+   Compiling rito-ffi v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-ffi)
+   Compiling rito-wasm v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-wasm)
+   Compiling rito-pack v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-pack)
+   Compiling rito-inline-spike v0.0.0 (/home/helian/rito-rowspan-fixed/crates/rito-inline-spike)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 48s
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_block-1a1d3608dc8e8292)
+
+running 65 tests
+test tests::floats::a_float_respects_the_preceding_siblings_bottom_margin ... ok
+test tests::floats::an_unfitting_float_steps_below_the_blocking_band ... ok
+test tests::floats::a_margined_block_after_a_cleared_spacer_keeps_its_full_margin ... ok
+test tests::floats::a_later_float_keeps_its_flow_position_y ... ok
+test tests::floats::auto_width_floats_shrink_to_their_content ... ok
+test tests::floats::clearance_clears_the_floats_margin_edge ... ok
+test tests::floats::content_beside_floats_clears_below_them ... ok
+test tests::floats::float_shrink_to_fit_excludes_the_floats_own_margins ... ok
+test tests::floats::floats_stack_against_the_active_set_not_a_band_chain ... ok
+test tests::floats::padded_float_inline_flow_lays_lines_in_the_content_box ... ok
+test tests::floats::float_flow_position_includes_a_clear_paragraphs_margins ... ok
+test tests::floats::paired_float_columns_sit_side_by_side ... ok
+test tests::floats::negative_top_margins_hoist_floats_above_their_flow_position ... ok
+test tests::floats::nested_float_columns_resume_side_by_side_across_pages ... ok
+test tests::floats::container_float_shrink_to_fit_excludes_its_own_margins ... ok
+test tests::margins::a_padded_percentage_parent_keeps_its_child_margin_inside ... ok
+test tests::floats::paired_float_columns_split_and_resume_side_by_side_across_pages ... ok
+test tests::margins::a_margin_meeting_an_unforced_break_is_truncated ... ok
+test tests::margins::a_percentage_parent_margin_collapses_with_its_first_child_at_layout ... ok
+test tests::margins::a_snug_last_paragraph_keeps_its_full_margin ... ok
+test tests::margins::a_childless_container_self_collapses_its_margins ... ok
+test tests::margins::adjacent_margins_collapse_to_the_larger_one ... ok
+test tests::margins::horizontal_padding_truncates_onto_the_layout_unit_grid ... ok
+test tests::margins::an_empty_paragraph_self_collapses_its_margins ... ok
+test tests::margins::mixed_sign_margins_collapse_as_a_set_through_empty_blocks ... ok
+test tests::margins::percentage_margins_resolve_against_the_inline_size ... ok
+test tests::margins::negative_margins_collapse_by_positive_max_plus_negative_min ... ok
+test tests::margins::auto_vertical_margins_resolve_to_zero ... ok
+test tests::pagination::a_full_page_monolith_breaks_past_the_opener_padding ... ok
+test tests::pagination::a_box_whose_trailing_padding_misses_moves_whole_when_it_can ... ok
+test tests::pagination::a_monolith_taller_than_any_page_still_force_places ... ok
+test tests::pagination::a_page_tall_line_breaks_past_a_padding_shortened_opener ... ok
+test tests::pagination::cancellation_propagates ... ok
+test tests::pagination::breaks_inside_nested_containers_resume_through_the_ancestor_path ... ok
+test tests::pagination::continuous_space_never_breaks ... ok
+test tests::pagination::forced_breaks_seal_the_fragmentainer_between_children ... ok
+test tests::pagination::leaf_roots_fail_closed_and_empty_nested_containers_are_zero_height ... ok
+test tests::pagination::deferred_trailing_padding_opens_the_next_page_and_preserves_the_sibling_margin ... ok
+test tests::pagination::line_taller_than_a_fresh_fragmentainer_still_progresses ... ok
+test tests::pagination::missing_layout_styles_fail_closed ... ok
+test tests::pagination::mixed_leaves_and_paragraphs_share_fragmentainers ... ok
+test tests::pagination::leading_padding_breaks_alone_when_it_squeezes_a_full_page_line ... ok
+test tests::pagination::paragraph_lines_paginate_without_gaps_or_repeats ... ok
+test tests::pagination::resumption_is_deterministic ... ok
+test tests::pagination::page_tall_line_pairs_paginate_one_per_page ... ok
+test tests::pagination::leading_padding_breaks_even_when_the_line_overflows_a_whole_page ... ok
+test tests::pagination::three_levels_of_nesting_paginate_losslessly ... ok
+test tests::pagination::trailing_padding_still_defers_when_the_box_opens_the_page ... ok
+test tests::tables::a_fitting_table_places_whole_and_continuous_flow_never_fragments ... ok
+test tests::tables::a_multi_cell_row_breaks_between_rows ... ok
+test tests::tables::border_spacing_wraps_the_single_row_once_per_side ... ok
+test tests::tables::a_page_tall_single_cell_table_fragments_between_its_paragraphs ... ok
+test tests::pagination::nested_containers_stack_in_continuous_space ... ok
+test tests::tables::rowspan_participates_in_the_formatting_tree_fingerprint ... ok
+test tests::tables::rowspan_reports_an_indivisible_line_instead_of_silently_clipping_it ... ok
+test tests::tables::rowspan_group_moves_as_a_unit_and_column_occupancy_survives_the_break ... ok
+test tests::zero_height_boxes::a_forced_break_after_an_empty_box_still_breaks ... ok
+test tests::zero_height_boxes::an_empty_box_keeps_a_padded_wrappers_head_on_the_first_page ... ok
+test tests::zero_height_boxes::an_empty_box_ahead_of_a_page_tall_monolith_costs_no_page ... ok
+test tests::zero_height_boxes::an_empty_boxs_margin_still_takes_space ... ok
+test tests::zero_height_boxes::empty_boxes_ahead_of_a_page_tall_line_cost_no_page ... ok
+test tests::tables::rowspan_table_preserves_fragmentation_of_an_unrelated_tall_single_cell_row ... ok
+test tests::tables::rowspan_taller_than_a_page_fragments_without_lost_or_repeated_lines ... ok
+test tests::pagination::real_paragraphs_paginate_losslessly_through_parley ... ok
+test tests::tables::parallel_cell_continuation_survives_serialization_and_a_fresh_context ... ok
+
+test result: ok. 65 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_core-7b6c6bd029229ba9)
+
+running 576 tests
+test epub::archive::tests::bounds_inflate_by_the_declared_entry_size_before_length_mismatch ... ok
+test epub::archive::tests::accepts_a_multipart_wrapped_archive_with_prefix_and_trailer ... ok
+test epub::archive::tests::accepts_a_trailing_upload_boundary_after_the_footer_comment ... ok
+test epub::archive::tests::exposes_only_safe_canonical_file_metadata ... ok
+test epub::archive::tests::normalizes_only_percent_decoded_dot_segments ... ok
+test epub::archive::tests::falls_back_to_percent_decoded_entry_names ... ok
+test epub::archive::tests::rejects_ambiguous_footers_inside_trailing_garbage ... ok
+test epub::archive::tests::rejects_a_truncated_footer_comment ... ok
+test epub::archive::tests::rejects_duplicate_raw_entry_paths_before_zip_index_deduplication ... ok
+test epub::archive::tests::prefers_exact_entry_names_before_percent_decoding ... ok
+test epub::archive::tests::rejects_entries_over_the_compression_ratio_limit_before_reading ... ok
+test epub::archive::tests::rejects_entries_over_the_uncompressed_byte_limit_before_reading ... ok
+test epub::archive::tests::rejects_raw_central_directory_count_before_building_the_zip_index ... ok
+test epub::archive::tests::percent_encoded_lookups_return_the_physical_entry_identity ... ok
+test epub::archive::tests::rejects_malformed_percent_escapes_after_exact_miss ... ok
+test epub::archive::tests::zip_parser_ignores_a_shadow_archive_inside_the_selected_comment ... ok
+test epub::archive::tests::zip_parser_cannot_fall_back_to_an_unvalidated_earlier_footer ... ok
+test epub::check::tests::bytes_that_are_not_an_epub_fail_as_opening_does ... ok
+test epub::document::open::archive_images::tests::matches_the_reference_archive_image_extension_set ... ok
+test epub::document::tests::batch_detects_cached_image_dimensions_without_reopening_archive ... ok
+test epub::document::tests::caches_lazy_binary_resources_after_first_read ... ok
+test epub::document::tests::caches_lazy_font_resources_after_batch_load ... ok
+test epub::document::tests::detects_image_dimensions_from_cached_bytes_without_archive_source ... ok
+test epub::document::tests::ignores_image_dimension_ranges_beyond_available_chapters ... ok
+test epub::document::tests::opens_document_with_runtime_resources_and_chapters ... ok
+test epub::document::tests::rejects_missing_spine_chapter ... ok
+test epub::document::tests::rejects_spine_idrefs_missing_from_the_manifest ... ok
+test epub::document::tests::resource_hrefs::opens_percent_encoded_manifest_hrefs_against_literal_zip_names ... ok
+test epub::check::tests::a_chapter_missing_from_the_archive_fails_the_book_as_layout_does ... ok
+test epub::document::tests::resource_hrefs::resolves_percent_encoded_content_href_to_literal_manifest_resource ... ok
+test epub::document::tests::resource_hrefs::resolves_query_and_fragment_hrefs_for_lazy_image_loading ... ok
+test epub::document::tests::resource_hrefs::resolves_source_paths_that_contain_the_manifest_href ... ok
+test epub::check::tests::a_linked_stylesheet_missing_from_the_archive_fails_the_book_as_styling_does ... ok
+test epub::document::tests::skips_missing_optional_manifest_resources ... ok
+test epub::document::tests::streams_image_dimensions_without_caching_the_full_resource ... ok
+test epub::document::tests::unmanifested_images::eagerly_loads_safe_archive_images_missing_from_the_manifest ... ok
+test epub::document::tests::unmanifested_images::indexes_url_delimiters_in_physical_archive_image_names ... ok
+test epub::document::tests::unmanifested_images::keeps_unreferenced_archive_images_lazy_during_runtime_layout ... ok
+test epub::check::tests::listed_files_missing_from_the_archive_are_problems_not_failures ... ok
+test epub::check::tests::a_well_formed_book_is_readable_without_problems ... ok
+test epub::check::tests::a_chapter_that_does_not_parse_shows_empty_and_the_book_still_lays_out ... ok
+test epub::document::tests::unmanifested_images::preserves_manifest_identity_and_media_type_before_archive_fallbacks ... ok
+test epub::fonts::face::tests::font_family_lists_split_on_unquoted_commas_only ... ok
+test epub::fonts::face::tests::missing_face_descriptors_normalize_to_normal_400 ... ok
+test epub::fonts::sources::tests::parses_font_face_weight_values ... ok
+test epub::fonts::sources::tests::rejects_non_publication_font_face_sources ... ok
+test epub::fonts::sources::tests::resolves_font_face_href_relative_to_stylesheet ... ok
+test epub::fonts::sources::tests::resolves_multiple_stylesheets_once_and_preserves_global_source_order ... ok
+test epub::layout_bridge::tests::non_empty_chapter_without_source_arena_keeps_typed_error ... ok
+test epub::layout_bridge::tests::undeclared_entity_chapter_renders_literally ... ok
+test epub::layout_bridge::tests::unrepresentable_css_does_not_refuse_the_chapter ... ok
+test epub::document::tests::resource_hrefs::resolves_literal_content_href_to_percent_encoded_manifest_resource ... ok
+test epub::parser::tests::parses_container_rootfile_path ... ok
+test epub::parser::tests::parses_package_metadata_manifest_and_spine ... ok
+test epub::parser::tests::still_requires_manifest_and_spine_structure ... ok
+test epub::parser::tests::tolerates_missing_package_metadata_values ... ok
+test epub::paths::tests::distinguishes_external_and_epub_relative_hrefs ... ok
+test epub::paths::tests::encodes_url_delimiters_in_physical_archive_paths ... ok
+test epub::paths::tests::expresses_archive_paths_relative_to_the_opf_directory ... ok
+test epub::paths::tests::strips_url_query_and_fragment_when_joining_epub_hrefs ... ok
+test epub::prepared::tests::body_background_resolves_into_the_typed_body_style ... ok
+test epub::document::tests::resource_hrefs::transfers_query_and_fragment_image_refs_through_the_runtime ... ok
+test epub::prepared::tests::clear_and_max_width_project_into_the_typed_layout_style ... ok
+test epub::prepared::tests::background_url_cluster_resolves_against_the_stylesheet_base ... ok
+test epub::prepared::tests::body_bgcolor_applies_as_a_presentational_hint ... ok
+test epub::prepared::tests::invalid_font_family_override_is_rejected_before_stylesheet_injection ... ok
+test epub::prepared::tests::configured_root_font_size_is_the_initial_em_and_computed_rem_basis ... ok
+test epub::prepared::tests::force_typography_still_overwrites_descendant_declarations ... ok
+test epub::prepared::tests::height_float_and_overflow_project_into_the_typed_layout_style ... ok
+test epub::prepared::tests::prepared_base_keeps_the_raw_stylesheet_sources ... ok
+test epub::prepared::tests::non_force_typography_overrides_body_then_allows_descendant_declarations ... ok
+test epub::prepared::tests::prepared_chapter_retains_the_canonical_arena_across_clones ... ok
+test epub::prepared::tests::only_column_breaks_force_a_break_in_the_reader_column_context ... ok
+test epub::prepared::tests::opacity_projects_into_the_typed_paint_style ... ok
+test epub::prepared::tests::stylo_medium_border_keeps_the_browser_compatible_three_pixel_width ... ok
+test epub::prepared::tests::rotate_transforms_project_as_exact_radians ... ok
+test epub::prepared::tests::unparseable_chapter_still_degrades_to_the_warning_fallback ... ok
+test epub::prepared::tests::undeclared_entity_chapter_parses_with_the_reference_rendered_literally ... ok
+test epub::shard::tests::a_body_that_claims_deflate_but_does_not_inflate_is_refused ... ok
+test epub::prepared::tests::the_publication_stylesheet_resolves_into_typed_tables ... ok
+test epub::prepared::tests::unsupported_background_values_drop_the_background_image ... ok
+test epub::prepared::tests::unrepresentable_declarations_leave_the_representable_ones_intact ... ok
+test epub::shard::tests::a_shard_from_another_packing_is_refused ... ok
+test epub::shard::tests::a_skeleton_packed_under_another_dimension_rule_is_refused ... ok
+test epub::document::tests::unmanifested_images::transfers_an_unmanifested_image_through_the_runtime_resource_path ... ok
+test epub::document::tests::unmanifested_images::transfers_distinct_physical_url_delimiter_images ... ok
+test epub::shard::tests::a_skeleton_that_leaves_a_chapter_in_a_shard_is_refused ... ok
+test epub::shard::tests::payloads_round_trip ... ok
+test epub::shard::tests::encrypted_shards_need_their_own_key ... ok
+test epub::shard::tests::only_images_leave_the_skeleton ... ok
+test epub::shard::tests::the_skeleton_is_deflated_harder_than_media_shards ... ok
+test epub::toc::tests::parses_epub2_ncx_toc ... ok
+test epub::toc::tests::parses_epub3_nav_toc ... ok
+test epub::toc::tests::parses_ncx_with_single_quoted_xml_declaration ... ok
+test epub::shard::tests::text_is_deflated_before_sealing_and_incompressible_bytes_are_not ... ok
+test epub::toc::tests::resolves_toc_entries_relative_to_their_nav_or_ncx_resource ... ok
+test epub::shard::tests::a_document_opened_from_shards_matches_the_archive ... ok
+test epub::shard::tests::an_image_is_read_once_its_shard_arrives_and_names_the_shard_until_then ... ok
+test fragment_bridge::tests::boxes::decorated_blocks_carry_box_paint_and_absorb_border_widths ... ok
+test epub::shard::tests::the_skeleton_alone_lays_the_book_out ... ok
+test fragment_bridge::tests::boxes::double_border_style_reaches_the_painter ... ok
+test fragment_bridge::tests::boxes::a_collapsed_table_marks_its_horizontal_edges_for_segmentation ... ok
+test epub::shard::tests::content_shards_are_ordered_by_reading_distance_from_a_chapter ... ok
+test fragment_bridge::tests::boxes::horizontal_rules_build_sized_leaves_with_rule_paint ... ok
+test fragment_bridge::tests::boxes::ridge_borders_split_into_measured_two_tone_halves ... ok
+test fragment_bridge::tests::floated_images::a_floated_image_box_is_exactly_the_image ... ok
+test fragment_bridge::tests::floated_images::a_floated_image_after_text_stays_inline_and_says_so ... ok
+test fragment_bridge::tests::floated_images::floated_avatars_sit_beside_their_floated_bubbles ... ok
+test fragment_bridge::tests::floated_images::lines_after_a_floated_image_opening_a_paragraph_wrap_beside_it ... ok
+test fragment_bridge::tests::flow::cleared_spacer_keeps_the_badge_margin_below_the_float ... ok
+test fragment_bridge::tests::flow::cleared_spacer_margins_credit_the_follower_and_spare_the_container ... ok
+test fragment_bridge::tests::flow::observe_fixed_height_text_div_flow ... ok
+test fragment_bridge::tests::flow::observe_percent_margin_float_lines ... ok
+test fragment_bridge::tests::flow::margins_after_a_cleared_spacer_stay_below_the_clear_line ... ok
+test fragment_bridge::tests::flow::observe_title_float_ys ... ok
+test fragment_bridge::tests::generated::a_clearing_block_after_closes_its_floats ... ok
+test fragment_bridge::tests::generated::an_absolutely_positioned_block_leaves_the_flow ... ok
+test fragment_bridge::tests::inline::bare_text_borrows_its_block_style_without_the_block_background ... ok
+test fragment_bridge::tests::inline::an_inline_image_em_width_resolves_against_its_own_font_size ... ok
+test fragment_bridge::tests::generated::an_absolutely_positioned_tail_hangs_outside_its_bubble ... ok
+test fragment_bridge::tests::generated::inline_generated_text_opens_and_closes_the_lines ... ok
+test fragment_bridge::tests::inline::collapsible_space_after_a_forced_break_is_removed_at_the_line_start ... ok
+test fragment_bridge::tests::inline::malformed_ruby_structures_degrade_to_plain_text ... ok
+test fragment_bridge::tests::inline::mono_ruby_pairs_each_annotation_with_its_base_segment ... ok
+test fragment_bridge::tests::boxes::over_constrained_table_columns_land_on_the_layout_unit_grid ... ok
+test fragment_bridge::tests::inline::pre_wrap_keeps_spaces_and_segment_breaks_verbatim ... ok
+test fragment_bridge::tests::inline::ruby_annotations_collapse_css_white_space_and_keep_space_separators ... ok
+test fragment_bridge::tests::inline::ruby_bases_carry_annotations_and_never_merge_with_neighbours ... ok
+test fragment_bridge::tests::flow::a_negative_margin_raised_line_avoids_the_float_band ... ok
+test fragment_bridge::tests::pagination::real_chapter_paginates_losslessly_through_the_new_engine ... ok
+test fragment_bridge::tests::inline::right_aligned_line_starts_at_width_minus_advance ... ok
+test fragment_bridge::tests::tree::a_block_level_link_scopes_its_href_over_the_card_subtree ... ok
+test fragment_bridge::tests::tree::chapter_tree_construction_is_deterministic ... ok
+test fragment_bridge::tests::tree::chapter_tree_reflects_box_generation_and_display_none ... ok
+test fragment_bridge::tests::sizing::stretch_sizing_on_floats_fills_the_available_width ... ok
+test fragment_bridge::tests::tree::list_items_carry_outside_markers_without_degrading ... ok
+test fragment_pagination::tests::pagination_paints_at_the_page_content_origin ... ok
+test fragment_paint::tests::boxes::a_transformed_box_wraps_its_subtree_in_a_transform_state ... ok
+test fragment_paint::tests::boxes::an_outside_marker_paints_its_measured_box_ending_at_the_content_edge ... ok
+test fragment_paint::tests::faces::a_face_the_engine_never_registered_fails_closed ... ok
+test fragment_paint::tests::faces::a_run_drawn_from_two_faces_paints_once_per_face ... ok
+test fragment_paint::tests::faces::a_run_paints_with_the_alias_of_the_face_that_shaped_it ... ok
+test fragment_paint::tests::fail_closed::a_text_run_crossing_item_boundaries_fails_closed ... ok
+test fragment_paint::tests::fail_closed::unexpressible_pure_paint_approximates_and_still_inks ... ok
+test fragment_paint::tests::images::a_ratio_true_box_paints_identically_under_object_fit_contain ... ok
+test fragment_paint::tests::images::an_author_box_off_the_raster_ratio_letterboxes_under_contain ... ok
+test fragment_paint::tests::images::images_paint_with_their_source_reference ... ok
+test fragment_paint::tests::ruby::a_base_shaped_into_several_runs_on_one_line_carries_one_annotation_over_all_of_them ... ok
+test fragment_paint::tests::ruby::a_ruby_annotation_distributes_over_the_column_extent_on_the_layout_grid ... ok
+test fragment_paint::tests::ruby::ruby_bases_paint_their_annotation_above_the_run ... ok
+test fragment_paint::tests::rules::an_inset_rule_paints_as_a_two_tone_border_box ... ok
+test fragment_paint::tests::rules::rule_paints_stroke_across_its_sized_box ... ok
+test fragment_paint::tests::text_runs::a_baseline_rounds_the_line_top_on_css_pixels_and_the_sum_on_the_device_grid ... ok
+test fragment_paint::tests::text_runs::adjacent_items_paint_with_their_own_styles ... ok
+test fragment_paint::tests::text_runs::baseline_shift_raises_the_paint_anchor ... ok
+test fragment_paint::tests::text_runs::the_run_closing_an_item_ends_on_the_layout_grid ... ok
+test fragment_paint::tests::vertical_columns::a_vertical_column_places_every_glyph_and_rotates_its_marks ... ok
+test fragment_paint::tests::vertical_columns::write_vertical_paint_parity_fixture ... ignored, regenerates tools/paint-parity/fixtures/text-vertical.json
+test interaction::footnote::tests::canonicalizes_source_relative_paths_and_percent_encoded_fragments ... ok
+test interaction::footnote::tests::external_target_set_filters_forward_and_backward_chapters ... ok
+test interaction::footnote::tests::footnote_filter_removes_only_referenced_same_chapter_notes ... ok
+test interaction::footnote::tests::footnote_filter_resolves_parent_relative_noterefs ... ok
+test interaction::footnote::tests::footnote_html_preserves_allowlisted_structure_and_attributes ... ok
+test interaction::footnote::tests::footnote_html_removes_active_content_attributes_and_urls ... ok
+test interaction::footnote::tests::lightweight_definition_stage_keeps_last_duplicate_like_compatibility_path ... ok
+test interaction::footnote::tests::lightweight_plan_preserves_relative_percent_and_nested_definition_semantics ... ok
+test interaction::footnote::tests::single_pass_duplicate_keys_keep_the_last_definition_like_two_pass_collection ... ok
+test interaction::footnote::tests::single_pass_index_matches_two_pass_cross_chapter_and_nested_semantics ... ok
+test interaction::tests::summarize_interaction_includes_structured_footnotes ... ok
+test interaction::text::word_segmentation::tests::a_caret_takes_the_word_it_sits_in_or_the_one_on_its_side ... ok
+test interaction::text::word_segmentation::tests::invalid_language_tags_fall_back_to_invariant_segmentation ... ok
+test layout::tests::creates_single_page_layout_config_from_uniform_margin ... ok
+test layout::tests::portrait_viewports_force_single_spread_mode ... ok
+test layout::tests::the_pages_of_a_spread_sit_on_the_device_grid ... ok
+test render::commands::reader_wire::tests::checked_lengths_reject_values_above_u32 ... ok
+test render::commands::reader_wire::tests::cross_language_wire_fixture_matches_the_encoder ... ok
+test render::commands::reader_wire::tests::every_color_space_tag_is_valid_and_tag_16_is_rejected ... ok
+test render::commands::reader_wire::tests::every_command_shape_lowers_and_encodes ... ok
+test render::commands::reader_wire::tests::every_primitive_shape_roundtrips_through_the_strict_validator ... ok
+test render::commands::reader_wire::tests::fixed_primitive_wire_does_not_drift ... ok
+test render::commands::reader_wire::tests::lowered_display_commands_encode_as_format_4 ... ok
+test fragment_bridge::tests::sizing::modern_sizing_on_images_keeps_the_natural_size ... ok
+test render::commands::reader_wire::tests::primary_encoder_and_contract_have_no_json_value_path ... ok
+test fragment_pagination::tests::a_long_paragraph_breaks_into_pages_that_repaint_every_word ... ok
+test render::commands::reader_wire::tests::rejects_non_finite_command_numbers ... ok
+test render::commands::reader_wire::tests::validator_rejects_a_cluster_flag_other_than_joins ... ok
+test render::commands::reader_wire::tests::runs_share_one_paint_and_index_into_the_tables ... ok
+test render::commands::reader_wire::tests::write_reader_wire_fixtures ... ignored, writes the cross-language wire fixture the JavaScript and Dart decoder tests read
+test render::commands::tests::display_precision_keeps_every_layout_unit_position_exactly ... ok
+test render::commands::reader_wire::tests::validator_rejects_the_semantic_format_and_trailing_bytes ... ok
+test render::commands::tests::fixture_json_round_trips_every_command_shape ... ok
+test render::commands::tests::summarizes_image_refs_from_images_and_block_backgrounds ... ok
+test render::lower::image_fallback::tests::a_large_image_centres_a_24px_picture_and_cracks_it_when_broken ... ok
+test render::lower::image_fallback::tests::a_small_image_shrinks_the_picture_and_a_tiny_one_keeps_only_the_block ... ok
+test render::lower::tests::a_background_band_snaps_each_edge_and_declares_the_ground ... ok
+test render::lower::tests::a_bare_text_run_passes_through_in_css_pixels_at_any_ratio ... ok
+test render::lower::tests::a_block_that_snaps_to_nothing_paints_nothing ... ok
+test render::lower::tests::a_dashed_edge_shorter_than_a_dash_paints_the_whole_span ... ok
+test render::lower::tests::a_fractional_box_top_moves_the_band_by_the_rounding_rule ... ok
+test render::lower::tests::a_radius_smaller_than_the_spread_grows_by_the_corner_correction ... ok
+test render::lower::tests::a_rounded_box_shadow_takes_each_corner_and_cuts_inside_an_opaque_fill ... ok
+test render::lower::tests::a_split_inline_box_squares_its_open_end ... ok
+test render::lower::tests::a_text_run_lowers_to_its_inline_box_the_run_and_its_decoration_line ... ok
+test render::lower::tests::a_uniform_rounded_border_strokes_one_ring_inset_by_half_its_width ... ok
+test render::lower::tests::background_images_size_place_clip_and_tile_against_the_unsnapped_box ... ok
+test render::lower::tests::bevel_styles_take_the_solid_band ... ok
+test render::lower::tests::block_background_snaps_each_edge_independently ... ok
+test render::lower::tests::box_shadows_blur_the_spread_box_outside_the_box_back_to_front ... ok
+test render::lower::tests::clip_with_a_radius_traces_the_rounded_outline_overlap_scaled ... ok
+test render::lower::tests::clip_without_a_radius_is_a_rect_path ... ok
+test render::lower::tests::dashed_edges_stretch_the_gap_so_full_dashes_land_flush_at_both_ends ... ok
+test render::lower::tests::disagreeing_rounded_edges_each_paint_inside_their_wedge ... ok
+test render::lower::tests::double_edges_paint_two_solid_thirds ... ok
+test render::lower::tests::hidden_edges_missing_paint_or_a_missing_border_box_stroke_nothing ... ok
+test render::lower::tests::horizontal_rules_raster_as_border_edges ... ok
+test render::lower::tests::images_draw_at_the_scaled_destination_with_the_source_rect_untouched ... ok
+test render::lower::tests::json_form_mirrors_the_decoded_wire_shape ... ok
+test render::lower::tests::lowering_sources_are_typed_only ... ok
+test render::lower::tests::one_inline_box_draws_one_decoration_line_across_its_runs ... ok
+test render::lower::tests::page_fill_declares_the_page_ground_and_stays_unsnapped ... ok
+test render::lower::tests::parity::lower_paint_parity_fixtures ... ok
+test render::lower::tests::page_fills_scale_to_the_device_grid ... ok
+test render::lower::tests::percent_and_corner_radii_resolve_against_the_box ... ok
+test render::lower::tests::rejects_a_ratio_that_is_not_finite_and_positive ... ok
+test render::lower::tests::rounded_backgrounds_fill_the_snapped_box_and_declare_the_unsnapped_ground ... ok
+test render::lower::tests::state_commands_scale_their_offsets_to_device_pixels ... ok
+test render::lower::tests::straight_edges_of_two_colours_meet_on_the_miter ... ok
+test render::lower::tests::straight_solid_borders_are_binary_bands_at_the_rounded_outer_edge ... ok
+test render::lower::tests::the_decoration_line_rounds_its_top_and_floors_its_thickness ... ok
+test render::lower::tests::thick_dotted_edges_are_round_dots_at_the_measured_pitch ... ok
+test render::lower::tests::thin_dotted_edges_follow_the_binary_endpoint_table ... ok
+test render::lower::tests::transform_resolves_translate_percentages_against_the_device_box ... ok
+test render::lower::tests::unequal_solid_rounded_edges_of_one_colour_fill_a_crescent ... ok
+test render::run_paint::tests::clones_share_storage_until_layout_mutates_spacing ... ok
+test render::run_paint::tests::glyphs_only_drops_the_inline_box_and_the_decoration_line ... ok
+test render::run_paint::tests::ruby_paint_keeps_the_base_font_and_colour_at_the_annotation_size ... ok
+test render::run_paint::tests::shifting_the_decoration_moves_only_its_row ... ok
+test resources::href::tests::ambiguous_aliases_do_not_fall_back_to_shorter_keys ... ok
+test resources::href::tests::does_not_strip_percent_encoded_url_delimiters_after_decoding ... ok
+test resources::href::tests::ignores_path_separators_inside_url_suffixes ... ok
+test resources::href::tests::malformed_sources_only_use_raw_resolution ... ok
+test resources::href::tests::percent_aliases_are_decoded_only_once ... ok
+test resources::href::tests::prefers_stripped_exact_paths_before_longer_resource_suffixes ... ok
+test resources::href::tests::preserves_raw_exact_precedence_before_alias_resolution ... ok
+test resources::href::tests::preserves_raw_query_precedence_and_rejects_canonical_collisions ... ok
+test resources::href::tests::rejects_ambiguous_decoded_resource_aliases ... ok
+test resources::href::tests::rejects_ambiguous_raw_suffixes_and_basenames ... ok
+test resources::href::tests::resolves_longest_exact_manifest_tail_from_source_paths ... ok
+test resources::href::tests::resolves_percent_aliases_in_both_directions ... ok
+test resources::href::tests::resolves_query_and_fragment_aliases_symmetrically ... ok
+test resources::tests::a_quarter_turned_exif_jpeg_swaps_its_stored_dimensions ... ok
+test resources::tests::sorts_fixture_hrefs_like_javascript_locale_compare_for_ascii_paths ... ok
+test resources::tests::streams_jpeg_dimensions_across_a_large_metadata_segment ... ok
+test runtime::chapter_text::tests::builds_utf16_text_spans ... ok
+test runtime::cleanup::interactions::tests::empty_interactions_have_three_exact_units ... ok
+test runtime::cleanup::interactions::tests::mixed_payload_matches_the_formula ... ok
+test runtime::cleanup::interactions::tests::sources_and_retirement_have_separate_units ... ok
+test runtime::cleanup::interactions::tests::wide_payload_is_exact_under_single_unit_scheduling ... ok
+test runtime::cleanup::queue::tests::each_job_has_a_separate_queue_retirement_unit ... ok
+test runtime::cleanup::queue::tests::empty_queue_reports_complete_without_consuming_budget ... ok
+test runtime::cleanup::queue::tests::jobs_advance_round_robin_at_unit_quanta ... ok
+test runtime::cleanup::queue::tests::queue_drop_drains_every_remaining_job_directly ... ok
+test runtime::cleanup::queue::tests::repeated_revisions_do_not_accumulate_behind_a_long_job ... ok
+test runtime::cleanup::queue::tests::unwind_drains_a_partially_released_revision ... ok
+test runtime::cleanup::revision::tests::empty_revision_units_include_each_required_font_face ... ok
+test runtime::cleanup::revision::tests::interactions_compose_with_revision_retirement ... ok
+test runtime::cleanup::interactions::tests::immediate_and_partial_unwind_drops_drain_wide_sources ... ok
+test runtime::cleanup::revision::tests::the_font_catalog_releases_before_the_interactions ... ok
+test runtime::fragment_backend::tests::page_lookup_spans_chapter_boundaries ... ok
+test runtime::metadata::tests::layout_key_byte_contract_has_fixed_goldens ... ok
+test runtime::metadata::tests::streamed_layout_keys_match_the_buffered_reference ... ok
+test runtime::page_artifact::fragment::tests::a_runs_boundaries_are_its_clusters_origins ... ok
+test runtime::page_artifact::fragment::tests::page_text_and_range_geometry_come_from_the_fragments ... ok
+test runtime::page_artifact::fragment::tests::runs_slice_the_page_text_the_way_its_utf16_offsets_read_it ... ok
+test runtime::cleanup::revision::tests::large_font_catalog_is_exact_and_drop_drains_unread_faces ... ok
+test fragment_bridge::tests::sizing::modern_sizing_keeps_numeric_constraints_and_authored_styles ... ok
+test runtime::page_target::tests::resolves_destination_labels_without_a_paginated_target_chapter ... ok
+test runtime::reader_session::artifact::tests::used_fonts_expand_css_family_lists_case_insensitively ... ok
+test render::commands::reader_wire::tests::primitive_validator_rejects_truncation_unknown_opcodes_and_unknown_tags ... ok
+test runtime::page_target::tests::page_targets_carry_core_resolved_toc_destination_labels ... ok
+test fragment_bridge::tests::sizing::intrinsic_sizing_on_floats_shrinks_to_fit_like_auto ... ok
+test runtime::reader_session::background_tests::a_mid_book_candidate_paints_the_same_page_as_the_visible_chapter_local_artifact ... ok
+test runtime::reader_session::background_tests::a_background_step_lays_out_the_pages_its_budget_allows ... ok
+test runtime::reader_session::background_tests::adopted_publication_keeps_advancing_and_owns_adjacent_resources_and_disposal ... ok
+test runtime::reader_session::background_tests::background_start_paginates_the_whole_book_in_one_pass ... ok
+test runtime::reader_session::background_tests::background_candidate_adoption_is_cas_and_keeps_replaced_artifact_live ... ok
+test fragment_bridge::tests::sizing::modern_sizing_paginates_like_auto_without_losing_box_geometry_or_text ... ok
+test runtime::reader_session::background_tests::every_publication_candidate_locator_describes_the_page_it_draws ... ok
+test runtime::reader_session::background_tests::foreground_adjacent_replaces_intent_and_stales_old_background_request ... ok
+test runtime::reader_session::background_tests::live_artifact_cap_requires_and_then_consumes_one_candidate_reserve ... ok
+test runtime::reader_session::background_tests::peek_and_fast_commit_work_from_publication_artifacts ... ok
+test runtime::reader_session::background_tests::publication_artifacts_number_pages_book_wide ... ok
+test runtime::reader_session::background_tests::newer_seek_makes_old_background_guards_stale_without_mutating_refs_or_intent ... ok
+test runtime::reader_session::background_tests::publication_turns_cross_image_only_plates_in_both_directions ... ok
+test runtime::reader_session::background_tests::the_first_artifact_completes_the_footnote_index_without_parsing_other_chapters ... ok
+test runtime::reader_session::background_tests::releasing_current_visible_fails_closed_without_orphaning_background_candidate ... ok
+test runtime::reader_session::background_tests::same_layout_seek_reuses_existing_publication_without_another_quantum ... ok
+test runtime::reader_session::background_tests::the_first_publication_candidate_carries_the_book_page_count ... ok
+test runtime::reader_session::font_tests::a_bad_face_is_an_invalid_request_and_changes_nothing ... ok
+test runtime::reader_session::background_tests::no_handoff_ever_moves_the_reader ... ok
+test runtime::reader_session::font_tests::a_face_added_mid_session_lays_the_next_request_out_again ... ok
+test runtime::reader_session::hit_tests::hits_are_the_page_targets_of_the_whole_book_revision ... ok
+test runtime::reader_session::font_tests::a_face_the_host_cannot_paint_stops_shaping_from_the_next_request ... ok
+test runtime::reader_session::interaction_tests::a_caret_resolves_in_display_list_space_with_its_source_point ... ok
+test runtime::reader_session::interaction_tests::a_kept_caret_extends_to_a_point_and_two_carets_bound_a_range ... ok
+test runtime::reader_session::interaction_tests::a_range_across_paragraphs_in_one_wrapping_block_resolves ... ok
+test runtime::reader_session::interaction_tests::a_movement_steps_the_focus_and_echoes_its_preferred_positions ... ok
+test runtime::reader_session::interaction_tests::a_placed_source_range_resolves_as_a_range_with_its_carets ... ok
+test runtime::reader_session::interaction_tests::a_point_on_a_page_the_artifact_does_not_draw_is_rejected ... ok
+test runtime::reader_session::interaction_tests::a_range_across_paragraphs_of_the_body_resolves_alike ... ok
+test runtime::reader_session::interaction_tests::an_inline_block_stays_in_its_paragraph_and_a_break_keeps_one_newline ... ok
+test runtime::reader_session::interaction_tests::an_orphaned_or_malformed_target_is_reported_not_thrown ... ok
+test runtime::reader_session::interaction_tests::a_source_position_reads_under_its_last_preceding_entry ... ok
+test runtime::reader_session::interaction_tests::a_session_selection_matches_the_whole_book_revision ... ok
+test runtime::reader_session::interaction_tests::interaction_wire_fixtures_are_pinned_byte_for_byte ... ok
+test runtime::reader_session::interaction_tests::navigation_wire_fixtures_are_pinned_byte_for_byte ... ok
+test runtime::reader_session::interaction_tests::interaction_messages_round_trip_and_reject_every_truncated_prefix ... ok
+test runtime::reader_session::every_page_tests::every_page_matches_each_spread_one_page_at_a_time ... ok
+test runtime::reader_session::interaction_tests::annotation_targets_are_the_bytes_the_document_writes ... ok
+test runtime::reader_session::every_page_tests::every_page_matches_each_spread_two_pages_at_a_time ... ok
+test runtime::reader_session::interaction_tests::empty_anchors_resolve_to_the_same_page_on_every_host ... ok
+test runtime::reader_session::interaction_tests::positions_compare_in_reading_order_and_locators_place_or_decline ... ok
+test runtime::reader_session::interaction_tests::word_and_paragraph_ranges_come_from_two_points ... ok
+test runtime::reader_session::interaction_tests::toc_entries_by_page_match_the_whole_book_revision ... ok
+test runtime::reader_session::layout_tests::layout_and_spread_wire_fixtures_are_pinned_byte_for_byte ... ok
+test runtime::reader_session::layout_tests::layout_and_spread_wires_reject_every_truncated_prefix_and_trailing_bytes ... ok
+test runtime::reader_session::layout_tests::a_chapter_layout_is_that_chapters_slice_of_the_whole_book_layout ... ok
+test runtime::reader_session::layout_tests::a_whole_book_layout_matches_the_whole_book_revision ... ok
+test runtime::reader_session::publication_info::tests::package_mapping_preserves_all_spine_items_and_canonicalizes_nested_toc ... ok
+test runtime::reader_session::session::errors::identity_tests::generated_identity_stops_after_signed_64_bit_maximum ... ok
+test runtime::reader_session::shard_tests::an_image_resource_names_its_shard_until_it_is_supplied ... ok
+test runtime::reader_session::shard_tests::background_pagination_needs_no_shard_and_matches_the_archive ... ok
+test runtime::reader_session::layout_tests::a_spread_request_fails_closed_without_publishing ... ok
+test runtime::reader_session::layout_tests::a_spread_reached_by_position_commits_and_turns_like_any_page ... ok
+test runtime::reader_session::layout_tests::a_spread_reached_by_position_is_the_spread_reached_by_turning ... ok
+test runtime::reader_session::tests::a_chapter_local_page_lays_images_out_with_their_real_dimensions ... ok
+test runtime::reader_session::tests::a_fragment_without_a_path_is_not_a_start_of_book_locator ... ok
+test runtime::reader_session::tests::a_render_ratio_change_repaints_without_a_new_revision ... ok
+test runtime::reader_session::shard_tests::every_chapter_draws_the_same_from_the_skeleton_alone ... ok
+test runtime::reader_session::tests::adjacent_and_seek_candidates_adopt_without_releasing_prior_frames ... ok
+test runtime::reader_session::tests::adjacent_identity_boundaries_and_terminal_are_fail_closed ... ok
+test runtime::reader_session::tests::an_empty_href_opens_the_book_at_its_first_linear_chapter ... ok
+test runtime::reader_session::tests::an_open_locator_with_a_dead_source_point_degrades_to_progression ... ok
+test runtime::reader_session::tests::an_open_locator_with_an_unknown_href_still_fails ... ok
+test runtime::reader_session::tests::an_open_locator_with_only_a_dead_selector_degrades_to_the_chapter_start ... ok
+test runtime::reader_session::tests::artifact_hits_carry_footnote_keys_that_read_back_directly ... ok
+test runtime::reader_session::tests::artifact_resources_follow_their_revision_release_order ... ok
+test runtime::reader_session::tests::a_backward_walk_crosses_into_a_long_chapter_and_serves_every_page ... ok
+test runtime::reader_session::pagination_tests::a_page_table_and_a_locator_read_only_the_pages_laid_out_so_far ... ok
+test runtime::reader_session::tests::artifact_hits_share_the_display_list_coordinate_space ... ok
+test runtime::reader_session::tests::chapter_boundary_previous_resolves_the_tail_in_one_request ... ok
+test runtime::reader_session::tests::a_peek_leaves_a_pending_foreground_candidate_adoptable ... ok
+test runtime::reader_session::tests::chapter_local_artifacts_have_no_book_page_numbering ... ok
+test runtime::reader_session::tests::commit_peeked_artifact_is_a_pure_visible_swap ... ok
+test runtime::reader_session::tests::double_spread_hits_carry_their_page_offset ... ok
+test runtime::reader_session::tests::exact_cache_does_not_reuse_an_evicted_revision ... ok
+test runtime::reader_session::tests::every_kitchen_sink_page_survives_display_list_encoding ... ok
+test runtime::reader_session::tests::exact_cache_falls_back_for_layout_misses_only ... ok
+test runtime::reader_session::tests::exact_nonzero_locator_owns_first_artifact_and_lifecycle ... ok
+test runtime::reader_session::tests::exact_href_seek_reuses_only_a_chapter_origin_revision ... ok
+test runtime::reader_session::tests::exact_seek_reuses_a_published_revision_without_layout_work ... ok
+test runtime::reader_session::tests::exact_source_range_answers_for_a_page_this_artifact_does_not_draw ... ok
+test runtime::reader_session::tests::exact_source_range_reports_a_stale_anchor_instead_of_painting_over_it ... ok
+test runtime::reader_session::tests::exact_source_range_projects_a_durable_anchor_into_display_list_space ... ok
+test runtime::reader_session::tests::failed_revision_retirement_restores_artifact_ownership ... ok
+test runtime::reader_session::tests::foreground_cas_rejects_stale_expected_visible_without_mutation ... ok
+test runtime::reader_session::tests::peek_crosses_single_page_chapter_boundaries_in_both_directions ... ok
+test runtime::reader_session::tests::foreground_result_is_not_visible_until_initial_cas_adoption ... ok
+test runtime::reader_session::tests::peek_declines_at_the_terminal_publication_boundary ... ok
+test runtime::reader_session::tests::exact_cache_reuses_the_whole_chapter_revision_for_a_repeat_target ... ok
+test runtime::reader_session::tests::protocol_source_has_no_platform_or_dynamic_primary_wire_types ... ok
+test runtime::reader_session::tests::peek_publishes_known_neighbors_without_foreground_side_effects ... ok
+test runtime::reader_session::tests::search_hits_feed_straight_into_text_geometry ... ok
+test runtime::reader_session::tests::rapid_cached_exact_candidates_keep_latest_cas_ownership ... ok
+test runtime::reader_session::tests::selection_geometry_spans_the_font_grid_box ... ok
+test runtime::reader_session::tests::session_exposes_one_static_publication_snapshot ... ok
+test runtime::reader_session::tests::exact_tail_locator_resolves_from_the_whole_chapter_revision ... ok
+test runtime::reader_session::tests::session_rejects_wrong_identity_stale_request_and_unknown_artifact ... ok
+test runtime::reader_session::tests::session_rejects_external_id_sign_bit_before_lookup_or_work ... ok
+test runtime::reader_session::tests::previous_chapter_tail_publishes_when_the_chapter_completes_within_budget ... ok
+test runtime::reader_session::tests::terminal_foreground_request_preserves_visible_and_allocates_no_candidate ... ok
+test runtime::reader_session::typography_tests::a_force_flag_reaches_the_engine_only_with_its_override ... ok
+test runtime::reader_session::tests::text_range_geometry_lands_in_display_list_space ... ok
+test runtime::reader_session::typography_tests::the_artifact_request_wire_is_pinned_byte_for_byte ... ok
+test runtime::reader_session::wire::fonts::tests::font_wires_round_trip_and_are_pinned_byte_for_byte ... ok
+test runtime::reader_session::wire::query_tests::pending_shards_wire_is_pinned_and_validated ... ok
+test runtime::reader_session::wire::query_tests::query_wire_fixtures_are_pinned_byte_for_byte ... ok
+test runtime::reader_session::wire::tests::adjacent_request_is_fixed_width_deterministic_and_round_trips ... ok
+test runtime::reader_session::wire::tests::adjacent_request_rejects_every_truncated_prefix_and_unknown_direction ... ok
+test runtime::reader_session::wire::tests::artifact_wire_is_deterministic_and_round_trips_every_section ... ok
+test runtime::reader_session::wire::tests::artifact_wire_rejects_every_truncated_prefix ... ok
+test runtime::reader_session::wire::tests::background_messages_are_fixed_width_or_length_framed_and_round_trip ... ok
+test runtime::reader_session::wire::tests::background_messages_reject_every_truncated_prefix_and_unknown_state ... ok
+test runtime::reader_session::wire::tests::cross_language_artifact_fixture_matches_the_encoder ... ok
+test runtime::reader_session::wire::tests::cross_language_page_records_fixture_matches_the_encoder ... ok
+test runtime::reader_session::wire::tests::exact_source_range_wire_is_deterministic_and_round_trips_both_directions ... ok
+test runtime::reader_session::wire::tests::exact_source_range_wire_rejects_every_truncated_prefix_and_unknown_status ... ok
+test runtime::reader_session::wire::tests::exact_source_range_wire_round_trips_a_resolution_carrying_no_geometry ... ok
+test runtime::reader_session::wire::tests::foreground_handoff_messages_are_fixed_width_and_round_trip_none_and_some ... ok
+test runtime::reader_session::wire::tests::foreground_handoff_rejects_truncation_unknown_tags_and_noncanonical_none ... ok
+test runtime::reader_session::wire::tests::identities_retain_exact_bigint_width_and_reject_the_sign_bit ... ok
+test runtime::reader_session::wire::tests::page_records_round_trip_and_reject_truncation ... ok
+test runtime::reader_session::wire::tests::publication_wire_is_deterministic_and_round_trips_nested_toc ... ok
+test runtime::reader_session::wire::tests::publication_wire_rejects_every_truncated_prefix_and_unknown_target ... ok
+test runtime::reader_session::wire::tests::publication_wire_rejects_invalid_semantics_versions_and_trailing_bytes ... ok
+test runtime::reader_session::wire::tests::request_wire_is_deterministic_and_round_trips_every_section ... ok
+test runtime::reader_session::wire::tests::resource_wire_is_deterministic_and_round_trips_every_field ... ok
+test runtime::reader_session::wire::tests::resource_wire_rejects_every_truncated_prefix ... ok
+test runtime::reader_session::wire::tests::resource_wire_rejects_unknown_kinds_and_invalid_lengths ... ok
+test runtime::reader_session::wire::tests::wire_rejects_unknown_tags_and_non_finite_numbers ... ok
+test runtime::reader_session::wire::tests::wire_rejects_unknown_versions_and_trailing_bytes ... ok
+test runtime::reader_session::wire::tests::write_reader_artifact_fixture ... ignored, writes the cross-language artifact fixture the JavaScript and Dart decoder tests read
+test runtime::reader_session::wire::tests::write_reader_page_records_fixture ... ignored, writes the cross-language page records fixture the JavaScript and Dart decoder tests read
+test runtime::resource::tests::resolves_transfer_metadata_with_display_href_semantics ... ok
+test runtime::resource::tests::snapshots_binary_metadata_without_carrying_cached_bytes ... ok
+test runtime::search::page_text::tests::a_direct_match_split_across_contiguous_runs_keeps_its_full_anchor ... ok
+test runtime::search::page_text::tests::a_result_limit_caps_the_matches_in_page_order ... ok
+test runtime::search::page_text::tests::case_insensitive_search_expansion_uses_outward_source_boundaries ... ok
+test runtime::search::page_text::tests::case_insensitive_search_maps_folded_offsets_to_original_text ... ok
+test runtime::search::page_text::tests::direct_runs_of_different_nodes_anchor_the_whole_match_across_them ... ok
+test runtime::search::page_text::tests::search_match_shrinks_to_the_sourced_side_of_generated_content ... ok
+test runtime::search::page_text::tests::whole_word_search_skips_matches_inside_words ... ok
+test runtime::reader_session::tests::superseded_or_released_foreground_candidate_never_changes_visible ... ok
+test runtime::source_locator::annotation::tests::a_backward_range_builds_the_same_target_as_a_forward_one ... ok
+test runtime::reader_session::tests::chapter_local_pages_match_the_whole_book_fragment_layout ... ok
+test runtime::source_locator::annotation::tests::a_missing_chapter_orphans_the_target ... ok
+test runtime::source_locator::annotation::tests::a_resolution_serializes_with_its_level_tag ... ok
+test runtime::source_locator::annotation::tests::a_target_serializes_to_the_canonical_bytes ... ok
+test runtime::source_locator::annotation::tests::an_empty_range_is_rejected ... ok
+test runtime::source_locator::annotation::tests::a_shrunken_chapter_falls_back_to_the_scaled_position ... ok
+test runtime::source_locator::annotation::tests::an_unchanged_chapter_resolves_exactly_to_the_same_target ... ok
+test runtime::source_locator::annotation::tests::other_versions_and_unknown_fields_are_rejected ... ok
+test runtime::source_locator::annotation::tests::moved_text_falls_back_to_the_quote_with_the_best_context ... ok
+test runtime::source_locator::annotation::tests::quote_context_never_splits_a_surrogate_pair ... ok
+test runtime::source_locator::annotation::tests::range_ends_at_a_node_seam_name_the_text_they_cover ... ok
+test runtime::source_locator::projection::tests::source_point_projection_does_not_depend_on_run_traversal_order ... ok
+test runtime::source_locator::projection::tests::targets_beyond_the_sealed_source_extent_remain_pending ... ok
+test runtime::source_locator::toc::tests::source_points_order_by_tree_position_then_offset ... ok
+test runtime::source_locator::toc::tests::the_active_entry_is_the_last_one_at_or_before_the_page ... ok
+test runtime::source_locator::toc::tests::the_page_sweep_agrees_with_the_per_page_rule ... ok
+test runtime::source_locator::utf16_slice_tests::preserves_non_terminal_utf16_boundaries ... ok
+test runtime::spread::tests::double_spread_mode_does_not_place_chapter_start_on_right_page ... ok
+test runtime::spread::tests::double_spread_mode_keeps_first_page_alone ... ok
+test runtime::spread::tests::single_spread_mode_maps_each_page_to_one_slot ... ok
+test runtime::tests::a_page_exposes_its_text_and_where_each_run_sits_in_it ... ok
+test runtime::tests::a_created_revision_reports_the_extent_of_its_page_table ... ok
+test runtime::source_locator::annotation::tests::reworded_text_falls_back_to_the_stored_position ... ok
+test runtime::tests::access_tests::every_versioned_read_answers_under_the_handle_it_was_asked_with ... ok
+test runtime::tests::access_tests::a_versioned_read_reports_why_it_was_refused ... ok
+test runtime::tests::chapter_local_tests::exact_revision_copies_only_targets_referenced_by_its_chapter ... ok
+test runtime::reader_session::typography_tests::an_unforced_override_yields_to_the_books_own_declarations ... ok
+test runtime::tests::chapter_local_tests::a_chapter_lays_out_the_same_on_a_cold_and_a_book_warmed_engine ... ok
+test runtime::tests::chapter_local_tests::exact_owner_release_rejects_stale_and_forged_coordinates ... ok
+test runtime::tests::chapter_local_tests::first_local_artifact_completes_the_footnote_index_and_parses_only_its_chapter ... ok
+test runtime::tests::chapter_window_layout_does_not_treat_window_start_as_publication_cover ... ok
+test runtime::tests::chapter_local_tests::mismatched_target_fails_before_allocating_a_revision_or_cursor ... ok
+test runtime::tests::chapter_local_tests::wire_shape_and_access_layers_keep_local_coordinates_discriminated ... ok
+test runtime::tests::chapter_local_tests::fragment_target_resolves_to_its_exact_local_spread ... ok
+test runtime::tests::creates_revisions_and_paints_their_spreads ... ok
+test runtime::tests::creates_revision_when_chapter_xhtml_is_malformed ... ok
+test runtime::reader_session::tests::three_published_flips_reuse_revision_without_reflow ... ok
+test runtime::tests::every_page_exposes_semantic_nodes_inside_its_own_bounds ... ok
+test runtime::tests::exposes_typed_page_targets_with_canonical_footnote_and_image_semantics ... ok
+test runtime::tests::fragment_page_table_tests::a_book_that_cannot_paginate_fails_creation_and_leaves_no_revision ... ok
+test runtime::tests::double_spread_page_targets_keep_page_content_coordinates ... ok
+test runtime::tests::fragment_page_table_tests::a_paragraph_selection_copies_the_trailing_paragraph_separator ... ok
+test runtime::tests::fragment_page_table_tests::a_representable_book_hands_pagination_to_the_fragment_engine ... ok
+test runtime::tests::fragment_page_table_tests::a_revision_reports_the_extent_of_its_fragment_page_table ... ok
+test runtime::tests::fragment_page_table_tests::a_forced_sans_serif_override_changes_the_painted_frame ... ok
+test runtime::tests::fragment_page_table_tests::a_word_granularity_drag_spans_from_the_anchor_word_to_the_focus_word ... ok
+test runtime::tests::fragment_page_table_tests::an_author_object_fit_fill_overrides_the_ua_default ... ok
+test runtime::tests::fragment_page_table_tests::a_chapter_rebuilds_to_the_same_pages_after_it_is_evicted ... ok
+test runtime::tests::fragment_page_table_tests::fragment_pages_resolve_keyboard_selection_movement ... ok
+test runtime::tests::fragment_page_table_tests::fragment_pages_resolve_pointer_selection ... ok
+test runtime::tests::fragment_page_table_tests::fragment_pages_serve_targets_semantics_and_anchors ... ok
+test runtime::tests::fragment_page_table_tests::fragment_selection_rects_span_the_font_grid_box ... ok
+test runtime::tests::fragment_page_table_tests::fragment_source_locators_round_trip_across_a_reflow ... ok
+test runtime::tests::fragment_page_table_tests::render_ratio_moves_raster_snaps_without_re_paginating ... ok
+test runtime::tests::fragment_page_table_tests::painted_commands_carry_link_targets_and_image_alt ... ok
+test runtime::tests::fragment_page_table_tests::the_ua_stylesheet_letterboxes_an_author_box_off_the_raster_ratio ... ok
+test runtime::tests::fragment_page_table_tests::search_finds_text_after_the_fragment_page_table_attaches ... ok
+test runtime::tests::page_semantics_expose_link_and_image_nodes ... ignored, the fragment engine's page semantics expose paragraphs only; link and image nodes are a follow-up
+test runtime::tests::fragment_page_table_tests::finding_the_page_of_a_source_point_rebuilds_no_chapter ... ok
+test runtime::tests::layout_key_is_stable_across_revisions ... ok
+test runtime::tests::pinned_font_policy_tests::releasing_revisions_does_not_release_document_pinned_font_policy ... ok
+test runtime::tests::pinned_font_policy_tests::pinned_font_policy_summary_is_bytes_free_canonical_and_publication_neutral ... ok
+test runtime::tests::pinned_font_policy_tests::pinned_policy_changes_layout_identity_and_is_stable_across_runtime_paths ... ok
+test runtime::tests::pinned_font_policy_validation_tests::pinned_font_policy_rejects_empty_hash_mismatch_and_invalid_font ... ok
+test runtime::tests::pinned_font_policy_validation_tests::pinned_font_policy_rejects_variable_faces ... ok
+test runtime::tests::fragment_page_table_tests::search_and_a_movement_step_rebuild_no_chapter_they_do_not_read ... ok
+test runtime::tests::pinned_font_policy_validation_tests::pinned_font_policy_rejects_duplicate_selector_and_hash ... ok
+test runtime::tests::pinned_font_wiring_tests::catalog::unresolved_names_are_the_ones_no_family_answers_to ... ok
+test runtime::tests::pinned_font_wiring_tests::catalog::a_host_face_added_at_runtime_becomes_nameable_and_relays_out ... ok
+test runtime::tests::pinned_font_wiring_tests::catalog::the_catalog_lists_host_and_publication_families ... ok
+test runtime::tests::pinned_font_wiring_tests::face_order::unknown_and_unshapeable_families_paint_with_the_resolved_face_alias ... ok
+test runtime::tests::reading_anchor_tests::every_page_reading_anchor_resolves_back_to_its_own_page ... ok
+test runtime::tests::reading_anchor_tests::exact_page_anchor_round_trips_to_the_same_source_after_reflow ... ok
+test runtime::tests::reading_anchor_tests::image_only_page_resolves_a_durable_fallback_anchor ... ok
+test runtime::tests::reads_revision_scoped_footnotes ... ok
+test runtime::tests::reads_revision_scoped_resources_without_kind_fallback ... ok
+test runtime::tests::rejects_invalid_source_locator_hrefs_and_selectors ... ok
+test runtime::tests::rejects_unknown_revision_and_spread ... ok
+test runtime::tests::fragment_page_table_tests::a_selection_crossing_a_hard_break_copies_the_line_break ... ok
+test runtime::reader_session::pagination_tests::a_chapter_paginated_as_far_as_its_reader_needs_publishes_what_the_whole_chapter_does ... ok
+test runtime::tests::relayout_equivalence_tests::a_chapter_builds_the_query_artifacts_of_the_pages_read_only ... ok
+test runtime::tests::pinned_font_wiring_tests::face_order::ideographs_fall_back_to_the_role_face_for_their_language ... ok
+test runtime::tests::pinned_font_wiring_tests::face_order::a_generic_family_resolves_to_the_faces_of_its_role ... ok
+test runtime::tests::pinned_font_wiring_tests::face_order::a_publication_family_shadows_a_host_family_of_the_same_name ... ok
+test runtime::tests::relayout_equivalence_tests::a_chapter_is_bridged_once_for_every_layout_its_tree_holds_under ... ok
+test runtime::tests::releases_obsolete_revisions ... ok
+test runtime::tests::resolves_an_empty_chapter_href_to_its_page ... ok
+test runtime::tests::resolves_source_locators_by_href_anchor_point_range_and_progression ... ok
+test runtime::tests::resolves_text_range_geometry_from_search_positions ... ok
+test runtime::tests::ruby_range_tests::a_range_across_a_ruby_reads_as_its_line_without_the_annotation ... ok
+test runtime::tests::ruby_range_tests::a_range_in_a_ruby_base_lands_on_the_base_text ... ok
+test runtime::tests::relayout_equivalence_tests::a_chapter_is_styled_once_for_every_layout_its_styles_hold_under ... ok
+test runtime::tests::ruby_range_tests::a_search_match_across_hidden_text_falls_back_to_one_node ... ok
+test runtime::tests::ruby_range_tests::a_search_match_across_a_ruby_anchors_the_whole_match ... ok
+test runtime::tests::search_source_is_unavailable_when_raw_parsed_text_has_a_hidden_gap ... ignored, the fragment engine maps a match that spans a hidden gap to the first run's source range only; the exact span across the gap is a follow-up
+test runtime::tests::searches_revision_scoped_typed_page_text ... ok
+test runtime::tests::ruby_range_tests::a_selection_from_a_ruby_base_builds_an_annotation_that_resolves ... ok
+test runtime::tests::table_rowspan_tests::rowspan_and_colspan_reserve_their_entire_rectangle ... ok
+test runtime::tests::source_locator_projection_changes_across_reflow_without_changing_source_identity ... ok
+test runtime::tests::relayout_equivalence_tests::a_chapter_takes_its_search_records_when_first_searched ... ok
+test runtime::tests::table_rowspan_tests::rowspan_header_keeps_the_second_row_under_the_fourth_column ... ok
+test runtime::tests::table_rowspan_tests::rowspan_nested_in_a_wrapper_table_keeps_inline_images_and_following_text ... ok
+test runtime::tests::table_rowspan_tests::zero_rowspan_stops_at_its_row_group ... ok
+test runtime::tests::text_granularity_tests::point_range_contract_has_stable_camel_case_serde ... ok
+test runtime::tests::table_rowspan_tests::rowspan_continuation_preserves_source_selection_and_marks_after_reflow ... ok
+test runtime::tests::table_rowspan_tests::rowspan_parallel_text_with_different_line_positions_remains_readable ... ok
+test runtime::tests::text_interaction_tests::exact_source_range_contract_uses_a_narrow_camel_case_request ... ok
+test runtime::tests::text_interaction_tests::exact_text_contract_uses_stable_camel_case_serde_shapes ... ok
+test runtime::tests::text_interaction_tests::a_caret_read_rejects_a_non_finite_point ... ok
+test runtime::tests::text_interaction_tests::native_search_source_reuses_authoritative_exact_shape_projection ... ok
+test runtime::tests::text_movement_tests::movement_contract_uses_optional_camel_case_positions_and_typed_pending ... ok
+test runtime::tests::text_interaction_tests::wrapped_break_all_paragraph_resolves_exact_source_range_by_node_path ... ok
+test runtime::tests::text_targets_keep_their_click_source_locator ... ignored, the fragment engine's page targets carry no click-source locator; the tapped run's source point is a follow-up
+test runtime::tests::text_movement_tests::movement_rejects_a_non_finite_preference ... ok
+test runtime::tests::word_selection_tests::a_double_tap_before_a_words_middle_selects_that_word ... ok
+test runtime::text_interaction::source_match::tests::accepts_only_whitespace_between_exact_source_segments ... ok
+test style::paint_values::tests::background_fields_map_to_their_typed_paint_values ... ok
+test style::paint_values::tests::publication_hrefs_keep_their_query_and_fragment ... ok
+test style::stylo_sources::tests::admits_book10_property_surface_and_safe_at_rules ... ok
+test style::stylo_sources::tests::admits_only_audited_legacy_noops_and_safe_list_style_shorthand ... ok
+test style::stylo_sources::tests::admits_standard_and_legacy_page_break_aliases_to_the_typed_bridge ... ok
+test style::stylo_sources::tests::admits_uncontracted_inline_style_properties ... ok
+test style::stylo_sources::tests::constructs_stable_percent_encoded_publication_urls ... ok
+test style::stylo_sources::tests::import_expansion_probes_rule_names_on_char_boundaries ... ok
+test style::stylo_sources::tests::inventories_inline_style_declarations ... ok
+test style::stylo_sources::tests::preserves_document_order_and_assigns_source_specific_base_urls ... ok
+test style::stylo_sources::tests::preserves_implicit_all_publication_stylesheets_compatibility ... ok
+test style::stylo_sources::tests::rejects_all_pseudo_elements_until_materialization_exists ... ok
+test style::stylo_sources::tests::rejects_escapes_nesting_and_unreliable_syntax ... ok
+test style::stylo_sources::tests::rejects_known_unsupported_contract_properties_and_at_rules ... ok
+test style::stylo_sources::tests::requires_one_exact_external_ledger_match ... ok
+test style::stylo_sources::tests::reserved_internal_property_escapes_still_fail_closed ... ok
+test style::stylo_sources::tests::this_scanner_s_own_limits_never_refuse_the_publication ... ok
+test style::stylo_sources::tests::unrepresentable_css_is_classified_rather_than_refusing_the_publication ... ok
+test tests::exposes_engine_identity ... ok
+test xhtml::footnote_scan::tests::mirrors_body_ignored_opaque_and_inline_unwrap_semantics ... ok
+test xhtml::footnote_scan::tests::rejects_malformed_source_without_returning_partial_hints ... ok
+test xhtml::parser::tests::converts_svg_image_to_image_node ... ok
+test xhtml::parser::tests::derives_semantic_nodes_from_the_callers_exact_source_arena ... ok
+test xhtml::parser::tests::owned_parse_keeps_the_arena_that_owns_projected_node_ids ... ok
+test xhtml::parser::tests::parses_body_nodes_and_stylesheet_links ... ok
+test xhtml::parser::tests::parses_legacy_html_void_elements_without_relaxing_xml_structure ... ok
+test xhtml::parser::tests::preserves_embedded_stylesheet_order_and_missing_link_semantics ... ok
+test xhtml::parser::tests::preserves_known_namespace_attribute_prefixes ... ok
+test xhtml::parser::tests::preserves_link_and_style_occurrences_in_one_document_order_ledger ... ok
+test xhtml::parser::tests::retains_original_text_when_default_whitespace_normalization_changes_it ... ok
+test xhtml::parser::tests::rowspan_zero_and_html_span_limits_survive_projection ... ok
+test runtime::tests::word_selection_tests::a_double_tap_past_a_wrapped_lines_end_selects_its_last_word ... ok
+test runtime::tests::text_interaction_tests::embedded_nested_search_source_projects_non_tail_range_exactly ... ok
+test runtime::tests::relayout_equivalence_tests::every_text_run_resolves_to_the_page_that_shows_it ... ok
+test runtime::tests::relayout_equivalence_tests::a_document_laid_out_again_paints_what_a_fresh_document_paints ... ok
+test runtime::tests::relayout_equivalence_tests::a_window_dragged_a_pixel_at_a_time_paints_what_a_fresh_document_paints ... ok
+
+test result: ok. 569 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 37.55s
+
+     Running tests/render_architecture_invariants.rs (/home/helian/rito-verified-probes/target/debug/deps/render_architecture_invariants-eddc15ab0191b7f3)
+
+running 3 tests
+test render_text_commands_keep_the_typed_run_paint_input ... ok
+test render_does_not_recover_text_paint_fields_through_json_paths ... ok
+test render_does_not_depend_on_style_dom_or_css_engines ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/ua_image_policy_mirror.rs (/home/helian/rito-verified-probes/target/debug/deps/ua_image_policy_mirror-be1821efd886239c)
+
+running 1 test
+test the_pixel_walk_truth_mirrors_the_ua_image_policy ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/workspace_smoke.rs (/home/helian/rito-verified-probes/target/debug/deps/workspace_smoke-de26893468515cbb)
+
+running 1 test
+test module_boundaries_are_declared_once ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_ffi-2fba2e8824a6f436)
+
+running 35 tests
+test actor::tests::active_core_navigation_is_not_interrupted_by_latest_wins ... ok
+test actor::tests::adjacent_pending_requires_a_core_retained_owner ... ok
+test actor::tests::actor_exit_guard_closes_admission_and_reports_exit ... ok
+test actor::tests::ambiguous_core_or_wire_mutation_failure_requires_actor_termination ... ok
+test actor::tests::queue_cap_rejects_without_owning_an_extra_command ... ok
+test actor::tests::foreground_and_background_handoffs_keep_fifo_position_around_navigation ... ok
+test actor::tests::rapid_foreground_navigation_keeps_only_the_latest_queued_request ... ok
+test actor::tests::dropped_mutation_reply_is_an_explicit_terminal_status ... ok
+test actor::tests::replacement_does_not_cross_publication_resource_adjacent_or_release_order ... ok
+test actor::tests::close_drains_admitted_commands_and_terminates_without_polling ... ok
+test actor::tests::unexpected_receiver_disconnect_is_an_engine_failure ... ok
+test actor::tests::concurrent_flood_admits_only_the_fixed_owner_cap ... ok
+test paper_turn_tests::the_header_lays_the_numbers_out_as_the_model_does ... ok
+test layout_tests::a_spread_named_by_the_layout_is_published_and_committed_across_the_abi ... ok
+test font_tests::host_faces_are_listed_added_and_removed_across_the_abi ... ok
+test paper_turn_tests::a_turn_through_the_abi_is_the_model_s_turn_bit_for_bit ... ok
+test tests::an_open_without_pinned_fonts_fails_closed ... ok
+test tests::adjacent_request_is_actor_owned_strict_and_bounded ... ok
+test tests::ffi_status_mapping_keeps_actionable_reader_failures_distinct ... ok
+test tests::ffi_rejects_external_ids_above_i64_max_without_signed_conversion ... ok
+test tests::disposing_an_open_session_releases_it_for_reuse ... ok
+test tests::footnote_hits_read_back_through_the_abi ... ok
+test tests::ffi_statuses_distinguish_terminal_and_unsupported_profile ... ok
+test tests::malformed_fixed_handoff_and_background_messages_fail_before_registry_lookup ... ok
+test tests::a_word_selection_becomes_a_stored_annotation_across_the_abi ... ok
+test tests::invalid_and_truncated_inputs_are_rejected_without_a_session ... ok
+test tests::foreground_candidate_is_invisible_until_explicit_cas_adoption ... ok
+test tests::peek_and_commit_round_trip_without_foreground_side_effects ... ok
+test tests::open_release_and_dispose_are_owned_and_idempotent ... ok
+test shard_tests::a_sharded_reader_lays_out_from_its_skeleton_and_reads_images_as_they_arrive ... ok
+test tests::open_resolves_a_deep_target_in_one_call ... ok
+test tests::pinned_font_open_declares_embedded_publication_faces ... ok
+test tests::search_crosses_the_abi_with_locators_and_context ... ok
+test tests::text_range_geometry_crosses_the_abi_in_display_list_space ... ok
+test tests::background_candidate_and_handoff_are_owned_actor_round_trips ... ok
+
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.99s
+
+     Running tests/architecture.rs (/home/helian/rito-verified-probes/target/debug/deps/architecture-615b59bcfd5dad5a)
+
+running 9 tests
+test fixed_handoff_and_background_messages_are_validated_before_actor_admission ... ok
+test open_is_one_pass_and_adjacent_pending_requires_core_owned_state ... ok
+test mutating_wire_failures_terminate_the_owner_actor ... ok
+test actor_registry_does_not_store_core_sessions ... ok
+test actor_mailbox_stays_bounded_and_non_blocking_at_admission ... ok
+test foreground_navigation_is_a_single_latest_wins_slot ... ok
+test foreground_and_background_handoffs_remain_fifo_actor_commands ... ok
+test publication_metadata_is_binary_bounded_and_fifo ... ok
+test unsafe_is_isolated_to_abi_memory_bridge ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/header_smoke.rs (/home/helian/rito-verified-probes/target/debug/deps/header_smoke-8c44adc8a77f3c4c)
+
+running 2 tests
+test every_exported_function_is_declared_and_exercised ... ok
+test public_header_compiles_as_c11 ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_fragment-8fab735ecc019e53)
+
+running 30 tests
+test block::tests::continuous_layout_never_breaks ... ok
+test block::tests::monolithic_child_taller_than_a_fragmentainer_still_progresses ... ok
+test block::tests::resumption_is_deterministic ... ok
+test block::tests::fragments_across_fragmentainers_with_no_gap_and_no_repeat ... ok
+test block::tests::unbreakable_child_moves_whole_to_the_next_fragmentainer ... ok
+test cache::tests::byte_budget_is_never_exceeded_and_evicts_least_recently_used ... ok
+test cache::tests::cancellation_computes_nothing_and_caches_nothing ... ok
+test cache::tests::clear_releases_all_bytes ... ok
+test cache::tests::different_space_or_token_misses ... ok
+test cache::tests::every_field_of_the_space_keys_the_cache ... ok
+test cache::tests::invalidate_node_releases_that_tree_only ... ok
+test cache::tests::outcome_larger_than_the_whole_budget_is_returned_uncached ... ok
+test cache::tests::rebuilt_tree_with_same_ids_never_replays_stale_fragments ... ok
+test cache::tests::spanning_table_state_affects_cache_identity_and_memory_charge ... ok
+test cache::tests::style_reference_change_alone_changes_the_fingerprint ... ok
+test cache::tests::replay_equals_recompute_and_skips_the_provider ... ok
+test cache::tests::incoming_table_state_is_budgeted_and_cache_hits_share_its_vectors ... ok
+test formatting_tree::tests::fingerprint_covers_style_table_content ... ok
+test formatting_tree::tests::inline_flow_without_style_tables_fails_closed ... ok
+test formatting_tree::tests::inline_item_with_untabled_style_fails_closed ... ok
+test formatting_tree::tests::ruby_annotation_allocation_follows_word_midpoints ... ok
+test formatting_tree::tests::ruby_annotation_distribution_follows_the_computed_alignment ... ok
+test serialize::tests::encoding_is_deterministic ... ok
+test serialize::tests::round_trips_identically ... ok
+test serialize::tests::trailing_bytes_fail_closed ... ok
+test serialize::tests::line_and_text_fragments_round_trip ... ok
+test serialize::tests::spanning_table_state_round_trips_and_truncation_fails_closed ... ok
+test serialize::tests::ordinary_break_tokens_keep_their_existing_encoding ... ok
+test serialize::tests::unknown_tags_fail_closed ... ok
+test serialize::tests::truncated_input_fails_closed ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_inline-323e8e15bc318a34)
+
+running 77 tests
+test segmented_lru::tests::a_replaced_entry_keeps_its_protection ... ok
+test segmented_lru::tests::a_pass_of_entries_used_once_leaves_the_entries_used_again ... ok
+test segmented_lru::tests::entries_used_once_go_least_recently_used_first ... ok
+test segmented_lru::tests::a_value_larger_than_the_budget_is_not_kept ... ok
+test segmented_lru::tests::protected_entries_past_their_share_go_back_on_probation ... ok
+test tests::atoms_and_grid::a_number_line_height_multiplies_the_grid_rounded_font_size ... ok
+test tests::atoms_and_grid::an_atom_boundary_share_moves_the_atom_not_the_next_run ... ignored, two truth probes disagree on the atom-following share: the b20 badge comma rides one share right of its natural position while the micro line's ideograph hugs the image edge — the unified rule (likely by the follower's punctuation class) is still unmeasured
+test tests::atoms_and_grid::letter_spacing_stays_outside_the_fixed_point_round_trip ... ok
+test tests::atoms_and_grid::grid_pen_splits_ride_the_fixed_point_shaper_scale ... ok
+test tests::atoms_and_grid::an_inline_image_separates_a_punctuation_pair ... ok
+test tests::atoms_and_grid::a_top_aligned_image_in_a_super_chain_overflows_the_line_top ... ok
+test tests::atoms_and_grid::the_shaping_size_truncates_the_f32_hundredths_product ... ok
+test tests::atoms_and_grid::a_justified_dash_pair_stays_in_one_paint_fragment ... ok
+test tests::atoms_and_grid::a_ruby_edge_is_a_shaping_boundary ... ok
+test tests::breaks_and_spacing::a_cj_starter_may_open_a_line_unless_strict ... ok
+test tests::breaks_and_spacing::a_fullwidth_comma_keeps_its_following_opening_quote ... ok
+test tests::atoms_and_grid::the_b20_double_ruby_paragraph_interior_pitch_matches_truth ... ok
+test tests::breaks_and_spacing::a_number_line_height_floors_and_a_length_rounds ... ok
+test tests::breaks_and_spacing::an_inline_margin_indents_its_forced_break_line ... ok
+test tests::breaks_and_spacing::a_trailing_ideographic_space_run_hangs_out_of_alignment ... ok
+test tests::breaks_and_spacing::break_all_splits_the_dash_pair_and_keeps_parley_relaxations ... ok
+test tests::breaks_and_spacing::a_line_break_severs_the_trailing_kern_pair ... ok
+test tests::breaks_and_spacing::an_opener_pair_trim_never_lends_width_to_the_previous_line ... ok
+test tests::breaks_and_spacing::geometric_shapes_open_a_justify_share_and_math_operators_do_not ... ok
+test tests::breaks_and_spacing::narrow_advance_breaks_into_multiple_reassemblable_lines ... ok
+test tests::breaks_and_spacing::line_natural_probe ... ok
+test tests::atoms_and_grid::the_b20_ruby_line_pitch_matches_truth ... ok
+test tests::breaks_and_spacing::observe_adjacent_bordered_span_run_boxes ... ok
+test tests::breaks_and_spacing::the_page_clamp_scales_the_authored_image_box_uniformly ... ok
+test tests::breaks_and_spacing::a_latin_preceded_space_keeps_the_words_trailing_kern ... ok
+test tests::breaks_and_spacing::a_closing_quote_breaks_before_a_dash_pair ... ok
+test tests::clusters::a_marker_string_measures_its_box_and_cluster_origins ... ok
+test tests::clusters::a_lines_text_in_one_item_is_one_fragment_of_segments ... ok
+test tests::breaks_and_spacing::named_publication_fonts_shape_instead_of_the_pinned_fallback ... ok
+test tests::clusters::a_ruby_annotation_measures_at_its_size_with_the_base_spacing_off ... ok
+test tests::breaks_and_spacing::the_b52_title_cell_centers_its_ink_with_the_tail_hung ... ok
+test tests::breaks_and_spacing::observe_symbol_fallback_advances ... ok
+test tests::clusters::clusters_reached_by_a_bare_advance_join_the_one_before ... ok
+test tests::clusters::an_underlined_item_keeps_a_fragment_per_piece ... ok
+test tests::clusters::text_fragments_carry_one_origin_per_cluster_stepping_forward ... ok
+test tests::clusters::word_spacing_folds_outside_the_fixed_point_round_trip ... ok
+test tests::clusters::an_all_cjk_run_at_a_fractional_size_takes_the_grid_law ... ok
+test tests::clusters::a_spread_ruby_base_keeps_one_origin_per_cluster_after_merging ... ok
+test tests::envelopes_and_ruby::a_super_shifted_span_sizes_the_line_by_its_shifted_line_shape ... ok
+test tests::envelopes_and_ruby::a_justified_line_gives_a_wide_ruby_column_no_share_of_its_own ... ok
+test tests::envelopes_and_ruby::a_super_shifted_marker_image_grows_the_line_with_a_consistent_baseline ... ok
+test tests::envelopes_and_ruby::glyph_runs_carry_monotonic_geometry_and_indent_offsets_the_first_run ... ok
+test tests::envelopes_and_ruby::a_ruby_base_breaks_across_lines_like_plain_text ... ok
+test tests::envelopes_and_ruby::a_ruby_split_whose_annotation_overflows_rewinds_to_the_item_start ... ok
+test tests::envelopes_and_ruby::glyph_runs_split_at_item_boundaries_even_with_identical_measure_styles ... ok
+test tests::envelopes_and_ruby::a_wide_ruby_annotation_spreads_its_base_with_interior_gaps ... ok
+test tests::fonts::a_host_family_answers_to_its_own_name_and_unknown_names_are_recorded ... ok
+test tests::envelopes_and_ruby::images_lay_out_as_atomic_inlines_with_display_geometry ... ok
+test tests::fonts::a_publication_family_shadows_a_host_family_of_the_same_name ... ok
+test tests::fonts::a_generic_resolves_its_role_before_the_fallback_roles ... ok
+test tests::punctuation_and_contract::an_atomic_inline_expands_before_but_defers_after ... ok
+test tests::punctuation_and_contract::cancellation_and_non_inline_roots_fail_closed ... ok
+test tests::punctuation_and_contract::a_trailing_nbsp_stays_in_max_content_and_a_space_leaves ... ok
+test tests::envelopes_and_ruby::zero_line_height_paragraph_still_emits_its_line ... ok
+test tests::punctuation_and_contract::consecutive_forced_breaks_keep_an_empty_strut_line ... ok
+test tests::punctuation_and_contract::empty_font_registration_fails_closed ... ok
+test tests::punctuation_and_contract::fragmented_space_and_break_tokens_fail_closed ... ok
+test tests::punctuation_and_contract::first_line_indent_narrows_only_the_first_line ... ok
+test tests::punctuation_and_contract::cjk_punctuation_pairs_trim_half_an_em ... ok
+test tests::punctuation_and_contract::intrinsic_sizes_are_ordered_and_positive ... ok
+test tests::punctuation_and_contract::layout_is_deterministic_and_cache_replayable ... ok
+test tests::punctuation_and_contract::line_geometry_is_positive_and_stacked ... ok
+test tests::punctuation_and_contract::named_cjk_publication_fonts_shape_instead_of_the_pinned_fallback ... ok
+test tests::clusters::a_ruby_annotation_measures_its_line_offset_over_the_base ... ok
+test width_bounds::tests::a_pinned_layout_holds_no_bounds ... ok
+test width_bounds::tests::a_size_on_a_threshold_holds_no_bounds ... ok
+test width_bounds::tests::decisions_bound_the_sizes_that_answer_alike ... ok
+test tests::punctuation_and_contract::line_end_closing_punctuation_trims_only_when_the_half_width_fits ... ok
+test tests::punctuation_and_contract::text_indent_joins_intrinsic_widths ... ok
+test tests::punctuation_and_contract::the_badge_line_replica_matches_the_truth_comma_position ... ok
+test tests::fonts::the_content_language_picks_among_faces_tagged_for_a_language ... ok
+test tests::line_items::a_line_splits_alike_with_and_without_its_glyphs ... ok
+
+test result: ok. 76 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running unittests src/main.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_inline_spike-697116a3357af318)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_pack-905f834fff99424b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_source-261f80c936e5479b)
+
+running 15 tests
+test normalizer::tests::closes_everything_left_open_at_the_end ... ok
+test normalizer::tests::a_repaired_source_parses_into_a_full_tree ... ok
+test normalizer::tests::drops_an_orphan_close_tag ... ok
+test normalizer::tests::ignores_markup_in_protected_and_raw_text_sections ... ok
+test normalizer::tests::preserves_malformed_non_void_markup_for_strict_parser_errors ... ok
+test normalizer::tests::normalizes_single_quoted_xml_declarations_and_nbsp ... ok
+test normalizer::tests::preserves_self_closed_and_explicitly_closed_void_elements ... ok
+test normalizer::tests::preserves_xml_tag_name_case_like_the_existing_normalizer ... ok
+test normalizer::tests::repairs_an_unclosed_element_at_its_ancestors_close ... ok
+test normalizer::tests::self_closes_unpaired_legacy_void_elements ... ok
+test normalizer::tests::self_closes_void_elements_before_parent_closing_tags ... ok
+test normalizer::tests::strips_document_types_without_touching_comment_or_cdata_literals ... ok
+test normalizer::tests::well_formed_markup_needs_no_repair ... ok
+test scan::tests::visits_normalized_legacy_xhtml_with_resolved_epub_attributes ... ok
+test tree::tests::builder_enforces_its_node_limit_before_allocating_another_node ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/source_arena.rs (/home/helian/rito-verified-probes/target/debug/deps/source_arena-7fac184dc11d204b)
+
+running 9 tests
+test accepts_external_document_type_without_loading_it ... ok
+test canonical_entrypoint_repairs_supported_legacy_epub_forms ... ok
+test exposes_stable_read_only_parent_sibling_and_document_order_navigation ... ok
+test document_owns_exactly_one_root_element ... ok
+test malformed_non_void_markup_recovers_like_a_browser ... ok
+test renders_internal_dtd_entity_references_literally_without_expanding_them ... ok
+test preserves_namespaces_attributes_and_whitespace_text ... ok
+test renders_recursive_dtd_entities_literally_without_expanding_them ... ok
+test bounds_depth_before_the_recursive_xml_parser_runs ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_style_contract-f36b4a9a0f22a327)
+
+running 12 tests
+test color::tests::absolute_color_rejects_alpha_outside_the_unit_interval ... ok
+test color::tests::missing_components_have_one_canonical_numeric_representation ... ok
+test font::tests::font_family_list_is_non_empty ... ok
+test font::tests::font_weight_uses_css_range ... ok
+test font::tests::oblique_angle_has_one_canonical_nonzero_range ... ok
+test scalar::tests::finite_value_normalizes_negative_zero_for_equality_and_hashing ... ok
+test paint::tests::resolved_url_budget_counts_utf8_bytes ... ok
+test transform::tests::empty_transform_list_canonically_represents_none ... ok
+test scalar::tests::finite_value_rejects_nan_and_infinity ... ok
+test paint::tests::resolved_url_requires_an_absolute_bounded_value ... ok
+test text::tests::language_tag_canonicalizes_ascii_case ... ok
+test transform::tests::transform_list_is_bounded ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/style_table.rs (/home/helian/rito-verified-probes/target/debug/deps/style_table-758c761e9ee3e8f5)
+
+running 7 tests
+test debug_output_is_bounded_to_counts ... ok
+test duplicate_node_assignment_is_rejected_without_interning_another_style ... ok
+test interning_is_value_deduplicated_and_first_seen_deterministic ... ok
+test invalid_node_assignment_does_not_mutate_the_intern_table ... ok
+test node_mapping_reports_missing_and_out_of_bounds_states ... ok
+test opacity_participates_in_style_interning ... ok
+test nested_payloads_are_shared_across_many_unique_outer_styles ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_stylo-b3a3b135c6f32035)
+
+running 27 tests
+test break_properties::tests::does_not_rewrite_names_inside_custom_property_token_blocks ... ok
+test break_properties::tests::prefixed_writing_mode_aliases_reach_the_standard_property ... ok
+test break_properties::tests::rewrites_inline_declaration_list_at_offset_zero ... ok
+test break_properties::tests::rewrites_standard_and_legacy_aliases_without_touching_values ... ok
+test break_properties::tests::rewrites_ruby_align_only_for_values_the_browser_accepts ... ok
+test dom::traits::tests::css_language_ranges_match_exact_or_hyphenated_prefixes ... ok
+test break_properties::tests::ruby_align_value_scan_handles_comments_and_important ... ok
+test font_faces::tests::decodes_css_escaped_urls_from_stylo_serialization ... ok
+test presentational_hints::tests::accepts_exact_html_legacy_colour_forms ... ok
+test font_faces::tests::parses_typed_faces_and_preserves_stylesheet_rule_order ... ok
+test presentational_hints::tests::rejects_svg_geometry_values_browsers_also_ignore ... ok
+test presentational_hints::tests::accepts_svg_geometry_values_the_css_grammar_accepts ... ok
+test presentational_hints::tests::rejects_values_for_which_html_produces_no_colour ... ok
+test presentational_hints::tests::preserves_exact_legacy_rgb_results ... ok
+test presentational_hints::tests::svg_geometry_hints_map_to_the_matching_axis_declaration ... ok
+test session::tests::a_stylesheet_parsed_once_serves_every_later_document ... ok
+test projection::inline::tests::deep_language_inheritance_normalizes_only_the_declaration ... ok
+test session::tests::configured_root_font_size_drives_root_relative_cascade ... ok
+test session::tests::generates_before_and_after_boxes_with_their_styles_and_content ... ok
+test projection::layout::sizing_tests::intrinsic_max_width_retains_the_element_layout_style ... ok
+test session::tests::reader_font_family_uses_stylo_grammar_and_rejects_injection ... ok
+test session::tests::projection_preserves_computed_field_distinctions ... ok
+test session::tests::resolves_author_and_inline_style_declarations ... ok
+test session::tests::resolves_namespace_attribute_and_language_selectors ... ok
+test projection::inline::tests::shared_payload_operation_counts_are_linear_in_unique_lists ... ok
+test projection::inline::tests::repeated_resolved_background_url_projects_once_across_unique_styles ... ok
+test projection::inline::tests::shared_transform_storage_projects_once_across_unique_foregrounds ... ok
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/css_semantics.rs (/home/helian/rito-verified-probes/target/debug/deps/css_semantics-3d47e8d852d0ce48)
+
+running 8 tests
+test records_upstream_servo_has_selector_gap ... ok
+test records_upstream_servo_nth_child_of_selector_gap ... ok
+test author_display_overrides_epub_ua_origin ... ok
+test epub_ua_stylesheet_supplies_html_box_generation_semantics ... ok
+test html_dir_is_an_inherited_zero_specificity_presentational_hint ... ok
+test shorthands_and_keywords_project_into_the_production_tables ... ok
+test respects_normal_and_important_cascade_origin_order ... ok
+test direct_adapter_matches_selector_cascade_and_value_semantics ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/inline_style.rs (/home/helian/rito-verified-probes/target/debug/deps/inline_style-d45b4dd095801503)
+
+running 18 tests
+test decoration_is_own_computed_value_not_a_source_ancestor_stack ... ok
+test background_url_preserves_the_initial_repeat_value ... ok
+test background_url_uses_stylesheet_base_and_projects_coupled_paint ... ok
+test background_url_supports_auto_contain_and_px_percentage_positions ... ok
+test background_none_bypasses_irrelevant_layer_lists ... ok
+test direct_projection_preserves_represented_computed_distinctions ... ok
+test font_family_projection_retains_quoted_and_identifier_syntax ... ok
+test hostile_transform_list_hits_the_operation_budget ... ok
+test language_is_case_canonicalized_with_xml_precedence_and_empty_reset ... ok
+test disposition_ledger_exactly_accounts_for_the_dense_source_arena ... ok
+test non_default_transform_origin_fails_closed ... ok
+test individual_transform_longhands_fail_closed ... ok
+test opaque_calc_fails_closed_and_leaves_the_node_slot_empty ... ok
+test ruby_align_cascades_through_the_registered_custom_property ... ok
+test rotate_and_rotate_z_project_as_equivalent_ordered_2d_operations ... ok
+test oversized_resolved_background_url_hits_the_payload_budget ... ok
+test unsupported_background_layer_values_fail_closed_by_field ... ok
+test unsupported_standard_transform_operations_fail_closed ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/inline_style_guards.rs (/home/helian/rito-verified-probes/target/debug/deps/inline_style_guards-00ec25de925aa773)
+
+running 4 tests
+test hostile_shadow_list_hits_the_budget_before_projection ... ok
+test complex_current_color_shadow_fails_closed ... ok
+test projection_debug_is_bounded_to_summary_counts ... ok
+test shared_symbolic_payloads_remain_shared_across_unique_foregrounds ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/layout_style.rs (/home/helian/rito-verified-probes/target/debug/deps/layout_style-e752b32441a333fd)
+
+running 16 tests
+test counter_styles_outside_the_legacy_consumer_enum_fail_closed ... ok
+test centered_single_line_row_flex_alignment_projects_exactly ... ok
+test height_constraints_float_and_overflow_project_exactly ... ok
+test intrinsic_max_width_is_retained_for_consumer_compatibility ... ok
+test asymmetric_or_scrollable_overflow_fails_closed ... ok
+test intrinsic_and_opaque_max_height_fail_closed ... ok
+test logical_clear_fails_closed_without_a_layout_table_assignment ... ok
+test logical_float_fails_closed_without_a_layout_table_assignment ... ok
+test opaque_max_width_calc_fails_closed_without_a_layout_table_assignment ... ok
+test opaque_width_calc_fails_closed_without_a_layout_table_assignment ... ok
+test percentage_height_constraints_are_preserved_in_the_contract ... ok
+test page_break_aliases_use_one_stylo_cascade_and_distinct_table_keys ... ok
+test page_and_always_forced_breaks_are_ignored_like_the_column_context_ignores_them ... ok
+test production_slice_keeps_percentage_auto_display_and_legacy_list_type_exact ... ok
+test unsupported_page_break_values_fail_closed_in_the_typed_projection ... ok
+test unsupported_flex_flow_and_alignment_fail_closed ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/presentational_hints.rs (/home/helian/rito-verified-probes/target/debug/deps/presentational_hints-891ca6e58ec0d418)
+
+running 9 tests
+test invalid_legacy_colour_values_fail_closed_before_traversal ... ok
+test author_background_overrides_the_zero_specificity_presentational_hint ... ok
+test author_size_rules_override_the_zero_specificity_svg_geometry_hint ... ok
+test bgcolor_on_non_body_elements_is_not_a_body_hint ... ok
+test bare_svg_numbers_are_user_unit_px_lengths ... ok
+test body_bgcolor_is_an_exact_pres_hints_background_declaration ... ok
+test svg_geometry_attributes_are_pres_hints_width_and_height_declarations ... ok
+test svg_geometry_attributes_outside_the_svg_namespace_are_not_hints ... ok
+test invalid_svg_geometry_values_are_ignored_like_a_browser_ignores_them ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/viewport_dependence.rs (/home/helian/rito-verified-probes/target/debug/deps/viewport_dependence-5a25beccad145b1d)
+
+running 3 tests
+test styles_that_read_nothing_of_the_viewport_hold_at_any_viewport ... ok
+test a_viewport_length_holds_at_its_own_viewport_only ... ok
+test a_media_query_holds_while_it_answers_the_same ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_turn-cb11b8359d21bf2b)
+
+running 85 tests
+test math::tests::javascript_semantics ... ok
+test pack::tests::a_frame_reads_as_it_was_written ... ok
+test pack::tests::a_settle_reads_as_it_was_written ... ok
+test spec::curl::a_page_curled_over_on_itself::lifts_no_farther_than_the_page_lying_on_it_has ... ok
+test spec::curl::a_page_curled_over_on_itself::rolls_at_one_radius_until_its_line_nears_the_spine_and_tightens_evenly_from_there ... ok
+test spec::curl::how_a_curled_page_no_finger_moves_keeps_step_with_its_turn::finishes_by_itself_when_its_turn_is_at_its_end_and_it_is_not ... ok
+test spec::curl::how_a_curled_page_no_finger_moves_keeps_step_with_its_turn::goes_on_from_where_it_is_when_what_moves_its_turn_changes ... ok
+test spec::curl::how_a_curled_page_no_finger_moves_keeps_step_with_its_turn::gone_from_the_frame_with_its_turn_still_on_its_way_stays_gone_until_the_turn_has_come_back_for_it ... ok
+test spec::curl::a_page_curled_over_on_itself::carries_its_lifted_edge_twice_as_far_as_its_line_goes_once_it_lies_on_top_of_its_roll ... ok
+test spec::curl::a_page_curled_over_on_itself::is_out_of_the_frame_once_turned_lying_flat_past_the_spine_with_no_roll_left ... ok
+test spec::curl::a_page_curled_over_on_itself::lies_flat_until_its_turn_begins_whichever_way_its_line_leans ... ok
+test spec::curl::how_a_curled_page_no_finger_moves_keeps_step_with_its_turn::turned_by_a_key_sweeps_across_upright_and_is_gone_before_its_turn_stops ... ok
+test spec::curl::how_a_curled_page_no_finger_moves_keeps_step_with_its_turn::let_go_where_there_is_no_page_to_turn_to_comes_back_in_step_with_its_turn ... ok
+test spec::curl::a_page_curled_over_on_itself::is_not_stretched_neighbouring_points_stay_as_far_apart_as_they_lie_flat ... ok
+test spec::curl_held::a_curled_page_its_finger_has_let_go::finishes_by_itself_from_where_it_is_as_fast_as_it_was_going_and_is_gone_before_its_motion_has_stopped ... ok
+test spec::curl_held::a_curled_page_its_finger_has_let_go::goes_by_itself_in_the_same_time_whatever_its_frame_is_drawn_at ... ok
+test spec::curl_held::a_curled_page_its_finger_has_let_go::let_go_before_any_frame_showed_it_held_turns_from_where_it_lies ... ok
+test spec::curl_held::a_curled_page_its_finger_has_let_go::is_left_to_its_own_way_by_a_turn_that_takes_it_the_same_way_and_taken_from_it_by_one_that_does_not ... ok
+test spec::curl_held::a_curled_page_its_finger_has_let_go::sent_back_lies_flat_again_the_same_way ... ok
+test spec::curl::how_a_curled_page_no_finger_moves_keeps_step_with_its_turn::lays_a_page_behind_another_no_farther_over_than_the_one_in_front ... ok
+test spec::curl_held::a_curled_page_under_a_finger_that_has_yet_to_set_off::lifts_nothing_for_a_finger_that_goes_up_or_down_only_or_the_other_way ... ok
+test spec::curl_held::a_curled_page_its_finger_has_let_go::starts_from_rest_when_it_was_going_the_other_way_it_was_coming_to_the_finger_not_carried_by_the_hand ... ok
+test spec::curl_held::a_curled_page_under_a_finger_that_has_yet_to_set_off::keeps_its_distance_from_the_finger_a_slip_from_mid_page_lifts_next_to_nothing ... ok
+test spec::curl_held::a_curled_page_under_a_finger_that_has_yet_to_set_off::carries_its_edge_as_far_as_the_finger_has_gone_from_the_first_of_its_way ... ok
+test spec::curl_held::a_curled_page_whose_finger_has_set_off::is_taken_anew_by_a_finger_that_comes_down_again_where_the_last_one_did_and_by_one_that_finds_it_left_to_itself ... ok
+test spec::curl_held::a_curled_page_whose_finger_has_set_off::brought_back_comes_in_until_its_edge_is_under_the_finger_lying_flat_left_of_its_roll ... ok
+test spec::curl_held::a_curled_page_whose_finger_has_set_off::is_under_the_finger_from_there_wherever_the_finger_goes_however_fast_and_back_past_where_it_came_down ... ok
+test spec::curl_held::a_curled_page_whose_finger_has_set_off::is_where_it_was_in_the_frame_the_finger_sets_off_and_gathers_way_from_rest ... ok
+test spec::curl_held::a_curled_page_whose_finger_has_set_off::goes_only_to_a_finger_it_is_short_of_one_already_past_its_finger_keeps_its_distance ... ok
+test spec::curl_hold::how_a_page_comes_to_the_finger_that_has_set_off_with_it::is_off_from_rest_nine_tenths_of_the_way_in_a_tenth_of_a_second_and_never_turns_round ... ok
+test spec::curl_held::a_curled_page_whose_finger_has_set_off::taken_in_the_air_is_where_it_was_whether_or_not_it_is_lifted_where_the_finger_is ... ok
+test spec::curl_held::a_curled_page_whose_finger_has_set_off::comes_to_the_finger_with_the_finger_at_rest_never_by_much_in_a_frame_and_is_under_it_in_a_quarter_of_a_second ... ok
+test spec::curl_hold::how_far_over_a_curled_page_is_for_where_its_edge_is_wanted::lies_flat_short_of_anything_asked_of_it_and_is_turned_past_all_its_edge_can_go ... ok
+test spec::curl_held::a_curled_page_whose_finger_has_set_off::leans_over_to_how_it_will_lean_under_the_finger_without_turning_round_the_paper_it_holds_lifted_all_the_way ... ok
+test spec::curl_hold::how_much_a_held_page_leans::by_a_corner_at_once_half_way_up_the_edge_only_as_the_page_comes_over ... ok
+test spec::curl_hold::how_much_a_held_page_leans::never_past_what_a_page_wider_than_it_is_tall_can_be_laid_out_by ... ok
+test spec::curl_hold::how_much_a_held_page_leans::not_at_all_before_its_edge_has_gone_anywhere_unless_it_leant_when_it_was_taken ... ok
+test spec::curl_hold::how_far_over_a_curled_page_is_for_where_its_edge_is_wanted::carries_the_edge_through_where_the_paper_has_yet_to_lift_without_a_step ... ok
+test spec::curl_held::a_curled_page_whose_finger_has_set_off::follows_the_finger_while_it_is_still_coming_to_it ... ok
+test spec::curl_turn::a_page_curled_over_turned_by_a_finger::is_where_the_finger_has_it_still_when_a_frame_is_long_in_coming ... ok
+test spec::curl_turn::a_page_curled_over_turned_by_a_finger::gone_from_the_frame_has_nothing_left_for_a_turn_that_cuts_in_to_carry_on_with ... ok
+test spec::curl_hold::how_far_over_a_curled_page_is_for_where_its_edge_is_wanted::puts_the_edge_where_it_is_asked_for_at_any_height_and_lean_the_paper_can_take ... ok
+test spec::curl_hold::how_much_a_held_page_leans::so_that_the_paper_at_the_finger_is_lifted_and_the_corner_it_is_peeled_from_is_no_higher_than_the_finger ... ok
+test spec::leaf::a_leaf_turned_about_the_spine::arches_in_the_air_however_it_is_taken_off_the_straight_line_from_the_spine_to_its_edge ... ok
+test spec::leaf::a_leaf_turned_about_the_spine::bends_without_stretching_neighbours_stay_as_far_apart_as_they_are_flat ... ok
+test spec::leaf::a_leaf_turned_about_the_spine::leads_with_the_corner_it_is_taken_by ... ok
+test spec::leaf::a_leaf_turned_about_the_spine::lies_flat_face_up_before_it_is_turned ... ok
+test spec::leaf::a_leaf_turned_about_the_spine::lies_flat_on_the_far_side_face_down_once_turned ... ok
+test spec::curl_turn::a_page_curled_over_turned_by_a_finger::let_go_to_turn_finishes_by_itself_and_its_turn_is_over_as_soon_as_it_is_out_of_the_frame ... ok
+test spec::leaf::a_leaf_turned_about_the_spine::stays_bound_at_the_spine_all_the_way_over ... ok
+test spec::leaf::a_leaf_turned_about_the_spine::swings_evenly_and_is_flat_at_both_ends_of_the_turn ... ok
+test spec::leaves::a_leaf_left_to_come_down_by_itself::comes_down_at_the_same_pace_at_any_device_pixel_ratio ... ok
+test spec::leaves::how_the_leaf_a_turn_leads_is_brought_where_it_is_wanted::no_faster_than_a_jump_of_the_hand_may_be_but_for_a_page_that_is_where_a_finger_has_it ... ok
+test spec::leaves::the_hold_a_finger_takes_of_a_leaf_in_the_air::is_no_nearer_the_spine_than_a_hand_turns_a_leaf_by_and_keeps_its_distance_from_the_finger ... ok
+test spec::leaves::the_hold_a_finger_takes_of_a_leaf_in_the_air::is_of_the_point_of_the_leaf_showing_under_the_finger ... ok
+test spec::leaves::the_hold_a_finger_takes_of_a_leaf_in_the_air::leaves_the_leaf_where_it_is_when_the_finger_has_not_moved_and_follows_it_when_it_has ... ok
+test spec::leaves::the_leaves_in_the_air::a_page_curled_over_has_left_the_frame_while_its_motion_is_still_going ... ok
+test spec::leaves::the_leaves_in_the_air::are_left_to_come_down_on_the_side_of_the_leaf_being_turned_they_belong_on ... ok
+test spec::leaves::the_leaves_in_the_air::come_in_the_order_of_the_spreads_printed_on_them ... ok
+test spec::leaves::the_leaves_in_the_air::have_landed_a_pixel_short_of_flat_not_when_a_spring_has_crept_the_rest ... ok
+test spec::leaves::the_leaves_in_the_air::never_pass_through_each_other_the_leaf_being_turned_takes_along_what_it_would_pass ... ok
+test spec::physics::a_paper_turn_that_cuts_into_another::is_let_go_by_what_the_finger_carried_it_wherever_the_finger_took_it ... ok
+test spec::physics::a_paper_turn_that_cuts_into_another::is_not_over_while_a_leaf_it_left_in_the_air_is_still_coming_down ... ok
+test spec::physics::a_paper_turn_that_cuts_into_another::is_over_a_frame_after_its_page_is_where_it_takes_it_with_its_own_motion_still_on_its_way ... ok
+test spec::physics::a_paper_turn_that_cuts_into_another::sent_back_the_way_it_came_slows_to_a_stop_before_it_comes_back ... ok
+test spec::physics::a_paper_turn_that_cuts_into_another::takes_up_the_same_leaf_where_it_is_and_lifts_another_from_flat ... ok
+test spec::physics::a_paper_turn_that_cuts_into_another::with_nowhere_left_to_go_is_there_whatever_speed_it_was_let_go_at ... ok
+test spec::physics::how_a_paper_turn_comes_to_rest::a_leaf_no_finger_turned_is_off_at_once_lands_softly_and_takes_well_under_half_a_second ... ok
+test spec::physics::how_a_paper_turn_comes_to_rest::a_turn_let_go_on_the_move_keeps_its_momentum ... ok
+test spec::physics::how_a_paper_turn_comes_to_rest::draws_the_leaf_exactly_where_it_lands_before_the_turn_is_over ... ok
+test spec::physics::how_far_a_finger_carries_a_paper_turn::carries_the_edge_of_one_page_as_far_as_the_finger_goes_wherever_it_went_down ... ok
+test spec::physics::how_far_a_finger_carries_a_paper_turn::keeps_the_held_point_under_the_finger_over_the_spine_at_half_a_turn ... ok
+test spec::physics::how_far_a_finger_carries_a_paper_turn::takes_a_sheet_no_nearer_the_spine_than_a_hand_could_turn_it_by ... ok
+test spec::physics::how_far_a_finger_carries_a_paper_turn::turns_back_by_the_sheet_lying_left_of_the_spine ... ok
+test spec::physics::the_spring_as_a_motion::follows_the_path_the_stepped_spring_does ... ok
+test spec::physics::whether_letting_a_page_curled_over_go_turns_it::a_finger_come_back_from_its_farthest_does_not_more_of_it_after_a_long_pull ... ok
+test spec::physics::whether_letting_a_page_curled_over_go_turns_it::a_finger_flinging_it_back_does_not_whatever_it_had_pulled ... ok
+test spec::physics::whether_letting_a_page_curled_over_go_turns_it::a_pull_out_does_however_short_a_nudge_does_not ... ok
+test spec::physics::whether_letting_a_page_curled_over_go_turns_it::is_asked_of_one_page_a_spread_only_a_leaf_of_two_goes_by_how_far_its_turn_has_gone ... ok
+test spec::physics::whether_letting_a_paper_turn_go_turns_the_page::a_pull_of_a_fifth_of_the_way_or_a_flick_does_a_nudge_or_a_pull_back_does_not ... ok
+test spec::curl_turn::a_page_curled_over_turned_by_a_finger::let_go_with_its_turn_where_it_began_goes_back_by_itself_and_the_turn_waits_for_it ... ok
+test spec::curl::a_page_curled_over_on_itself::never_leaves_the_spine_its_line_stays_right_of_both_ends_of_it ... ok
+test spec::leaf::a_leaf_turned_about_the_spine::never_goes_under_the_pages_and_comes_down_edge_first ... ok
+test spec::curl_hold::how_far_over_a_curled_page_is_for_where_its_edge_is_wanted::is_in_one_place_only_for_what_is_asked_of_it_with_any_lean_a_held_page_is_given ... ok
+test spec::curl_turn::a_page_curled_over_turned_by_a_finger::takes_as_long_by_itself_whatever_its_frame_is_drawn_at_let_go_or_left_for_another_page ... ok
+
+test result: ok. 85 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s
+
+     Running tests/web_geometry.rs (/home/helian/rito-verified-probes/target/debug/deps/web_geometry-17a3b2f51e0dd312)
+
+running 1 test
+test the_geometry_is_the_webs ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/web_traces.rs (/home/helian/rito-verified-probes/target/debug/deps/web_traces-22507221348a92e9)
+
+running 1 test
+test the_model_turns_as_the_web_does ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.52s
+
+     Running unittests src/lib.rs (/home/helian/rito-verified-probes/target/debug/deps/rito_wasm-ed118670a512389d)
+
+running 26 tests
+test reader_session::host_fonts::tests::metadata_names_each_face_by_a_canonical_digest_role_and_language ... ok
+test reader_session::host_fonts::tests::two_faces_share_a_role_and_language_only_when_added ... ok
+test reader_session::host_fonts::tests::malformed_metadata_is_an_invalid_request ... ok
+test reader_session::tests::adjacent_wire_preserves_bigint_sized_identities_without_a_number_hop ... ok
+test reader_session::query_tests::a_peeked_page_commits_with_the_acknowledgement_core_gives ... ok
+test reader_session::tests::background_wires_preserve_bigint_sized_identities_without_a_number_hop ... ok
+test reader_session::tests::adjacent_projection_is_core_identical_across_three_turns ... ok
+test reader_session::tests::background_handoff_and_adopted_adjacent_are_byte_identical_to_core ... ok
+test reader_session::query_tests::a_spread_by_position_and_its_layout_answer_the_bytes_core_answers ... ok
+test reader_session::query_tests::every_query_answers_the_bytes_core_answers ... ok
+test reader_session::tests::font_queries_cross_the_projection_as_core_wires ... ok
+test reader_session::tests::background_wires_reject_truncation_trailing_bytes_and_top_bit_ids ... ok
+test reader_session::tests::foreground_handoff_binding_rejects_wrong_length_and_preserves_candidate_after_failed_cas ... ok
+test reader_session::tests::projection_reports_typed_wire_and_session_errors ... ok
+test reader_session::tests::one_session_supports_followup_seek_reflow_and_rejects_stale_request_ids ... ok
+test reader_session::tests::each_background_transport_call_matches_exactly_one_core_quantum ... ok
+test reader_session::tests::wasm_error_codes_match_actionable_core_reader_kinds ... ok
+test reader_session::tests::release_and_dispose_are_idempotent_and_disposed_requests_are_typed ... ok
+test reader_session::tests::tmp_pt_margin_probe ... ok
+test reader_session::tests::stale_background_cas_is_typed_and_does_not_replace_the_new_intent ... ok
+test reader_session::tests::wasm_projection_uses_core_wire_types_without_a_json_schema_copy ... ok
+test reader_session::tests::wasm_pending_query_projects_retained_adjacent_without_message_parsing ... ok
+test reader_session::tests::wasm_projection_rejects_top_bit_ids_instead_of_converting_them_to_negative ... ok
+test reader_session::tests::wasm_projection_is_byte_identical_to_core_for_a_nonfirst_page_locator ... ok
+test reader_session::tests::resource_projection_is_core_identical_for_the_real_0005_image ... ok
+test reader_session::tests::a_session_opened_from_shards_lays_out_alone_and_names_an_image_shard ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.74s
+
+     Running tests/workspace_smoke.rs (/home/helian/rito-verified-probes/target/debug/deps/workspace_smoke-d5e3283755cb6857)
+
+running 1 test
+test wasm_crate_links_to_core_crate ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_block
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_ffi
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_fragment
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_inline
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_pack
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_source
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_style_contract
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_stylo
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_turn
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rito_wasm
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
