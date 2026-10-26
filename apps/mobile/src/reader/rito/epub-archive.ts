@@ -6,9 +6,10 @@ export const READER_EPUB_MAX_ARCHIVE_BYTES = 100 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 250 * 1024 * 1024;
 const MAX_ENTRY_BYTES = 64 * 1024 * 1024;
 const MAX_ENTRIES = 5_000;
-const INPUT_CHUNK_BYTES = 8 * 1024;
+const INPUT_CHUNK_BYTES = 64 * 1024;
 const YIELD_AFTER_BYTES = 128 * 1024;
-const YIELD_AFTER_MS = 8;
+const YIELD_AFTER_MS = 16;
+const SMALL_READ_BYTES = 128 * 1024;
 
 interface ArchiveEntry extends UnzipFileInfo {
   readonly path: string;
@@ -65,7 +66,11 @@ export class EpubArchive {
   }
 
   async readAsync(path: string): Promise<Uint8Array<ArrayBuffer> | undefined> {
-    if (!this.entries.has(path)) return undefined;
+    const entry = this.entries.get(path);
+    if (!entry) return undefined;
+    // Container/OPF and small covers need only a central-directory lookup.
+    // Do not scan the whole local stream for each tiny metadata document.
+    if (entry.size <= SMALL_READ_BYTES && entry.originalSize <= SMALL_READ_BYTES) return this.read(path);
     let result: Uint8Array<ArrayBuffer> | undefined;
     await this.extract(
       ({ bytes }) => {
@@ -170,22 +175,23 @@ export class EpubArchive {
       file.start();
     });
     unzipper.register(UnzipInflate);
-    let lastYield = performance.now();
+    let cpuSinceYield = 0;
     let bytesSinceYield = 0;
     try {
       for (let offset = 0; offset < this.bytes.byteLength; offset += INPUT_CHUNK_BYTES) {
         const end = Math.min(offset + INPUT_CHUNK_BYTES, this.bytes.byteLength);
+        const decodeStart = performance.now();
         unzipper.push(this.bytes.subarray(offset, end), end === this.bytes.byteLength);
+        cpuSinceYield += performance.now() - decodeStart;
         if (failure) throw failure;
         while (completed.length) await onEntry(completed.shift()!);
         report(end / this.bytes.byteLength);
         bytesSinceYield += end - offset;
-        if (
-          decodedSinceYield &&
-          (bytesSinceYield >= YIELD_AFTER_BYTES || performance.now() - lastYield >= YIELD_AFTER_MS)
-        ) {
+        if (decodedSinceYield && (bytesSinceYield >= YIELD_AFTER_BYTES || cpuSinceYield >= YIELD_AFTER_MS)) {
           await yieldToEventLoop();
-          lastYield = performance.now();
+          // Awaited writers can already yield for native I/O. Their wall
+          // time is not decoder CPU and must not trigger an extra timer.
+          cpuSinceYield = 0;
           bytesSinceYield = 0;
           decodedSinceYield = false;
         }
