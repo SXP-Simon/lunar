@@ -1,0 +1,59 @@
+   Compiling rito-core v0.0.0 (/home/helian/rito-vertical-base/crates/rito-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 29.85s
+     Running unittests src/lib.rs (/home/helian/.cache/lunar-rito-target/debug/deps/rito_core-f5b7d893e0a538b3)
+
+running 6 tests
+
+thread 'runtime::tests::vertical_interaction_tests::vertical_interaction_inline_image_and_link_hits_follow_paint' (1500) panicked at crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs:49:5:
+24 != 368
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'runtime::reader_session::interaction_tests::vertical_interaction_protocol_keeps_source_and_ranges_without_a_wrong_caret_bar' (1498) panicked at crates/rito-core/src/runtime/reader_session/interaction_tests.rs:38:5:
+protocol 7 must not invent a vertical caret bar
+test runtime::tests::vertical_interaction_tests::vertical_interaction_inline_image_and_link_hits_follow_paint ... FAILED
+test runtime::reader_session::interaction_tests::vertical_interaction_protocol_keeps_source_and_ranges_without_a_wrong_caret_bar ... FAILED
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::vertical_interaction_tests::vertical_interaction_pointer_range_selects_the_painted_character' (1502) panicked at crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs:94:5:
+assertion `left == right` failed
+  left: Some(RuntimeSourcePoint { node_path: [0, 0], text_offset: 3 })
+ right: Some(RuntimeSourcePoint { node_path: [0, 0], text_offset: 1 })
+
+thread 'runtime::tests::vertical_interaction_tests::vertical_interaction_latin_and_non_bmp_glyphs_keep_utf16_boundaries' (1501) panicked at crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs:244:9:
+assertion `left == right` failed
+  left: 2
+ right: 0
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::vertical_interaction_tests::vertical_interaction_hits_share_the_painted_glyph_column' (1499) panicked at crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs:49:5:
+0 != 352.5
+ICU4X data error: No segmentation model for language: ja
+test runtime::tests::vertical_interaction_tests::vertical_interaction_pointer_range_selects_the_painted_character ... FAILED
+test runtime::tests::vertical_interaction_tests::vertical_interaction_latin_and_non_bmp_glyphs_keep_utf16_boundaries ... FAILED
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+test runtime::tests::vertical_interaction_tests::vertical_interaction_hits_share_the_painted_glyph_column ... FAILED
+
+thread 'runtime::tests::vertical_interaction_tests::vertical_interaction_ruby_base_annotation_reprojects_after_reflow' (1503) panicked at crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs:169:5:
+assertion `left == right` failed
+  left: ""
+ right: "甲乙"
+test runtime::tests::vertical_interaction_tests::vertical_interaction_ruby_base_annotation_reprojects_after_reflow ... FAILED
+
+failures:
+
+failures:
+    runtime::reader_session::interaction_tests::vertical_interaction_protocol_keeps_source_and_ranges_without_a_wrong_caret_bar
+    runtime::tests::vertical_interaction_tests::vertical_interaction_hits_share_the_painted_glyph_column
+    runtime::tests::vertical_interaction_tests::vertical_interaction_inline_image_and_link_hits_follow_paint
+    runtime::tests::vertical_interaction_tests::vertical_interaction_latin_and_non_bmp_glyphs_keep_utf16_boundaries
+    runtime::tests::vertical_interaction_tests::vertical_interaction_pointer_range_selects_the_painted_character
+    runtime::tests::vertical_interaction_tests::vertical_interaction_ruby_base_annotation_reprojects_after_reflow
+
+test result: FAILED. 0 passed; 6 failed; 0 ignored; 0 measured; 569 filtered out; finished in 0.80s
+
+error: test failed, to rerun pass `-p rito-core --lib`

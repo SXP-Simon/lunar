@@ -1,0 +1,206 @@
+[
+  {
+    "chapter": "horizontal",
+    "size": 18,
+    "samePaint": true,
+    "samePageText": true,
+    "checks": [
+      {
+        "text": "く",
+        "baselineText": "く",
+        "fixedText": "く",
+        "fixedRects": [
+          {
+            "height": 26,
+            "width": 17.639999389648438,
+            "x": 112,
+            "y": 153.69940567016602
+          }
+        ]
+      },
+      {
+        "text": "山道",
+        "baselineText": "山道",
+        "fixedText": "山道",
+        "fixedRects": [
+          {
+            "height": 26,
+            "width": 36,
+            "x": 40,
+            "y": 153.69940567016602
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "chapter": "horizontal",
+    "size": 20,
+    "samePaint": true,
+    "samePageText": true,
+    "checks": [
+      {
+        "text": "く",
+        "baselineText": "く",
+        "fixedText": "く",
+        "fixedRects": [
+          {
+            "height": 29,
+            "width": 19.599990844726562,
+            "x": 120,
+            "y": 161.91815567016602
+          }
+        ]
+      },
+      {
+        "text": "山道",
+        "baselineText": "山道",
+        "fixedText": "山道",
+        "fixedRects": [
+          {
+            "height": 29,
+            "width": 40,
+            "x": 40,
+            "y": 161.91815567016602
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "chapter": "vertical",
+    "size": 18,
+    "samePaint": true,
+    "samePageText": true,
+    "checks": [
+      {
+        "text": "く",
+        "baselineText": "一列目の終わり。二列目の始まり。",
+        "fixedText": "く",
+        "fixedRects": [
+          {
+            "height": 18,
+            "width": 18,
+            "x": 312.5,
+            "y": 160.76190567016602
+          }
+        ]
+      },
+      {
+        "text": "山道",
+        "baselineText": "山道を歩く。漢字を読む。",
+        "fixedText": "山道",
+        "fixedRects": [
+          {
+            "height": 36,
+            "width": 18,
+            "x": 312.5,
+            "y": 88.76190567016602
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "chapter": "vertical",
+    "size": 20,
+    "samePaint": true,
+    "samePageText": true,
+    "checks": [
+      {
+        "text": "く",
+        "baselineText": "一列目の終わり。二列目の始まり。",
+        "fixedText": "く",
+        "fixedRects": [
+          {
+            "height": 20,
+            "width": 20,
+            "x": 305.5,
+            "y": 168.76190567016602
+          }
+        ]
+      },
+      {
+        "text": "山道",
+        "baselineText": "山道を歩く。漢字を読む。",
+        "fixedText": "山道",
+        "fixedRects": [
+          {
+            "height": 40,
+            "width": 20,
+            "x": 305.5,
+            "y": 88.76190567016602
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "chapter": "prefixed",
+    "size": 18,
+    "samePaint": true,
+    "samePageText": true,
+    "checks": [
+      {
+        "text": "く",
+        "baselineText": "一列目の終わり。二列目の始まり。",
+        "fixedText": "く",
+        "fixedRects": [
+          {
+            "height": 18,
+            "width": 18,
+            "x": 312.5,
+            "y": 160.76190567016602
+          }
+        ]
+      },
+      {
+        "text": "山道",
+        "baselineText": "山道を歩く。漢字を読む。",
+        "fixedText": "山道",
+        "fixedRects": [
+          {
+            "height": 36,
+            "width": 18,
+            "x": 312.5,
+            "y": 88.76190567016602
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "chapter": "prefixed",
+    "size": 20,
+    "samePaint": true,
+    "samePageText": true,
+    "checks": [
+      {
+        "text": "く",
+        "baselineText": "一列目の終わり。二列目の始まり。",
+        "fixedText": "く",
+        "fixedRects": [
+          {
+            "height": 20,
+            "width": 20,
+            "x": 305.5,
+            "y": 168.76190567016602
+          }
+        ]
+      },
+      {
+        "text": "山道",
+        "baselineText": "山道を歩く。漢字を読む。",
+        "fixedText": "山道",
+        "fixedRects": [
+          {
+            "height": 40,
+            "width": 20,
+            "x": 305.5,
+            "y": 88.76190567016602
+          }
+        ]
+      }
+    ]
+  }
+]
