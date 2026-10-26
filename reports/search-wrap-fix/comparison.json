@@ -1,0 +1,24 @@
+{
+  "epubSha256": "3217b1cb335c9b10d84e7816b88d70a05ab767b28411f287b9fbca78884faabb",
+  "samePageText": true,
+  "sameDisplayList": true,
+  "displayListSha256": "65bc18a20f143f7a557432f5bd151549b0b378b06156e27acc8d1b290af3c71e",
+  "beforeCounts": [
+    0,
+    0,
+    1,
+    1,
+    0,
+    0
+  ],
+  "afterCounts": [
+    1,
+    1,
+    1,
+    1,
+    0,
+    0
+  ],
+  "fullSourceAndMultilineGeometry": true,
+  "hardBreakAndParagraphNegativeControls": true
+}

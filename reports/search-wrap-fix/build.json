@@ -1,0 +1,18 @@
+{
+  "baseCommit": "ed0284f3703244da28b3e6efd80cf29267cf6e65",
+  "fixedCommit": "376e939fa70f03f218ae7d19cdd3490aacd170ca",
+  "rustVersion": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "platform": "Ubuntu 22.04 / WSL Linux x86_64",
+  "fontSha256": {
+    "Tinos-Regular.ttf": "60a0e8ef0c04dd5dd69ffe91025fa2ae5836cbd35600a82ba031977557e2cb61",
+    "SourceHanSerifCN-Regular.otf": "3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d"
+  },
+  "coreRebuiltBeforeEachVersion": true,
+  "checks": {
+    "fmt": true,
+    "clippyWarningsDenied": true,
+    "workspaceTestsPassed": 1028,
+    "workspaceTestsIgnored": 8
+  },
+  "androidAdoptionVerified": false
+}

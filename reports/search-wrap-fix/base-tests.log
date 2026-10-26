@@ -1,0 +1,38 @@
+   Compiling rito-core v0.0.0 (/home/helian/rito-search-base/crates/rito-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 23.59s
+     Running unittests src/lib.rs (/home/helian/.cache/lunar-rito-target/debug/deps/rito_core-f5b7d893e0a538b3)
+
+running 4 tests
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::search_soft_wrap_tests::soft_wrap_search_retains_source_across_inline_elements' (1027) panicked at crates/rito-core/src/runtime/tests/search_soft_wrap_tests.rs:36:5:
+assertion `left == right` failed: page text: "春风穿过安静的树林我\n们继续向着远方前行。"
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'runtime::tests::search_soft_wrap_tests::soft_wrap_search_joins_cjk_and_projects_the_whole_range' (1025) panicked at crates/rito-core/src/runtime/tests/search_soft_wrap_tests.rs:36:5:
+assertion `left == right` failed: page text: "春风穿过安静的树林我\n们继续向着远方前行。"
+  left: 0
+ right: 1
+
+thread 'runtime::tests::search_soft_wrap_tests::soft_wrap_search_restores_english_word_spaces' (1026) panicked at crates/rito-core/src/runtime/tests/search_soft_wrap_tests.rs:36:5:
+assertion `left == right` failed: page text: "The quick brown \nfox jumps over the \nlazy dog."
+  left: 0
+ right: 1
+test runtime::tests::search_soft_wrap_tests::soft_wrap_search_joins_cjk_and_projects_the_whole_range ... FAILED
+test runtime::tests::search_soft_wrap_tests::soft_wrap_search_retains_source_across_inline_elements ... FAILED
+test runtime::tests::search_soft_wrap_tests::soft_wrap_search_restores_english_word_spaces ... FAILED
+test runtime::tests::search_soft_wrap_tests::soft_wrap_search_does_not_join_br_or_paragraph_boundaries ... ok
+
+failures:
+
+failures:
+    runtime::tests::search_soft_wrap_tests::soft_wrap_search_joins_cjk_and_projects_the_whole_range
+    runtime::tests::search_soft_wrap_tests::soft_wrap_search_restores_english_word_spaces
+    runtime::tests::search_soft_wrap_tests::soft_wrap_search_retains_source_across_inline_elements
+
+test result: FAILED. 1 passed; 3 failed; 0 ignored; 0 measured; 569 filtered out; finished in 0.12s
+
+error: test failed, to rerun pass `-p rito-core --lib`

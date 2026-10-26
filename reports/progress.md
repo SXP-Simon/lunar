@@ -60,7 +60,7 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 - [表格实测](table-device-validation.md)：普通三列表格及跨页续文可读；五列表头 rowspan 降级导致列含义错误，且窄屏宽表溢出。已登记 [Lunar #9](https://github.com/Umbrae-Labs/lunar/issues/9)，尚未修复。
 - [Ruby 与竖排实测](ruby-vertical-validation.md)：简单横排 Ruby、标准及 EPUB 前缀竖排能显示；原生交互工件仍保留横排坐标，选字、标注及重排高亮错位。已提交 [Rito #43](https://github.com/Ringyuki/Rito/issues/43)，尚未修复。
 - [《草枕》重排与重启](kusamakura-reflow-validation.md)：原始字体为14pt，改根字号没有真正改变文字；边距24→40使401页变439页，原段落保留，强制结束应用后源位置和页文本恢复一致。仅对移除备用样式引用的控制变体成立，不算原版通过。
-- [同页搜索漏匹配](search-wrap-device-validation.md)：原创合规中英文连续句经过视觉折行后搜索0结果，同行短查询可找到；排除跨页和未加载。已提交 [Rito #44](https://github.com/Ringyuki/Rito/issues/44)，尚未修复。
+- [同页搜索漏匹配](search-wrap-device-validation.md)：原创合规中英文连续句经过视觉折行后搜索0结果，同行短查询可找到；排除跨页和未加载。已提交 [Rito #44](https://github.com/Ringyuki/Rito/issues/44)；后续独立内核修复与对照见下文，当前安装包尚未采用。
 
 上面的交互问题证明画面出现文字并不等于范围几何正确。新问题均附公开样本和原生数据，用户提供的 EPUB、截图和日志仅本地保留。性能、更多图片逐位置覆盖和内核新版接入复测仍在后续范围内。
 
@@ -71,3 +71,9 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 - 内存记录为开发版、调试器和ARM转译下的进程RSS/PSS；不能据此定性生产泄漏或声称原生路线优于WebView。同步导入路径已有实测证据，正式ARM构建、精细内存归因与内核新版接入仍需后续验证。
 
 同步ZIP导入问题已登记为 [Lunar #10](https://github.com/Umbrae-Labs/lunar/issues/10)，性能原始证据固定在 `3f2181003387bafd9fefac4f95cc946f9daab7d5`。白鲸三次字号重排的源点均保持 `[1,7,0,0]:187`；尚未把内核修复接入安装包。
+
+## 2026-10-26 搜索软换行修复
+
+独立分支 `fix/search-soft-line-wraps`，提交 `376e939fa70f03f218ae7d19cdd3490aacd170ca`，基于上游 dev `ed0284f3703244da28b3e6efd80cf29267cf6e65`。同一 CC0 样书的 Linux 生产 ReaderSession 对照：中文／英文整句由0→1，同行查询保留，硬换行／段落反例仍为0；完整源范围与多行高亮可投影，页文本和绘制列表一致。8项新增回归、fmt、Clippy、全量1028通过／8忽略，见 [修复报告](search-wrap-fix/README.md)。
+
+未发布适配器、未更改锁定版本，当前 Android 安装包仍有该问题；竖排交互坐标、rowspan 与宽表显示策略、同步ZIP性能也未在本项中修复。
