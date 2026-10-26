@@ -57,7 +57,7 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 ## 2026-10-26 新增设备验证
 
 - [Lunar PR #8](https://github.com/Umbrae-Labs/lunar/pull/8)：保留 Rito 已知失效目录状态，失效行明确说明且不再可点，可用子章节保留。544 项测试、类型检查、lint、Android JS export、模拟器正反对照通过；远程 CI 通过。未合并，见 [目录报告](missing-toc-target-validation.md)。这处理 Lunar 的信息丢失，不自动修复 EPUB 源文件。
-- [表格实测](table-device-validation.md)：普通三列表格及跨页续文可读；五列表头 rowspan 降级导致列含义错误，且窄屏宽表溢出。已登记 [Lunar #9](https://github.com/Umbrae-Labs/lunar/issues/9)，尚未修复。
+- [表格实测](table-device-validation.md)：普通三列表格及跨页续文可读；五列表头 rowspan 降级导致列含义错误，且窄屏宽表溢出。已登记 [Lunar #9](https://github.com/Umbrae-Labs/lunar/issues/9)。跨行内核修复已提交PR #48、尚未接入APK；宽表应用策略仍待处理，详见下文。
 - [Ruby 与竖排实测](ruby-vertical-validation.md)：简单横排 Ruby、标准及 EPUB 前缀竖排能显示；原生交互工件仍保留横排坐标，选字、标注及重排高亮错位。已提交 [Rito #43](https://github.com/Ringyuki/Rito/issues/43)；内核修复与主机验证见下文，当前安装包尚未采用。
 - [《草枕》重排与重启](kusamakura-reflow-validation.md)：原始字体为14pt，改根字号没有真正改变文字；边距24→40使401页变439页，原段落保留，强制结束应用后源位置和页文本恢复一致。仅对移除备用样式引用的控制变体成立，不算原版通过。
 - [同页搜索漏匹配](search-wrap-device-validation.md)：原创合规中英文连续句经过视觉折行后搜索0结果，同行短查询可找到；排除跨页和未加载。已提交 [Rito #44](https://github.com/Ringyuki/Rito/issues/44)；后续独立内核修复与对照见下文，当前安装包尚未采用。
@@ -94,3 +94,12 @@ Haruko 源文件全局声明 `pre-paginated`，p01 视口 600×837，一张 JPG�
 ## 2026-10-26 构建隔离复核
 
 此前搜索／竖排报告仅清理 rito-core，导致 workspace 总计含有其他分支遗留的4项测试。现已按 Git 原始字节校验三个独立导出，新的 target 每切换版本清理整个 workspace：基线1016、搜索1024、竖排1022通过，均8忽略。重新运行生产 ReaderSession 探针，搜索与竖排选区／重排标注的前后结论保持一致；两个 PR 的代码 head 均未改变，未接入 APK。详见[复核与原始日志](build-isolation-audit/README.md)。
+
+
+## 2026-10-26 跨行表格修复
+
+[Rito #47](https://github.com/Ringyuki/Rito/issues/47)与[独立PR #48](https://github.com/Ringyuki/Rito/pull/48)，分支 `feat/table-rowspan-grid`，提交 `f6c498a68e24d0fe0d9336c0e12a348ed75c33e5`，目标dev、未合并。原版IDPF表头回到第4列，普通表格99条文字及坐标逐值不变；原创双列长表的27条页外文字降为0，两列各30段完整。
+
+6项运行时回归在基线4失败／2通过，修复后全通过，覆盖标注JSON往返、重新开书后16→20px重排及嵌套表格内联图片续排。图片仅验证原生工件几何，未做新版Skia像素或APK验收。共17项新增回归，fmt、Clippy、全量1033通过／8忽略，1554个源码普通文件与Git字节一致。证据固定为 `d819b054a96db8fd04fc88b4a905a2fac453050b`，见[完整报告](rowspan-investigation/README.md)。
+
+GitHub为MERGEABLE、远程检查列表为空。未发布适配器或修改锁文件，Lunar #9继续跟踪版本接入及窄屏宽表策略；同步ZIP导入问题 #10也尚未修复。

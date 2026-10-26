@@ -4,6 +4,8 @@
 
 本次是 Linux x86_64 / Ubuntu 22.04 WSL 的 Rust 原生章节排版与运行时 API 验证，Rust 1.95.0。Lunar 当前安装包的错误表头已有[源文件与模拟器对照](../table-device-validation.md)；这里没有把主机修复结果表述为新版 APK 验收。
 
+[独立 PR #48](https://github.com/Ringyuki/Rito/pull/48) 已创建，目标dev，head为上述代码提交，未合并。GitHub确认MERGEABLE、远程检查列表为空；本地1033项检查通过不等于远程CI通过。PR证据固定到 `d819b054a96db8fd04fc88b4a905a2fac453050b`。
+
 ## 源文件与结果
 
 原版 IDPF `internallinks.epub` 未改动，SHA-256 `deaf03a1843f52cc5e4cedb226ca8659610efe1be5e810fccf615bcb549238aa`，来源和 CC BY-SA 3.0 许可见[总说明](../../README.md)。文件已有 EPUBCheck 0 错误、0 警告。[源码与安装包报告](../table-device-validation.md)确认：五列表头的第1、2、3、5列跨2行，第二行的“MS明朝”应在第4列 Readium 下方。
