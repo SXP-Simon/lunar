@@ -1,0 +1,101 @@
+
+ RUN  v3.2.4 C:/Helianthus/SXP-Simon/杂/anime-dev/lunar-epub-perf-baseline/apps/mobile
+
+ ✓ tests/unit/reader-locator-navigation.test.ts > reader text geometry ownership > uses the visible artifact when retained turn sources share its chapter-local page index 4ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > reader text geometry ownership > rejects a geometry request when a queued turn replaces its visible artifact 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > reader text geometry ownership > returns no geometry for a page outside the visible artifact 0ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > reader text geometry ownership > discards late geometry after navigation replaces a render in the same revision and slot 2ms
+ × tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > waits for native disposal before a runtime close reports idle 62ms
+   → expected true to be false // Object.is equality
+ × tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > joins a native close already started by cancellation 63ms
+   → expected true to be false // Object.is equality
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > settles runtime teardown without an unhandled cancellation rejection when disposal fails 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > applies all light paper palettes while keeping the reading position 2ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > applies all dark paper palettes while keeping the reading position 2ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > holds background pagination through overlapping animations and resumes once 3ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > reads a font once across navigation and metadata refreshes, and reloads changed content 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > leaves pinned host faces to their pre-open registration instead of reading them back 0ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > retries a font registration that failed on a candidate page 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > publishes whole-book page numbers after indexing without a host work budget 2ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > reloads source bytes when a layout revision opens a new native session 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > sends only the start point for a highlight with both saved selectors 0ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > retains the completed total after a toc jump 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > retains the completed total after a bookmark jump 0ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > retains the completed total after a highlight jump 0ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > restores book page numbers after repeated jumps in single mode 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > restores book page numbers after repeated jumps in double mode 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > preserves completed page numbers when a saved-location jump fails 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > requests exact source coordinates across chapters and publishes the prepared frame 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > keeps the visible source frame until candidate adoption succeeds 0ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > restores the source slot and releases the candidate after failed adoption 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > leaves the page intact when the saved chapter is missing 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > waits for native disposal before a runtime close reports idle
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ tests/unit/reader-locator-navigation.test.ts:183:23
+    181|     try {
+    182|       await vi.waitFor(() => expect(session.dispose).toHaveBeenCalledT…
+    183|       expect(settled).toBe(false);
+       |                       ^
+    184|       expect(runtime.getSnapshot().phase).toBe('closing');
+    185|       finishDisposal();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > joins a native close already started by cancellation
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ tests/unit/reader-locator-navigation.test.ts:204:23
+    202|     try {
+    203|       await vi.waitFor(() => expect(session.dispose).toHaveBeenCalledT…
+    204|       expect(settled).toBe(false);
+       |                       ^
+    205|       finishDisposal();
+    206|       await Promise.all([cancelled, closing]);
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 24 passed (26)
+     Errors  1 error
+   Start at  22:05:08
+   Duration  896ms (transform 178ms, setup 0ms, collect 263ms, tests 153ms, environment 0ms, prepare 183ms)
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: native disposal failed
+ ❯ tests/unit/reader-locator-navigation.test.ts:217:43
+    215|   it('settles runtime teardown without an unhandled cancellation rejec…
+    216|     const { runtime, session } = await setup({ runtime: true });
+    217|     session.dispose.mockRejectedValueOnce(new Error('native disposal f…
+       |                                           ^
+    218|     await runtime.close();
+    219|     expect(runtime.getSnapshot().phase).toBe('idle');
+ ❯ ../../../../../%E6%9D%82/anime-dev/lunar/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+This error originated in "tests/unit/reader-locator-navigation.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "holds background pagination through overlapping animations and resumes once". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+

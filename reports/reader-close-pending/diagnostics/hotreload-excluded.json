@@ -1,0 +1,106 @@
+[
+  {
+    "round": 1,
+    "label": "baseline",
+    "commit": "4641589621f24d0df7d5a0811a3e26b1856c64cf",
+    "events": [
+      {
+        "atMs": 8901125.8195,
+        "name": "runtime.close.start"
+      },
+      {
+        "atMs": 8901126.7339,
+        "name": "runtime.close.resolved"
+      },
+      {
+        "atMs": 8901129.1023,
+        "name": "native.dispose.start"
+      },
+      {
+        "atMs": 8901146.4481,
+        "name": "native.dispose.end"
+      }
+    ],
+    "nativeDisposedWhenCloseResolved": false,
+    "phaseWhenCloseResolved": "idle",
+    "startedAtMs": 1793022680234
+  },
+  {
+    "round": 1,
+    "label": "fixed",
+    "commit": "f6f336f0f621a35750d83465cd713d30110cf0de",
+    "events": [
+      {
+        "atMs": 8905582.9939,
+        "name": "runtime.close.start"
+      },
+      {
+        "atMs": 8905585.7953,
+        "name": "native.dispose.start"
+      },
+      {
+        "atMs": 8905596.4498,
+        "name": "native.dispose.end"
+      },
+      {
+        "atMs": 8905596.6015,
+        "name": "runtime.close.resolved"
+      }
+    ],
+    "nativeDisposedWhenCloseResolved": true,
+    "phaseWhenCloseResolved": "idle",
+    "startedAtMs": 1793022686725
+  },
+  {
+    "round": 2,
+    "label": "baseline",
+    "commit": "4641589621f24d0df7d5a0811a3e26b1856c64cf",
+    "events": [
+      {
+        "atMs": 8910771.7353,
+        "name": "runtime.close.start"
+      },
+      {
+        "atMs": 8910772.3974,
+        "name": "runtime.close.resolved"
+      },
+      {
+        "atMs": 8910773.5475,
+        "name": "native.dispose.start"
+      },
+      {
+        "atMs": 8910789.2929,
+        "name": "native.dispose.end"
+      }
+    ],
+    "nativeDisposedWhenCloseResolved": false,
+    "phaseWhenCloseResolved": "idle",
+    "startedAtMs": 1793022691514
+  },
+  {
+    "round": 2,
+    "label": "fixed",
+    "commit": "f6f336f0f621a35750d83465cd713d30110cf0de",
+    "events": [
+      {
+        "atMs": 8915943.0326,
+        "name": "runtime.close.start"
+      },
+      {
+        "atMs": 8915943.6364,
+        "name": "runtime.close.resolved"
+      },
+      {
+        "atMs": 8915963.259,
+        "name": "native.dispose.start"
+      },
+      {
+        "atMs": 8916176.5587,
+        "name": "native.dispose.end"
+      }
+    ],
+    "nativeDisposedWhenCloseResolved": false,
+    "phaseWhenCloseResolved": "idle",
+    "startedAtMs": 1793022695240
+  }
+]

@@ -1,0 +1,170 @@
+[
+  {
+    "round": 1,
+    "label": "baseline",
+    "commit": "4641589621f24d0df7d5a0811a3e26b1856c64cf",
+    "disposeStatus": "ok",
+    "events": [
+      {
+        "atMs": 9107722.6884,
+        "name": "runtime.close.start"
+      },
+      {
+        "atMs": 9107727.0933,
+        "name": "runtime.close.resolved"
+      },
+      {
+        "atMs": 9107738.9824,
+        "name": "native.dispose.start"
+      },
+      {
+        "atMs": 9107769.3921,
+        "name": "native.dispose.end"
+      }
+    ],
+    "nativeDisposedWhenCloseResolved": false,
+    "phaseWhenCloseResolved": "idle",
+    "startedAtMs": 1793022880867,
+    "tracksPendingClose": false
+  },
+  {
+    "round": 1,
+    "label": "fixed",
+    "commit": "f6f336f0f621a35750d83465cd713d30110cf0de",
+    "disposeStatus": "ok",
+    "events": [
+      {
+        "atMs": 9127128.9648,
+        "name": "runtime.close.start"
+      },
+      {
+        "atMs": 9127155.9109,
+        "name": "native.dispose.start"
+      },
+      {
+        "atMs": 9127204.527,
+        "name": "native.dispose.end"
+      },
+      {
+        "atMs": 9127204.6616,
+        "name": "runtime.close.resolved"
+      }
+    ],
+    "nativeDisposedWhenCloseResolved": true,
+    "phaseWhenCloseResolved": "idle",
+    "startedAtMs": 1793022905109,
+    "tracksPendingClose": true
+  },
+  {
+    "round": 2,
+    "label": "baseline",
+    "commit": "4641589621f24d0df7d5a0811a3e26b1856c64cf",
+    "disposeStatus": "ok",
+    "events": [
+      {
+        "atMs": 9146020.7168,
+        "name": "runtime.close.start"
+      },
+      {
+        "atMs": 9146030.0905,
+        "name": "runtime.close.resolved"
+      },
+      {
+        "atMs": 9146052.3148,
+        "name": "native.dispose.start"
+      },
+      {
+        "atMs": 9146109.1577,
+        "name": "native.dispose.end"
+      }
+    ],
+    "nativeDisposedWhenCloseResolved": false,
+    "phaseWhenCloseResolved": "idle",
+    "startedAtMs": 1793022922472,
+    "tracksPendingClose": false
+  },
+  {
+    "round": 2,
+    "label": "fixed",
+    "commit": "f6f336f0f621a35750d83465cd713d30110cf0de",
+    "disposeStatus": "ok",
+    "events": [
+      {
+        "atMs": 9163066.9513,
+        "name": "runtime.close.start"
+      },
+      {
+        "atMs": 9163090.2337,
+        "name": "native.dispose.start"
+      },
+      {
+        "atMs": 9163146.1736,
+        "name": "native.dispose.end"
+      },
+      {
+        "atMs": 9163146.3093,
+        "name": "runtime.close.resolved"
+      }
+    ],
+    "nativeDisposedWhenCloseResolved": true,
+    "phaseWhenCloseResolved": "idle",
+    "startedAtMs": 1793022939746,
+    "tracksPendingClose": true
+  },
+  {
+    "round": 3,
+    "label": "baseline",
+    "commit": "4641589621f24d0df7d5a0811a3e26b1856c64cf",
+    "disposeStatus": "ok",
+    "events": [
+      {
+        "atMs": 9182720.9217,
+        "name": "runtime.close.start"
+      },
+      {
+        "atMs": 9182728.6762,
+        "name": "runtime.close.resolved"
+      },
+      {
+        "atMs": 9182755.2554,
+        "name": "native.dispose.start"
+      },
+      {
+        "atMs": 9182806.3399,
+        "name": "native.dispose.end"
+      }
+    ],
+    "nativeDisposedWhenCloseResolved": false,
+    "phaseWhenCloseResolved": "idle",
+    "startedAtMs": 1793022958724,
+    "tracksPendingClose": false
+  },
+  {
+    "round": 3,
+    "label": "fixed",
+    "commit": "f6f336f0f621a35750d83465cd713d30110cf0de",
+    "disposeStatus": "ok",
+    "events": [
+      {
+        "atMs": 9203110.5986,
+        "name": "runtime.close.start"
+      },
+      {
+        "atMs": 9203147.5536,
+        "name": "native.dispose.start"
+      },
+      {
+        "atMs": 9203212.4184,
+        "name": "native.dispose.end"
+      },
+      {
+        "atMs": 9203212.5962,
+        "name": "runtime.close.resolved"
+      }
+    ],
+    "nativeDisposedWhenCloseResolved": true,
+    "phaseWhenCloseResolved": "idle",
+    "startedAtMs": 1793022978679,
+    "tracksPendingClose": true
+  }
+]

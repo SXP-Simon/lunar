@@ -1,1 +1,7 @@
 /scripts/*.sh text eol=lf
+
+# Preserve byte fingerprints of the executed close-order probes and evidence.
+/scripts/reader-close-observer.js -text
+/scripts/reader-close-input.js -text
+/scripts/compare-reader-close.mjs -text
+/reports/reader-close-pending/** -text

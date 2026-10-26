@@ -1,0 +1,36 @@
+{
+  "baselineCommit": "4641589621f24d0df7d5a0811a3e26b1856c64cf",
+  "fixedCommit": "f6f336f0f621a35750d83465cd713d30110cf0de",
+  "apkSha256": "3fff66355689b9dd4d753bbee78452d89d2ea2ac6e19d4bcd3d569001600be2c",
+  "apkNativeSource": "8ecf3336ad73b4b73d93d1ade2d3b3847c5e9170",
+  "ritoRnVersion": "0.3.0-lunar.1",
+  "engineCommit": "9c9111ca2fc57f63ce81c65d3c4f80cb513610ae",
+  "sampleSha256": "81bc079841a38e91a02a7776d04786a2fc311cfd300064e9fc533ce7c54cf7b4",
+  "formalProcessPolicy": "force-stop and cold-start app for every trial; exact source module exports",
+  "scope": "native disposal completion order through production reader runtime, not Canvas/UI or performance",
+  "changedSourceSha256": {
+    "apps/mobile/src/reader/runtime/core/native-reader-runtime.ts": "39fa0721d72ce4f72a7924e315e7fb71486b3b79f69befa8a0fb607b7d3ac48a",
+    "apps/mobile/src/reader/runtime/pagination/rito-native-pagination-backend.ts": "f482f62d989b8f6fd78e6b4a40a8ac581773222181cf72b879c8e521bb7bdcff",
+    "apps/mobile/tests/unit/reader-locator-navigation.test.ts": "3cee3c5449a5060e1061de90501e9e2cb97bb9fa716aaa2ca9dbaa0d51579023"
+  },
+  "copiedFileSha256": {
+    "scripts/reader-close-observer.js": "4d7e8d6a447055b4417047dd6145a7489ec0ada4b63bcb6c5de209f52740e556",
+    "scripts/reader-close-input.js": "25ecb39250cd626919a864c86091a5c3763334d8aa90697c855c2f90e0907af6",
+    "scripts/compare-reader-close.mjs": "18ef4c56a43389cfafc0e474f93c6b74e09dc2306f97e949998f980af7bb255e",
+    "reports/reader-close-pending/formal-trials.json": "1ef0d65214eba328baedce634c835879766de28d0464500efe6d15bdad416087",
+    "reports/reader-close-pending/settings-restored.json": "65a92635f00fc7d49d643cfc61ae70a5626cc9323175809183e496be3c60d3a8",
+    "reports/reader-close-pending/diagnostics/original-settings-and-invalid-setup.json": "4601a1f2f0c6d4375f177928f13adc21bb684993161fb7f8a9a004fccf3d2285",
+    "reports/reader-close-pending/diagnostics/hotreload-excluded.json": "3012aedbeff45274185c59a352ef489767aae8ddc855af64c4c59e978f9f88e2",
+    "reports/reader-close-pending/checks/baseline-final-tests.log": "849875df8dbf61193ebfcbd857d88e9216b1eeaf4d1547f828794c3823db87d3",
+    "reports/reader-close-pending/checks/fixed-targeted-tests.log": "32931b4c7c1f74f733f9d4c7180f40c82537e9c62d17507e4a181a237726a480",
+    "reports/reader-close-pending/checks/fixed-mobile-tests.log": "90b80d4ea653317dfbd4e9ac8bf6ef63d2ade52190e3ee6ae62f0fccf2ce2dcd",
+    "reports/reader-close-pending/checks/types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reports/reader-close-pending/checks/lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reports/reader-close-pending/baseline-1.json": "7d720f663f48b3aeeb438a76f03013f11eee6371630eadd832f2cf2f128264b5",
+    "reports/reader-close-pending/baseline-2.json": "56d12526641e41790eaccf64f7edc741d5dc7a64fc5b26200876d702de300798",
+    "reports/reader-close-pending/baseline-3.json": "bd82ea1e3e54f3cecc3a2e7132f4d7b5e23e025b7d587fc30fa161fd6c93a998",
+    "reports/reader-close-pending/fixed-1.json": "87b735d2309d4cd2445da399b3ce5414d7b649adfb8741a06b3ce6ed39f5a218",
+    "reports/reader-close-pending/fixed-2.json": "42a9e487e3bef28f6ec129702307a5b4cb803b97021f36130654c06e224f60c0",
+    "reports/reader-close-pending/fixed-3.json": "6d8a09196919d44b1d83f11029b3066f4f781c1f93b9b156545697f11b7b7133"
+  }
+}
