@@ -1,0 +1,6 @@
+{"round":1,"label":"baseline","pid":"5267","stats":{"backendMs":1879.5458000004292,"otherMs":1864.6455000005662,"pictureMs":215.21800000034273,"readMs":1678.9223999995738,"totalMs":5638.331700000912}}
+{"round":1,"label":"fixed","pid":"5364","stats":{"backendMs":2499.6802999991924,"otherMs":541.5955000016838,"pictureMs":355.84530000016093,"readMs":39.46829999983311,"totalMs":3436.5894000008702}}
+{"round":2,"label":"baseline","pid":"5458","stats":{"backendMs":1711.935399999842,"otherMs":281.26739999838173,"pictureMs":233.86140000075102,"readMs":35.181600000709295,"totalMs":2262.245799999684}}
+{"round":2,"label":"fixed","pid":"5547","stats":{"backendMs":1654.1276999991387,"otherMs":264.14820000343025,"pictureMs":218.73979999870062,"readMs":36.3863999992609,"totalMs":2173.4021000005305}}
+{"round":3,"label":"baseline","pid":"5638","stats":{"backendMs":1702.7771000005305,"otherMs":281.93370000086725,"pictureMs":184.42809999920428,"readMs":34.968399999663234,"totalMs":2204.1073000002652}}
+{"round":3,"label":"fixed","pid":"5744","stats":{"backendMs":1655.235400000587,"otherMs":277.60519999824464,"pictureMs":180.79420000128448,"readMs":35.83339999988675,"totalMs":2149.468200000003}}

@@ -1,0 +1,309 @@
+{
+  "sourceCommit": "15efd33e545716707abbd2beb03f88580dc6a26d",
+  "baselineCommit": "4641589621f24d0df7d5a0811a3e26b1856c64cf",
+  "formalTrials": 6,
+  "durations": {
+    "open": {
+      "baseline": {
+        "runsMs": [
+          [
+            5686.467100000009
+          ],
+          [
+            2966.1775000002235
+          ],
+          [
+            2981.7873999997973
+          ]
+        ],
+        "medianMs": 2981.7873999997973
+      },
+      "fixed": {
+        "runsMs": [
+          [
+            4690.599899999797
+          ],
+          [
+            5473.161899998784
+          ],
+          [
+            2702.63030000031
+          ]
+        ],
+        "medianMs": 4690.599899999797
+      }
+    },
+    "reflow-20": {
+      "baseline": {
+        "runsMs": [
+          [
+            2023.526099998504
+          ],
+          [
+            1331.9059000015259
+          ],
+          [
+            1176.5636999998242
+          ]
+        ],
+        "medianMs": 1331.9059000015259
+      },
+      "fixed": {
+        "runsMs": [
+          [
+            529.9902999997139
+          ],
+          [
+            597.9956000000238
+          ],
+          [
+            550.917500000447
+          ]
+        ],
+        "medianMs": 550.917500000447
+      }
+    },
+    "reflow-22": {
+      "baseline": {
+        "runsMs": [
+          [
+            970.2077999990433
+          ],
+          [
+            880.8624999988824
+          ],
+          [
+            582.280700000003
+          ]
+        ],
+        "medianMs": 880.8624999988824
+      },
+      "fixed": {
+        "runsMs": [
+          [
+            199.84179999865592
+          ],
+          [
+            196.6499000005424
+          ],
+          [
+            194.59469999931753
+          ]
+        ],
+        "medianMs": 196.6499000005424
+      }
+    },
+    "reflow-18": {
+      "baseline": {
+        "runsMs": [
+          [
+            512.5372999999672
+          ],
+          [
+            722.8349999990314
+          ],
+          [
+            479.73689999990165
+          ]
+        ],
+        "medianMs": 512.5372999999672
+      },
+      "fixed": {
+        "runsMs": [
+          [
+            131.3636000007391
+          ],
+          [
+            130.4482999984175
+          ],
+          [
+            118.71389999985695
+          ]
+        ],
+        "medianMs": 130.4482999984175
+      }
+    },
+    "cover-reflow": {
+      "baseline": {
+        "runsMs": [
+          [
+            658.6951999999583
+          ],
+          [
+            2383.166500000283
+          ],
+          [
+            560.1105000004172
+          ]
+        ],
+        "medianMs": 658.6951999999583
+      },
+      "fixed": {
+        "runsMs": [
+          [
+            32.517200000584126
+          ],
+          [
+            35.57840000092983
+          ],
+          [
+            40.90290000103414
+          ]
+        ],
+        "medianMs": 35.57840000092983
+      }
+    },
+    "boundary-next": {
+      "baseline": {
+        "runsMs": [
+          [
+            100.91029999963939,
+            40.21250000037253
+          ],
+          [
+            109.95020000077784,
+            40.583099998533726
+          ],
+          [
+            85.50140000134706,
+            25.728600000962615
+          ]
+        ],
+        "medianMs": 63.042249999940395
+      },
+      "fixed": {
+        "runsMs": [
+          [
+            116.28930000029504,
+            38.08880000002682
+          ],
+          [
+            100.81509999930859,
+            35.112600000575185
+          ],
+          [
+            118.81640000082552,
+            31.156300000846386
+          ]
+        ],
+        "medianMs": 69.4519499996677
+      }
+    },
+    "boundary-previous": {
+      "baseline": {
+        "runsMs": [
+          [
+            37.9242000002414,
+            26.24860000051558
+          ],
+          [
+            43.79600000008941,
+            39.75859999842942
+          ],
+          [
+            31.86060000024736,
+            27.111899999901652
+          ]
+        ],
+        "medianMs": 34.89240000024438
+      },
+      "fixed": {
+        "runsMs": [
+          [
+            41.12550000101328,
+            27.03859999962151
+          ],
+          [
+            33.683299999684095,
+            24.562000000849366
+          ],
+          [
+            38.88099999912083,
+            44.93969999998808
+          ]
+        ],
+        "medianMs": 36.28214999940246
+      }
+    }
+  },
+  "copiedFileSha256": {
+    "scripts/reflow-runtime-check.js": "6380e4461d62df2efbec0f7f45e9d475d7937924815f659ce13165d007ebda7b",
+    "scripts/reflow-ready.js": "15bdfe2a4ac7ff9a94f9e741163e4762b5ac1eb8715b51d24ac923ffbb3e9f03",
+    "scripts/compare-reflow-runtime.mjs": "d5f7a4b1ff9e58b7e7a927863e27c90a372af9edaef506040b9fd67d661e2733",
+    "scripts/reflow-prepare-settings.js": "697a4c830ff8a72db64ec9c4d67b134c7fc688539620034f7585c1a0ed628803",
+    "reports/reader-session-reflow/controller.log": "10bad858ed3e07fe48d6c682d36bfca212f372537eafd7f5c451f4a5d9dd3e7a",
+    "reports/reader-session-reflow/formal-trials.json": "ac507ce5397b1c0eee5d0ab1de300c6721718702e701ad0ee293dcdfe9c367c0",
+    "reports/reader-session-reflow/settings-before.json": "28f3dd7ea0428443c9f3abc9def8bcbb3c170f3cb69aed1852a3bad7c7970cdb",
+    "reports/reader-session-reflow/settings-restored.json": "65a92635f00fc7d49d643cfc61ae70a5626cc9323175809183e496be3c60d3a8",
+    "reports/reader-session-reflow/checks/initial-baseline-negative.log": "58a0f8e960c5d7a83de1683f5e74b6ea60ce92a37addf93c92162bf68695a430",
+    "reports/reader-session-reflow/checks/targeted-tests.log": "de0c50e2b66f5364dfd09fd93851fae685d657a61f56b2792fc4291967604d64",
+    "reports/reader-session-reflow/checks/full-tests.log": "d4715ac5572a00e5dad4b8554bfd4baf9888c5cd4d2ac54182bc2aaead2d36ea",
+    "reports/reader-session-reflow/checks/types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reports/reader-session-reflow/checks/lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reports/reader-session-reflow/diagnostics/first-working-tree-run.json": "1ac0735e2a8f33718aa983c05be8af925868d280b252011f039b5e7553eaf4e8",
+    "reports/reader-session-reflow/checks/final-baseline-negative.log": "c1d39b9bf7e9a4ce86f67aee3f702261b1dc8e476a8172f670383d13e4e44ec4",
+    "scripts/reflow-cold-profile.js": "a292df979b8753d91f0fded8f9a2fc3274fd936241e8a5411ece0aa2ef694f71",
+    "scripts/compare-reflow-cold.mjs": "f52f2e5929a4beff3d6dc2f5df1b2ac011dcc628b6b91b4d364510b4e58aaf4f",
+    "reports/reader-session-reflow/cold-profile/trials.json": "1ad3cc0c8c4781f4fd01c2d5ef7476c37a6f79a5b23f66abe91e132f020ccdbe",
+    "reports/reader-session-reflow/cold-profile/controller.log": "1db6dea94ceea4329b4a14eddd07953238362918e5fdeca78c3479c3e6f0d388",
+    "reports/reader-session-reflow/cold-profile/settings-before.json": "28f3dd7ea0428443c9f3abc9def8bcbb3c170f3cb69aed1852a3bad7c7970cdb",
+    "reports/reader-session-reflow/cold-profile/settings-restored.json": "65a92635f00fc7d49d643cfc61ae70a5626cc9323175809183e496be3c60d3a8",
+    "scripts/reflow-middle-position.js": "c4e901be1f20fe463086de0cf9e1dcbe8a3bcec3c75a08bc82d9877ccb96bcfc",
+    "reports/reader-session-reflow/middle-position.json": "d7824b1511c22c1ead3a66b9f3af5c43b6f83befb276ac14f1f54f299539f41d",
+    "scripts/reflow-ui-open.js": "e85eec6ea665f1a40a7675e623ccd68671b12f4cba27919f39820c3a7de3c7a4",
+    "scripts/reflow-ui-position.js": "bd326e65157d3c5e1bafc8d9c9aeddc58497d0330d98f4353741d3fc22739837",
+    "scripts/reflow-ui-adjust.js": "813824d2a1cb484867e8ee3e05de03ecb0393b85270b0514730a80b6318a06c4",
+    "scripts/reflow-ui-restore.js": "1e8d3aa0ad84d015d5224564b7a0699539b87bdc9e9f844da21ea7cf77e3b13c",
+    "scripts/reflow-ui-set20.js": "ab902704e1adc9b3ddf2ebef9e4b29e4efdf64d43f269c7112ed224cba5c43c8",
+    "scripts/reflow-ui-fresh20.js": "a3be3e3a0fd0fa38cde12ca646fe058022d77340f33de770943999157031d6e1",
+    "reports/reader-session-reflow/ui/reflow-ui-before.json": "b45d52c5d25dc8fe00f7dbcc9e78f7f49697c10edc0ddb45390f2593394b8413",
+    "reports/reader-session-reflow/ui/reflow-ui-positioned.json": "a769c5660910038be53dca6b846cf44be279c0c7db833538152a1bcbb05b54eb",
+    "reports/reader-session-reflow/ui/reflow-ui-24.json": "f548fcef3b2e97b55dd0db3b7fadf8dfaa0817595926e23bb717536d3b680846",
+    "reports/reader-session-reflow/ui/reflow-ui-20.json": "4ac50e42ce30b631a10c69bccc329ffd3c3e9fb11c80aec3158643d80b16b393",
+    "reports/reader-session-reflow/ui/reflow-ui-restored.json": "69608990f3c5ce465906c87aa3dec7e940c42ab50b3615487789f095c1af628c",
+    "reports/reader-session-reflow/ui/reflow-ui-24.png": "2cdcedd749de0d852b0d7dfda9d58a8bc56a8fcb052767f7befe04a986fd89d9",
+    "reports/reader-session-reflow/ui/reflow-ui-20.png": "5f7aa7759cf9ea8d7b9dce1e101f4bff2c464ef76ce4878d20d501b41878ad5a",
+    "reports/reader-session-reflow/ui/reflow-ui-pixel-open.json": "0cd4c3c39c4be6ad32f4cead44959c3edbf7aac0e8444e7b5344ac445ee5e74c",
+    "reports/reader-session-reflow/ui/reflow-ui-pixel-positioned.json": "fac49584f07372b04575b440748bdc35b2ed44a2254d77335a58aee4d167c4ea",
+    "reports/reader-session-reflow/ui/reflow-ui-pixel-fast.json": "44a59137254103978db070a9a2c638ea8fe8eee5c6b014027b61309a5caf0718",
+    "reports/reader-session-reflow/ui/reflow-ui-pixel-fresh.json": "41fc16c963e397101a4af858bdb15ac02e6be30c88942186ab1db9934337f3a3",
+    "reports/reader-session-reflow/ui/reflow-ui-pixel-restored.json": "a68179f8486da11f8891f4a1a058f926f820a54bb92ab12a3fd11f54dbc711bc",
+    "reports/reader-session-reflow/ui/reflow-ui-pixel-fast.png": "6023764fc495fc6403225fc1a6a6644f9743a4e80bec859a85741983a90035fd",
+    "reports/reader-session-reflow/ui/reflow-ui-pixel-fresh.png": "48d2ce58bcb859dd53b4f5fb477c17bb672d7f922a451afec2a8778ee7f47721",
+    "reports/reader-session-reflow/ui/reflow-ui-pixel-comparison.json": "f00405dc52105d30885b87151e952f525af702330b1aecf884af4974db78b55c",
+    "reports/reader-session-reflow/baseline-1.json": "80ddb63f696d64626ad5b4541bc71e03ddefc8c40c7c707b19ba554b6c794c47",
+    "reports/reader-session-reflow/cold-profile/baseline-1.json": "4fa9871578bdfe31f0faafa6d13ef5120210ed841a4b2d6d50f59e4250e052da",
+    "reports/reader-session-reflow/baseline-2.json": "41c5347b2cb903bfd658691cf0d3c596d90f097bc283b3a06d781d535338445a",
+    "reports/reader-session-reflow/cold-profile/baseline-2.json": "878ed4dabee3bb8242047877d645c0e4a61eab475342a73fd2e50d0b2f2a0f28",
+    "reports/reader-session-reflow/baseline-3.json": "8f01c384273e6830cd91caf3f5d13708e8a64e2361fcf0cf9a47b9184579e6d6",
+    "reports/reader-session-reflow/cold-profile/baseline-3.json": "479e03ae4784eca7c03fb32318910ca17b4afeeb5b98a313ff00163deac04b48",
+    "reports/reader-session-reflow/fixed-1.json": "a6cabbcfeb763ba84a874321ae7bc872033075f3fd8f5a837ac755b12e18aec1",
+    "reports/reader-session-reflow/cold-profile/fixed-1.json": "e33fa79cf5ef70c62ecfb5c01b21913c223705e3afa10c5c96f46d72f7213b4a",
+    "reports/reader-session-reflow/fixed-2.json": "fe8e1188a5fb0072dec9c495a774e747fc72ccea95e08409a480b39316ed2dd8",
+    "reports/reader-session-reflow/cold-profile/fixed-2.json": "4cc42f312216215de482e65b7697e0ee6023d62ac612c56d015e67554572e238",
+    "reports/reader-session-reflow/fixed-3.json": "7a50b5af1cfd386bedba0ff5f3b9e5204d4212924e00338630a4b46d146a75c7",
+    "reports/reader-session-reflow/cold-profile/fixed-3.json": "8baccb98b76c9b4874940a3da062bb1e72a67da83188d270fb098379786192e8"
+  },
+  "sourceFileSha256": {
+    "apps/mobile/src/reader/runtime/core/native-reader-runtime.ts": "dc9b229f5604ce7ba80976e4f65f23a8ed4489dcb839262b9e55511a16d52deb",
+    "apps/mobile/src/reader/runtime/pagination/pagination-backend.ts": "ce8378fa278b7fe9d6400bff92cb64c6105226f63b21d70d13a9ca7459dfa0b7",
+    "apps/mobile/src/reader/runtime/pagination/rito-native-pagination-backend.ts": "6c759181e490cd9caa78abbafef9263b5321fa91ce346238ad18d2011ff9ba21",
+    "apps/mobile/tests/unit/reader-locator-navigation.test.ts": "7e6542972a98c274047ec664cb2474728722bc5fed955964c0f42dbc267064a7"
+  },
+  "coldProfiles": {
+    "baseline": {
+      "totalMs": 2262.245799999684,
+      "readMs": 35.181600000709295,
+      "backendMs": 1711.935399999842,
+      "pictureMs": 215.21800000034273,
+      "otherMs": 281.93370000086725
+    },
+    "fixed": {
+      "totalMs": 2173.4021000005305,
+      "readMs": 36.3863999992609,
+      "backendMs": 1655.235400000587,
+      "pictureMs": 218.73979999870062,
+      "otherMs": 277.60519999824464
+    }
+  }
+}

@@ -7,3 +7,6 @@
 /reports/reader-close-pending/** -text
 /scripts/reader-reflow-diagnostic.js -text
 /reports/reflow-feasibility/** -text
+/scripts/reflow-*.js -text
+/scripts/compare-reflow-*.mjs -text
+/reports/reader-session-reflow/** -text

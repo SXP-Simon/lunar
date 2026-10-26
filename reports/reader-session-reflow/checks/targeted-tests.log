@@ -1,0 +1,41 @@
+
+ RUN  v3.2.4 C:/Helianthus/SXP-Simon/杂/anime-dev/lunar/apps/mobile
+
+ ✓ tests/unit/reader-locator-navigation.test.ts > reader text geometry ownership > uses the visible artifact when retained turn sources share its chapter-local page index 4ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > reader text geometry ownership > rejects a geometry request when a queued turn replaces its visible artifact 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > reader text geometry ownership > returns no geometry for a page outside the visible artifact 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > reader text geometry ownership > discards late geometry after navigation replaces a render in the same revision and slot 3ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > applies all light paper palettes while keeping the reading position 2ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > applies all dark paper palettes while keeping the reading position 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > holds background pagination through overlapping animations and resumes once 3ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > reads a font once across navigation and metadata refreshes, and reloads changed content 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > leaves pinned host faces to their pre-open registration instead of reading them back 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > retries a font registration that failed on a candidate page 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > publishes whole-book page numbers after indexing without a host work budget 2ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > reflows a ready book without rereading bytes or opening another native session 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > reopens the source when the selected body font changes 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > reuses copied resolved faces with the same digest and reopens changed font bytes 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > keeps the visible frame when a reflow candidate cannot be adopted 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > discards a superseded candidate and only publishes the newest layout 61ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > finishes an in-flight native handoff without publishing its superseded revision 61ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > cancels a delayed reflow candidate when the reader closes 63ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > does not let a superseded close erase a newly opened book 62ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > orders reflow after a background quantum already in flight 65ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > keeps embedded font registration across repeated layout revisions 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > sends only the start point for a highlight with both saved selectors 0ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > retains the completed total after a toc jump 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > retains the completed total after a bookmark jump 0ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > retains the completed total after a highlight jump 0ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > restores book page numbers after repeated jumps in single mode 2ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > restores book page numbers after repeated jumps in double mode 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > preserves completed page numbers when a saved-location jump fails 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > requests exact source coordinates across chapters and publishes the prepared frame 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > keeps the visible source frame until candidate adoption succeeds 0ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > restores the source slot and releases the candidate after failed adoption 1ms
+ ✓ tests/unit/reader-locator-navigation.test.ts > saved reader location navigation > leaves the page intact when the saved chapter is missing 0ms
+
+ Test Files  1 passed (1)
+      Tests  32 passed (32)
+   Start at  22:20:24
+   Duration  1.17s (transform 221ms, setup 0ms, collect 328ms, tests 347ms, environment 0ms, prepare 198ms)
+
