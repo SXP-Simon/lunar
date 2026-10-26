@@ -1,0 +1,11 @@
+{
+  "beforeProbeSha256": "0552892d8d53728fba21f4a722a862a6d07e57eeae6a2626b7d662d40d2ea315",
+  "combinedProbeSha256": "7c97aef60b6edb69b9f55b8b2f4a3ee7fa8ee7f888b49ce243c8ef6c91eec580",
+  "helperSha256": "6c1410b972d876b3a5e98ade720f82b94302d1328969bc8e1728973606247c0f",
+  "fontSha256": "3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d",
+  "runtime": "Linux x86_64 / WSL Ubuntu 22.04, Rust 1.95.0",
+  "workspaceTestsPassed": 1032,
+  "workspaceTestsIgnored": 8,
+  "fmt": true,
+  "clippyWarningsDenied": true
+}

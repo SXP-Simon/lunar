@@ -1,0 +1,33 @@
+{
+  "base": "ed0284f3703244da28b3e6efd80cf29267cf6e65",
+  "commits": [
+    "5fa3f60e4b702eb7aa89c025ee890d0c4fb62053",
+    "dbef76cdf15dabd48bb83d03f3c2ddf82b263b9e",
+    "123a1fbebb7ca00c34f1aded03a390eef0309527"
+  ],
+  "overlays": {
+    "crates/rito-core/src/fragment_paint/vertical.rs": "3ce6df480f674320a3a9aa31b0377f8a94563e41a5526d4e34116fe2c3434c70",
+    "crates/rito-core/src/fragment_vertical.rs": "c388a9d3247884ac8f68ea1f2c7138da45599d5a15cc5626ed50443386d7146c",
+    "crates/rito-core/src/interaction/text/types.rs": "b01fe28434a1dc193418a7c161342c5c9304767ef100ba0135e0ddd49c4b7602",
+    "crates/rito-core/src/lib.rs": "6106e3e5d9cbe13016f9dcf2434a8e6829c31322c713df66eec982ba925c8286",
+    "crates/rito-core/src/runtime/chapter_engine_session/fragment/mod.rs": "25eed0cee1dbe072f4c3b0e559b0efd8c2fcf9e61c646fb33c9e1b3aefdd8961",
+    "crates/rito-core/src/runtime/chapter_engine_session/fragment/movement.rs": "70536b86fee3b8c9a29a1992feefcf76375f3d5dcc288fb5520a649eaaf61247",
+    "crates/rito-core/src/runtime/fragment_backend.rs": "84836e6f6739d268c9dda1782119709be63f0e63e8a2d76f01b496f70e86d0e6",
+    "crates/rito-core/src/runtime/page_artifact/fragment.rs": "558e9edaa6fa212aa47e134163d41778481b805038fef3af2c3a4c71bbf4e58f",
+    "crates/rito-core/src/runtime/reader_session/interaction_tests.rs": "d7fa6048ce16b1957668fac94605fe63977dd53fe9b3693b0b5a7d2ba7c766dd",
+    "crates/rito-core/src/runtime/reader_session/interaction_types.rs": "d3a1df0630ba7b67b48ddaca99f632f549cb5c79fcedd394952ff0c5ae25ed77",
+    "crates/rito-core/src/runtime/reader_session/session/interaction.rs": "fee8e1539eeff276ca1660288e17df4cbd543bdd11c1560856ab712cc5092ab2",
+    "crates/rito-core/src/runtime/tests.rs": "c8253cfb642f797947954bd50ae29172ab2b7ae2ea9ca073644bfda73cf84338",
+    "crates/rito-core/src/runtime/tests/vertical_inline_block_tests.rs": "7c944f23f1f74fb5d272b1dbe5e93181a3a3ecc44632644959d8bd32e48e9edd",
+    "crates/rito-core/src/runtime/tests/vertical_interaction_tests.rs": "bacf833db2d20053ef292de8728b789c9d6d79153a9fdde43f83caa0c140f973",
+    "crates/rito-inline/src/atoms.rs": "c81251357febd75ef2d454f1eefd05a2cf7170a48ceeb08c38b54d1d46ffbabf",
+    "crates/rito-inline/src/tests/mod.rs": "31f8ee98877fa218a09b5b9da953eb3a00a5468225cb15965a57b8f3a502451c",
+    "crates/rito-inline/src/tests/vertical_images.rs": "84fb897aac1d324d9f659e3542d073cc2ffa073ba707d2a7c580ba75a8bb2fca"
+  },
+  "resolutions": [
+    {
+      "file": "crates/rito-core/src/runtime/tests.rs",
+      "method": "union and alphabetize added vertical test module declarations"
+    }
+  ]
+}

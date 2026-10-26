@@ -1,0 +1,659 @@
+{
+  "sampleSha256": "2d90c4ea4fef02a0930aa16f1784928007d7c44fef0e67fe7a433459e809bebd",
+  "decoderSha256": "25c28105ebd5f942b949fda23ff4552232ecea5a4ec704c717db3642d9bd6666",
+  "binary": "/home/helian/rito-vertical-composition-probe",
+  "font": "/home/helian/rito-vertical-composition/apps/reader/src/assets/fonts/SourceHanSerifCN-Regular.otf",
+  "platform": "Linux native ReaderSession; not an Android updated APK",
+  "chapters": [
+    {
+      "chapter": "horizontal",
+      "initial": [
+        {
+          "text": "盒内文字",
+          "expected": {
+            "x": 76,
+            "y": 518.6,
+            "width": 72,
+            "height": 18
+          },
+          "frame": {
+            "artifactId": 1,
+            "displaySha256": "a24f3b3027f7082d2dc3b441b2385f7164a0b9dbd8c0124e2fbec0ebf751b85d",
+            "hits": [
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 88.76190567016602
+                },
+                "text": "春夏秋冬山川日月星辰春夏秋冬山川日月"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 115.76190567016602
+                },
+                "text": "星辰春夏秋冬山川日月星辰春夏秋冬山川"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 142.76190567016602
+                },
+                "text": "日月星辰春夏秋冬山川日月星辰春夏秋冬"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 169.76190567016602
+                },
+                "text": "山川日月星辰春夏秋冬山川日月星辰春夏"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 196.76190567016602
+                },
+                "text": "秋冬山川日月星辰春夏秋冬山川日月星辰"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 223.76190567016602
+                },
+                "text": "春夏秋冬山川日月星辰春夏秋冬山川日月"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 250.76190567016602
+                },
+                "text": "星辰春夏秋冬山川日月星辰春夏秋冬山川"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 277.761905670166
+                },
+                "text": "日月星辰春夏秋冬山川日月星辰春夏秋冬"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 304.761905670166
+                },
+                "text": "山川日月星辰春夏秋冬山川日月星辰春夏"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 331.761905670166
+                },
+                "text": "秋冬山川日月星辰春夏秋冬山川日月星辰"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 358.761905670166
+                },
+                "text": "春夏秋冬山川日月星辰春夏秋冬山川日月"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 385.761905670166
+                },
+                "text": "星辰春夏秋冬山川日月星辰春夏秋冬山川"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 412.761905670166
+                },
+                "text": "日月星辰春夏秋冬山川日月星辰春夏秋冬"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 439.761905670166
+                },
+                "text": "山川日月星辰春夏秋冬山川日月星辰春夏"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 324,
+                  "x": 40,
+                  "y": 466.761905670166
+                },
+                "text": "秋冬山川日月星辰春夏秋冬山川日月星辰"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 36,
+                  "x": 40,
+                  "y": 511.761905670166
+                },
+                "text": "外前"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 72,
+                  "x": 76,
+                  "y": 511.761905670166
+                },
+                "text": "盒内文字"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 36,
+                  "x": 148,
+                  "y": 511.761905670166
+                },
+                "text": "外后"
+              },
+              {
+                "bounds": {
+                  "height": 38,
+                  "width": 36,
+                  "x": 40,
+                  "y": 556.761905670166
+                },
+                "text": "图前"
+              },
+              {
+                "bounds": {
+                  "height": 38,
+                  "width": 36,
+                  "x": 124,
+                  "y": 556.761905670166
+                },
+                "text": "图后"
+              },
+              {
+                "bounds": {
+                  "height": 38,
+                  "width": 36,
+                  "x": 40,
+                  "y": 612.761905670166
+                },
+                "text": "对照"
+              },
+              {
+                "bounds": {
+                  "height": 38,
+                  "width": 36,
+                  "x": 124,
+                  "y": 612.761905670166
+                },
+                "text": "结束"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 36,
+                  "x": 40,
+                  "y": 668.761905670166
+                },
+                "text": "嵌前"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 36,
+                  "x": 76,
+                  "y": 668.761905670166
+                },
+                "text": "一级"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 36,
+                  "x": 112,
+                  "y": 668.761905670166
+                },
+                "text": "二级"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 36,
+                  "x": 148,
+                  "y": 668.761905670166
+                },
+                "text": "末尾"
+              },
+              {
+                "bounds": {
+                  "height": 27,
+                  "width": 36,
+                  "x": 184,
+                  "y": 668.761905670166
+                },
+                "text": "嵌后"
+              },
+              {
+                "bounds": {
+                  "height": 32,
+                  "width": 36,
+                  "x": 40,
+                  "y": 713.761905670166
+                },
+                "text": "注前"
+              },
+              {
+                "bounds": {
+                  "height": 32,
+                  "width": 36,
+                  "x": 76,
+                  "y": 713.761905670166
+                },
+                "text": "山道"
+              },
+              {
+                "bounds": {
+                  "height": 32,
+                  "width": 36,
+                  "x": 112,
+                  "y": 713.761905670166
+                },
+                "text": "注後"
+              },
+              {
+                "bounds": {
+                  "height": 32,
+                  "width": 48,
+                  "x": 76,
+                  "y": 556.761905670166
+                },
+                "text": ""
+              },
+              {
+                "bounds": {
+                  "height": 32,
+                  "width": 48,
+                  "x": 76,
+                  "y": 612.761905670166
+                },
+                "text": ""
+              }
+            ],
+            "localPageIndex": 0,
+            "matchedBy": "Href",
+            "pageIndex": 0,
+            "text": "春夏秋冬山川日月星辰春夏秋冬山川日月\n星辰春夏秋冬山川日月星辰春夏秋冬山川\n日月星辰春夏秋冬山川日月星辰春夏秋冬\n山川日月星辰春夏秋冬山川日月星辰春夏\n秋冬山川日月星辰春夏秋冬山川日月星辰\n春夏秋冬山川日月星辰春夏秋冬山川日月\n星辰春夏秋冬山川日月星辰春夏秋冬山川\n日月星辰春夏秋冬山川日月星辰春夏秋冬\n山川日月星辰春夏秋冬山川日月星辰春夏\n秋冬山川日月星辰春夏秋冬山川日月星辰\n春夏秋冬山川日月星辰春夏秋冬山川日月\n星辰春夏秋冬山川日月星辰春夏秋冬山川\n日月星辰春夏秋冬山川日月星辰春夏秋冬\n山川日月星辰春夏秋冬山川日月星辰春夏\n秋冬山川日月星辰春夏秋冬山川日月星辰\n外前\n盒内文字外后\n图前图后\n对照结束\n嵌前\n一级\n二级末尾嵌后\n注前\n山道注後",
+            "commands": [
+              {
+                "kind": "text",
+                "text": "盒内文字",
+                "rect": {
+                  "x": 76,
+                  "y": 518.6,
+                  "width": 72,
+                  "height": 18
+                },
+                "paint": {
+                  "font": {
+                    "family": "__RitoPinned_3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d",
+                    "sizePx": 18,
+                    "weight": 400,
+                    "style": "normal"
+                  },
+                  "color": {
+                    "space": "srgb",
+                    "component0": 0,
+                    "component1": 0,
+                    "component2": 0,
+                    "alpha": 1,
+                    "none": {
+                      "component0": false,
+                      "component1": false,
+                      "component2": false,
+                      "alpha": false
+                    }
+                  },
+                  "textShadows": []
+                },
+                "lineHeightPx": 27,
+                "clusters": {
+                  "bytes": {
+                    "0": 0,
+                    "1": 3,
+                    "2": 6,
+                    "3": 9
+                  },
+                  "origins": {
+                    "0": 76,
+                    "1": 533,
+                    "2": 94,
+                    "3": 533,
+                    "4": 112,
+                    "5": 533,
+                    "6": 130,
+                    "7": 533
+                  },
+                  "joins": {
+                    "0": 0,
+                    "1": 1,
+                    "2": 1,
+                    "3": 1
+                  }
+                }
+              },
+              {
+                "kind": "draw-image",
+                "src": "probe.png",
+                "dest": {
+                  "x": 76,
+                  "y": 557,
+                  "width": 48,
+                  "height": 32
+                }
+              },
+              {
+                "kind": "draw-image",
+                "src": "probe.png",
+                "dest": {
+                  "x": 76,
+                  "y": 613,
+                  "width": 48,
+                  "height": 32
+                }
+              },
+              {
+                "kind": "text",
+                "text": "一级",
+                "rect": {
+                  "x": 76,
+                  "y": 675.6,
+                  "width": 36,
+                  "height": 18
+                },
+                "paint": {
+                  "font": {
+                    "family": "__RitoPinned_3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d",
+                    "sizePx": 18,
+                    "weight": 400,
+                    "style": "normal"
+                  },
+                  "color": {
+                    "space": "srgb",
+                    "component0": 0,
+                    "component1": 0,
+                    "component2": 0,
+                    "alpha": 1,
+                    "none": {
+                      "component0": false,
+                      "component1": false,
+                      "component2": false,
+                      "alpha": false
+                    }
+                  },
+                  "textShadows": []
+                },
+                "lineHeightPx": 27,
+                "clusters": {
+                  "bytes": {
+                    "0": 0,
+                    "1": 3
+                  },
+                  "origins": {
+                    "0": 76,
+                    "1": 690,
+                    "2": 94,
+                    "3": 690
+                  },
+                  "joins": {
+                    "0": 0,
+                    "1": 1
+                  }
+                }
+              },
+              {
+                "kind": "text",
+                "text": "二级",
+                "rect": {
+                  "x": 112,
+                  "y": 675.6,
+                  "width": 36,
+                  "height": 18
+                },
+                "paint": {
+                  "font": {
+                    "family": "__RitoPinned_3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d",
+                    "sizePx": 18,
+                    "weight": 400,
+                    "style": "normal"
+                  },
+                  "color": {
+                    "space": "srgb",
+                    "component0": 0,
+                    "component1": 0,
+                    "component2": 0,
+                    "alpha": 1,
+                    "none": {
+                      "component0": false,
+                      "component1": false,
+                      "component2": false,
+                      "alpha": false
+                    }
+                  },
+                  "textShadows": []
+                },
+                "lineHeightPx": 27,
+                "clusters": {
+                  "bytes": {
+                    "0": 0,
+                    "1": 3
+                  },
+                  "origins": {
+                    "0": 112,
+                    "1": 690,
+                    "2": 130,
+                    "3": 690
+                  },
+                  "joins": {
+                    "0": 0,
+                    "1": 1
+                  }
+                }
+              },
+              {
+                "kind": "text",
+                "text": "末尾",
+                "rect": {
+                  "x": 148,
+                  "y": 675.6,
+                  "width": 36,
+                  "height": 18
+                },
+                "paint": {
+                  "font": {
+                    "family": "__RitoPinned_3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d",
+                    "sizePx": 18,
+                    "weight": 400,
+                    "style": "normal"
+                  },
+                  "color": {
+                    "space": "srgb",
+                    "component0": 0,
+                    "component1": 0,
+                    "component2": 0,
+                    "alpha": 1,
+                    "none": {
+                      "component0": false,
+                      "component1": false,
+                      "component2": false,
+                      "alpha": false
+                    }
+                  },
+                  "textShadows": []
+                },
+                "lineHeightPx": 27,
+                "clusters": {
+                  "bytes": {
+                    "0": 0,
+                    "1": 3
+                  },
+                  "origins": {
+                    "0": 148,
+                    "1": 690,
+                    "2": 166,
+                    "3": 690
+                  },
+                  "joins": {
+                    "0": 0,
+                    "1": 1
+                  }
+                }
+              },
+              {
+                "kind": "ruby",
+                "text": "さんどう",
+                "rect": {
+                  "x": 76,
+                  "y": 714.8,
+                  "width": 36,
+                  "height": 9
+                },
+                "paint": {
+                  "font": {
+                    "family": "__RitoPinned_3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d",
+                    "sizePx": 9,
+                    "weight": 400,
+                    "style": "normal"
+                  },
+                  "color": {
+                    "space": "srgb",
+                    "component0": 0,
+                    "component1": 0,
+                    "component2": 0,
+                    "alpha": 1,
+                    "none": {
+                      "component0": false,
+                      "component1": false,
+                      "component2": false,
+                      "alpha": false
+                    }
+                  },
+                  "textShadows": []
+                },
+                "clusters": {
+                  "bytes": {
+                    "0": 0,
+                    "1": 3,
+                    "2": 6,
+                    "3": 9
+                  },
+                  "origins": {
+                    "0": 76,
+                    "1": 722,
+                    "2": 85,
+                    "3": 722,
+                    "4": 94,
+                    "5": 722,
+                    "6": 103,
+                    "7": 722
+                  },
+                  "joins": {
+                    "0": 0,
+                    "1": 0,
+                    "2": 0,
+                    "3": 0
+                  }
+                }
+              },
+              {
+                "kind": "text",
+                "text": "山道",
+                "rect": {
+                  "x": 76,
+                  "y": 725.6,
+                  "width": 36,
+                  "height": 18
+                },
+                "paint": {
+                  "font": {
+                    "family": "__RitoPinned_3754ea669c530e2473354f8f6d9f79680a44d7e26ec7d00eeabee4a7e0753c5d",
+                    "sizePx": 18,
+                    "weight": 400,
+                    "style": "normal"
+                  },
+                  "color": {
+                    "space": "srgb",
+                    "component0": 0,
+                    "component1": 0,
+                    "component2": 0,
+                    "alpha": 1,
+                    "none": {
+                      "component0": false,
+                      "component1": false,
+                      "component2": false,
+                      "alpha": false
+                    }
+                  },
+                  "textShadows": []
+                },
+                "lineHeightPx": 32,
+                "clusters": {
+                  "bytes": {
+                    "0": 0,
+                    "1": 3
+                  },
+                  "origins": {
+                    "0": 76,
+                    "1": 740,
+                    "2": 94,
+                    "3": 740
+                  },
+                  "joins": {
+                    "0": 0,
+                    "1": 1
+                  }
+                }
+              }
+            ]
+          },
+          "selected": {
+            "status": "Unavailable(InvalidCaret)"
+          }
+        }
+      ],
+      "reflow": [],
+      "reopened": [],
+      "back": []
+    }
+  ],
+  "failure": "AssertionError [ERR_ASSERTION]: {\"status\":\"Unavailable(InvalidCaret)\"}\n+ actual - expected\n\n+ undefined\n- '盒内文字'\n\n    at checkRange (file:///C:/Helianthus/SXP-Simon/%E6%9D%82/anime-dev/lunar-epub-evidence/scripts/vertical-composition-audit.mjs:84:10)\n    at file:///C:/Helianthus/SXP-Simon/%E6%9D%82/anime-dev/lunar-epub-evidence/scripts/vertical-composition-audit.mjs:104:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}

@@ -1,0 +1,11 @@
+{
+  "baseCommit": "ed0284f3703244da28b3e6efd80cf29267cf6e65",
+  "fixedCommit": "1b3031defde326d83e2c8e80269791e339f1fc19",
+  "sameTestSource": true,
+  "baselineProductionUnchanged": true,
+  "workspaceTestsPassed": 1019,
+  "workspaceTestsIgnored": 8,
+  "negativeRegressions": 3,
+  "fmt": true,
+  "clippyWarningsDenied": true
+}

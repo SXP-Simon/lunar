@@ -1,0 +1,65 @@
+   Compiling rito-style-contract v0.0.0 (/home/helian/rito-inline-addresses/crates/rito-style-contract)
+   Compiling rito-source v0.0.0 (/home/helian/rito-inline-addresses/crates/rito-source)
+   Compiling rito-fragment v0.0.0 (/home/helian/rito-inline-addresses/crates/rito-fragment)
+   Compiling rito-inline v0.0.0 (/home/helian/rito-inline-addresses/crates/rito-inline)
+   Compiling rito-block v0.0.0 (/home/helian/rito-inline-addresses/crates/rito-block)
+   Compiling rito-stylo v0.0.0 (/home/helian/rito-inline-addresses/crates/rito-stylo)
+   Compiling rito-core v0.0.0 (/home/helian/rito-inline-addresses/crates/rito-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 53.86s
+     Running unittests src/lib.rs (/home/helian/rito-inline-block-target/debug/deps/rito_core-f5b7d893e0a538b3)
+
+running 3 tests
+test runtime::tests::inline_block_interaction_tests::inline_block_range_includes_nested_and_trailing_text_in_order ... FAILED
+test runtime::tests::inline_block_interaction_tests::inline_block_pointer_marks_reproject_after_font_changes ... FAILED
+test runtime::tests::inline_block_interaction_tests::inline_block_run_addresses_are_unique_and_reading_ordered ... FAILED
+
+failures:
+
+---- runtime::tests::inline_block_interaction_tests::inline_block_range_includes_nested_and_trailing_text_in_order stdout ----
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::inline_block_interaction_tests::inline_block_range_includes_nested_and_trailing_text_in_order' (9117) panicked at crates/rito-core/src/runtime/tests/inline_block_interaction_tests.rs:176:5:
+assertion `left == right` failed
+  left: "甲乙盒内文字嵌套文字尾字丙丁"
+ right: "盒内文字嵌套文字尾字丙丁"
+
+---- runtime::tests::inline_block_interaction_tests::inline_block_pointer_marks_reproject_after_font_changes stdout ----
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::inline_block_interaction_tests::inline_block_pointer_marks_reproject_after_font_changes' (9116) panicked at crates/rito-core/src/runtime/tests/inline_block_interaction_tests.rs:77:9:
+a painted inline-block selection must resolve: Unavailable { reason: InvalidCaret }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- runtime::tests::inline_block_interaction_tests::inline_block_run_addresses_are_unique_and_reading_ordered stdout ----
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::inline_block_interaction_tests::inline_block_run_addresses_are_unique_and_reading_ordered' (9118) panicked at crates/rito-core/src/runtime/tests/inline_block_interaction_tests.rs:99:5:
+unique reading-order addresses: [(0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 1, 2), (0, 2, 2)]
+
+
+failures:
+    runtime::tests::inline_block_interaction_tests::inline_block_pointer_marks_reproject_after_font_changes
+    runtime::tests::inline_block_interaction_tests::inline_block_range_includes_nested_and_trailing_text_in_order
+    runtime::tests::inline_block_interaction_tests::inline_block_run_addresses_are_unique_and_reading_ordered
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 569 filtered out; finished in 0.59s
+
+error: test failed, to rerun pass `-p rito-core --lib`

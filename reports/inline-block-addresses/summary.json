@@ -1,0 +1,7 @@
+{
+  "deviceRangeIncludesPrecedingText": true,
+  "negativeRegressions": 3,
+  "workspaceTestsPassed": 1019,
+  "workspaceTestsIgnored": 8,
+  "androidUpdatedKernelAdopted": false
+}

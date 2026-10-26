@@ -1,0 +1,108 @@
+   Compiling rito-style-contract v0.0.0 (/home/helian/rito-vertical-composition/crates/rito-style-contract)
+   Compiling rito-source v0.0.0 (/home/helian/rito-vertical-composition/crates/rito-source)
+   Compiling rito-fragment v0.0.0 (/home/helian/rito-vertical-composition/crates/rito-fragment)
+   Compiling rito-stylo v0.0.0 (/home/helian/rito-vertical-composition/crates/rito-stylo)
+   Compiling rito-block v0.0.0 (/home/helian/rito-vertical-composition/crates/rito-block)
+   Compiling rito-inline v0.0.0 (/home/helian/rito-vertical-composition/crates/rito-inline)
+   Compiling rito-core v0.0.0 (/home/helian/rito-vertical-composition/crates/rito-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 56.93s
+     Running unittests src/lib.rs (/home/helian/rito-inline-block-target/debug/deps/rito_core-f5b7d893e0a538b3)
+
+running 6 tests
+test runtime::tests::vertical_interaction_tests::vertical_interaction_inline_image_and_link_hits_follow_paint ... ok
+test runtime::reader_session::interaction_tests::vertical_interaction_protocol_keeps_source_and_ranges_without_a_wrong_caret_bar ... ok
+test runtime::tests::vertical_interaction_tests::vertical_interaction_latin_and_non_bmp_glyphs_keep_utf16_boundaries ... ok
+test runtime::tests::vertical_interaction_tests::vertical_interaction_ruby_base_annotation_reprojects_after_reflow ... ok
+test runtime::tests::vertical_interaction_tests::vertical_interaction_pointer_range_selects_the_painted_character ... ok
+test runtime::tests::vertical_interaction_tests::vertical_interaction_hits_share_the_painted_glyph_column ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 576 filtered out; finished in 1.15s
+
+     Running tests/render_architecture_invariants.rs (/home/helian/rito-inline-block-target/debug/deps/render_architecture_invariants-840b31fdb22faed1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/ua_image_policy_mirror.rs (/home/helian/rito-inline-block-target/debug/deps/ua_image_policy_mirror-0cf4524189a86ab9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests/workspace_smoke.rs (/home/helian/rito-inline-block-target/debug/deps/workspace_smoke-65543ffcc310f3a4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.82s
+     Running unittests src/lib.rs (/home/helian/rito-inline-block-target/debug/deps/rito_core-f5b7d893e0a538b3)
+
+running 4 tests
+test runtime::tests::vertical_inline_block_tests::vertical_inline_block_text_keeps_reading_order_and_link_metadata ... ok
+test runtime::tests::vertical_inline_block_tests::vertical_inline_block_images_keep_physical_size_alt_and_link ... ok
+test runtime::tests::vertical_inline_block_tests::vertical_nested_inline_blocks_keep_every_descendant ... ok
+test runtime::tests::vertical_inline_block_tests::vertical_inline_blocks_keep_text_and_images_after_relayout ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 578 filtered out; finished in 1.21s
+
+     Running tests/render_architecture_invariants.rs (/home/helian/rito-inline-block-target/debug/deps/render_architecture_invariants-840b31fdb22faed1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/ua_image_policy_mirror.rs (/home/helian/rito-inline-block-target/debug/deps/ua_image_policy_mirror-0cf4524189a86ab9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests/workspace_smoke.rs (/home/helian/rito-inline-block-target/debug/deps/workspace_smoke-65543ffcc310f3a4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+   Compiling rito-inline v0.0.0 (/home/helian/rito-vertical-composition/crates/rito-inline)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.40s
+     Running unittests src/lib.rs (/home/helian/rito-inline-block-target/debug/deps/rito_inline-be1871f43e0f0949)
+
+running 3 tests
+test tests::vertical_images::vertical_image_percentage_width_uses_physical_width ... ok
+test tests::vertical_images::vertical_boxed_landscape_image_keeps_author_dimensions ... ok
+test tests::vertical_images::vertical_image_page_clamp_uses_physical_axes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 77 filtered out; finished in 0.02s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running unittests src/lib.rs (/home/helian/rito-inline-block-target/debug/deps/rito_core-f5b7d893e0a538b3)
+
+running 3 tests
+test runtime::tests::inline_block_interaction_tests::inline_block_range_includes_nested_and_trailing_text_in_order ... ok
+test runtime::tests::inline_block_interaction_tests::inline_block_pointer_marks_reproject_after_font_changes ... ok
+test runtime::tests::inline_block_interaction_tests::inline_block_run_addresses_are_unique_and_reading_ordered ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 579 filtered out; finished in 0.55s
+
+     Running tests/render_architecture_invariants.rs (/home/helian/rito-inline-block-target/debug/deps/render_architecture_invariants-840b31fdb22faed1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/ua_image_policy_mirror.rs (/home/helian/rito-inline-block-target/debug/deps/ua_image_policy_mirror-0cf4524189a86ab9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests/workspace_smoke.rs (/home/helian/rito-inline-block-target/debug/deps/workspace_smoke-65543ffcc310f3a4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+   Compiling rito-core v0.0.0 (/home/helian/rito-vertical-composition/crates/rito-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.71s

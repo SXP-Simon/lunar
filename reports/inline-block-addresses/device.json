@@ -1,0 +1,423 @@
+{
+  "hit": {
+    "bounds": {
+      "height": 29.6875,
+      "width": 72,
+      "x": 60,
+      "y": 88.76190567016602
+    },
+    "footnotePending": false,
+    "pageIndex": 0,
+    "text": "盒内文字",
+    "textRange": {
+      "end": {
+        "blockIndex": 0,
+        "charIndex": 4,
+        "lineIndex": 0,
+        "runIndex": 0
+      },
+      "start": {
+        "blockIndex": 0,
+        "charIndex": 0,
+        "lineIndex": 0,
+        "runIndex": 0
+      }
+    }
+  },
+  "href": "horizontal.xhtml",
+  "paint": [
+    {
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 24,
+          "y": 108.95238095238095
+        },
+        {
+          "byte": 3,
+          "x": 42,
+          "y": 108.95238095238095
+        }
+      ],
+      "kind": "text",
+      "lineHeightPx": 29.6875,
+      "paint": {
+        "color": {
+          "alpha": 1,
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "none": {
+            "alpha": false,
+            "component0": false,
+            "component1": false,
+            "component2": false
+          },
+          "space": "srgb"
+        },
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 18,
+          "style": "normal",
+          "weight": 400
+        },
+        "textShadows": []
+      },
+      "rect": {
+        "height": 18,
+        "width": 36,
+        "x": 24,
+        "y": 94.552381
+      },
+      "text": "外前"
+    },
+    {
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 60,
+          "y": 108.95238095238095
+        },
+        {
+          "byte": 3,
+          "x": 78,
+          "y": 108.95238095238095
+        },
+        {
+          "byte": 6,
+          "x": 96,
+          "y": 108.95238095238095
+        },
+        {
+          "byte": 9,
+          "x": 114,
+          "y": 108.95238095238095
+        }
+      ],
+      "kind": "text",
+      "lineHeightPx": 29.6875,
+      "paint": {
+        "color": {
+          "alpha": 1,
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "none": {
+            "alpha": false,
+            "component0": false,
+            "component1": false,
+            "component2": false
+          },
+          "space": "srgb"
+        },
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 18,
+          "style": "normal",
+          "weight": 400
+        },
+        "textShadows": []
+      },
+      "rect": {
+        "height": 18,
+        "width": 72,
+        "x": 60,
+        "y": 94.552381
+      },
+      "text": "盒内文字"
+    },
+    {
+      "clusters": [
+        {
+          "byte": 0,
+          "x": 132,
+          "y": 108.95238095238095
+        },
+        {
+          "byte": 3,
+          "x": 150,
+          "y": 108.95238095238095
+        }
+      ],
+      "kind": "text",
+      "lineHeightPx": 29.6875,
+      "paint": {
+        "color": {
+          "alpha": 1,
+          "component0": 0,
+          "component1": 0,
+          "component2": 0,
+          "none": {
+            "alpha": false,
+            "component0": false,
+            "component1": false,
+            "component2": false
+          },
+          "space": "srgb"
+        },
+        "font": {
+          "family": "__RitoPinned_39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+          "sizePx": 18,
+          "style": "normal",
+          "weight": 400
+        },
+        "textShadows": []
+      },
+      "rect": {
+        "height": 18,
+        "width": 36,
+        "x": 132,
+        "y": 94.552381
+      },
+      "text": "外后"
+    }
+  ],
+  "rects": [
+    {
+      "blockIndex": 0,
+      "bounds": {
+        "height": 22,
+        "width": 36,
+        "x": 24,
+        "y": 91.76190567016602
+      },
+      "endCharIndex": 2,
+      "lineIndex": 0,
+      "runIndex": 0,
+      "startCharIndex": 0
+    },
+    {
+      "blockIndex": 0,
+      "bounds": {
+        "height": 22,
+        "width": 72,
+        "x": 60,
+        "y": 91.76190567016602
+      },
+      "endCharIndex": 4,
+      "lineIndex": 0,
+      "runIndex": 0,
+      "startCharIndex": 0
+    }
+  ],
+  "relatedHits": [
+    {
+      "bounds": {
+        "height": 29.6875,
+        "width": 36,
+        "x": 24,
+        "y": 88.76190567016602
+      },
+      "footnotePending": false,
+      "pageIndex": 0,
+      "text": "外前",
+      "textRange": {
+        "end": {
+          "blockIndex": 0,
+          "charIndex": 2,
+          "lineIndex": 0,
+          "runIndex": 0
+        },
+        "start": {
+          "blockIndex": 0,
+          "charIndex": 0,
+          "lineIndex": 0,
+          "runIndex": 0
+        }
+      }
+    },
+    {
+      "bounds": {
+        "height": 29.6875,
+        "width": 72,
+        "x": 60,
+        "y": 88.76190567016602
+      },
+      "footnotePending": false,
+      "pageIndex": 0,
+      "text": "盒内文字",
+      "textRange": {
+        "end": {
+          "blockIndex": 0,
+          "charIndex": 4,
+          "lineIndex": 0,
+          "runIndex": 0
+        },
+        "start": {
+          "blockIndex": 0,
+          "charIndex": 0,
+          "lineIndex": 0,
+          "runIndex": 0
+        }
+      }
+    },
+    {
+      "bounds": {
+        "height": 29.6875,
+        "width": 36,
+        "x": 132,
+        "y": 88.76190567016602
+      },
+      "footnotePending": false,
+      "pageIndex": 0,
+      "text": "外后",
+      "textRange": {
+        "end": {
+          "blockIndex": 0,
+          "charIndex": 2,
+          "lineIndex": 1,
+          "runIndex": 2
+        },
+        "start": {
+          "blockIndex": 0,
+          "charIndex": 0,
+          "lineIndex": 1,
+          "runIndex": 2
+        }
+      }
+    },
+    {
+      "bounds": {
+        "height": 29.6875,
+        "width": 36,
+        "x": 60,
+        "y": 255.82440567016602
+      },
+      "footnotePending": false,
+      "pageIndex": 0,
+      "text": "一级",
+      "textRange": {
+        "end": {
+          "blockIndex": 3,
+          "charIndex": 2,
+          "lineIndex": 0,
+          "runIndex": 0
+        },
+        "start": {
+          "blockIndex": 3,
+          "charIndex": 0,
+          "lineIndex": 0,
+          "runIndex": 0
+        }
+      }
+    },
+    {
+      "bounds": {
+        "height": 29.6875,
+        "width": 36,
+        "x": 96,
+        "y": 255.82440567016602
+      },
+      "footnotePending": false,
+      "pageIndex": 0,
+      "text": "二级",
+      "textRange": {
+        "end": {
+          "blockIndex": 3,
+          "charIndex": 2,
+          "lineIndex": 0,
+          "runIndex": 0
+        },
+        "start": {
+          "blockIndex": 3,
+          "charIndex": 0,
+          "lineIndex": 0,
+          "runIndex": 0
+        }
+      }
+    },
+    {
+      "bounds": {
+        "height": 29.6875,
+        "width": 36,
+        "x": 132,
+        "y": 255.82440567016602
+      },
+      "footnotePending": false,
+      "pageIndex": 0,
+      "text": "末尾",
+      "textRange": {
+        "end": {
+          "blockIndex": 3,
+          "charIndex": 2,
+          "lineIndex": 1,
+          "runIndex": 2
+        },
+        "start": {
+          "blockIndex": 3,
+          "charIndex": 0,
+          "lineIndex": 1,
+          "runIndex": 2
+        }
+      }
+    }
+  ],
+  "request": {
+    "bookId": "433bd7f6670e435dd4aa5dbda142391a8e44290df9c88f721df94222dfce57bf",
+    "contentInsets": {
+      "bottom": 28,
+      "left": 0,
+      "right": 0,
+      "top": 52.761905670166016
+    },
+    "fileUri": "file:///data/user/0/com.lunarain_079.lunar.dev/files/books/433bd7f6670e435dd4aa5dbda142391a8e44290df9c88f721df94222dfce57bf/book.epub",
+    "fontFaces": {
+      "body": {
+        "family": "LunarWenKai",
+        "source": "builtin"
+      },
+      "chrome": {
+        "family": "LunarWenKai",
+        "source": "builtin"
+      }
+    },
+    "palette": {
+      "backgroundColor": "#F8F8FA",
+      "foregroundColor": "#202020",
+      "spreadBodyBackgroundColor": "#F8F8FA"
+    },
+    "theme": "light",
+    "typography": {
+      "fontSize": 18,
+      "fonts": {
+        "body": {
+          "family": "LunarWenKai",
+          "source": "builtin"
+        },
+        "chrome": {
+          "family": "LunarWenKai",
+          "source": "builtin"
+        }
+      },
+      "lineHeight": 1.65,
+      "marginHorizontal": 24,
+      "marginVertical": 36,
+      "spreadMode": "single"
+    },
+    "viewport": {
+      "height": 914,
+      "pixelRatio": 2.625,
+      "width": 411
+    }
+  },
+  "snapshot": {
+    "bookId": "433bd7f6670e435dd4aa5dbda142391a8e44290df9c88f721df94222dfce57bf",
+    "chapterTitle": "horizontal",
+    "paginationComplete": false,
+    "phase": "ready",
+    "position": {
+      "locator": {
+        "chapterProgress": 0,
+        "manifestHref": "horizontal.xhtml",
+        "spineIdref": "horizontal"
+      },
+      "pageIndex": 0,
+      "progression": 0,
+      "spreadIndex": 2,
+      "timestamp": 1793019770035
+    },
+    "renderId": 1,
+    "revisionId": 1,
+    "spreadIndex": 2
+  }
+}
