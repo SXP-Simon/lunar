@@ -1,0 +1,80 @@
+   Compiling rito-style-contract v0.0.0 (/home/helian/rito-inline-block-base/crates/rito-style-contract)
+   Compiling rito-source v0.0.0 (/home/helian/rito-inline-block-base/crates/rito-source)
+   Compiling rito-fragment v0.0.0 (/home/helian/rito-inline-block-base/crates/rito-fragment)
+   Compiling rito-stylo v0.0.0 (/home/helian/rito-inline-block-base/crates/rito-stylo)
+   Compiling rito-block v0.0.0 (/home/helian/rito-inline-block-base/crates/rito-block)
+   Compiling rito-inline v0.0.0 (/home/helian/rito-inline-block-base/crates/rito-inline)
+   Compiling rito-core v0.0.0 (/home/helian/rito-inline-block-base/crates/rito-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 40.22s
+     Running unittests src/lib.rs (/home/helian/rito-inline-block-target/debug/deps/rito_core-f5b7d893e0a538b3)
+
+running 4 tests
+test runtime::tests::vertical_inline_block_tests::vertical_inline_blocks_keep_text_and_images_after_relayout ... FAILED
+test runtime::tests::vertical_inline_block_tests::vertical_nested_inline_blocks_keep_every_descendant ... FAILED
+test runtime::tests::vertical_inline_block_tests::vertical_inline_block_text_keeps_reading_order_and_link_metadata ... FAILED
+test runtime::tests::vertical_inline_block_tests::vertical_inline_block_images_keep_physical_size_alt_and_link ... FAILED
+
+failures:
+
+---- runtime::tests::vertical_inline_block_tests::vertical_inline_blocks_keep_text_and_images_after_relayout stdout ----
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::vertical_inline_block_tests::vertical_inline_blocks_keep_text_and_images_after_relayout' (2439) panicked at crates/rito-core/src/runtime/tests/vertical_inline_block_tests.rs:148:13:
+assertion `left == right` failed
+  left: "前后对照结束"
+ right: "前盒内嵌套末尾后对照结束"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- runtime::tests::vertical_inline_block_tests::vertical_nested_inline_blocks_keep_every_descendant stdout ----
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::vertical_inline_block_tests::vertical_nested_inline_blocks_keep_every_descendant' (2440) panicked at crates/rito-core/src/runtime/tests/vertical_inline_block_tests.rs:81:9:
+assertion `left == right` failed
+  left: "外后"
+ right: "外一级二级三级二末一末后"
+
+---- runtime::tests::vertical_inline_block_tests::vertical_inline_block_text_keeps_reading_order_and_link_metadata stdout ----
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::vertical_inline_block_tests::vertical_inline_block_text_keeps_reading_order_and_link_metadata' (2438) panicked at crates/rito-core/src/runtime/tests/vertical_inline_block_tests.rs:61:9:
+assertion `left == right` failed
+  left: "外前外后"
+ right: "外前盒内文字外后"
+
+---- runtime::tests::vertical_inline_block_tests::vertical_inline_block_images_keep_physical_size_alt_and_link stdout ----
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::vertical_inline_block_tests::vertical_inline_block_images_keep_physical_size_alt_and_link' (2437) panicked at crates/rito-core/src/runtime/tests/vertical_inline_block_tests.rs:107:9:
+assertion `left == right` failed: both the boxed and direct image paint
+  left: 1
+ right: 2
+
+
+failures:
+    runtime::tests::vertical_inline_block_tests::vertical_inline_block_images_keep_physical_size_alt_and_link
+    runtime::tests::vertical_inline_block_tests::vertical_inline_block_text_keeps_reading_order_and_link_metadata
+    runtime::tests::vertical_inline_block_tests::vertical_inline_blocks_keep_text_and_images_after_relayout
+    runtime::tests::vertical_inline_block_tests::vertical_nested_inline_blocks_keep_every_descendant
+
+test result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 569 filtered out; finished in 0.61s
+
+error: test failed, to rerun pass `-p rito-core --lib`

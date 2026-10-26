@@ -1,0 +1,26 @@
+   Compiling rito-core v0.0.0 (/home/helian/rito-inline-block-fixed/crates/rito-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.81s
+     Running unittests src/lib.rs (/home/helian/rito-inline-block-target/debug/deps/rito_core-f5b7d893e0a538b3)
+
+running 4 tests
+test runtime::tests::vertical_inline_block_tests::vertical_inline_block_images_keep_physical_size_alt_and_link ... FAILED
+test runtime::tests::vertical_inline_block_tests::vertical_inline_block_text_keeps_reading_order_and_link_metadata ... ok
+test runtime::tests::vertical_inline_block_tests::vertical_inline_blocks_keep_text_and_images_after_relayout ... ok
+test runtime::tests::vertical_inline_block_tests::vertical_nested_inline_blocks_keep_every_descendant ... ok
+
+failures:
+
+---- runtime::tests::vertical_inline_block_tests::vertical_inline_block_images_keep_physical_size_alt_and_link stdout ----
+ICU4X data error: No segmentation model for language: ja
+
+thread 'runtime::tests::vertical_inline_block_tests::vertical_inline_block_images_keep_physical_size_alt_and_link' (996) panicked at crates/rito-core/src/runtime/tests/vertical_inline_block_tests.rs:107:13:
+physical width: ReaderRect { x: 361.0, y: 40.0, width: 20.0, height: 13.328125 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    runtime::tests::vertical_inline_block_tests::vertical_inline_block_images_keep_physical_size_alt_and_link
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 569 filtered out; finished in 1.29s
+
+error: test failed, to rerun pass `-p rito-core --lib`

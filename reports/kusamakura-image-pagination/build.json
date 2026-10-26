@@ -1,0 +1,21 @@
+{
+  "baselineCommit": "ed0284f3703244da28b3e6efd80cf29267cf6e65",
+  "fixedTrackedFilesVerified": 1553,
+  "trackedContentManifestSha256": "f6871b5eade6524e16820a81bd50395ca9c4c59f7d340bd4e1af91d930283fea",
+  "sourceOverlay": [
+    "crates/rito-core/src/fragment_paint/vertical.rs",
+    "crates/rito-core/src/runtime/tests.rs",
+    "crates/rito-core/src/runtime/tests/vertical_inline_block_tests.rs"
+  ],
+  "baselineProductionUnchanged": true,
+  "finalTestSourceIdentical": true,
+  "workspaceCleanBetweenCheckouts": true,
+  "fixedProbeSha256": "41196dfdd0993d3c1363005b39cf2fd2f49b14416d8e1b8c8dc07a60cad1d8c6",
+  "baselineProbeSha256": "88a20b18d2c8fc0ad5e1fe8da1122b71925f4e025f299b65bb1c26cd024f5852",
+  "workspaceTestsPassed": 1020,
+  "workspaceTestsIgnored": 8,
+  "newRegressions": 4,
+  "fmt": true,
+  "clippyWarningsDenied": true,
+  "fixedCommit": "dbef76cdf15dabd48bb83d03f3c2ddf82b263b9e"
+}

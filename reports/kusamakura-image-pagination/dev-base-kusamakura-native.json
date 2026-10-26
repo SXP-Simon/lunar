@@ -1,0 +1,105 @@
+{
+  "label": "base",
+  "binary": "/home/helian/rito-verified-probes/baseline-vertical",
+  "font": "/home/helian/rito-baseline-audit/apps/reader/src/assets/fonts/SourceHanSerifCN-Regular.otf",
+  "sampleSha256": "5eee439293bd53cb2c284a9b988e8e15013aa433a415d10427fbf7bd1bc62a0d",
+  "decoderSha256": "25c28105ebd5f942b949fda23ff4552232ecea5a4ec704c717db3642d9bd6666",
+  "results": [
+    {
+      "chapter": "xhtml/表紙",
+      "pageText": "",
+      "paintedText": "",
+      "imageCount": 0,
+      "images": [],
+      "commands": [
+        {
+          "kind": "fill-rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 411,
+            "height": 914
+          },
+          "color": {
+            "space": "srgb",
+            "component0": 1,
+            "component1": 1,
+            "component2": 1,
+            "alpha": 1,
+            "none": {
+              "component0": false,
+              "component1": false,
+              "component2": false,
+              "alpha": false
+            }
+          },
+          "ground": "page"
+        },
+        {
+          "kind": "push-state"
+        },
+        {
+          "kind": "translate",
+          "dx": 0,
+          "dy": 0
+        },
+        {
+          "kind": "fill-rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 411,
+            "height": 914
+          },
+          "color": {
+            "space": "srgb",
+            "component0": 1,
+            "component1": 1,
+            "component2": 1,
+            "alpha": 1,
+            "none": {
+              "component0": false,
+              "component1": false,
+              "component2": false,
+              "alpha": false
+            }
+          },
+          "ground": "page"
+        },
+        {
+          "kind": "push-state"
+        },
+        {
+          "kind": "clip-path",
+          "path": [
+            {
+              "op": "rect",
+              "x": 40,
+              "y": 88.761906,
+              "width": 371,
+              "height": 761.238094
+            }
+          ]
+        },
+        {
+          "kind": "pop-state"
+        },
+        {
+          "kind": "pop-state"
+        }
+      ],
+      "hits": [
+        {
+          "bounds": {
+            "height": 250,
+            "width": 250,
+            "x": 551.234375,
+            "y": 88.76190567016602
+          },
+          "text": ""
+        }
+      ],
+      "displaySha256": "0ed96700fe6a3116c0dec37313be96922f5135ca4e1e7f75809e0e5cd0e5d8ee"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "sampleSha256": "433bd7f6670e435dd4aa5dbda142391a8e44290df9c88f721df94222dfce57bf",
+  "deviceBaseline": [
+    {
+      "chapter": "horizontal.xhtml",
+      "indexedInnerText": true,
+      "paintedInnerText": true,
+      "images": 2
+    },
+    {
+      "chapter": "vertical.xhtml",
+      "indexedInnerText": true,
+      "paintedInnerText": false,
+      "images": 1
+    },
+    {
+      "chapter": "prefixed.xhtml",
+      "indexedInnerText": true,
+      "paintedInnerText": false,
+      "images": 1
+    }
+  ],
+  "hostFixedInnerTextPreserved": true,
+  "hostFixedImagesPerChapter": 2,
+  "horizontalPaintUnchanged": true,
+  "landscapeSizingStillUnfixed": true,
+  "androidFixedKernelAdopted": false
+}

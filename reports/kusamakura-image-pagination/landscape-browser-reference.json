@@ -1,0 +1,23 @@
+{
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "boxed": {
+    "x": 734,
+    "y": 16,
+    "width": 30,
+    "height": 20,
+    "top": 16,
+    "right": 764,
+    "bottom": 36,
+    "left": 734
+  },
+  "direct": {
+    "x": 734,
+    "y": 52,
+    "width": 30,
+    "height": 20,
+    "top": 52,
+    "right": 764,
+    "bottom": 72,
+    "left": 734
+  }
+}
