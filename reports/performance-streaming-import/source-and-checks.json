@@ -1,0 +1,33 @@
+{
+  "baselineCommit": "4641589621f24d0df7d5a0811a3e26b1856c64cf",
+  "fixedCommit": "620a00fa531688fdc7277eef6a7afe3f475349b0",
+  "apkSha256": "3fff66355689b9dd4d753bbee78452d89d2ea2ac6e19d4bcd3d569001600be2c",
+  "apkSourceCommit": "8ecf3336ad73b4b73d93d1ade2d3b3847c5e9170",
+  "fixedFormalBundleSha256": "93585917c944c0bdb60d95133d3875efa1390269f77733176dea0cc7c49b7480",
+  "nativePackage": "@umbrae-labs/rito-rn@0.3.0-lunar.1",
+  "kernelCommit": "9c9111ca2fc57f63ce81c65d3c4f80cb513610ae",
+  "checks": [
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit",
+      "exitCode": 0
+    },
+    {
+      "command": "node node_modules/vitest/vitest.mjs run --maxWorkers=2",
+      "exitCode": 0,
+      "passed": 566,
+      "files": 89
+    },
+    {
+      "command": "node node_modules/eslint/bin/eslint.js .",
+      "exitCode": 0,
+      "existingWarnings": 16,
+      "modifiedFilesWarnings": 0
+    },
+    {
+      "command": "prettier --check (all modified files)",
+      "exitCode": 0
+    }
+  ],
+  "independence": "No dependency, lock, generated-native, Rito kernel or public-sample files in the code diff.",
+  "formalControls": "Library foreground; no native reader loaded; startup resume temporarily off, restored to true afterward."
+}

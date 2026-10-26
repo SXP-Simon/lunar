@@ -1,0 +1,106 @@
+{
+  "runs": {
+    "baseline": {
+      "environment": {
+        "appState": "active",
+        "nativeSessionLoaded": false,
+        "resumeReadingOnLaunch": false
+      },
+      "rssWindow": {
+        "edgePaddingMs": 2000,
+        "samples": 65,
+        "firstHostAtMs": 1793006271705.3591,
+        "lastHostAtMs": 1793006340863.1138,
+        "minMiB": 1028.13671875,
+        "maxMiB": 1131.1796875
+      },
+      "zipSyncCalls": 6,
+      "samples": {
+        "moby": {
+          "durationMs": [
+            3629.558100000024,
+            3460.6082999999635,
+            3602.212099999655
+          ],
+          "medianDurationMs": 3602.212099999655,
+          "maxTimerDelayMs": [
+            2890.7657999997027,
+            2893.9167999997735,
+            2744.9672000003047
+          ]
+        },
+        "kusa": {
+          "durationMs": [
+            16047.914899999741,
+            15345.551899999846,
+            14914.900499999989
+          ],
+          "medianDurationMs": 15345.551899999846,
+          "maxTimerDelayMs": [
+            14687.968200000003,
+            15077.65100000007,
+            14622.207799999975
+          ]
+        }
+      }
+    },
+    "fixed": {
+      "environment": {
+        "appState": "active",
+        "nativeSessionLoaded": false,
+        "resumeReadingOnLaunch": false
+      },
+      "rssWindow": {
+        "edgePaddingMs": 2000,
+        "samples": 69,
+        "firstHostAtMs": 1793006498847.6577,
+        "lastHostAtMs": 1793006572758.8638,
+        "minMiB": 1024.34765625,
+        "maxMiB": 1121.6875
+      },
+      "zipSyncCalls": 0,
+      "samples": {
+        "moby": {
+          "durationMs": [
+            3939.851100000087,
+            3534.3366000000387,
+            3576.3675000001676
+          ],
+          "medianDurationMs": 3576.3675000001676,
+          "maxTimerDelayMs": [
+            267.3133999998681,
+            166.8305999999866,
+            153.92590000014752
+          ]
+        },
+        "kusa": {
+          "durationMs": [
+            15100.553100000136,
+            16921.592300000135,
+            17977.47450000001
+          ],
+          "medianDurationMs": 16921.592300000135,
+          "maxTimerDelayMs": [
+            208.23580000037327,
+            286.3935000002384,
+            216.35069999983534
+          ]
+        }
+      }
+    }
+  },
+  "scope": "Foreground development APK; three reimports per sample, one process per version.",
+  "assets": [
+    {
+      "sample": "moby-dick.epub",
+      "entries": 154,
+      "allSourceBytesMatch": true
+    },
+    {
+      "sample": "kusamakura-vertical-only.epub",
+      "entries": 30,
+      "allSourceBytesMatch": true
+    }
+  ],
+  "durableStateUnchanged": true
+}

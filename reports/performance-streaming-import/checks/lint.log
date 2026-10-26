@@ -1,0 +1,36 @@
+
+C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\.expo\types\router.d.ts
+  1:1  warning  Unused eslint-disable directive (no problems were reported)
+
+C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\tests\unit\paragraph-direction.test.ts
+  7:1  warning  Import in body of module; reorder to top  import/first
+
+C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\tests\unit\reader-colors.test.ts
+  9:1  warning  Import in body of module; reorder to top  import/first
+
+C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\tests\unit\reader-highlight-overlay.test.ts
+   5:1  warning  Import in body of module; reorder to top  import/first
+  13:1  warning  Import in body of module; reorder to top  import/first
+  19:1  warning  Import in body of module; reorder to top  import/first
+  20:1  warning  Import in body of module; reorder to top  import/first
+  21:1  warning  Import in body of module; reorder to top  import/first
+  22:1  warning  Import in body of module; reorder to top  import/first
+
+C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\tests\unit\reader-imported-fonts-store.test.ts
+  17:1  warning  Import in body of module; reorder to top  import/first
+
+C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\tests\unit\reader-locator-navigation.test.ts
+  3:43  warning  'C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\node_modules\@umbrae-labs\rito-rn\src\index.ts' imported multiple times  import/no-duplicates
+  4:58  warning  'C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\node_modules\@umbrae-labs\rito-rn\src\index.ts' imported multiple times  import/no-duplicates
+  5:42  warning  'C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\node_modules\@umbrae-labs\rito-rn\src\index.ts' imported multiple times  import/no-duplicates
+
+C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\tests\unit\reader-pinned-fonts.test.ts
+  31:1  warning  Import in body of module; reorder to top  import/first
+
+C:\Helianthus\SXP-Simon\杂\anime-dev\lunar\apps\mobile\tests\unit\rito-package-integration.test.ts
+  6:1  warning  Import in body of module; reorder to top  import/first
+  7:1  warning  Import in body of module; reorder to top  import/first
+
+✖ 16 problems (0 errors, 16 warnings)
+  0 errors and 14 warnings potentially fixable with the `--fix` option.
+
