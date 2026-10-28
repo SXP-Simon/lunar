@@ -21,12 +21,16 @@ const state = vi.hoisted(() => ({
   period: undefined as unknown,
   applyRange: undefined as undefined | ((range: { start: string; end: string }) => void),
   selectDimension: undefined as undefined | ((keys: Set<string>) => void),
+  openMonth: undefined as undefined | ((date: string) => void),
 }));
 vi.mock('../../src/features/statistics/components/reading-trend', () => ({
-  ReadingTrend: ({ daily }: { daily: unknown }) => <div>{JSON.stringify(daily)}</div>,
+  ReadingTrend: ({ daily, onOpenMonth }: { daily: unknown; onOpenMonth: (date: string) => void }) => {
+    state.openMonth = onOpenMonth;
+    return <div>{JSON.stringify(daily)}</div>;
+  },
 }));
-vi.mock('../../src/features/statistics/components/period-books', () => ({
-  PeriodBooks: ({ period }: { period: unknown }) => {
+vi.mock('../../src/features/statistics/components/period-ranking', () => ({
+  PeriodRanking: ({ period }: { period: unknown }) => {
     state.period = period;
     return <div>{JSON.stringify(period)}</div>;
   },
@@ -274,6 +278,10 @@ describe('statistics mobile screen interactions', () => {
     state.selectDimension!(new Set(['year']));
     render();
     expect(state.period).toMatchObject({ range: { start: '2026-01-01', end: '2026-10-16' }, total: 60_000 });
+    state.openMonth!('2026-08-01');
+    render();
+    expect(state.period).toMatchObject({ range: { start: '2026-08-01', end: '2026-08-31' }, total: 0 });
+    expect(state.actions.has('statistics.nextPeriod')).toBe(true);
     state.selectDimension!(new Set(['custom']));
     state.applyRange!({ start: '2026-10-01', end: '2026-10-14' });
     markup = render();

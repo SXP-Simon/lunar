@@ -1,116 +1,133 @@
-import { useCallback, useMemo, useState } from 'react';
-import { PanResponder, Text, View } from 'react-native';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
-import { Button } from 'heroui-native/button';
-import { useResolveClassNames } from 'uniwind';
+import { useMemo, useState } from 'react';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from '@/i18n';
-import { durationParts } from '../domain/statistics';
-import { readingCurve } from '../domain/curve';
+import { durationParts, trendBuckets, type TrendBucket } from '../domain/statistics';
 
+const CHART_HEIGHT = 140;
+const BUBBLE_SPACE = 56;
+
+/** Bars per day or month; tapping one raises a bubble that leads to that day's or month's details. */
 export function ReadingTrend({
   daily,
-  onSelect,
+  onOpenDay,
+  onOpenMonth,
 }: {
   daily: { date: string; milliseconds: number }[];
-  onSelect: (date: string) => void;
+  onOpenDay: (date: string) => void;
+  onOpenMonth: (date: string) => void;
 }) {
   const { t } = useTranslation();
-  const [width, setWidth] = useState(240);
-  const [index, setIndex] = useState(daily.length - 1);
-  const active = Math.max(0, Math.min(index, daily.length - 1));
-  const accent = useResolveClassNames('text-navigation-active').color as string;
-  const neutral = useResolveClassNames('text-default').color as string;
-  const maximum = Math.max(30 * 60_000, ...daily.map((day) => day.milliseconds));
-  const plotWidth = Math.max(1, width - 16);
-  const { points, path } = readingCurve(
-    daily.map((day) => day.milliseconds),
-    plotWidth,
-    140,
-    maximum,
-  );
-  const choose = useCallback(
-    (x: number) =>
-      setIndex(Math.max(0, Math.min(daily.length - 1, Math.round(((x - 8) / plotWidth) * (daily.length - 1))))),
-    [daily.length, plotWidth],
-  );
-  const responder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gesture) =>
-          Math.abs(gesture.dx) > 6 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
-        onPanResponderGrant: (event) => choose(event.nativeEvent.locationX),
-        onPanResponderMove: (event) => choose(event.nativeEvent.locationX),
-        onPanResponderTerminationRequest: () => true,
-      }),
-    [choose],
-  );
-  const duration = (value: number) => {
-    const parts = durationParts(value);
+  const { fontScale } = useWindowDimensions();
+  const buckets = useMemo(() => trendBuckets(daily), [daily]);
+  const [active, setActive] = useState<number>();
+  const [width, setWidth] = useState(0);
+  const [bubbleWidth, setBubbleWidth] = useState(0);
+  const maximum = Math.max(30 * 60_000, ...buckets.map((bucket) => bucket.milliseconds));
+  const unit = buckets[0]?.unit ?? 'day';
+  const step = buckets.length <= 12 ? 1 : Math.ceil(buckets.length / 7);
+  const duration = (milliseconds: number) => {
+    const parts = durationParts(milliseconds);
     return parts.hours ? t('statistics.hours', parts) : t('statistics.minutes', parts);
   };
-  const current = daily[active];
-  const point = points[active];
+  const title = (bucket: TrendBucket) => {
+    const year = Number(bucket.date.slice(0, 4));
+    const month = t('statistics.monthsLong').split(',')[Number(bucket.date.slice(5, 7)) - 1];
+    return bucket.unit === 'month'
+      ? t('statistics.monthTitle', { year, month })
+      : t('statistics.dateTitle', { year, month, day: Number(bucket.date.slice(8)) });
+  };
+  const tick = (bucket: TrendBucket) =>
+    bucket.unit === 'month'
+      ? t('statistics.monthsShort').split(',')[Number(bucket.date.slice(5, 7)) - 1]
+      : String(Number(bucket.date.slice(8)));
+  const current = active === undefined ? undefined : buckets[active];
+  const center = active === undefined ? 0 : ((active + 0.5) * width) / buckets.length;
   return (
     <View className="gap-3 rounded-3xl bg-surface p-5">
-      <Text className="text-base font-semibold text-foreground">{t('statistics.trend')}</Text>
-      <View className="flex-row flex-wrap justify-between gap-1">
-        <Text className="text-xs text-muted">{t('statistics.dailyTime')}</Text>
-        <Text className="text-xs text-muted">{duration(maximum)}</Text>
+      <View className="flex-row flex-wrap items-baseline justify-between gap-2">
+        <Text className="text-base font-semibold text-foreground">{t('statistics.trend')}</Text>
+        <Text className="text-xs text-muted">
+          {t(unit === 'month' ? 'statistics.monthlyTime' : 'statistics.dailyTime')}
+        </Text>
       </View>
       <View
-        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-        {...responder.panHandlers}
-        onTouchEnd={(event) => choose(event.nativeEvent.locationX)}
-        accessibilityLabel={t('statistics.chartHint')}>
-        <Svg width="100%" height={164} viewBox={`-8 -12 ${width} 164`} accessible={false}>
-          {[0, 70, 140].map((y) => (
-            <Line key={y} x1={0} x2={plotWidth} y1={y} y2={y} stroke={neutral} strokeWidth={1} />
-          ))}
-          {points.length > 1 ? <Path d={`${path} L ${plotWidth} 140 L 0 140 Z`} fill={accent} opacity={0.07} /> : null}
-          <Path d={path} fill="none" stroke={accent} strokeWidth={2} strokeLinejoin="round" />
-          {point ? (
-            <>
-              <Line x1={point.x} x2={point.x} y1={0} y2={140} stroke={accent} opacity={0.3} strokeDasharray="3 4" />
-              <Circle cx={point.x} cy={point.y} r={4} fill={accent} />
-            </>
-          ) : null}
-        </Svg>
-      </View>
-      <View className="flex-row justify-between gap-2">
-        <Text className="text-[10px] text-muted">{daily[0]?.date}</Text>
-        <Text className="text-[10px] text-muted">{daily.at(-1)?.date}</Text>
-      </View>
-      {current ? (
-        <View className="gap-2 rounded-2xl bg-background p-3 dark:bg-surface-secondary">
-          <View className="flex-row flex-wrap items-center justify-between gap-2">
-            <Text className="text-sm text-foreground">{current.date}</Text>
-            <Text className="text-sm font-semibold text-navigation-active">{duration(current.milliseconds)}</Text>
-          </View>
-          <View className="flex-row items-center justify-between gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              isIconOnly
-              accessibilityLabel={t('statistics.previousDay')}
-              isDisabled={active === 0}
-              onPress={() => setIndex(active - 1)}>
-              ‹
-            </Button>
-            <Button size="sm" variant="ghost" onPress={() => onSelect(current.date)}>
-              {t('statistics.dayDetails')}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              isIconOnly
-              accessibilityLabel={t('statistics.nextDay')}
-              isDisabled={active === daily.length - 1}
-              onPress={() => setIndex(active + 1)}>
-              ›
-            </Button>
-          </View>
+        style={{ height: CHART_HEIGHT + BUBBLE_SPACE }}
+        onLayout={({ nativeEvent }) => setWidth(nativeEvent.layout.width)}>
+        {[0, 0.5, 1].map((ratio) => (
+          <View
+            key={ratio}
+            className="absolute left-0 right-0 h-px bg-default"
+            style={{ top: BUBBLE_SPACE + CHART_HEIGHT * ratio }}
+          />
+        ))}
+        <Text className="absolute right-0 text-[10px] text-muted" style={{ top: BUBBLE_SPACE - 16 }}>
+          {duration(maximum)}
+        </Text>
+        <View className="absolute bottom-0 left-0 right-0 flex-row items-end" style={{ height: CHART_HEIGHT }}>
+          {buckets.map((bucket, index) => {
+            const selected = index === active;
+            return (
+              <Pressable
+                key={bucket.date}
+                accessibilityRole="button"
+                accessibilityLabel={`${title(bucket)}, ${duration(bucket.milliseconds)}`}
+                accessibilityState={{ selected }}
+                className="h-full min-w-0 flex-1 items-center justify-end"
+                onPress={() => setActive(selected ? undefined : index)}>
+                <View
+                  className={`w-3/5 max-w-6 ${
+                    bucket.milliseconds > 0
+                      ? `rounded-t-md ${selected ? 'bg-navigation-active' : 'bg-navigation-active/50'}`
+                      : 'rounded-full bg-default'
+                  }`}
+                  style={{ height: Math.max(3, (bucket.milliseconds / maximum) * CHART_HEIGHT) }}
+                />
+              </Pressable>
+            );
+          })}
         </View>
-      ) : null}
+        {current ? (
+          <>
+            <View
+              className="absolute size-2 rotate-45 bg-navigation-active"
+              style={{ left: center - 4, top: BUBBLE_SPACE - 12, opacity: bubbleWidth ? 1 : 0 }}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t(current.unit === 'month' ? 'statistics.monthDetails' : 'statistics.dayDetails', {
+                date: title(current),
+              })}
+              className="absolute top-0 gap-0.5 rounded-lg bg-navigation-active px-2.5 py-1.5 active:opacity-80"
+              style={{
+                left: Math.max(0, Math.min(width - bubbleWidth, center - bubbleWidth / 2)),
+                opacity: bubbleWidth ? 1 : 0,
+              }}
+              onLayout={({ nativeEvent }) => setBubbleWidth(nativeEvent.layout.width)}
+              onPress={() => (current.unit === 'month' ? onOpenMonth(current.date) : onOpenDay(current.date))}>
+              <Text className="text-xs text-accent-foreground" numberOfLines={1}>
+                {title(current)} ›
+              </Text>
+              <Text className="text-sm font-semibold text-accent-foreground" numberOfLines={1}>
+                {duration(current.milliseconds)}
+              </Text>
+            </Pressable>
+          </>
+        ) : null}
+      </View>
+      {/* Absolute ticks do not size their row, so it follows the system font scale explicitly. */}
+      <View style={{ height: Math.ceil(16 * fontScale) }}>
+        {buckets.map((bucket, index) =>
+          index % step === 0 ? (
+            <Text
+              key={bucket.date}
+              className="absolute top-0 w-10 text-center text-[10px] text-muted"
+              numberOfLines={1}
+              style={{ left: ((index + 0.5) * width) / buckets.length - 20 }}>
+              {tick(bucket)}
+            </Text>
+          ) : null,
+        )}
+      </View>
     </View>
   );
 }

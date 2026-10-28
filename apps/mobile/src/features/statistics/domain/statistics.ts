@@ -132,6 +132,24 @@ export function buildHeatmap(
   );
 }
 
+export interface TrendBucket {
+  unit: 'day' | 'month';
+  /** The day, or the first day of the month, that the bar stands for. */
+  date: string;
+  milliseconds: number;
+}
+
+/** Daily bars stay legible up to about two months; longer periods are summed per calendar month. */
+export function trendBuckets(daily: readonly { date: string; milliseconds: number }[]): TrendBucket[] {
+  if (daily.length <= 62) return daily.map((day) => ({ unit: 'day', ...day }));
+  const months = new Map<string, number>();
+  for (const day of daily) {
+    const month = `${day.date.slice(0, 7)}-01`;
+    months.set(month, (months.get(month) ?? 0) + day.milliseconds);
+  }
+  return [...months].map(([date, milliseconds]) => ({ unit: 'month', date, milliseconds }));
+}
+
 export function durationParts(milliseconds: number) {
   const seconds = Math.floor(Math.max(0, milliseconds) / 1000);
   return { hours: Math.floor(seconds / 3600), minutes: Math.floor(seconds / 60) % 60, seconds: seconds % 60 };

@@ -1,12 +1,12 @@
 import { Image as ExpoImage } from 'expo-image';
 import { PressableFeedback } from 'heroui-native/pressable-feedback';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { withUniwind } from 'uniwind';
 import { useTranslation } from '@/i18n';
 import { durationParts, type selectPeriod } from '../domain/statistics';
 const Image = withUniwind(ExpoImage);
 
-export function PeriodBooks({
+export function PeriodRanking({
   period,
   onOpenBook,
 }: {
@@ -19,47 +19,15 @@ export function PeriodBooks({
     return parts.hours ? t('statistics.hours', parts) : t('statistics.minutes', parts);
   };
   return (
-    <>
-      <View className="gap-4 rounded-3xl bg-surface p-5">
-        <View className="flex-row flex-wrap items-center justify-between gap-2">
-          <Text className="text-base font-semibold text-foreground">{t('statistics.periodBooks')}</Text>
-          <Text className="text-xs text-muted">{t('statistics.count', { count: period.books.length })}</Text>
-        </View>
-        {!period.books.length ? (
-          <Text className="text-sm text-muted">{t('statistics.periodEmpty')}</Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
-            {period.books.map((book) => (
-              <PressableFeedback
-                key={book.id}
-                className="w-16 gap-2"
-                animation={{ scale: { value: 0.97 } }}
-                accessibilityRole="button"
-                accessibilityLabel={t('statistics.openBook', { title: book.title })}
-                onPress={() => onOpenBook(book.id)}>
-                {book.coverUri ? (
-                  <Image
-                    source={book.coverUri}
-                    contentFit="cover"
-                    className="h-24 w-16 rounded-lg"
-                    accessible={false}
-                  />
-                ) : (
-                  <View className="h-24 w-16 items-center justify-center rounded-lg bg-default">
-                    <Text className="text-xl text-muted">{book.title.slice(0, 1)}</Text>
-                  </View>
-                )}
-                <Text className="text-xs text-foreground" numberOfLines={2}>
-                  {book.title}
-                </Text>
-              </PressableFeedback>
-            ))}
-          </ScrollView>
-        )}
+    <View className="gap-4 rounded-3xl bg-surface p-5">
+      <View className="flex-row flex-wrap items-baseline justify-between gap-2">
+        <Text className="text-base font-semibold text-foreground">{t('statistics.ranking')}</Text>
+        <Text className="text-xs text-muted">{t('statistics.count', { count: period.books.length })}</Text>
       </View>
-      {period.books.length ? (
-        <View className="gap-4 rounded-3xl bg-surface p-5">
-          <Text className="text-base font-semibold text-foreground">{t('statistics.ranking')}</Text>
+      {!period.books.length ? (
+        <Text className="text-sm text-muted">{t('statistics.periodEmpty')}</Text>
+      ) : (
+        <>
           <Text className="text-xs text-muted">{t('statistics.shareDefinition')}</Text>
           {period.ranking.map((book, index) => (
             <PressableFeedback
@@ -103,8 +71,8 @@ export function PeriodBooks({
               })}
             </Text>
           ) : null}
-        </View>
-      ) : null}
-    </>
+        </>
+      )}
+    </View>
   );
 }

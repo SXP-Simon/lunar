@@ -10,6 +10,7 @@ import {
   periodBounds,
   selectPeriod,
   shiftDate,
+  trendBuckets,
 } from '../../src/features/statistics/domain/statistics';
 import { readStatistics } from '../../src/features/statistics/repositories/statistics-repository';
 import { SQLiteReadingSessionRepository } from '../../src/features/reader/repositories/sqlite-reading-session-repository';
@@ -128,6 +129,18 @@ describe('reading statistics', () => {
         .map((day) => day.level),
     ).toEqual([0, 1, 2, 3, 4, 0, 0]);
     expect(buildHeatmap(periodBounds('week', '2026-10-11'), '2026-10-11', [])).toHaveLength(1);
+  });
+  it('draws daily bars up to two months and sums longer periods per calendar month', () => {
+    const days = (start: string, count: number) =>
+      Array.from({ length: count }, (_, index) => ({ date: shiftDate(start, index), milliseconds: 60_000 }));
+    expect(trendBuckets(days('2026-10-01', 31))).toHaveLength(31);
+    expect(trendBuckets(days('2026-09-01', 62)).every((bucket) => bucket.unit === 'day')).toBe(true);
+    expect(trendBuckets(days('2026-01-30', 63))).toEqual([
+      { unit: 'month', date: '2026-01-01', milliseconds: 2 * 60_000 },
+      { unit: 'month', date: '2026-02-01', milliseconds: 28 * 60_000 },
+      { unit: 'month', date: '2026-03-01', milliseconds: 31 * 60_000 },
+      { unit: 'month', date: '2026-04-01', milliseconds: 2 * 60_000 },
+    ]);
   });
   it('derives Sunday-first weeks, calendar months and years relative to today', () => {
     expect(periodBounds('week', '2026-10-28')).toEqual({ start: '2026-10-25', end: '2026-10-31' });

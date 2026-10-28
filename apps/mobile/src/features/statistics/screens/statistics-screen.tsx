@@ -22,7 +22,7 @@ import { loadStatistics } from '../repositories/statistics-repository';
 import { DailyReadingSheet } from '../components/daily-reading-sheet';
 import { ReadingHeatmap } from '../components/reading-heatmap';
 import { ReadingTrend } from '../components/reading-trend';
-import { PeriodBooks } from '../components/period-books';
+import { PeriodRanking } from '../components/period-ranking';
 import { PeriodNavigator } from '../components/period-navigator';
 import { DateRangeSheet } from '../components/date-range-sheet';
 
@@ -141,6 +141,11 @@ export function StatisticsScreen() {
     setSelected(date);
     setDayOpen(true);
   }, []);
+  const openMonth = (date: string) => {
+    const months = (value: string) => Number(value.slice(0, 4)) * 12 + Number(value.slice(5, 7));
+    setDimension('month');
+    setOffset(months(date) - months(today));
+  };
   const dimensionLabel = t(`statistics.dimension.${dimension}`);
   return (
     <View
@@ -249,8 +254,13 @@ export function StatisticsScreen() {
                   </View>
                 ))}
               </View>
-              <ReadingTrend key={`${range.start}:${range.end}`} daily={period.daily} onSelect={openDay} />
-              <PeriodBooks period={period} onOpenBook={openBook} />
+              <ReadingTrend
+                key={`${range.start}:${range.end}`}
+                daily={period.daily}
+                onOpenDay={openDay}
+                onOpenMonth={openMonth}
+              />
+              <PeriodRanking period={period} onOpenBook={openBook} />
               {!data.books.length ? (
                 <View className="gap-3 rounded-3xl bg-surface p-5">
                   <Text className="text-sm text-muted">{t('statistics.empty')}</Text>

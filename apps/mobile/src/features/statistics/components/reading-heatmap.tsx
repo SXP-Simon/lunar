@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, type ReactNode } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedRef, useScrollOffset, useSharedValue } from 'react-native-reanimated';
 import { useTranslation } from '@/i18n';
@@ -17,7 +17,7 @@ const levels = [
 type HeatmapDay = ReturnType<typeof buildHeatmap>[number][number];
 
 interface HeatmapProps {
-  /** The full calendar period; days after `today` stay visible in the calendar layout but cannot be selected. */
+  /** The full calendar period; days after `today` are left out. */
   bounds: DateRange;
   today: string;
   daily: readonly { date: string; milliseconds: number }[];
@@ -35,21 +35,15 @@ export function ReadingHeatmap({ bounds, today, daily, selected, onSelect }: Hea
     },
     [t],
   );
-  // Up to six weeks reads best as a calendar; longer periods scroll as week columns.
-  const calendar = weeks.length <= 6;
   return (
     <View className="gap-4 rounded-3xl bg-surface p-5">
       <Text className="text-base font-semibold text-foreground">{t('statistics.activity')}</Text>
-      {calendar ? (
-        <CalendarGrid weeks={weeks} selected={selected} describe={describe} onSelect={onSelect} />
-      ) : (
-        <WeekColumns
-          weeks={weeks.filter((week) => week[0].date <= today)}
-          selected={selected}
-          describe={describe}
-          onSelect={onSelect}
-        />
-      )}
+      <WeekColumns
+        weeks={weeks.filter((week) => week[0].date <= today)}
+        selected={selected}
+        describe={describe}
+        onSelect={onSelect}
+      />
       <View className="flex-row items-center justify-end gap-1">
         <Text className="text-xs text-muted">{t('statistics.less')}</Text>
         {levels.map((level) => (
@@ -66,46 +60,6 @@ interface GridProps {
   selected?: string;
   describe: (day: HeatmapDay) => string;
   onSelect: (date: string) => void;
-}
-
-function CalendarGrid({ weeks, selected, describe, onSelect }: GridProps) {
-  const { t } = useTranslation();
-  return (
-    <View className="gap-1.5">
-      <View className="flex-row gap-1.5">
-        {t('statistics.weekdaysShort')
-          .split(',')
-          .map((day) => (
-            <Text key={day} className="min-w-0 flex-1 text-center text-[10px] text-muted">
-              {day}
-            </Text>
-          ))}
-      </View>
-      {weeks.map((week) => (
-        <View key={week[0].date} className="flex-row gap-1.5">
-          {week.map((day) =>
-            day.outside ? (
-              <View key={day.date} className="aspect-square min-w-0 flex-1" />
-            ) : (
-              <HeatmapCell
-                key={day.date}
-                date={day.date}
-                level={day.level}
-                future={day.future}
-                selected={selected === day.date}
-                label={describe(day)}
-                onSelect={onSelect}
-                className="aspect-square min-w-0 flex-1 items-center justify-center rounded-lg">
-                <Text className={`text-xs ${day.level >= 3 && !day.future ? 'text-accent-foreground' : 'text-muted'}`}>
-                  {Number(day.date.slice(8))}
-                </Text>
-              </HeatmapCell>
-            ),
-          )}
-        </View>
-      ))}
-    </View>
-  );
 }
 
 function WeekColumns({ weeks, selected, describe, onSelect }: GridProps) {
@@ -169,12 +123,10 @@ function WeekColumns({ weeks, selected, describe, onSelect }: GridProps) {
                       key={day.date}
                       date={day.date}
                       level={day.level}
-                      future={false}
                       selected={selected === day.date}
                       label={describe(day)}
                       onSelect={onSelect}
-                      style={cellStyle}
-                      className="rounded-[3px]"
+                      size={cellStyle}
                     />
                   ),
                 )}
@@ -191,35 +143,27 @@ function WeekColumns({ weeks, selected, describe, onSelect }: GridProps) {
 const HeatmapCell = memo(function HeatmapCell({
   date,
   level,
-  future,
+  size,
   selected,
   label,
   onSelect,
-  className,
-  style,
-  children,
 }: {
   date: string;
   level: number;
-  future: boolean;
+  size: { width: number; height: number };
   selected: boolean;
   label: string;
   onSelect: (date: string) => void;
-  className: string;
-  style?: { width: number; height: number };
-  children?: ReactNode;
 }) {
   return (
     <Pressable
-      disabled={future}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ selected, disabled: future }}
+      accessibilityState={{ selected }}
       onPress={() => onSelect(date)}
       onLongPress={() => onSelect(date)}
-      style={style}
-      className={`${className} active:opacity-60 ${future ? 'bg-default opacity-40' : levels[level]} ${selected ? 'border-2 border-navigation-active' : ''}`}>
-      {children}
-    </Pressable>
+      style={size}
+      className={`rounded-[3px] active:opacity-60 ${levels[level]} ${selected ? 'border-2 border-navigation-active' : ''}`}
+    />
   );
 });
