@@ -105,7 +105,6 @@ export function StatisticsScreen() {
             <Text accessibilityRole="header" className="text-3xl font-semibold text-foreground">
               {t('statistics.title')}
             </Text>
-            <Text className="text-sm text-muted">{t('statistics.subtitle')}</Text>
           </View>
           <View className="flex-row gap-1 rounded-2xl bg-default p-1">
             {(['activity', 'period'] as const).map((item) => (

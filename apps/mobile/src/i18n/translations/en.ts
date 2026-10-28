@@ -109,7 +109,6 @@ export const en: TranslationSchema<typeof zhCN> = {
     dayEmpty: 'No reading recorded on this day.',
 
     title: 'Reading statistics',
-    subtitle: 'Time well spent, one page at a time',
     activity: 'Reading activity',
     weeks: 'Last 13 weeks',
     less: 'Less',

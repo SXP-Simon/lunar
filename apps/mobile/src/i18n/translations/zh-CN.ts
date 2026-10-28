@@ -107,7 +107,6 @@ export const zhCN = {
     dayEmpty: '这一天还没有阅读记录。',
 
     title: '阅读统计',
-    subtitle: '每一页，都留下时间的痕迹',
     activity: '阅读足迹',
     weeks: '近 13 周',
     less: '少',
