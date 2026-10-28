@@ -93,23 +93,39 @@ export function heatLevel(milliseconds: number) {
           : 4;
 }
 
-export function buildHeatmap(today: string, daily: readonly { date: string; milliseconds: number }[]) {
-  const end = new Date(`${today}T00:00:00Z`);
-  const first = shiftDate(today, -364);
-  const start = new Date(`${first}T00:00:00Z`);
-  start.setUTCDate(start.getUTCDate() - start.getUTCDay());
-  const count = Math.floor((end.getTime() - start.getTime()) / (7 * 86_400_000)) + 1;
+export type StatisticsDimension = 'week' | 'month' | 'year';
+
+/** The full calendar period `offset` steps before the one containing `today`; weeks start on Sunday. */
+export function periodBounds(dimension: StatisticsDimension, today: string, offset = 0): DateRange {
+  if (dimension === 'week') {
+    const start = shiftDate(today, offset * 7 - new Date(`${today}T00:00:00Z`).getUTCDay());
+    return { start, end: shiftDate(start, 6) };
+  }
+  const year = Number(today.slice(0, 4));
+  if (dimension === 'year') return { start: `${year + offset}-01-01`, end: `${year + offset}-12-31` };
+  const first = new Date(Date.UTC(year, Number(today.slice(5, 7)) - 1 + offset, 1));
+  const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0));
+  return { start: first.toISOString().slice(0, 10), end: last.toISOString().slice(0, 10) };
+}
+
+/** Sunday-aligned week columns covering `range`; days outside it keep their slot but are not shown. */
+export function buildHeatmap(
+  range: DateRange,
+  today: string,
+  daily: readonly { date: string; milliseconds: number }[],
+) {
+  const start = shiftDate(range.start, -new Date(`${range.start}T00:00:00Z`).getUTCDay());
+  const count = Math.floor((Date.parse(range.end) - Date.parse(start)) / (7 * 86_400_000)) + 1;
   const totals = new Map(daily.map((day) => [day.date, day.milliseconds]));
   return Array.from({ length: count }, (_, week) =>
     Array.from({ length: 7 }, (_, weekday) => {
-      const date = new Date(start);
-      date.setUTCDate(start.getUTCDate() + week * 7 + weekday);
-      const key = date.toISOString().slice(0, 10);
-      const milliseconds = totals.get(key) ?? 0;
+      const date = shiftDate(start, week * 7 + weekday);
+      const milliseconds = totals.get(date) ?? 0;
       return {
-        date: key,
+        date,
         milliseconds,
-        future: key > today || key < first,
+        outside: date < range.start || date > range.end,
+        future: date > today,
         level: heatLevel(milliseconds),
       };
     }),

@@ -13,7 +13,6 @@ const state = vi.hoisted(() => ({
   appState: undefined as undefined | ((state: string) => void),
   actions: new Map<string, () => void>(),
   longActions: new Map<string, () => void>(),
-  dayChildren: [] as ReactNode[],
   sheetChildren: undefined as ReactNode,
   load: vi.fn(),
   push: vi.fn(),
@@ -21,6 +20,7 @@ const state = vi.hoisted(() => ({
   toast: vi.fn(),
   period: undefined as unknown,
   applyRange: undefined as undefined | ((range: { start: string; end: string }) => void),
+  selectDimension: undefined as undefined | ((keys: Set<string>) => void),
 }));
 vi.mock('../../src/features/statistics/components/reading-trend', () => ({
   ReadingTrend: ({ daily }: { daily: unknown }) => <div>{JSON.stringify(daily)}</div>,
@@ -73,6 +73,23 @@ vi.mock('react-native', () => ({
   View: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
   ScrollView: ({ children }: { children: ReactNode }) => <section>{children}</section>,
+  Pressable: ({
+    children,
+    accessibilityLabel,
+    onPress,
+    onLongPress,
+    disabled,
+  }: {
+    children?: ReactNode;
+    accessibilityLabel: string;
+    onPress: () => void;
+    onLongPress?: () => void;
+    disabled?: boolean;
+  }) => {
+    if (!disabled) state.actions.set(accessibilityLabel, onPress);
+    if (!disabled && onLongPress) state.longActions.set(accessibilityLabel, onLongPress);
+    return <button disabled={disabled}>{children}</button>;
+  },
   useWindowDimensions: () => ({ width: 411, height: 914, fontScale: 1 }),
   PanResponder: { create: () => ({ panHandlers: {} }) },
   ActivityIndicator: () => <span>loading</span>,
@@ -85,6 +102,34 @@ vi.mock('react-native', () => ({
   },
 }));
 vi.mock('expo-image', () => ({ Image: () => <span>cover</span> }));
+vi.mock('expo-symbols', () => ({ SymbolView: () => null }));
+vi.mock('@/components/ui/app-tabs', () => ({ APP_TAB_BAR_HEIGHT: 58 }));
+vi.mock('heroui-native/hooks', () => ({ useThemeColor: () => 'black' }));
+vi.mock('heroui-native/menu', () => {
+  const Part = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
+  const Group = ({
+    children,
+    onSelectionChange,
+  }: {
+    children: ReactNode;
+    onSelectionChange: (keys: Set<string>) => void;
+  }) => {
+    state.selectDimension = onSelectionChange;
+    return <div>{children}</div>;
+  };
+  return {
+    Menu: Object.assign(Part, {
+      Trigger: Part,
+      Portal: Part,
+      Overlay: () => null,
+      Content: Part,
+      Group,
+      Item: Part,
+      ItemIndicator: () => null,
+      ItemTitle: Part,
+    }),
+  };
+});
 vi.mock('uniwind', () => ({
   withUniwind: (component: unknown) => component,
   useResolveClassNames: () => ({ color: 'blue' }),
@@ -132,10 +177,7 @@ vi.mock('heroui-native/button', () => {
   }) => {
     const name = accessibilityLabel ?? String(children);
     if (!isDisabled) state.actions.set(name, onPress);
-    if (onLongPress) {
-      state.longActions.set(name, onLongPress);
-      state.dayChildren.push(children);
-    }
+    if (onLongPress) state.longActions.set(name, onLongPress);
     return <button disabled={isDisabled}>{children}</button>;
   };
   return {
@@ -188,7 +230,6 @@ const data = {
 function render() {
   state.cursor = 0;
   state.actions.clear();
-  state.dayChildren = [];
   state.longActions.clear();
   return renderToStaticMarkup(<StatisticsScreen />);
 }
@@ -206,52 +247,72 @@ beforeEach(() => {
 });
 
 describe('statistics mobile screen interactions', () => {
-  it('updates summary, curve, books and ranking together across presets and custom ranges', async () => {
+  it('defaults to the current month and keeps every module on the selected dimension', async () => {
     render();
     const cleanup = state.focus!();
     await settle();
-    render();
-    state.actions.get('statistics.period')!();
     let markup = render();
-    expect(markup).toContain('statistics.periodSummary');
+    expect(markup).toContain('statistics.monthTitle{&quot;year&quot;:2026,&quot;month&quot;:&quot;October&quot;}');
     expect(state.period).toMatchObject({
+      range: { start: '2026-10-01', end: '2026-10-16' },
       total: 60_000,
+      average: 60_000 / 16,
       readingDays: 1,
       books: [{ id: 'book', milliseconds: 60_000 }],
       ranking: [{ share: 1 }],
     });
-    state.applyRange!({ start: '2026-10-01', end: '2026-10-14' });
-    markup = render();
-    expect(state.period).toMatchObject({ total: 0, average: 0, books: [], ranking: [] });
-    expect(markup).not.toContain('Lunar book');
-    expect(markup).toContain('2026-10-14');
-    state.applyRange!({ start: '2026-10-15', end: '2026-10-15' });
-    render();
-    expect(state.period).toMatchObject({
-      total: 60_000,
-      average: 60_000,
-      daily: [{ date: '2026-10-15', milliseconds: 60_000 }],
-    });
+    expect(state.actions.has('statistics.previousPeriod')).toBe(false);
+    expect(state.actions.has('statistics.nextPeriod')).toBe(false);
     state.actions.get('statistics.posterEntry')!();
     expect(state.push).toHaveBeenCalledWith({
       pathname: '/statistics-poster',
-      params: { start: '2026-10-15', end: '2026-10-15' },
+      params: { start: '2026-10-01', end: '2026-10-16' },
     });
-    state.actions.get('statistics.lastDays{"count":7}')!();
+    state.selectDimension!(new Set(['week']));
     render();
-    expect(state.period).toMatchObject({ total: 60_000, average: 60_000 / 7 });
+    expect(state.period).toMatchObject({ range: { start: '2026-10-11', end: '2026-10-16' }, average: 10_000 });
+    state.selectDimension!(new Set(['year']));
+    render();
+    expect(state.period).toMatchObject({ range: { start: '2026-01-01', end: '2026-10-16' }, total: 60_000 });
+    state.selectDimension!(new Set(['custom']));
+    state.applyRange!({ start: '2026-10-01', end: '2026-10-14' });
+    markup = render();
+    expect(state.period).toMatchObject({ total: 0, average: 0, books: [], ranking: [] });
+    expect(markup).toContain('2026-10-01 — 2026-10-14');
+    expect(state.actions.has('statistics.posterEntry')).toBe(false);
+    cleanup();
+  });
+  it('steps back through calendar periods only while older history exists', async () => {
+    const september = { ...data.books[0], milliseconds: 120_000 };
+    state.load.mockResolvedValue({
+      ...data,
+      dayBooks: { ...data.dayBooks, '2026-09-03': [september] },
+      daily: [...data.daily, { date: '2026-09-03', milliseconds: 120_000 }],
+    });
+    render();
+    const cleanup = state.focus!();
+    await settle();
+    render();
+    state.actions.get('statistics.previousPeriod')!();
+    const markup = render();
+    expect(markup).toContain('&quot;month&quot;:&quot;September&quot;');
+    expect(state.period).toMatchObject({ range: { start: '2026-09-01', end: '2026-09-30' }, total: 120_000 });
+    expect(state.actions.has('statistics.previousPeriod')).toBe(false);
+    state.actions.get('statistics.nextPeriod')!();
+    render();
+    expect(state.period).toMatchObject({ range: { start: '2026-10-01', end: '2026-10-16' } });
     cleanup();
   });
   it('loads on focus, selects a date and opens the correct book route', async () => {
     expect(render()).toContain('loading');
     const cleanup = state.focus!();
     await settle();
-    expect(render()).toContain('statistics.yearSummary');
+    render();
+    expect(state.actions.has('2026-10-17, statistics.minutes{"hours":0,"minutes":0,"seconds":0}')).toBe(false);
     const day = [...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'));
     expect(day).toBeDefined();
     state.actions.get(day!)!();
     expect(render()).toContain('October 15, 2026');
-    expect(state.dayChildren.every((child) => child === undefined)).toBe(true);
     state.actions.get('statistics.openBook{"title":"Lunar book"}')!();
     expect(state.push).toHaveBeenCalledWith({ pathname: '/reader/[bookId]', params: { bookId: 'book' } });
     cleanup();
@@ -290,10 +351,11 @@ describe('statistics mobile screen interactions', () => {
     await settle();
     render();
     state.locale = 'zh-CN';
+    expect(render()).toContain('&quot;month&quot;:&quot;10月&quot;');
+    state.selectDimension!(new Set(['year']));
     const markup = render();
     expect(markup).toContain('周日');
-    expect(markup).toContain('>7月<');
-    for (const month of ['8月', '9月', '10月']) expect(markup).toContain(`>${month}<`);
+    for (const month of ['1月', '7月', '9月', '10月']) expect(markup).toContain(`>${month}<`);
     const day = [...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'))!;
     state.actions.get(day)!();
     expect(render()).toContain('2026年10月15日');
@@ -333,7 +395,7 @@ describe('statistics mobile screen interactions', () => {
     render();
     cleanup = state.focus!();
     await settle();
-    expect(render()).toContain('statistics.yearSummary');
+    expect(render()).toContain('statistics.monthTitle');
     expect(state.cells[1]).toBe(false);
     cleanup();
   });

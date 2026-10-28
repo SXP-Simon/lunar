@@ -1,34 +1,48 @@
 import { useFocusEffect, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
-import { PressableFeedback } from 'heroui-native/pressable-feedback';
+import { useThemeColor } from 'heroui-native/hooks';
+import { Menu, type MenuKey } from 'heroui-native/menu';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { ActivityIndicator, AppState, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { APP_TAB_BAR_HEIGHT } from '@/components/ui/app-tabs';
 import { readingDateKey } from '@/features/reader';
 import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
-import { durationParts, selectPeriod, shiftDate, type DateRange } from '../domain/statistics';
+import {
+  durationParts,
+  periodBounds,
+  selectPeriod,
+  type DateRange,
+  type StatisticsDimension,
+} from '../domain/statistics';
 import { loadStatistics } from '../repositories/statistics-repository';
 import { DailyReadingSheet } from '../components/daily-reading-sheet';
-import { YearHeatmap } from '../components/year-heatmap';
+import { ReadingHeatmap } from '../components/reading-heatmap';
 import { ReadingTrend } from '../components/reading-trend';
 import { PeriodBooks } from '../components/period-books';
+import { PeriodNavigator } from '../components/period-navigator';
 import { DateRangeSheet } from '../components/date-range-sheet';
+
+type Dimension = StatisticsDimension | 'custom';
+const DIMENSIONS: readonly Dimension[] = ['week', 'month', 'year', 'custom'];
+
+const currentDateKey = () => readingDateKey(Date.now(), Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
 
 export function StatisticsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { toast } = useToast();
+  const iconColor = useThemeColor('foreground');
   const [data, setData] = useState<Awaited<ReturnType<typeof loadStatistics>>>();
   const [error, setError] = useState(false);
   const [revision, setRevision] = useState(0);
   const [selected, setSelected] = useState<string>();
   const [dayOpen, setDayOpen] = useState(false);
-  const [today, setToday] = useState(() =>
-    readingDateKey(Date.now(), Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'),
-  );
+  const [today, setToday] = useState(currentDateKey);
   const notifyError = useEffectEvent(() => toast.show({ variant: 'danger', label: t('statistics.error') }));
   useEffect(() => {
     if (error) notifyError();
@@ -41,7 +55,7 @@ export function StatisticsScreen() {
       let request = 0;
       const refresh = async () => {
         const current = ++request;
-        setToday(readingDateKey(Date.now(), Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'));
+        setToday(currentDateKey());
         try {
           const next = await loadStatistics();
           if (active && current === request) {
@@ -58,7 +72,8 @@ export function StatisticsScreen() {
       const subscription = AppState.addEventListener('change', (state) => {
         if (state === 'active') void refresh();
       });
-      const timer = setInterval(() => void refresh(), 60_000);
+      // Records only change while reading, so a visible screen just follows the date across midnight.
+      const timer = setInterval(() => setToday(currentDateKey()), 60_000);
       return () => {
         active = false;
         setDayOpen(false);
@@ -67,23 +82,57 @@ export function StatisticsScreen() {
       };
     }, [revision]),
   );
-  const [mode, setMode] = useState<'activity' | 'period'>('activity');
-  const [preset, setPreset] = useState<number | undefined>(30);
-  const [custom, setCustom] = useState<DateRange>({ start: shiftDate(today, -29), end: today });
+  const [dimension, setDimension] = useState<Dimension>('month');
+  const [offset, setOffset] = useState(0);
+  const [custom, setCustom] = useState<DateRange>();
   const [rangeOpen, setRangeOpen] = useState(false);
-  const range = useMemo(
-    () => (preset ? { start: shiftDate(today, 1 - preset), end: today } : custom),
-    [preset, today, custom],
+  const bounds = useMemo(
+    () =>
+      dimension === 'custom' && custom
+        ? custom
+        : periodBounds(dimension === 'custom' ? 'month' : dimension, today, offset),
+    [custom, dimension, offset, today],
   );
+  // The current period ends today, so its daily average ignores days that have not happened yet.
+  const range = useMemo(() => ({ start: bounds.start, end: bounds.end < today ? bounds.end : today }), [bounds, today]);
   const period = useMemo(() => (data ? selectPeriod(data, range) : undefined), [data, range]);
-  const year = useMemo(
-    () => (data ? selectPeriod(data, { start: shiftDate(today, -364), end: today }) : undefined),
-    [data, today],
+  const earliest = data?.daily.at(-1)?.date;
+  const selectedDimension = useMemo<ReadonlySet<MenuKey>>(() => new Set([dimension]), [dimension]);
+  const changeDimension = useCallback(
+    (keys: Set<MenuKey>) => {
+      const next = keys.values().next().value as Dimension | undefined;
+      if (!next) return;
+      if (next === 'custom') {
+        setCustom((previous) => previous ?? range);
+        setRangeOpen(true);
+      } else setOffset(0);
+      setDimension(next);
+    },
+    [range],
   );
   const closeRange = useCallback(() => setRangeOpen(false), []);
   const duration = (milliseconds: number) => {
     const parts = durationParts(milliseconds);
     return parts.hours ? t('statistics.hours', parts) : t('statistics.minutes', parts);
+  };
+  const periodLabel = () => {
+    const year = Number(bounds.start.slice(0, 4));
+    const month = Number(bounds.start.slice(5, 7)) - 1;
+    const short = (date: string) =>
+      t('statistics.shortDate', {
+        month: t('statistics.monthsShort').split(',')[Number(date.slice(5, 7)) - 1],
+        day: Number(date.slice(8)),
+      });
+    switch (dimension) {
+      case 'year':
+        return t('statistics.yearTitle', { year });
+      case 'month':
+        return t('statistics.monthTitle', { year, month: t('statistics.monthsLong').split(',')[month] });
+      case 'week':
+        return t('statistics.weekTitle', { start: short(bounds.start), end: short(bounds.end) });
+      case 'custom':
+        return `${bounds.start} — ${bounds.end}`;
+    }
   };
   const openBook = (bookId: string) => router.push({ pathname: '/reader/[bookId]', params: { bookId } });
   // Keep the selected day's content mounted throughout the sheet's closing animation.
@@ -92,35 +141,72 @@ export function StatisticsScreen() {
     setSelected(date);
     setDayOpen(true);
   }, []);
-  const summary = mode === 'activity' ? year : period;
+  const dimensionLabel = t(`statistics.dimension.${dimension}`);
   return (
     <View
       className="flex-1 bg-background"
       style={{ paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
+      <View className="w-full max-w-[800px] flex-row items-center gap-2 self-center px-4 pt-1 pb-2">
+        <Text accessibilityRole="header" className="min-w-0 flex-1 px-1 text-2xl font-semibold text-foreground">
+          {t('statistics.title')}
+        </Text>
+        <Menu>
+          <Menu.Trigger asChild>
+            <Button
+              accessibilityLabel={t('statistics.dimensionMenu', { dimension: dimensionLabel })}
+              className="h-9 gap-1 rounded-full"
+              hitSlop={4}
+              size="sm"
+              variant="secondary">
+              <Button.Label>{dimensionLabel}</Button.Label>
+              <SymbolView
+                name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }}
+                size={14}
+                tintColor={iconColor}
+              />
+            </Button>
+          </Menu.Trigger>
+          <Menu.Portal>
+            <Menu.Overlay />
+            <Menu.Content align="end" placement="bottom" presentation="popover" width={200}>
+              <Menu.Group
+                disallowEmptySelection
+                onSelectionChange={changeDimension}
+                selectedKeys={selectedDimension}
+                selectionMode="single">
+                {DIMENSIONS.map((item) => (
+                  <Menu.Item key={item} id={item}>
+                    <Menu.ItemIndicator />
+                    <Menu.ItemTitle>{t(`statistics.dimension.${item}`)}</Menu.ItemTitle>
+                  </Menu.Item>
+                ))}
+              </Menu.Group>
+            </Menu.Content>
+          </Menu.Portal>
+        </Menu>
+        <Button
+          accessibilityLabel={t('statistics.posterEntry')}
+          className="h-9 rounded-full"
+          hitSlop={4}
+          isDisabled={!period?.books.length}
+          isIconOnly
+          onPress={() =>
+            router.push({ pathname: '/statistics-poster', params: { start: range.start, end: range.end } })
+          }
+          size="sm"
+          variant="secondary">
+          <SymbolView
+            name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }}
+            size={18}
+            tintColor={iconColor}
+          />
+        </Button>
+      </View>
       <ScrollView
-        contentContainerClassName="grow px-4 pt-5"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
-        <View className="w-full max-w-[800px] self-center gap-5">
-          <View className="gap-1">
-            <Text accessibilityRole="header" className="text-3xl font-semibold text-foreground">
-              {t('statistics.title')}
-            </Text>
-          </View>
-          <View className="flex-row gap-1 rounded-2xl bg-default p-1">
-            {(['activity', 'period'] as const).map((item) => (
-              <PressableFeedback
-                key={item}
-                accessibilityRole="tab"
-                accessibilityLabel={t(`statistics.${item}`)}
-                accessibilityState={{ selected: mode === item }}
-                onPress={() => setMode(item)}
-                className={`min-h-11 min-w-0 flex-1 items-center justify-center rounded-xl px-2 py-3 ${mode === item ? 'bg-surface' : ''}`}>
-                <Text className={mode === item ? 'text-sm font-semibold text-navigation-active' : 'text-sm text-muted'}>
-                  {t(`statistics.${item}`)}
-                </Text>
-              </PressableFeedback>
-            ))}
-          </View>
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="grow px-4 pt-2"
+        contentContainerStyle={{ paddingBottom: APP_TAB_BAR_HEIGHT + insets.bottom + 32 }}>
+        <View className="w-full max-w-[800px] self-center gap-4">
           {error ? (
             <View className="gap-3 rounded-3xl bg-surface p-5">
               <Text className="text-foreground">{t('statistics.error')}</Text>
@@ -130,82 +216,41 @@ export function StatisticsScreen() {
             </View>
           ) : null}
           {!data && !error ? <ActivityIndicator accessibilityLabel={t('statistics.loading')} /> : null}
-          {data && summary ? (
+          {data && period ? (
             <>
-              {mode === 'activity' ? (
-                <YearHeatmap
-                  today={today}
-                  daily={data.daily}
-                  selected={dayOpen ? selected : undefined}
-                  onSelect={openDay}
-                />
-              ) : (
-                <View className="gap-3 rounded-3xl bg-surface p-5">
-                  <Text className="text-base font-semibold text-foreground">{t('statistics.dateRange')}</Text>
-                  <View className="flex-row gap-1">
-                    {[7, 30, 90, 365].map((days) => (
-                      <Button
-                        key={days}
-                        size="sm"
-                        className="min-w-0 flex-1 px-1"
-                        variant={preset === days ? 'secondary' : 'ghost'}
-                        accessibilityLabel={t('statistics.lastDays', { count: days })}
-                        accessibilityState={{ selected: preset === days }}
-                        onPress={() => setPreset(days)}>
-                        <Button.Label
-                          className={preset === days ? 'text-xs text-navigation-active' : 'text-xs text-muted'}>
-                          {days === 365 ? t('statistics.oneYear') : t('statistics.shortDays', { count: days })}
-                        </Button.Label>
-                      </Button>
-                    ))}
+              <PeriodNavigator
+                label={periodLabel()}
+                onPrevious={
+                  dimension !== 'custom' && earliest && bounds.start > earliest
+                    ? () => setOffset((value) => value - 1)
+                    : undefined
+                }
+                onNext={dimension !== 'custom' && offset < 0 ? () => setOffset((value) => value + 1) : undefined}
+                onEdit={dimension === 'custom' ? () => setRangeOpen(true) : undefined}
+              />
+              <ReadingHeatmap
+                key={`${bounds.start}:${bounds.end}`}
+                bounds={bounds}
+                today={today}
+                daily={data.daily}
+                selected={dayOpen ? selected : undefined}
+                onSelect={openDay}
+              />
+              <View className="flex-row flex-wrap gap-3">
+                {[
+                  [t('statistics.total'), duration(period.total)],
+                  [t('statistics.average'), duration(period.average)],
+                  [t('statistics.books'), t('statistics.count', { count: period.books.length })],
+                  [t('statistics.readingDays'), t('statistics.daysCount', { count: period.readingDays })],
+                ].map(([label, value]) => (
+                  <View key={label} className="min-w-[120px] flex-1 basis-[45%] gap-3 rounded-3xl bg-surface p-4">
+                    <Text className="text-xs text-muted">{label}</Text>
+                    <Text className="text-lg font-semibold text-foreground">{value}</Text>
                   </View>
-                  <PressableFeedback
-                    accessibilityRole="button"
-                    accessibilityLabel={t('statistics.customRange')}
-                    className="gap-1 rounded-2xl bg-background p-3 dark:bg-surface-secondary"
-                    onPress={() => {
-                      setRangeOpen(true);
-                    }}>
-                    <Text className="text-xs text-muted">{t('statistics.customRange')}</Text>
-                    <Text className="text-sm font-medium text-foreground">
-                      {range.start} → {range.end}
-                    </Text>
-                  </PressableFeedback>
-                </View>
-              )}
-              <View className="gap-3">
-                <Text className="text-xs text-muted">
-                  {mode === 'activity' ? t('statistics.yearSummary') : t('statistics.periodSummary')} ·{' '}
-                  {summary.range.start} — {summary.range.end}
-                </Text>
-                <View className="flex-row flex-wrap gap-3">
-                  {[
-                    [t('statistics.total'), duration(summary.total)],
-                    [t('statistics.average'), duration(summary.average)],
-                    [t('statistics.books'), t('statistics.count', { count: summary.books.length })],
-                    [t('statistics.readingDays'), t('statistics.daysCount', { count: summary.readingDays })],
-                  ].map(([label, value]) => (
-                    <View key={label} className="min-w-[120px] flex-1 basis-[45%] gap-3 rounded-3xl bg-surface p-4">
-                      <Text className="text-xs text-muted">{label}</Text>
-                      <Text className="text-lg font-semibold text-foreground">{value}</Text>
-                    </View>
-                  ))}
-                </View>
+                ))}
               </View>
-              {mode === 'period' && period ? (
-                <>
-                  <Button
-                    variant="secondary"
-                    isDisabled={!period.books.length}
-                    onPress={() =>
-                      router.push({ pathname: '/statistics-poster', params: { start: range.start, end: range.end } })
-                    }>
-                    {t('statistics.posterEntry')}
-                  </Button>
-                  <ReadingTrend key={`${range.start}:${range.end}`} daily={period.daily} onSelect={openDay} />
-                  <PeriodBooks period={period} onOpenBook={openBook} />
-                </>
-              ) : null}
+              <ReadingTrend key={`${range.start}:${range.end}`} daily={period.daily} onSelect={openDay} />
+              <PeriodBooks period={period} onOpenBook={openBook} />
               {!data.books.length ? (
                 <View className="gap-3 rounded-3xl bg-surface p-5">
                   <Text className="text-sm text-muted">{t('statistics.empty')}</Text>
@@ -232,7 +277,7 @@ export function StatisticsScreen() {
         onClose={closeRange}
         onApply={(next) => {
           setCustom(next);
-          setPreset(undefined);
+          setDimension('custom');
           setRangeOpen(false);
         }}
       />

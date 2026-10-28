@@ -7,6 +7,7 @@ import {
   buildStatistics,
   durationParts,
   heatLevel,
+  periodBounds,
   selectPeriod,
   shiftDate,
 } from '../../src/features/statistics/domain/statistics';
@@ -104,14 +105,17 @@ describe('reading statistics', () => {
     expect(removed.completed).toBe(0);
     expect(removed.books).toHaveLength(2);
   });
-  it('covers a rolling year in Sunday-first weeks over year and leap-day boundaries and hides future dates', () => {
-    const weeks = buildHeatmap('2024-03-01', [{ date: '2024-02-29', milliseconds: 1_800_000 }]);
+  it('covers a calendar year in Sunday-first weeks across a leap day and marks dates after today', () => {
+    const weeks = buildHeatmap({ start: '2024-01-01', end: '2024-12-31' }, '2024-03-01', [
+      { date: '2024-02-29', milliseconds: 1_800_000 },
+    ]);
     expect(weeks).toHaveLength(53);
-    expect(weeks.flat()).toHaveLength(371);
-    expect(weeks[0][0].date).toBe('2023-02-26');
-    expect(weeks[52][4]).toMatchObject({ date: '2024-02-29', level: 2, future: false });
-    expect(weeks[52][6]).toMatchObject({ date: '2024-03-02', future: true });
-    expect(new Set(weeks.flat().map((day) => day.date)).size).toBe(371);
+    expect(weeks[0][0]).toMatchObject({ date: '2023-12-31', outside: true });
+    expect(weeks[0][1]).toMatchObject({ date: '2024-01-01', outside: false });
+    expect(weeks[8][4]).toMatchObject({ date: '2024-02-29', level: 2, future: false });
+    expect(weeks[8][6]).toMatchObject({ date: '2024-03-02', future: true });
+    expect(weeks.flat().filter((day) => !day.outside)).toHaveLength(366);
+    expect(new Set(weeks.flat().map((day) => day.date)).size).toBe(weeks.length * 7);
   });
   it('keeps Sunday and Saturday in the correct column and uses meaningful intensity levels', () => {
     const daily = [0, 1, 1_800_000, 3_600_000, 7_200_000].map((milliseconds, index) => ({
@@ -119,11 +123,27 @@ describe('reading statistics', () => {
       milliseconds,
     }));
     expect(
-      buildHeatmap('2026-10-17', daily)
+      buildHeatmap(periodBounds('week', '2026-10-17'), '2026-10-17', daily)
         .at(-1)!
         .map((day) => day.level),
     ).toEqual([0, 1, 2, 3, 4, 0, 0]);
-    expect(buildHeatmap('2026-10-11', []).at(-1)![0].date).toBe('2026-10-11');
+    expect(buildHeatmap(periodBounds('week', '2026-10-11'), '2026-10-11', [])).toHaveLength(1);
+  });
+  it('derives Sunday-first weeks, calendar months and years relative to today', () => {
+    expect(periodBounds('week', '2026-10-28')).toEqual({ start: '2026-10-25', end: '2026-10-31' });
+    expect(periodBounds('week', '2026-01-02', -1)).toEqual({ start: '2025-12-21', end: '2025-12-27' });
+    expect(periodBounds('month', '2026-10-28')).toEqual({ start: '2026-10-01', end: '2026-10-31' });
+    expect(periodBounds('month', '2024-03-31', -1)).toEqual({ start: '2024-02-01', end: '2024-02-29' });
+    expect(periodBounds('month', '2026-01-15', -1)).toEqual({ start: '2025-12-01', end: '2025-12-31' });
+    expect(periodBounds('year', '2026-10-28', -2)).toEqual({ start: '2024-01-01', end: '2024-12-31' });
+    const month = buildHeatmap(periodBounds('month', '2026-10-28'), '2026-10-28', []);
+    expect(month).toHaveLength(5);
+    expect(
+      month
+        .flat()
+        .filter((day) => !day.outside && !day.future)
+        .at(-1)?.date,
+    ).toBe('2026-10-28');
   });
   it('formats seconds, minutes and hours without rounding into a false completion', () => {
     expect(durationParts(0)).toEqual({ hours: 0, minutes: 0, seconds: 0 });
@@ -152,7 +172,7 @@ describe('period statistics consistency', () => {
       ],
     );
     expect(
-      buildHeatmap('2026-10-17', data.daily)
+      buildHeatmap(periodBounds('year', '2026-10-17'), '2026-10-17', data.daily)
         .flat()
         .every((day) => day.milliseconds === 0),
     ).toBe(true);
@@ -233,10 +253,10 @@ describe('period statistics consistency', () => {
     ]);
     expect(shiftDate('2024-03-01', -1)).toBe('2024-02-29');
     expect(() => selectPeriod(buildStatistics([], []), { start: '2026-10-17', end: '2026-10-16' })).toThrow();
-    const cells = buildHeatmap('2024-03-01', [])
+    const cells = buildHeatmap({ start: '2023-03-02', end: '2024-03-01' }, '2024-03-01', [])
       .flat()
-      .filter((d) => !d.future);
-    expect(cells).toHaveLength(365);
+      .filter((d) => !d.outside);
+    expect(cells).toHaveLength(366);
     expect(cells.at(-1)?.date).toBe('2024-03-01');
   });
 });
