@@ -30,6 +30,8 @@ export function DateRangeSheet({
   const [field, setField] = useState<'start' | 'end'>('start');
   const [month, setMonth] = useState(range.start.slice(0, 7));
   const [wasOpen, setWasOpen] = useState(isOpen);
+  // A closed sheet stays mounted in its portal; its calendar is built only while it is shown.
+  const [rendered, setRendered] = useState(isOpen);
   // Reset unapplied edits before rendering a newly opened sheet, retaining close animations.
   if (isOpen !== wasOpen) {
     setWasOpen(isOpen);
@@ -37,6 +39,7 @@ export function DateRangeSheet({
       setDraft(range);
       setField('start');
       setMonth(range.start.slice(0, 7));
+      setRendered(true);
     }
   }
   useEffect(() => {
@@ -93,101 +96,106 @@ export function DateRangeSheet({
           snapPoints={calendarSnapPoints}
           enableDynamicSizing={false}
           enableOverDrag={false}
-          footerComponent={footer}>
-          <CalendarScroll
-            enableFooterMarginAdjustment
-            contentContainerClassName="gap-4"
-            contentContainerStyle={{ paddingBottom: 16 }}>
-            <View className="flex-row items-center justify-between gap-2">
-              <BottomSheet.Title className="min-w-0 flex-1 text-xl font-semibold text-foreground">
-                {t('statistics.customRange')}
-              </BottomSheet.Title>
-              <Button size="sm" variant="ghost" onPress={onClose}>
-                {t('action.cancel')}
-              </Button>
-            </View>
-            <View className="flex-row flex-wrap gap-2">
-              {(['start', 'end'] as const).map((part) => (
-                <PressableFeedback
-                  key={part}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: field === part }}
-                  accessibilityLabel={t(`statistics.${part}`)}
-                  className={`min-w-[120px] flex-1 gap-1 rounded-2xl p-3 ${field === part ? 'bg-navigation-active/10' : 'bg-surface dark:bg-surface-secondary'}`}
-                  onPress={() => {
-                    setField(part);
-                    setMonth(draft[part].slice(0, 7));
-                  }}>
-                  <Text className="text-xs text-muted">{t(`statistics.${part}`)}</Text>
-                  <Text
-                    className={
-                      field === part ? 'text-sm font-semibold text-navigation-active' : 'text-sm text-foreground'
-                    }>
-                    {draft[part]}
-                  </Text>
-                </PressableFeedback>
-              ))}
-            </View>
-            <View className="gap-2 rounded-3xl bg-surface p-2 dark:bg-surface-secondary">
-              <View className="flex-row items-center justify-between">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  isIconOnly
-                  accessibilityLabel={t('statistics.previousMonth')}
-                  onPress={() => move(-1)}>
-                  ‹
-                </Button>
-                <Text className="min-w-0 flex-1 text-center text-sm font-semibold text-foreground">
-                  {month.slice(0, 4)} · {monthName}
-                </Text>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  isIconOnly
-                  accessibilityLabel={t('statistics.nextMonth')}
-                  isDisabled={month >= today.slice(0, 7)}
-                  onPress={() => move(1)}>
-                  ›
+          footerComponent={footer}
+          onChange={(index: number) => {
+            if (index === -1 && !isOpen) setRendered(false);
+          }}>
+          {rendered ? (
+            <CalendarScroll
+              enableFooterMarginAdjustment
+              contentContainerClassName="gap-4"
+              contentContainerStyle={{ paddingBottom: 16 }}>
+              <View className="flex-row items-center justify-between gap-2">
+                <BottomSheet.Title className="min-w-0 flex-1 text-xl font-semibold text-foreground">
+                  {t('statistics.customRange')}
+                </BottomSheet.Title>
+                <Button size="sm" variant="ghost" onPress={onClose}>
+                  {t('action.cancel')}
                 </Button>
               </View>
-              <View className="flex-row">
-                {weekdays.map((day) => (
-                  <Text key={day} className="flex-1 py-2 text-center text-[10px] text-muted">
-                    {day}
-                  </Text>
+              <View className="flex-row flex-wrap gap-2">
+                {(['start', 'end'] as const).map((part) => (
+                  <PressableFeedback
+                    key={part}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: field === part }}
+                    accessibilityLabel={t(`statistics.${part}`)}
+                    className={`min-w-[120px] flex-1 gap-1 rounded-2xl p-3 ${field === part ? 'bg-navigation-active/10' : 'bg-surface dark:bg-surface-secondary'}`}
+                    onPress={() => {
+                      setField(part);
+                      setMonth(draft[part].slice(0, 7));
+                    }}>
+                    <Text className="text-xs text-muted">{t(`statistics.${part}`)}</Text>
+                    <Text
+                      className={
+                        field === part ? 'text-sm font-semibold text-navigation-active' : 'text-sm text-foreground'
+                      }>
+                      {draft[part]}
+                    </Text>
+                  </PressableFeedback>
                 ))}
               </View>
-              {Array.from({ length: rows }, (_, week) => (
-                <View key={week} className="flex-row">
-                  {Array.from({ length: 7 }, (_, weekday) => {
-                    const date = shiftDate(gridStart, week * 7 + weekday);
-                    const shown = date.slice(0, 7) === month;
-                    const edge = date === draft.start || date === draft.end;
-                    const inside = valid && date > draft.start && date < draft.end;
-                    return (
-                      <PressableFeedback
-                        key={date}
-                        accessibilityRole="button"
-                        accessibilityLabel={date}
-                        accessibilityState={{ selected: edge, disabled: !shown || date > today }}
-                        isDisabled={!shown || date > today}
-                        className={`min-h-11 min-w-0 flex-1 items-center justify-center rounded-lg py-2 ${edge ? 'bg-navigation-active/15' : inside ? 'bg-default' : ''}`}
-                        onPress={() => {
-                          setDraft((previous) => ({ ...previous, [field]: date }));
-                          if (field === 'start') setField('end');
-                        }}>
-                        <Text
-                          className={`${edge ? 'font-semibold text-navigation-active' : 'text-foreground'} text-sm ${!shown ? 'opacity-0' : date > today ? 'opacity-30' : ''}`}>
-                          {Number(date.slice(8))}
-                        </Text>
-                      </PressableFeedback>
-                    );
-                  })}
+              <View className="gap-2 rounded-3xl bg-surface p-2 dark:bg-surface-secondary">
+                <View className="flex-row items-center justify-between">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    isIconOnly
+                    accessibilityLabel={t('statistics.previousMonth')}
+                    onPress={() => move(-1)}>
+                    ‹
+                  </Button>
+                  <Text className="min-w-0 flex-1 text-center text-sm font-semibold text-foreground">
+                    {month.slice(0, 4)} · {monthName}
+                  </Text>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    isIconOnly
+                    accessibilityLabel={t('statistics.nextMonth')}
+                    isDisabled={month >= today.slice(0, 7)}
+                    onPress={() => move(1)}>
+                    ›
+                  </Button>
                 </View>
-              ))}
-            </View>
-          </CalendarScroll>
+                <View className="flex-row">
+                  {weekdays.map((day) => (
+                    <Text key={day} className="flex-1 py-2 text-center text-[10px] text-muted">
+                      {day}
+                    </Text>
+                  ))}
+                </View>
+                {Array.from({ length: rows }, (_, week) => (
+                  <View key={week} className="flex-row">
+                    {Array.from({ length: 7 }, (_, weekday) => {
+                      const date = shiftDate(gridStart, week * 7 + weekday);
+                      const shown = date.slice(0, 7) === month;
+                      const edge = date === draft.start || date === draft.end;
+                      const inside = valid && date > draft.start && date < draft.end;
+                      return (
+                        <PressableFeedback
+                          key={date}
+                          accessibilityRole="button"
+                          accessibilityLabel={date}
+                          accessibilityState={{ selected: edge, disabled: !shown || date > today }}
+                          isDisabled={!shown || date > today}
+                          className={`min-h-11 min-w-0 flex-1 items-center justify-center rounded-lg py-2 ${edge ? 'bg-navigation-active/15' : inside ? 'bg-default' : ''}`}
+                          onPress={() => {
+                            setDraft((previous) => ({ ...previous, [field]: date }));
+                            if (field === 'start') setField('end');
+                          }}>
+                          <Text
+                            className={`${edge ? 'font-semibold text-navigation-active' : 'text-foreground'} text-sm ${!shown ? 'opacity-0' : date > today ? 'opacity-30' : ''}`}>
+                            {Number(date.slice(8))}
+                          </Text>
+                        </PressableFeedback>
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
+            </CalendarScroll>
+          ) : null}
         </BottomSheet.Content>
       </BottomSheet.Portal>
     </BottomSheet>

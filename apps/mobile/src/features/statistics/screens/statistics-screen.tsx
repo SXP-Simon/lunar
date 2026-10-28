@@ -29,6 +29,8 @@ import { DateRangeSheet } from '../components/date-range-sheet';
 type Dimension = StatisticsDimension | 'custom';
 const DIMENSIONS: readonly Dimension[] = ['week', 'month', 'year', 'custom'];
 
+const NO_DAYS: readonly { date: string; milliseconds: number }[] = [];
+
 const currentDateKey = () => readingDateKey(Date.now(), Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
 
 export function StatisticsScreen() {
@@ -144,6 +146,13 @@ export function StatisticsScreen() {
     setDayOpen(true);
   }, []);
   const closeCalendar = useCallback(() => setCalendarOpen(false), []);
+  const openCalendarDay = useCallback(
+    (date: string) => {
+      setCalendarOpen(false);
+      openDay(date);
+    },
+    [openDay],
+  );
   const openMonth = (date: string) => {
     const months = (value: string) => Number(value.slice(0, 4)) * 12 + Number(value.slice(5, 7));
     setDimension('month');
@@ -273,13 +282,10 @@ export function StatisticsScreen() {
         focus={range.end}
         initialMode={dimension === 'year' ? 'year' : 'month'}
         today={today}
-        daily={data?.daily ?? []}
+        daily={data?.daily ?? NO_DAYS}
         isOpen={calendarOpen}
         onClose={closeCalendar}
-        onOpenDay={(date) => {
-          setCalendarOpen(false);
-          openDay(date);
-        }}
+        onOpenDay={openCalendarDay}
       />
       <DailyReadingSheet
         date={selected}

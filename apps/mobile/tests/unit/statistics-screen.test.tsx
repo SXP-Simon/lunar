@@ -85,7 +85,16 @@ vi.mock('react-native-reanimated', async () => {
   };
 });
 vi.mock('react-native', () => ({
-  View: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  View: ({
+    children,
+    onLayout,
+  }: {
+    children: ReactNode;
+    onLayout?: (event: { nativeEvent: { layout: { width: number; height: number } } }) => void;
+  }) => {
+    onLayout?.({ nativeEvent: { layout: { width: 371, height: 600 } } });
+    return <div>{children}</div>;
+  },
   Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
   ScrollView: ({ children }: { children: ReactNode }) => <section>{children}</section>,
   Pressable: ({
@@ -208,10 +217,18 @@ vi.mock('@gorhom/bottom-sheet', () => ({
   BottomSheetFlatList: ({
     data,
     renderItem,
+    keyExtractor,
   }: {
     data: unknown[];
     renderItem: (entry: { item: unknown; index: number }) => ReactNode;
-  }) => <div>{data.map((item, index) => renderItem({ item, index }))}</div>,
+    keyExtractor: (item: unknown) => string;
+  }) => (
+    <div>
+      {data.map((item, index) => (
+        <React.Fragment key={keyExtractor(item)}>{renderItem({ item, index })}</React.Fragment>
+      ))}
+    </div>
+  ),
 }));
 vi.mock('heroui-native/tabs', () => {
   const Part = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
@@ -262,6 +279,12 @@ function render() {
   state.actions.clear();
   state.longActions.clear();
   return renderToStaticMarkup(<StatisticsScreen />);
+}
+/** Opening mounts the calendar, whose list then measures its width before rendering months. */
+function showCalendar() {
+  state.openCalendar!();
+  render();
+  render();
 }
 async function settle() {
   await Promise.resolve();
@@ -342,7 +365,7 @@ describe('statistics mobile screen interactions', () => {
     const cleanup = state.focus!();
     await settle();
     expect(render()).not.toContain('statistics.activity');
-    state.openCalendar!();
+    showCalendar();
     expect(render()).toContain('statistics.activity');
     expect([...state.actions.keys()].some((key) => key.startsWith('2026-10-17,'))).toBe(false);
     const day = [...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'));
@@ -359,7 +382,7 @@ describe('statistics mobile screen interactions', () => {
     render();
     const cleanup = state.focus!();
     await settle();
-    state.openCalendar!();
+    showCalendar();
     render();
     state.actions.get([...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'))!)!();
     expect(render()).toContain('cover');
@@ -374,7 +397,7 @@ describe('statistics mobile screen interactions', () => {
     render();
     const cleanup = state.focus!();
     await settle();
-    state.openCalendar!();
+    showCalendar();
     render();
     state.actions.get([...state.actions.keys()].find((key) => key.startsWith('2026-10-14,'))!)!();
     const markup = render();
@@ -387,7 +410,7 @@ describe('statistics mobile screen interactions', () => {
     await settle();
     state.locale = 'zh-CN';
     expect(render()).toContain('&quot;month&quot;:&quot;10月&quot;');
-    state.openCalendar!();
+    showCalendar();
     let markup = render();
     expect(markup).toContain('周日');
     expect(markup).toContain('1月 · statistics.daysCount{&quot;count&quot;:0}');
