@@ -89,6 +89,11 @@ export function ReadingCalendarSheet({
   const [rendered, setRendered] = useState(isOpen);
   // Kept here rather than in the list, which remounts per target and would lose the measurement.
   const [width, setWidth] = useState(0);
+  /*
+   * Gorhom pins a scrollable to the top until the sheet reaches its highest snap point, which
+   * would undo the list's initial scroll during the opening animation; the list mounts after it.
+   */
+  const [settled, setSettled] = useState(false);
   if (isOpen !== wasOpen) {
     setWasOpen(isOpen);
     if (isOpen) {
@@ -124,6 +129,7 @@ export function ReadingCalendarSheet({
           enableDynamicSizing={false}
           enableOverDrag={false}
           onChange={(index: number) => {
+            setSettled(index >= 0);
             if (index === -1 && !isOpen) setRendered(false);
           }}>
           <View className="gap-3 pb-3">
@@ -163,6 +169,7 @@ export function ReadingCalendarSheet({
               today={today}
               daily={daily}
               width={width}
+              settled={settled}
               onWidth={setWidth}
               onOpenDay={onOpenDay}
               onOpenMonth={switchMode}
@@ -180,6 +187,7 @@ function CalendarList({
   today,
   daily,
   width,
+  settled,
   onWidth,
   onOpenDay,
   onOpenMonth,
@@ -189,6 +197,7 @@ function CalendarList({
   today: string;
   daily: readonly { date: string; milliseconds: number }[];
   width: number;
+  settled: boolean;
   onWidth: (width: number) => void;
   onOpenDay: (date: string) => void;
   onOpenMonth: (mode: CalendarMode, date: string) => void;
@@ -246,10 +255,11 @@ function CalendarList({
     maxToRenderPerBatch: 2,
     windowSize: 5,
   };
-  // Every block height depends on the measured width, so the list waits for the first layout.
+  // Every block height depends on the measured width, so the list waits for the first layout
+  // as well as for the sheet to finish opening.
   return (
     <View className="flex-1" onLayout={({ nativeEvent }) => onWidth(nativeEvent.layout.width)}>
-      {!width ? null : mode === 'month' ? (
+      {!width || !settled ? null : mode === 'month' ? (
         <BottomSheetFlatList<MonthCalendar>
           {...listProps}
           data={months}

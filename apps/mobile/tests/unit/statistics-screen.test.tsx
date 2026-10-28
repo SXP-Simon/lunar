@@ -254,7 +254,11 @@ vi.mock('heroui-native/bottom-sheet', () => {
     BottomSheet: Object.assign(Root, {
       Portal: Part,
       Overlay: () => null,
-      Content: Part,
+      // Content only renders while open, where a real sheet would report reaching its snap point.
+      Content: ({ children, onChange }: { children: ReactNode; onChange?: (index: number) => void }) => {
+        onChange?.(0);
+        return <div>{children}</div>;
+      },
       Title: Part,
       Description: Part,
     }),
