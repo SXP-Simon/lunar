@@ -1,7 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { preparePosterTypeface } from '../infrastructure/poster-renderer';
-import { Image as CoverImage } from 'expo-image';
-import { withUniwind } from 'uniwind';
 import { SymbolView } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { ControlField } from 'heroui-native/control-field';
@@ -16,7 +14,6 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } fro
 import {
   ActivityIndicator,
   BackHandler,
-  FlatList,
   Keyboard,
   KeyboardAvoidingView,
   Linking,
@@ -26,6 +23,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '@/i18n';
 import { ImageViewer } from '@/components/ui/image-viewer';
@@ -34,6 +32,7 @@ import { DateRangeSheet } from '../components/date-range-sheet';
 import { PosterCanvas, type PosterCanvasHandle } from '../components/poster-canvas';
 import { PosterCoverEditor } from '../components/poster-cover-editor';
 import { PosterAction, PosterOption, PosterOptionRow, PosterOptionSection } from '../components/poster-controls';
+import { PosterBookPicker } from '../components/poster-book-picker';
 import type { PosterCrop } from '../domain/poster-crop';
 import {
   buildPoster,
@@ -56,7 +55,10 @@ import {
   writePosterImage,
 } from '../infrastructure/poster-image';
 
-const StyledCoverImage = withUniwind(CoverImage);
+// Field colors equal the drawer surface, so inputs take the grouped rows' background instead.
+const FIELD_CLASS = 'rounded-2xl border-0 bg-background shadow-none dark:bg-surface-secondary';
+const Entering = FadeIn.duration(180);
+const Resizing = LinearTransition.duration(220);
 const RANGE_PRESETS = ['year', 'lastMonth', 'quarter', 'lastYear'] as const;
 const RANGE_PRESET_LABELS = {
   year: 'statistics.posterYear',
@@ -97,17 +99,15 @@ export function PosterScreen() {
   const [readyPreview, setReadyPreview] = useState('');
   const [crops, setCrops] = useState<Record<string, PosterCrop>>({});
   const [cropEditor, setCropEditor] = useState<{ uri: string; labels: PosterLabels; initialId?: string }>();
-  const [excluded, setExcluded] = useState<Set<string>>(() => new Set()),
-    [selection, setSelection] = useState<Set<string>>(() => new Set()),
-    [choosing, setChoosing] = useState(false);
+  const [excluded, setExcluded] = useState<Set<string>>(() => new Set());
   const [preparation, setPreparation] = useState<{ source: readonly PosterBook[]; books?: PosterBook[] }>(),
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(''),
     [saved, setSaved] = useState<Set<number>>(() => new Set()),
     [denied, setDenied] = useState(false);
   const iconColor = useThemeColor('foreground');
-  // The drawer shows the export actions, or the poster settings in their place.
-  const [panel, setPanel] = useState<'actions' | 'settings'>('actions');
+  // The drawer shows the export actions, or the poster settings and book picker in their place.
+  const [panel, setPanel] = useState<'actions' | 'settings' | 'books'>('actions');
   const editor = useRef<ScrollView>(null);
   const focusEditor = useCallback(() => {
     setTimeout(() => editor.current?.scrollToEnd({ animated: true }), 180);
@@ -220,18 +220,14 @@ export function PosterScreen() {
         abort.current = true;
         return true;
       }
-      if (choosing) {
-        setChoosing(false);
-        return true;
-      }
-      if (panel === 'settings') {
-        setPanel('actions');
+      if (panel !== 'actions') {
+        setPanel(panel === 'books' ? 'settings' : 'actions');
         return true;
       }
       return false;
     });
     return () => sub.remove();
-  }, [choosing, panel]);
+  }, [panel]);
   const applyRange = useCallback(
     (next: DateRange) => {
       setRange(next);
@@ -312,79 +308,6 @@ export function PosterScreen() {
       }
     }
   }
-  if (choosing)
-    return (
-      <View className="flex-1 bg-background" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
-        <View className="gap-3 px-4 py-3">
-          <Button variant="ghost" onPress={() => setChoosing(false)}>
-            {t('statistics.posterBack')}
-          </Button>
-          <Text className="text-xl font-semibold text-foreground">{t('statistics.posterChooseBooks')}</Text>
-          <View className="flex-row gap-3">
-            <Button variant="secondary" onPress={() => setSelection(new Set())}>
-              {t('statistics.posterAll')}
-            </Button>
-            <Button variant="secondary" onPress={() => setSelection(new Set(period?.books.map((b) => b.id)))}>
-              {t('statistics.posterNone')}
-            </Button>
-          </View>
-        </View>
-        <FlatList
-          data={period?.books ?? []}
-          keyExtractor={(book) => book.id}
-          extraData={selection}
-          initialNumToRender={12}
-          windowSize={5}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-          renderItem={({ item: book }) => (
-            <PressableFeedback
-              accessibilityRole="checkbox"
-              accessibilityLabel={book.title}
-              accessibilityState={{ checked: !selection.has(book.id) }}
-              className="min-h-20 flex-row items-center gap-3 border-b border-separator py-3"
-              onPress={() =>
-                setSelection((previous) => {
-                  const next = new Set(previous);
-                  if (next.has(book.id)) next.delete(book.id);
-                  else next.add(book.id);
-                  return next;
-                })
-              }>
-              <StyledCoverImage
-                source={book.coverUri ? { uri: book.coverUri } : undefined}
-                className="h-14 w-10 rounded-md bg-default"
-                contentFit="cover"
-              />
-              <Text className="text-lg text-navigation-active">{selection.has(book.id) ? '○' : '✓'}</Text>
-              <View className="min-w-0 flex-1 gap-1">
-                <Text numberOfLines={2} className="text-sm text-foreground">
-                  {book.title}
-                </Text>
-                <Text numberOfLines={1} className="text-xs text-muted">
-                  {book.author || t('statistics.posterUnknownAuthor')}
-                </Text>
-              </View>
-            </PressableFeedback>
-          )}
-        />
-        <View className="gap-2 bg-surface p-4">
-          <Text className="text-xs text-muted">
-            {t('statistics.posterBooks', {
-              selected: (period?.books.length ?? 0) - selection.size,
-              total: period?.books.length ?? 0,
-            })}
-          </Text>
-          <Button
-            onPress={() => {
-              setExcluded(new Set(selection));
-              setPage(0);
-              setChoosing(false);
-            }}>
-            {t('statistics.posterApply')}
-          </Button>
-        </View>
-      </View>
-    );
   const previewReady = readyPreview === `${job}:${actualPage}`;
   const pageCount = document?.pages.length ?? 0;
   const savedAll = pageCount > 0 && saved.size === pageCount;
@@ -524,7 +447,6 @@ export function PosterScreen() {
               }}
             />
           </PosterOptionRow>
-          <Text className="px-1 text-xs text-muted">{t('statistics.posterHint')}</Text>
         </PosterOptionSection>
         <PosterOptionSection label={t('statistics.posterContent')}>
           <View className="overflow-hidden rounded-2xl bg-background dark:bg-surface-secondary">
@@ -532,10 +454,7 @@ export function PosterScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('statistics.posterChooseBooks')}
               className="min-h-14 flex-row items-center justify-between gap-3 px-4"
-              onPress={() => {
-                setSelection(new Set(excluded));
-                setChoosing(true);
-              }}>
+              onPress={() => setPanel('books')}>
               <Text className="text-base text-foreground">{t('statistics.posterChooseBooks')}</Text>
               <Text className="text-sm text-muted">
                 {selected?.length ?? 0} / {period?.books.length ?? 0} ›
@@ -559,23 +478,25 @@ export function PosterScreen() {
         </PosterOptionSection>
         <PosterOptionSection label={t('statistics.posterText')}>
           <TextField>
-            <Label>{t('statistics.posterTitleLabel')}</Label>
+            <Label className="px-1 text-sm text-foreground">{t('statistics.posterTitleLabel')}</Label>
             <Input
               accessibilityLabel={t('statistics.posterTitleLabel')}
               value={title}
               onChangeText={setTitle}
               onFocus={focusEditor}
+              className={FIELD_CLASS}
               placeholder={defaultTitle}
               maxLength={20}
             />
           </TextField>
           <TextField>
-            <Label>{t('statistics.posterQuoteLabel')}</Label>
+            <Label className="px-1 text-sm text-foreground">{t('statistics.posterQuoteLabel')}</Label>
             <Input
               accessibilityLabel={t('statistics.posterQuoteLabel')}
               value={quote}
               onChangeText={setQuote}
               onFocus={focusEditor}
+              className={FIELD_CLASS}
               maxLength={40}
             />
           </TextField>
@@ -704,10 +625,31 @@ export function PosterScreen() {
           </Text>
         )}
       </ScrollView>
-      <View className="rounded-t-3xl bg-surface pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+      <Animated.View
+        layout={Resizing}
+        className="overflow-hidden rounded-t-3xl bg-surface pt-2"
+        style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
         <View className="mb-1 h-1 w-9 self-center rounded-full bg-default" />
-        {panel === 'settings' && !busy ? settings : actions}
-      </View>
+        <Animated.View key={busy ? 'busy' : panel} entering={Entering}>
+          {busy || panel === 'actions' ? (
+            actions
+          ) : panel === 'settings' ? (
+            settings
+          ) : (
+            <PosterBookPicker
+              books={period?.books ?? []}
+              excluded={excluded}
+              maxHeight={height * 0.55}
+              onBack={() => setPanel('settings')}
+              onApply={(next) => {
+                setExcluded(next);
+                setPage(0);
+                setPanel('settings');
+              }}
+            />
+          )}
+        </Animated.View>
+      </Animated.View>
       {cropEditor && document && (
         <PosterCoverEditor
           page={document.pages[actualPage]}
