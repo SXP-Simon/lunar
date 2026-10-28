@@ -2,11 +2,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { preparePosterTypeface } from '../infrastructure/poster-renderer';
 import { Image as CoverImage } from 'expo-image';
 import { withUniwind } from 'uniwind';
+import { SymbolView } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
+import { ControlField } from 'heroui-native/control-field';
+import { useThemeColor } from 'heroui-native/hooks';
 import { Input } from 'heroui-native/input';
 import { Label } from 'heroui-native/label';
 import { TextField } from 'heroui-native/text-field';
 import { PressableFeedback } from 'heroui-native/pressable-feedback';
+import { Switch } from 'heroui-native/switch';
 import { useToast } from 'heroui-native/toast';
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import {
@@ -29,6 +33,7 @@ import { readingDateKey } from '@/features/reader';
 import { DateRangeSheet } from '../components/date-range-sheet';
 import { PosterCanvas, type PosterCanvasHandle } from '../components/poster-canvas';
 import { PosterCoverEditor } from '../components/poster-cover-editor';
+import { PosterAction, PosterOption, PosterOptionRow, PosterOptionSection } from '../components/poster-controls';
 import type { PosterCrop } from '../domain/poster-crop';
 import {
   buildPoster,
@@ -52,6 +57,18 @@ import {
 } from '../infrastructure/poster-image';
 
 const StyledCoverImage = withUniwind(CoverImage);
+const RANGE_PRESETS = ['year', 'lastMonth', 'quarter', 'lastYear'] as const;
+const RANGE_PRESET_LABELS = {
+  year: 'statistics.posterYear',
+  lastMonth: 'statistics.posterLastMonth',
+  quarter: 'statistics.posterQuarter',
+  lastYear: 'statistics.posterLastYear',
+} as const;
+const OUTPUT_LABELS = {
+  single: 'statistics.posterSingle',
+  long: 'statistics.posterLong',
+  pages: 'statistics.posterPages',
+} as const;
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export function PosterScreen() {
   const router = useRouter(),
@@ -88,21 +105,16 @@ export function PosterScreen() {
     [progress, setProgress] = useState(''),
     [saved, setSaved] = useState<Set<number>>(() => new Set()),
     [denied, setDenied] = useState(false);
+  const iconColor = useThemeColor('foreground');
+  // The drawer shows the export actions, or the poster settings in their place.
+  const [panel, setPanel] = useState<'actions' | 'settings'>('actions');
   const editor = useRef<ScrollView>(null);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const focusEditor = useCallback(() => {
     setTimeout(() => editor.current?.scrollToEnd({ animated: true }), 180);
   }, []);
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', () => {
-      setKeyboardVisible(true);
-      focusEditor();
-    });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
+    const show = Keyboard.addListener('keyboardDidShow', focusEditor);
+    return () => show.remove();
   }, [focusEditor]);
   const canvas = useRef<PosterCanvasHandle>(null),
     abort = useRef(false),
@@ -212,10 +224,14 @@ export function PosterScreen() {
         setChoosing(false);
         return true;
       }
+      if (panel === 'settings') {
+        setPanel('actions');
+        return true;
+      }
       return false;
     });
     return () => sub.remove();
-  }, [choosing]);
+  }, [choosing, panel]);
   const applyRange = useCallback(
     (next: DateRange) => {
       setRange(next);
@@ -296,59 +312,6 @@ export function PosterScreen() {
       }
     }
   }
-  const footer = (
-    <View className="gap-2 bg-surface px-4 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-      {!!progress && (
-        <Text accessibilityLiveRegion="polite" className="text-xs text-muted">
-          {progress}
-        </Text>
-      )}
-      {denied && (
-        <Button variant="ghost" onPress={() => void Linking.openSettings()}>
-          {t('statistics.posterSettings')}
-        </Button>
-      )}
-      {busy ? (
-        <Button
-          variant="secondary"
-          onPress={() => {
-            abort.current = true;
-          }}>
-          {t('statistics.posterCancel')}
-        </Button>
-      ) : (
-        <>
-          <Button
-            isDisabled={!canExport || saved.size === document?.pages.length}
-            onPress={() => void exportImages('all')}>
-            {saved.size === document?.pages.length
-              ? t('statistics.posterSavedAll')
-              : saved.size
-                ? t('statistics.posterRetry')
-                : t('statistics.posterSaveAll')}
-          </Button>
-          <View className="flex-row gap-2">
-            {(document?.pages.length ?? 0) > 1 && (
-              <Button
-                className="min-w-0 flex-1"
-                variant="secondary"
-                isDisabled={!canExport || saved.has(actualPage)}
-                onPress={() => void exportImages('current')}>
-                {t('statistics.posterSaveCurrent')}
-              </Button>
-            )}
-            <Button
-              className="min-w-0 flex-1"
-              variant="secondary"
-              isDisabled={!canExport}
-              onPress={() => void exportImages('share')}>
-              {t('statistics.posterShare')}
-            </Button>
-          </View>
-        </>
-      )}
-    </View>
-  );
   if (choosing)
     return (
       <View className="flex-1 bg-background" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
@@ -422,203 +385,180 @@ export function PosterScreen() {
         </View>
       </View>
     );
-  return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-background"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
-      <View className="flex-row items-center justify-between gap-3 px-4 py-2">
-        <Button size="sm" variant="ghost" isDisabled={busy} onPress={() => router.back()}>
-          {t('statistics.posterBack')}
-        </Button>
-        <Text className="min-w-0 flex-1 text-right text-base font-semibold text-foreground">
-          {t('statistics.posterEditor')}
+  const previewReady = readyPreview === `${job}:${actualPage}`;
+  const pageCount = document?.pages.length ?? 0;
+  const savedAll = pageCount > 0 && saved.size === pageCount;
+  const presets = [
+    { key: 'current', label: t('statistics.posterRangeCurrent'), range: original },
+    ...RANGE_PRESETS.map((kind) => ({
+      key: kind,
+      label: t(RANGE_PRESET_LABELS[kind]),
+      range: posterPreset(today, kind),
+    })),
+  ];
+  const customRange = !presets.some((preset) => preset.range.start === range.start && preset.range.end === range.end);
+  const actions = busy ? (
+    <View className="gap-3 px-5 py-4">
+      {!!progress && (
+        <Text accessibilityLiveRegion="polite" className="text-center text-sm text-muted">
+          {progress}
         </Text>
+      )}
+      <Button
+        variant="secondary"
+        onPress={() => {
+          abort.current = true;
+        }}>
+        {t('statistics.posterCancel')}
+      </Button>
+    </View>
+  ) : (
+    <View className="gap-1 pt-1">
+      {!!progress && (
+        <Text accessibilityLiveRegion="polite" className="px-5 text-center text-xs text-muted">
+          {progress}
+        </Text>
+      )}
+      {denied && (
+        <Button size="sm" variant="ghost" onPress={() => void Linking.openSettings()}>
+          <Button.Label className="text-navigation-active">{t('statistics.posterSettings')}</Button.Label>
+        </Button>
+      )}
+      <View className="flex-row items-center px-2">
+        <PosterAction
+          icon={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }}
+          label={t('statistics.posterStyle')}
+          onPress={() => setPanel('settings')}
+        />
+        <PosterAction
+          icon={{ ios: 'crop', android: 'crop', web: 'crop' }}
+          label={t('statistics.posterCropTitle')}
+          disabled={!previewReady || !document?.pages[actualPage].tiles.some((tile) => tile.book.coverUri)}
+          onPress={() => canvas.current?.edit()}
+        />
+        <PosterAction
+          icon={{ ios: 'arrow.down', android: 'file_download', web: 'file_download' }}
+          label={t(
+            savedAll
+              ? 'statistics.posterSavedAll'
+              : saved.size
+                ? 'statistics.posterRetry'
+                : pageCount > 1
+                  ? 'statistics.posterSaveAll'
+                  : 'statistics.posterSave',
+          )}
+          disabled={!canExport || savedAll}
+          onPress={() => void exportImages('all')}
+        />
+        <PosterAction
+          icon={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }}
+          label={t('statistics.posterShare')}
+          disabled={!canExport}
+          onPress={() => void exportImages('share')}
+        />
       </View>
-      <ScrollView ref={editor} keyboardShouldPersistTaps="handled" contentContainerClassName="gap-4 px-4 pb-6">
-        {loadError || fontError || prepareFailed ? (
-          <View className="gap-2">
-            <Text className="text-danger">{t('statistics.posterLoadFailed')}</Text>
-            <Button
-              onPress={() => {
-                setLoadError(false);
-                setRevision((v) => v + 1);
-              }}>
-              {t('statistics.retry')}
-            </Button>
-          </View>
-        ) : null}
-        {(preparing && !loadError) || (!fontReady && !fontError) ? (
-          <View className="gap-2 py-8">
-            <ActivityIndicator />
-            <Text className="text-center text-sm text-muted">{t('statistics.posterPreparing')}</Text>
-          </View>
-        ) : null}
-        {document && document.bookCount > 0 && fontReady && !preparing ? (
-          <>
-            <Text className="text-center text-xs text-muted">
-              {t('statistics.posterImageCount', { count: document.bookCount, pages: document.pages.length })}
-            </Text>
-            <ScrollView
-              nestedScrollEnabled
-              style={{ maxHeight: output === 'long' ? 320 : undefined }}
-              contentContainerClassName="items-center">
-              <PosterCanvas
-                key={`${job}:${actualPage}`}
-                ref={canvas}
-                document={document}
-                page={actualPage}
-                width={Math.min(width - insets.left - insets.right - 32, 600)}
-                labels={{
-                  showBookDetails,
-                  title: title.trim() || defaultTitle,
-                  quote,
-                  range: `${range.start} — ${range.end}`,
-                  total: t('statistics.posterTotal', { count: document.bookCount, time: duration(document.total) }),
-                  unknownAuthor: t('statistics.posterUnknownAuthor'),
-                  page: document.pages.length > 1 ? `${actualPage + 1} / ${document.pages.length}` : '',
-                }}
-                onOpen={(uri, origin) => {
-                  if (!saving.current) setPreview({ uri, origin });
-                }}
-                onReady={(ready) => setReadyPreview(ready ? `${job}:${actualPage}` : '')}
-                onEdit={(uri, labels, tile) => {
-                  if (!saving.current) setCropEditor({ uri, labels, initialId: tile?.book.id });
-                }}
+    </View>
+  );
+  const settings = (
+    <View style={{ maxHeight: height * 0.55 }}>
+      <View className="flex-row items-center justify-between px-3 pb-1">
+        <Button
+          accessibilityLabel={t('statistics.posterBackToActions')}
+          isIconOnly
+          onPress={() => setPanel('actions')}
+          size="sm"
+          variant="ghost">
+          <SymbolView
+            name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
+            size={21}
+            tintColor={iconColor}
+          />
+        </Button>
+        <Text accessibilityRole="header" className="text-lg font-semibold text-foreground">
+          {t('statistics.posterStyle')}
+        </Text>
+        <Button onPress={() => setPanel('actions')} size="sm" variant="ghost">
+          <Button.Label className="text-navigation-active">{t('statistics.posterCropApply')}</Button.Label>
+        </Button>
+      </View>
+      <ScrollView
+        ref={editor}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="gap-5 px-5 pb-6 pt-2">
+        <PosterOptionSection label={t('statistics.dateRange')}>
+          <PosterOptionRow>
+            {presets.map((preset) => (
+              <PosterOption
+                key={preset.key}
+                label={preset.label}
+                selected={preset.range.start === range.start && preset.range.end === range.end}
+                onPress={() => applyRange(preset.range)}
               />
-            </ScrollView>
-            <View className="flex-row gap-2">
-              <Button
-                className="min-w-0 flex-1"
-                variant="ghost"
-                isDisabled={busy || readyPreview !== `${job}:${actualPage}`}
-                onPress={() => canvas.current?.open()}>
-                {t('statistics.posterPreview')}
-              </Button>
-              <Button
-                className="min-w-0 flex-1"
-                variant="secondary"
-                isDisabled={
-                  busy ||
-                  readyPreview !== `${job}:${actualPage}` ||
-                  !document.pages[actualPage].tiles.some((tile) => tile.book.coverUri)
-                }
-                onPress={() => canvas.current?.edit()}>
-                {t('statistics.posterCropTitle')}
-              </Button>
-            </View>
-            {document.pages.length > 1 && (
-              <View className="flex-row items-center justify-between gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  isDisabled={busy || actualPage === 0}
-                  onPress={() => setPage((p) => p - 1)}>
-                  {t('statistics.posterPrevious')}
-                </Button>
-                <Text className="text-xs text-muted">
-                  {actualPage + 1} / {document.pages.length}
-                </Text>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  isDisabled={busy || actualPage >= document.pages.length - 1}
-                  onPress={() => setPage((p) => p + 1)}>
-                  {t('statistics.posterNext')}
-                </Button>
-              </View>
-            )}
-          </>
-        ) : null}
-        {prepared?.length === 0 && <Text className="text-sm text-muted">{t('statistics.posterEmptySelection')}</Text>}
-        {!!fallback && (
-          <Text className="text-xs text-muted">{t('statistics.posterCoverFallback', { count: fallback })}</Text>
-        )}
-        <View className="gap-3 rounded-3xl bg-surface p-4">
-          <Button
-            variant="secondary"
-            isDisabled={busy}
-            onPress={() => {
-              setSelection(new Set(excluded));
-              setChoosing(true);
-            }}>
-            {t('statistics.posterBooks', { selected: selected?.length ?? 0, total: period?.books.length ?? 0 })}
-          </Button>
-          <View className="flex-row gap-2">
+            ))}
+            <PosterOption
+              label={customRange ? `${range.start} → ${range.end}` : t('statistics.customRange')}
+              selected={customRange}
+              onPress={() => setRangeOpen(true)}
+            />
+          </PosterOptionRow>
+        </PosterOptionSection>
+        <PosterOptionSection label={t('statistics.posterLayout')}>
+          <PosterOptionRow>
             {(['single', 'long', 'pages'] as const).map((value) => (
-              <Button
+              <PosterOption
                 key={value}
-                className="min-w-0 flex-1"
-                variant={output === value ? 'secondary' : 'ghost'}
-                isDisabled={busy}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: output === value }}
+                label={t(OUTPUT_LABELS[value])}
+                selected={output === value}
                 onPress={() => {
                   setOutput(value);
                   setPage(0);
-                }}>
-                {t(
-                  value === 'single'
-                    ? 'statistics.posterSingle'
-                    : value === 'pages'
-                      ? 'statistics.posterPages'
-                      : 'statistics.posterLong',
-                )}
-              </Button>
+                }}
+              />
             ))}
+            <PosterOption
+              label={t('statistics.posterShuffle')}
+              onPress={() => {
+                setSeed((value) => value + 1);
+                setPage(0);
+              }}
+            />
+          </PosterOptionRow>
+          <Text className="px-1 text-xs text-muted">{t('statistics.posterHint')}</Text>
+        </PosterOptionSection>
+        <PosterOptionSection label={t('statistics.posterContent')}>
+          <View className="overflow-hidden rounded-2xl bg-background dark:bg-surface-secondary">
+            <PressableFeedback
+              accessibilityRole="button"
+              accessibilityLabel={t('statistics.posterChooseBooks')}
+              className="min-h-14 flex-row items-center justify-between gap-3 px-4"
+              onPress={() => {
+                setSelection(new Set(excluded));
+                setChoosing(true);
+              }}>
+              <Text className="text-base text-foreground">{t('statistics.posterChooseBooks')}</Text>
+              <Text className="text-sm text-muted">
+                {selected?.length ?? 0} / {period?.books.length ?? 0} ›
+              </Text>
+            </PressableFeedback>
+            <ControlField
+              accessibilityLabel={t('statistics.posterBookDetails')}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: showBookDetails }}
+              className="min-h-14 flex-row items-center justify-between gap-3 px-4"
+              isSelected={showBookDetails}
+              onSelectedChange={setShowBookDetails}>
+              <Text className="text-base text-foreground">{t('statistics.posterBookDetails')}</Text>
+              <ControlField.Indicator>
+                <Switch className="h-7 w-12" accessibilityElementsHidden>
+                  <Switch.Thumb className="size-5" />
+                </Switch>
+              </ControlField.Indicator>
+            </ControlField>
           </View>
-          <Button
-            variant="ghost"
-            isDisabled={busy}
-            onPress={() => {
-              setSeed((s) => s + 1);
-              setPage(0);
-            }}>
-            {t('statistics.posterShuffle')}
-          </Button>
-          <Text className="text-xs text-muted">{t('statistics.posterHint')}</Text>
-          <Button
-            variant="secondary"
-            accessibilityRole="switch"
-            accessibilityLabel={t('statistics.posterBookDetails')}
-            accessibilityState={{ checked: showBookDetails, disabled: busy }}
-            isDisabled={busy}
-            onPress={() => setShowBookDetails((value) => !value)}>
-            {t(showBookDetails ? 'statistics.posterHideBookDetails' : 'statistics.posterShowBookDetails')}
-          </Button>
-        </View>
-        <View className="gap-3 rounded-3xl bg-surface p-4">
-          <Text className="text-sm font-semibold text-foreground">{t('statistics.dateRange')}</Text>
-          <View className="flex-row flex-wrap gap-2">
-            <Button size="sm" variant="ghost" isDisabled={busy} onPress={() => applyRange(original)}>
-              {t('statistics.posterRangeCurrent')}
-            </Button>
-            {(['year', 'lastMonth', 'quarter', 'lastYear'] as const).map((kind) => (
-              <Button
-                key={kind}
-                size="sm"
-                variant="ghost"
-                isDisabled={busy}
-                onPress={() => applyRange(posterPreset(today, kind))}>
-                {t(
-                  (
-                    {
-                      year: 'statistics.posterYear',
-                      lastMonth: 'statistics.posterLastMonth',
-                      quarter: 'statistics.posterQuarter',
-                      lastYear: 'statistics.posterLastYear',
-                    } as const
-                  )[kind],
-                )}
-              </Button>
-            ))}
-          </View>
-          <Button variant="secondary" isDisabled={busy} onPress={() => setRangeOpen(true)}>
-            {range.start} → {range.end}
-          </Button>
-        </View>
-        <View className="gap-4 rounded-3xl bg-surface p-4">
-          <TextField isDisabled={busy}>
+        </PosterOptionSection>
+        <PosterOptionSection label={t('statistics.posterText')}>
+          <TextField>
             <Label>{t('statistics.posterTitleLabel')}</Label>
             <Input
               accessibilityLabel={t('statistics.posterTitleLabel')}
@@ -629,7 +569,7 @@ export function PosterScreen() {
               maxLength={20}
             />
           </TextField>
-          <TextField isDisabled={busy}>
+          <TextField>
             <Label>{t('statistics.posterQuoteLabel')}</Label>
             <Input
               accessibilityLabel={t('statistics.posterQuoteLabel')}
@@ -639,10 +579,135 @@ export function PosterScreen() {
               maxLength={40}
             />
           </TextField>
-          <Text className="text-xs text-muted">{t('statistics.posterPrivacy')}</Text>
-        </View>
+          <Text className="px-1 text-xs text-muted">{t('statistics.posterPrivacy')}</Text>
+        </PosterOptionSection>
       </ScrollView>
-      {!keyboardVisible && footer}
+    </View>
+  );
+  return (
+    <KeyboardAvoidingView
+      className="flex-1 bg-background"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
+      <View className="flex-row items-center gap-2 px-3 py-1">
+        <Button
+          accessibilityLabel={t('statistics.posterBack')}
+          isDisabled={busy}
+          isIconOnly
+          onPress={() => router.back()}
+          size="sm"
+          variant="ghost">
+          <SymbolView
+            name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
+            size={21}
+            tintColor={iconColor}
+          />
+        </Button>
+        <View className="min-w-0 flex-1 items-center">
+          <Text accessibilityRole="header" className="text-base font-semibold text-foreground">
+            {t('statistics.posterEditor')}
+          </Text>
+          {document?.bookCount ? (
+            <Text className="text-xs text-muted">
+              {t('statistics.posterImageCount', { count: document.bookCount, pages: document.pages.length })}
+            </Text>
+          ) : null}
+        </View>
+        <View className="size-9" />
+      </View>
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="grow items-center justify-center gap-3 px-4 py-4">
+        {loadError || fontError || prepareFailed ? (
+          <View className="items-center gap-3">
+            <Text className="text-danger">{t('statistics.posterLoadFailed')}</Text>
+            <Button
+              variant="secondary"
+              onPress={() => {
+                setLoadError(false);
+                setRevision((v) => v + 1);
+              }}>
+              {t('statistics.retry')}
+            </Button>
+          </View>
+        ) : (preparing && !loadError) || (!fontReady && !fontError) ? (
+          <View className="items-center gap-2">
+            <ActivityIndicator />
+            <Text className="text-sm text-muted">{t('statistics.posterPreparing')}</Text>
+          </View>
+        ) : document && document.bookCount > 0 ? (
+          <>
+            <PosterCanvas
+              key={`${job}:${actualPage}`}
+              ref={canvas}
+              document={document}
+              page={actualPage}
+              width={Math.min(width - insets.left - insets.right - 32, 600)}
+              labels={{
+                showBookDetails,
+                title: title.trim() || defaultTitle,
+                quote,
+                range: `${range.start} — ${range.end}`,
+                total: t('statistics.posterTotal', { count: document.bookCount, time: duration(document.total) }),
+                unknownAuthor: t('statistics.posterUnknownAuthor'),
+                page: document.pages.length > 1 ? `${actualPage + 1} / ${document.pages.length}` : '',
+              }}
+              onOpen={(uri, origin) => {
+                if (!saving.current) setPreview({ uri, origin });
+              }}
+              onReady={(ready) => setReadyPreview(ready ? `${job}:${actualPage}` : '')}
+              onEdit={(uri, labels, tile) => {
+                if (!saving.current) setCropEditor({ uri, labels, initialId: tile?.book.id });
+              }}
+            />
+            {document.pages.length > 1 && (
+              <View className="flex-row items-center gap-4">
+                <Button
+                  accessibilityLabel={t('statistics.posterPrevious')}
+                  isDisabled={busy || actualPage === 0}
+                  isIconOnly
+                  onPress={() => setPage((p) => p - 1)}
+                  size="sm"
+                  variant="ghost">
+                  <SymbolView
+                    name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }}
+                    size={18}
+                    tintColor={iconColor}
+                  />
+                </Button>
+                <Text className="text-sm text-muted">
+                  {actualPage + 1} / {document.pages.length}
+                </Text>
+                <Button
+                  accessibilityLabel={t('statistics.posterNext')}
+                  isDisabled={busy || actualPage >= document.pages.length - 1}
+                  isIconOnly
+                  onPress={() => setPage((p) => p + 1)}
+                  size="sm"
+                  variant="ghost">
+                  <SymbolView
+                    name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
+                    size={18}
+                    tintColor={iconColor}
+                  />
+                </Button>
+              </View>
+            )}
+          </>
+        ) : (
+          <Text className="text-sm text-muted">{t('statistics.posterEmptySelection')}</Text>
+        )}
+        {!!fallback && (
+          <Text className="text-center text-xs text-muted">
+            {t('statistics.posterCoverFallback', { count: fallback })}
+          </Text>
+        )}
+      </ScrollView>
+      <View className="rounded-t-3xl bg-surface pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+        <View className="mb-1 h-1 w-9 self-center rounded-full bg-default" />
+        {panel === 'settings' && !busy ? settings : actions}
+      </View>
       {cropEditor && document && (
         <PosterCoverEditor
           page={document.pages[actualPage]}
