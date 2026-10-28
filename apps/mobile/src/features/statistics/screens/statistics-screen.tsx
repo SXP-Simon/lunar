@@ -158,6 +158,23 @@ export function StatisticsScreen() {
         <Text accessibilityRole="header" className="min-w-0 flex-1 px-1 text-2xl font-semibold text-foreground">
           {t('statistics.title')}
         </Text>
+        <Button
+          accessibilityLabel={t('statistics.posterEntry')}
+          className="h-9 rounded-full"
+          hitSlop={4}
+          isDisabled={!period?.books.length}
+          isIconOnly
+          onPress={() =>
+            router.push({ pathname: '/statistics-poster', params: { start: range.start, end: range.end } })
+          }
+          size="sm"
+          variant="secondary">
+          <SymbolView
+            name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }}
+            size={18}
+            tintColor={iconColor}
+          />
+        </Button>
         <Menu>
           <Menu.Trigger asChild>
             <Button
@@ -192,23 +209,6 @@ export function StatisticsScreen() {
             </Menu.Content>
           </Menu.Portal>
         </Menu>
-        <Button
-          accessibilityLabel={t('statistics.posterEntry')}
-          className="h-9 rounded-full"
-          hitSlop={4}
-          isDisabled={!period?.books.length}
-          isIconOnly
-          onPress={() =>
-            router.push({ pathname: '/statistics-poster', params: { start: range.start, end: range.end } })
-          }
-          size="sm"
-          variant="secondary">
-          <SymbolView
-            name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }}
-            size={18}
-            tintColor={iconColor}
-          />
-        </Button>
       </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
