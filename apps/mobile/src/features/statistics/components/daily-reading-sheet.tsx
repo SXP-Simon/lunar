@@ -6,7 +6,7 @@ import { BackHandler, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { withUniwind } from 'uniwind';
 import { useTranslation } from '@/i18n';
-import { durationParts, type StatisticsBook } from '../domain/statistics';
+import type { StatisticsBook } from '../domain/statistics';
 import { BookReadingRow } from './book-reading-row';
 const DayScrollView = withUniwind(BottomSheetScrollView);
 const daySnapPoints = ['60%', '85%'];
@@ -34,7 +34,6 @@ export function DailyReadingSheet({
     });
     return () => subscription.remove();
   }, [isOpen, onClose]);
-  const parts = durationParts(books.reduce((sum, book) => sum + book.milliseconds, 0));
   const calendarDate = date ? new Date(`${date}T00:00:00Z`) : undefined;
   const title = calendarDate
     ? t('statistics.fullDate', {
@@ -78,10 +77,6 @@ export function DailyReadingSheet({
                 {t('action.close')}
               </Button>
             </View>
-            <BottomSheet.Description className="text-sm text-muted">
-              {t('statistics.daySummary', { count: books.length })} ·{' '}
-              {parts.hours ? t('statistics.hours', parts) : t('statistics.minutes', parts)}
-            </BottomSheet.Description>
           </View>
           <DayScrollView
             contentContainerClassName="gap-3"

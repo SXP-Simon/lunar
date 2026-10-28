@@ -20,7 +20,7 @@ import {
 } from '../domain/statistics';
 import { loadStatistics } from '../repositories/statistics-repository';
 import { DailyReadingSheet } from '../components/daily-reading-sheet';
-import { ReadingHeatmap } from '../components/reading-heatmap';
+import { ReadingCalendarSheet } from '../components/reading-calendar-sheet';
 import { ReadingTrend } from '../components/reading-trend';
 import { PeriodRanking } from '../components/period-ranking';
 import { PeriodNavigator } from '../components/period-navigator';
@@ -42,6 +42,7 @@ export function StatisticsScreen() {
   const [revision, setRevision] = useState(0);
   const [selected, setSelected] = useState<string>();
   const [dayOpen, setDayOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [today, setToday] = useState(currentDateKey);
   const notifyError = useEffectEvent(() => toast.show({ variant: 'danger', label: t('statistics.error') }));
   useEffect(() => {
@@ -77,6 +78,7 @@ export function StatisticsScreen() {
       return () => {
         active = false;
         setDayOpen(false);
+        setCalendarOpen(false);
         subscription.remove();
         clearInterval(timer);
       };
@@ -141,6 +143,7 @@ export function StatisticsScreen() {
     setSelected(date);
     setDayOpen(true);
   }, []);
+  const closeCalendar = useCallback(() => setCalendarOpen(false), []);
   const openMonth = (date: string) => {
     const months = (value: string) => Number(value.slice(0, 4)) * 12 + Number(value.slice(5, 7));
     setDimension('month');
@@ -233,14 +236,6 @@ export function StatisticsScreen() {
                 onNext={dimension !== 'custom' && offset < 0 ? () => setOffset((value) => value + 1) : undefined}
                 onEdit={dimension === 'custom' ? () => setRangeOpen(true) : undefined}
               />
-              <ReadingHeatmap
-                key={`${bounds.start}:${bounds.end}`}
-                bounds={bounds}
-                today={today}
-                daily={data.daily}
-                selected={dayOpen ? selected : undefined}
-                onSelect={openDay}
-              />
               <View className="flex-row flex-wrap gap-3">
                 {[
                   [t('statistics.total'), duration(period.total)],
@@ -255,12 +250,13 @@ export function StatisticsScreen() {
                 ))}
               </View>
               <ReadingTrend
-                key={`${range.start}:${range.end}`}
+                key={`trend:${range.start}:${range.end}`}
                 daily={period.daily}
                 onOpenDay={openDay}
                 onOpenMonth={openMonth}
+                onOpenCalendar={() => setCalendarOpen(true)}
               />
-              <PeriodRanking period={period} onOpenBook={openBook} />
+              <PeriodRanking key={`ranking:${range.start}:${range.end}`} period={period} onOpenBook={openBook} />
               {!data.books.length ? (
                 <View className="gap-3 rounded-3xl bg-surface p-5">
                   <Text className="text-sm text-muted">{t('statistics.empty')}</Text>
@@ -273,6 +269,18 @@ export function StatisticsScreen() {
           ) : null}
         </View>
       </ScrollView>
+      <ReadingCalendarSheet
+        focus={range.end}
+        initialMode={dimension === 'year' ? 'year' : 'month'}
+        today={today}
+        daily={data?.daily ?? []}
+        isOpen={calendarOpen}
+        onClose={closeCalendar}
+        onOpenDay={(date) => {
+          setCalendarOpen(false);
+          openDay(date);
+        }}
+      />
       <DailyReadingSheet
         date={selected}
         isOpen={dayOpen}

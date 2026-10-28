@@ -22,10 +22,21 @@ const state = vi.hoisted(() => ({
   applyRange: undefined as undefined | ((range: { start: string; end: string }) => void),
   selectDimension: undefined as undefined | ((keys: Set<string>) => void),
   openMonth: undefined as undefined | ((date: string) => void),
+  openCalendar: undefined as undefined | (() => void),
+  calendarMode: undefined as undefined | ((value: string) => void),
 }));
 vi.mock('../../src/features/statistics/components/reading-trend', () => ({
-  ReadingTrend: ({ daily, onOpenMonth }: { daily: unknown; onOpenMonth: (date: string) => void }) => {
+  ReadingTrend: ({
+    daily,
+    onOpenMonth,
+    onOpenCalendar,
+  }: {
+    daily: unknown;
+    onOpenMonth: (date: string) => void;
+    onOpenCalendar: () => void;
+  }) => {
     state.openMonth = onOpenMonth;
+    state.openCalendar = onOpenCalendar;
     return <div>{JSON.stringify(daily)}</div>;
   },
 }));
@@ -194,14 +205,29 @@ vi.mock('heroui-native/pressable-feedback', async () => {
 });
 vi.mock('@gorhom/bottom-sheet', () => ({
   BottomSheetScrollView: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  BottomSheetFlatList: ({
+    data,
+    renderItem,
+  }: {
+    data: unknown[];
+    renderItem: (entry: { item: unknown; index: number }) => ReactNode;
+  }) => <div>{data.map((item, index) => renderItem({ item, index }))}</div>,
 }));
+vi.mock('heroui-native/tabs', () => {
+  const Part = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
+  const Root = ({ children, onValueChange }: { children: ReactNode; onValueChange: (value: string) => void }) => {
+    state.calendarMode = onValueChange;
+    return <div>{children}</div>;
+  };
+  return { Tabs: Object.assign(Root, { List: Part, Indicator: () => null, Trigger: Part, Label: Part }) };
+});
 vi.mock('heroui-native/bottom-sheet', () => {
   const Part = ({ children }: { children: ReactNode }) => <div>{children}</div>;
   const Root = ({ isOpen, children }: { isOpen: boolean; children: ReactNode }) => {
     const isDay = (node: ReactNode): boolean =>
       React.Children.toArray(node).some((child) =>
         typeof child === 'string'
-          ? child.includes('statistics.daySummary')
+          ? child.includes('action.close')
           : React.isValidElement<{ children: ReactNode }>(child) && isDay(child.props.children),
       );
     if (isDay(children)) state.sheetChildren = children;
@@ -311,34 +337,36 @@ describe('statistics mobile screen interactions', () => {
     expect(state.period).toMatchObject({ range: { start: '2026-10-01', end: '2026-10-16' } });
     cleanup();
   });
-  it('loads on focus, selects a date and opens the correct book route', async () => {
+  it('loads on focus, picks a day from the calendar and opens the correct book route', async () => {
     expect(render()).toContain('loading');
     const cleanup = state.focus!();
     await settle();
-    render();
-    expect(state.actions.has('2026-10-17, statistics.minutes{"hours":0,"minutes":0,"seconds":0}')).toBe(false);
+    expect(render()).not.toContain('statistics.activity');
+    state.openCalendar!();
+    expect(render()).toContain('statistics.activity');
+    expect([...state.actions.keys()].some((key) => key.startsWith('2026-10-17,'))).toBe(false);
     const day = [...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'));
     expect(day).toBeDefined();
     state.actions.get(day!)!();
-    expect(render()).toContain('October 15, 2026');
+    const markup = render();
+    expect(markup).toContain('October 15, 2026');
+    expect(markup).not.toContain('statistics.activity');
     state.actions.get('statistics.openBook{"title":"Lunar book"}')!();
     expect(state.push).toHaveBeenCalledWith({ pathname: '/reader/[bookId]', params: { bookId: 'book' } });
     cleanup();
   });
-  it('opens daily books with a long press and closes with the close action', async () => {
+  it('keeps daily content during the closing animation', async () => {
     render();
     const cleanup = state.focus!();
     await settle();
+    state.openCalendar!();
     render();
-    const day = [...state.longActions.keys()].find((key) => key.startsWith('2026-10-15,'))!;
-    state.longActions.get(day)!();
-    expect(render()).toContain('statistics.daySummary{&quot;count&quot;:1}');
+    state.actions.get([...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'))!)!();
     expect(render()).toContain('cover');
     state.actions.get('action.close')!();
     expect(render()).not.toContain('October 15, 2026');
     const closingContent = renderToStaticMarkup(<>{state.sheetChildren}</>);
     expect(closingContent).toContain('October 15, 2026');
-    expect(closingContent).toContain('statistics.daySummary{&quot;count&quot;:1}');
     expect(closingContent).toContain('Lunar book');
     cleanup();
   });
@@ -346,27 +374,36 @@ describe('statistics mobile screen interactions', () => {
     render();
     const cleanup = state.focus!();
     await settle();
+    state.openCalendar!();
     render();
-    const day = [...state.actions.keys()].find((key) => key.startsWith('2026-10-14,'))!;
-    state.actions.get(day)!();
-    expect(render()).toContain('statistics.dayEmpty');
-    expect(render()).toContain('statistics.daySummary{&quot;count&quot;:0}');
+    state.actions.get([...state.actions.keys()].find((key) => key.startsWith('2026-10-14,'))!)!();
+    const markup = render();
+    expect(markup).toContain('statistics.dayEmpty');
     cleanup();
   });
-  it('updates calendar and date detail language without restarting the screen', async () => {
+  it('switches the calendar between scrolling months and yearly overviews', async () => {
     render();
     const cleanup = state.focus!();
     await settle();
-    render();
     state.locale = 'zh-CN';
     expect(render()).toContain('&quot;month&quot;:&quot;10月&quot;');
-    state.selectDimension!(new Set(['year']));
-    const markup = render();
+    state.openCalendar!();
+    let markup = render();
     expect(markup).toContain('周日');
-    for (const month of ['1月', '7月', '9月', '10月']) expect(markup).toContain(`>${month}<`);
-    const day = [...state.actions.keys()].find((key) => key.startsWith('2026-10-15,'))!;
-    state.actions.get(day)!();
-    expect(render()).toContain('2026年10月15日');
+    expect(markup).toContain('1月 · statistics.daysCount{&quot;count&quot;:0}');
+    expect(markup).toContain('10月 · statistics.daysCount{&quot;count&quot;:1}');
+    expect(markup).not.toContain('11月 ·');
+    state.calendarMode!('year');
+    markup = render();
+    expect(markup).not.toContain('周日');
+    expect(markup).toContain('statistics.yearTitle{&quot;year&quot;:2026} · statistics.daysCount{&quot;count&quot;:1}');
+    for (const month of ['1月', '9月', '10月', '11月', '12月']) expect(markup).toContain(`>${month}<`);
+    expect(state.actions.has('11月, statistics.daysCount{"count":0}')).toBe(false);
+    state.actions.get('9月, statistics.daysCount{"count":0}')!();
+    expect(render()).toContain('周日');
+    state.actions.get([...state.actions.keys()].find((key) => key.startsWith('2026-09-15,'))!)!();
+    expect(render()).toContain('2026年9月15日');
+    expect(state.period).toMatchObject({ range: { start: '2026-10-01', end: '2026-10-16' } });
     cleanup();
   });
   it('refreshes after foregrounding and ignores results after leaving the screen', async () => {

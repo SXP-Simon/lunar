@@ -76,8 +76,7 @@ export function selectPeriod(data: ReturnType<typeof buildStatistics>, range: Da
     total,
     average: total / days,
     readingDays: daily.filter((day) => day.milliseconds > 0).length,
-    ranking: books.slice(0, 10).map((book) => ({ ...book, share: total ? book.milliseconds / total : 0 })),
-    remaining: books.slice(10).reduce((sum, book) => sum + book.milliseconds, 0),
+    ranking: books.map((book) => ({ ...book, share: total ? book.milliseconds / total : 0 })),
   };
 }
 
@@ -130,6 +129,40 @@ export function buildHeatmap(
       };
     }),
   );
+}
+
+/** One Sunday-first calendar per month touched by `range`; days after `today` are marked as future. */
+export function monthCalendars(
+  range: DateRange,
+  today: string,
+  daily: readonly { date: string; milliseconds: number }[],
+) {
+  const last = range.end.slice(0, 7);
+  const calendars = [];
+  for (let month = range.start.slice(0, 7); month <= last; month = shiftMonth(month, 1)) {
+    const bounds = periodBounds('month', `${month}-01`);
+    const weeks = buildHeatmap(
+      {
+        start: bounds.start < range.start ? range.start : bounds.start,
+        end: bounds.end > range.end ? range.end : bounds.end,
+      },
+      today,
+      daily,
+    );
+    const days = weeks.flat().filter((day) => !day.outside && !day.future);
+    calendars.push({
+      month: bounds.start,
+      weeks,
+      readingDays: days.filter((day) => day.milliseconds > 0).length,
+      milliseconds: days.reduce((sum, day) => sum + day.milliseconds, 0),
+    });
+  }
+  return calendars;
+}
+
+function shiftMonth(month: string, months: number) {
+  const date = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1 + months, 1));
+  return date.toISOString().slice(0, 7);
 }
 
 export interface TrendBucket {

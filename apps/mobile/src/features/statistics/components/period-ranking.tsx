@@ -1,10 +1,13 @@
 import { Image as ExpoImage } from 'expo-image';
+import { Button } from 'heroui-native/button';
 import { PressableFeedback } from 'heroui-native/pressable-feedback';
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { withUniwind } from 'uniwind';
 import { useTranslation } from '@/i18n';
 import { durationParts, type selectPeriod } from '../domain/statistics';
 const Image = withUniwind(ExpoImage);
+const COLLAPSED_COUNT = 3;
 
 export function PeriodRanking({
   period,
@@ -14,6 +17,8 @@ export function PeriodRanking({
   onOpenBook: (id: string) => void;
 }) {
   const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? period.ranking : period.ranking.slice(0, COLLAPSED_COUNT);
   const duration = (milliseconds: number) => {
     const parts = durationParts(milliseconds);
     return parts.hours ? t('statistics.hours', parts) : t('statistics.minutes', parts);
@@ -28,8 +33,7 @@ export function PeriodRanking({
         <Text className="text-sm text-muted">{t('statistics.periodEmpty')}</Text>
       ) : (
         <>
-          <Text className="text-xs text-muted">{t('statistics.shareDefinition')}</Text>
-          {period.ranking.map((book, index) => (
+          {shown.map((book, index) => (
             <PressableFeedback
               key={book.id}
               className="flex-row items-center gap-3 rounded-xl py-2 active:bg-surface-secondary dark:active:bg-surface-tertiary"
@@ -62,14 +66,12 @@ export function PeriodRanking({
               </View>
             </PressableFeedback>
           ))}
-          {period.books.length > 10 ? (
-            <Text className="text-xs text-muted">
-              {t('statistics.otherBooks', {
-                count: period.books.length - 10,
-                time: duration(period.remaining),
-                share: ((period.remaining / period.total) * 100).toFixed(1),
-              })}
-            </Text>
+          {period.ranking.length > COLLAPSED_COUNT ? (
+            <Button variant="ghost" size="sm" onPress={() => setExpanded((value) => !value)}>
+              {expanded
+                ? t('statistics.rankingCollapse')
+                : t('statistics.rankingExpand', { count: period.ranking.length - COLLAPSED_COUNT })}
+            </Button>
           ) : null}
         </>
       )}

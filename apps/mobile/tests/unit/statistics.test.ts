@@ -7,6 +7,7 @@ import {
   buildStatistics,
   durationParts,
   heatLevel,
+  monthCalendars,
   periodBounds,
   selectPeriod,
   shiftDate,
@@ -130,6 +131,26 @@ describe('reading statistics', () => {
     ).toEqual([0, 1, 2, 3, 4, 0, 0]);
     expect(buildHeatmap(periodBounds('week', '2026-10-11'), '2026-10-11', [])).toHaveLength(1);
   });
+  it('splits a period into month calendars that count only days up to today', () => {
+    const daily = [
+      { date: '2026-09-30', milliseconds: 60_000 },
+      { date: '2026-10-03', milliseconds: 120_000 },
+      { date: '2026-10-20', milliseconds: 999_000 },
+    ];
+    const year = monthCalendars(periodBounds('year', '2026-10-16'), '2026-10-16', daily);
+    expect(year.map((calendar) => calendar.month)).toEqual(
+      Array.from({ length: 12 }, (_, index) => `2026-${String(index + 1).padStart(2, '0')}-01`),
+    );
+    expect(year[9]).toMatchObject({ readingDays: 1, milliseconds: 120_000 });
+    expect(year[9].weeks[0].slice(0, 4).map((day) => day.outside)).toEqual([true, true, true, true]);
+    expect(year[11].weeks.flat().every((day) => day.outside || day.future)).toBe(true);
+    const custom = monthCalendars({ start: '2026-09-30', end: '2026-10-03' }, '2026-10-16', daily);
+    expect(custom.map(({ month, readingDays, milliseconds }) => [month, readingDays, milliseconds])).toEqual([
+      ['2026-09-01', 1, 60_000],
+      ['2026-10-01', 1, 120_000],
+    ]);
+    expect(custom[1].weeks.flat().filter((day) => !day.outside)).toHaveLength(3);
+  });
   it('draws daily bars up to two months and sums longer periods per calendar month', () => {
     const days = (start: string, count: number) =>
       Array.from({ length: count }, (_, index) => ({ date: shiftDate(start, index), milliseconds: 60_000 }));
@@ -248,10 +269,9 @@ describe('period statistics consistency', () => {
     );
     const period = selectPeriod(data, { start: '2026-10-10', end: '2026-10-10' });
     expect(period.books).toHaveLength(12);
-    expect(period.ranking).toHaveLength(10);
+    expect(period.ranking).toHaveLength(12);
     expect(period.ranking[0].share).toBe(12 / 78);
-    expect(period.remaining).toBe(3 * 60_000);
-    expect(period.ranking.reduce((sum, b) => sum + b.milliseconds, period.remaining)).toBe(period.total);
+    expect(period.ranking.reduce((sum, b) => sum + b.milliseconds, 0)).toBe(period.total);
     expect(selectPeriod(data, { start: '2026-10-11', end: '2026-10-17' })).toMatchObject({
       books: [],
       ranking: [],

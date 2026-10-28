@@ -1,3 +1,6 @@
+import { SymbolView } from 'expo-symbols';
+import { Button } from 'heroui-native/button';
+import { useThemeColor } from 'heroui-native/hooks';
 import { useMemo, useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from '@/i18n';
@@ -11,12 +14,15 @@ export function ReadingTrend({
   daily,
   onOpenDay,
   onOpenMonth,
+  onOpenCalendar,
 }: {
   daily: { date: string; milliseconds: number }[];
   onOpenDay: (date: string) => void;
   onOpenMonth: (date: string) => void;
+  onOpenCalendar: () => void;
 }) {
   const { t } = useTranslation();
+  const iconColor = useThemeColor('foreground');
   const { fontScale } = useWindowDimensions();
   const buckets = useMemo(() => trendBuckets(daily), [daily]);
   const [active, setActive] = useState<number>();
@@ -44,11 +50,27 @@ export function ReadingTrend({
   const center = active === undefined ? 0 : ((active + 0.5) * width) / buckets.length;
   return (
     <View className="gap-3 rounded-3xl bg-surface p-5">
-      <View className="flex-row flex-wrap items-baseline justify-between gap-2">
-        <Text className="text-base font-semibold text-foreground">{t('statistics.trend')}</Text>
-        <Text className="text-xs text-muted">
-          {t(unit === 'month' ? 'statistics.monthlyTime' : 'statistics.dailyTime')}
-        </Text>
+      <View className="flex-row items-center gap-2">
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text className="text-base font-semibold text-foreground">{t('statistics.trend')}</Text>
+          <Text className="text-xs text-muted">
+            {t(unit === 'month' ? 'statistics.monthlyTime' : 'statistics.dailyTime')}
+          </Text>
+        </View>
+        <Button
+          accessibilityLabel={t('statistics.openCalendar')}
+          className="h-9 rounded-full"
+          hitSlop={4}
+          isIconOnly
+          onPress={onOpenCalendar}
+          size="sm"
+          variant="secondary">
+          <SymbolView
+            name={{ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }}
+            size={18}
+            tintColor={iconColor}
+          />
+        </Button>
       </View>
       <View
         style={{ height: CHART_HEIGHT + BUBBLE_SPACE }}
