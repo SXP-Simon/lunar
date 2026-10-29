@@ -71,6 +71,11 @@ const RETAINED_BOUNDARY_KEEP_ALIVE_CAP = 1;
 const RETAINED_SLOT_RADIUS = 4;
 /** The href Rito gives a pinned host face: this prefix, then its SHA-256. */
 const RITO_HOST_FONT_HREF_PREFIX = 'rito-host-font:';
+// Rito lays the rest of the book out at most this many pages per background
+// step. A foreground turn waits behind the step in flight, so the budget
+// bounds that wait; the engine runs off the JavaScript thread, so it can be
+// larger than the browser host's default of four.
+const RITO_BACKGROUND_PAGES_PER_QUANTUM = 8;
 
 /**
  * Rito 2.0.0 pagination backend. It keeps the native artifact as the source of
@@ -286,6 +291,13 @@ class RitoNativePublication implements LoadedReaderPublication {
       readerDiagnostic('frame.empty', () => `artifact=${describeArtifact(artifact)} matchedPages=${pages.length}`);
       throw new RangeError(`Rito artifact ${artifact.artifactId.toString()} contains no renderable pages.`);
     }
+    // An artifact carries only its pages' sizes; what each page holds is read
+    // from the session, while the artifact is still live.
+    const records = await readerPerformanceAsync(
+      'reader.page.read',
+      () => Promise.all(pages.map((page) => this.session.readPage(artifact.artifactId, page.pageIndex))),
+      () => ({ artifact: String(artifact.artifactId), pages: pages.length }),
+    );
     const frame: ReaderRenderFrame = {
       spreadIndex,
       manifestHref: artifact.locator.href,
@@ -296,9 +308,9 @@ class RitoNativePublication implements LoadedReaderPublication {
       height: artifact.height,
       imageSources: [...new Set(imageSources)],
       displayList: display,
-      hits: pages.flatMap(toReaderHitEntries),
-      semantics: pages.flatMap((page) => page.semantics.map(toReaderSemanticNode)),
-      text: pages.map((page) => page.text).join(''),
+      hits: records.flatMap(toReaderHitEntries),
+      semantics: records.flatMap((page) => page.semantics.map(toReaderSemanticNode)),
+      text: records.map((page) => page.text).join(''),
     };
     this.slots.set(spreadIndex, { artifactId: artifact.artifactId, frame });
     if (background) {
@@ -990,6 +1002,7 @@ class RitoNativePublication implements LoadedReaderPublication {
       const advance = await this.session.advanceBackground({
         sessionId: current.sessionId,
         expectedVisibleArtifactId: current.artifactId,
+        maxPagesPerQuantum: RITO_BACKGROUND_PAGES_PER_QUANTUM,
       });
       result = advance;
       readerDiagnostic(
@@ -1203,20 +1216,44 @@ function artifactSourceKey(artifact: RitoArtifact): string {
 }
 
 function artifactRenderKey(artifact: RitoArtifact, images: ReaderImageByteCache | undefined): string {
-  // Rito already supplies SHA-256 of the encoded display commands. Hashing
-  // the full wire payload again on the JavaScript thread delays every turn.
-  const digest = bytesToHex(artifact.displayList.semanticDigest);
+  // Rito no longer sends a digest of the display list, and a Picture is
+  // reused by what it draws rather than by artifact identity, so the key
+  // hashes the wire payload itself.
+  const { commandCount, wireBytes } = artifact.displayList;
   const imageKeys = artifact.resources
     .filter((resource) => resource.kind === 'image')
     .map((resource) => `${resource.href}:${byteHash(images?.get(resource.href))}`)
     .join('|');
-  return `${artifact.width}x${artifact.height}:${artifact.displayList.commandCount}:${digest}:${imageKeys}`;
+  return `${artifact.width}x${artifact.height}:${commandCount}:${wireBytes.byteLength}:${wireHash(wireBytes)}:${imageKeys}`;
 }
 
-function bytesToHex(bytes: Uint8Array): string {
-  let result = '';
-  for (const byte of bytes) result += byte.toString(16).padStart(2, '0');
-  return result;
+const wireHashes = new WeakMap<Uint8Array, string>();
+
+/**
+ * A 64-bit content hash of a display-list payload: two independent 32-bit
+ * lanes, a MurmurHash3 body and a rotated FNV-1a, over its words. A word at
+ * a time keeps a full page well under a millisecond on the JavaScript thread.
+ */
+function wireHash(bytes: Uint8Array): string {
+  const cached = wireHashes.get(bytes);
+  if (cached) return cached;
+  const aligned = bytes.byteOffset % 4 === 0 ? bytes : bytes.slice();
+  const words = new Uint32Array(aligned.buffer, aligned.byteOffset, aligned.byteLength >>> 2);
+  let murmur = 0;
+  let fnv = 2166136261;
+  const mix = (word: number) => {
+    let k = Math.imul(word, 0xcc9e2d51);
+    k = Math.imul((k << 15) | (k >>> 17), 0x1b873593);
+    murmur ^= k;
+    murmur = (Math.imul((murmur << 13) | (murmur >>> 19), 5) + 0xe6546b64) | 0;
+    fnv = Math.imul(fnv ^ word, 16777619);
+    fnv = (fnv << 7) | (fnv >>> 25);
+  };
+  for (let index = 0; index < words.length; index += 1) mix(words[index]!);
+  for (let index = words.length * 4; index < aligned.byteLength; index += 1) mix(aligned[index]!);
+  const digest = `${(murmur >>> 0).toString(16).padStart(8, '0')}${(fnv >>> 0).toString(16).padStart(8, '0')}`;
+  wireHashes.set(bytes, digest);
+  return digest;
 }
 
 const imageByteHashes = new WeakMap<Uint8Array, string>();
@@ -1497,7 +1534,9 @@ function toReaderLayoutParameters(layout: ReaderLayoutRequest): import('../../co
   };
 }
 
-function toReaderHitEntries(page: import('@umbrae-labs/rito-rn').RitoPage): import('../../contracts').ReaderHitEntry[] {
+function toReaderHitEntries(
+  page: import('@umbrae-labs/rito-rn').RitoPageRecords,
+): import('../../contracts').ReaderHitEntry[] {
   let textRunIndex = 0;
   return page.hits.map((hit) => {
     const textRun = hit.imageSrc === undefined && hit.text.length > 0 ? page.textRuns[textRunIndex++] : undefined;

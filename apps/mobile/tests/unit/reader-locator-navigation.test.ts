@@ -31,13 +31,13 @@ afterEach(() => { vi.useRealTimers(); });
 
 function artifact(id: bigint, href: string): RitoArtifact {
   return {
-    protocolVersion: 5, capabilityProfileId: 1, sessionId: 1n, requestId: id, revisionId: 1n,
+    protocolVersion: 7, capabilityProfileId: 1, sessionId: 1n, requestId: id, revisionId: 1n,
     revisionVersion: 1, artifactId: id, locator: { href, sourcePoint: { nodePath: [1], textOffset: 12n } },
     matchedBy: 'source-point', localPageIndex: 0, localSpreadIndex: 0, localPageIndexes: [0],
     width: 400, height: 800, navigation: { previous: 'available', next: 'available' },
     textProfile: 'platform-string-runs', resources: [], fonts: [],
-    displayList: { formatVersion: 2, commandCount: 0, semanticDigest: new Uint8Array(), wireBytes: new Uint8Array(), displayList: { formatVersion: 2, ratio: 1, commandCount: 0, commands: [] } },
-    pages: [{ pageIndex: 0, width: 400, height: 800, hits: [], semantics: [], text: href, textLength: 1n, textRuns: [] }],
+    displayList: { formatVersion: 4, commandCount: 0, wireBytes: new Uint8Array(), displayList: { formatVersion: 4, ratio: 1, commandCount: 0, commands: [] } },
+    pages: [{ pageIndex: 0, width: 400, height: 800 }],
   };
 }
 
@@ -60,6 +60,8 @@ async function setup(options: { completed?: boolean; runtime?: boolean; spreadMo
     readPublication: async () => ({ metadata: { title: 'Book', language: 'en', identifier: 'book' }, toc: [],
       spine: [{ idref: 'first', href: 'first.xhtml' }, { idref: 'second', href: 'second.xhtml' }] }),
     getArtifact: (id: bigint) => artifacts.get(id),
+    readPage: vi.fn(async (artifactId: bigint, pageIndex: number) => ({ artifactId, pageIndex, hits: [], semantics: [],
+      text: artifacts.get(artifactId)!.locator.href, textLength: 1n, textRuns: [] })),
     requestAdjacent: vi.fn(async () => {
       const candidate = { ...destination, artifactId: nextId++, requestId: nextId };
       artifacts.set(candidate.artifactId, candidate);
@@ -151,7 +153,7 @@ describe('reader text geometry ownership', () => {
 
   it('discards late geometry after navigation replaces a render in the same revision and slot', async () => {
     const { runtime, publication, destination } = await setup({ completed: true, runtime: true });
-    destination.displayList = { ...destination.displayList, semanticDigest: new Uint8Array([1]) };
+    destination.displayList = { ...destination.displayList, wireBytes: new Uint8Array([1]) };
     let resolve!: (rects: readonly ReaderTextRangeRect[]) => void;
     vi.spyOn(publication, 'resolveTextRangeGeometry').mockReturnValueOnce(
       new Promise((done) => { resolve = done; }),
@@ -256,7 +258,7 @@ describe('saved reader location navigation', () => {
     } finally { await backend.close(); }
   });
 
-  it('publishes whole-book page numbers after indexing without a host work budget', async () => {
+  it('publishes whole-book page numbers after indexing a page budget at a time', async () => {
     vi.useFakeTimers();
     const { runtime, backend, session } = await setup({ runtime: true });
     const advance = vi.spyOn(backend, 'advanceBackground');
@@ -269,7 +271,7 @@ describe('saved reader location navigation', () => {
       expect(runtime.getSnapshot().totalSpreads).toBeUndefined();
       expect(session.adoptBackground).not.toHaveBeenCalled();
       expect(session.advanceBackground).toHaveBeenNthCalledWith(1, {
-        sessionId: 1n, expectedVisibleArtifactId: 1n,
+        sessionId: 1n, expectedVisibleArtifactId: 1n, maxPagesPerQuantum: 8,
       });
 
       await vi.advanceTimersByTimeAsync(32);
@@ -280,7 +282,7 @@ describe('saved reader location navigation', () => {
 
       await vi.advanceTimersByTimeAsync(32);
       expect(session.advanceBackground).toHaveBeenNthCalledWith(3, {
-        sessionId: 1n, expectedVisibleArtifactId: 2n,
+        sessionId: 1n, expectedVisibleArtifactId: 2n, maxPagesPerQuantum: 8,
       });
       expect(runtime.getSnapshot().paginationComplete).toBe(true);
       await vi.advanceTimersByTimeAsync(96);
