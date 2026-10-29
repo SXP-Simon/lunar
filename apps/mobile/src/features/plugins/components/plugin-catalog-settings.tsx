@@ -1,33 +1,30 @@
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
 import { Input } from 'heroui-native/input';
 import { Label } from 'heroui-native/label';
+import { Surface } from 'heroui-native/surface';
 import { useToast } from 'heroui-native/toast';
 import { startTransition, useCallback, useEffect, useState, useTransition } from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 
 import { ConfirmModal } from '@/components/ui/confirm-modal';
-import { useMarkInitialContentReady } from '@/hooks/use-mark-initial-content-ready';
 import { useTranslation } from '@/i18n';
 import { usePluginStore, type PluginCatalogSubscription } from '@/stores';
 import { pluginErrorMessage } from '../domain/plugin-error';
-import { PluginScreenHeader } from '../components/plugin-screen-header';
 import { inspectPluginCatalog, usePluginCatalogs } from '../hooks/use-plugin-catalogs';
 import { normalizeCatalogUrl, type FetchedCatalog } from '../services/plugin-catalog';
 import type { CatalogStatus } from '../services/plugin-catalog-cache';
 
-const CATALOG_ROUTE = '/plugins/catalog' as Href;
-
-/** Adds and removes catalogs. Adding one trusts its signing key for the packages it publishes. */
-export function PluginCatalogsScreen() {
+/**
+ * The plugin settings section that adds and removes catalogs. Adding one trusts its signing key
+ * for the packages it publishes.
+ */
+export function PluginCatalogSettings() {
   const { t } = useTranslation();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { toast } = useToast();
-  useMarkInitialContentReady(true);
   const { add } = useLocalSearchParams<{ add?: string }>();
   const { subscriptions, statuses } = usePluginCatalogs();
   const addCatalog = usePluginStore((state) => state.addCatalog);
@@ -75,51 +72,39 @@ export function PluginCatalogsScreen() {
   };
 
   return (
-    <View
-      className="flex-1 bg-background"
-      style={{ paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
-      <PluginScreenHeader title={t('plugins.catalog.manage')} fallback={CATALOG_ROUTE} />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        contentContainerClassName="grow px-4 pt-4"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
-        <View className="w-full max-w-[800px] gap-6 self-center">
-          <View className="gap-3 rounded-3xl bg-surface p-5">
-            <Label>{t('plugins.catalog.address')}</Label>
-            <Input
-              value={url}
-              onChangeText={setUrl}
-              placeholder="https://example.com/lunar/index.json"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              accessibilityLabel={t('plugins.catalog.address')}
-              onSubmitEditing={() => check(url)}
-            />
-            <Text className="text-sm leading-5 text-muted">{t('plugins.catalog.addressHint')}</Text>
-            <Button variant="primary" isDisabled={!url.trim() || isChecking} onPress={() => check(url)}>
-              {isChecking ? t('plugins.catalog.checking') : t('plugins.catalog.add')}
-            </Button>
-          </View>
+    <View className="gap-2">
+      <Text className="ml-3 text-sm font-medium text-muted">{t('plugins.catalog.manage')}</Text>
+      {/* A Surface, like the ListGroup around the developer server field, gives the input its on-surface colors. */}
+      <Surface className="gap-3 rounded-3xl p-5">
+        <Label>{t('plugins.catalog.address')}</Label>
+        <Input
+          value={url}
+          onChangeText={setUrl}
+          placeholder="https://example.com/lunar/index.json"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          accessibilityLabel={t('plugins.catalog.address')}
+          onSubmitEditing={() => check(url)}
+        />
+        <Text className="text-sm leading-5 text-muted">{t('plugins.catalog.addressHint')}</Text>
+        <Button variant="primary" isDisabled={!url.trim() || isChecking} onPress={() => check(url)}>
+          {isChecking ? t('plugins.catalog.checking') : t('plugins.catalog.add')}
+        </Button>
+      </Surface>
 
-          {subscriptions.length > 0 ? (
-            <View className="gap-2">
-              <Text className="ml-3 text-sm font-medium text-muted">{t('plugins.catalog.list')}</Text>
-              <View className="gap-1 overflow-hidden rounded-3xl bg-surface">
-                {subscriptions.map((catalog) => (
-                  <CatalogRow
-                    key={catalog.url}
-                    catalog={catalog}
-                    status={statuses.get(catalog.url)}
-                    onRemove={() => setRemoving(catalog)}
-                  />
-                ))}
-              </View>
-            </View>
-          ) : null}
+      {subscriptions.length > 0 ? (
+        <View className="gap-1 overflow-hidden rounded-3xl bg-surface">
+          {subscriptions.map((catalog) => (
+            <CatalogRow
+              key={catalog.url}
+              catalog={catalog}
+              status={statuses.get(catalog.url)}
+              onRemove={() => setRemoving(catalog)}
+            />
+          ))}
         </View>
-      </ScrollView>
+      ) : null}
 
       <ConfirmModal
         isOpen={Boolean(pending)}

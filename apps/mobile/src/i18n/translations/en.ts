@@ -368,8 +368,6 @@ export const en: TranslationSchema<typeof zhCN> = {
       title: 'Get plugins',
       manage: 'Plugin catalogs',
       empty: 'No plugin catalogs yet',
-      emptyBody:
-        'Lunar does not include any plugin catalog. Add the catalog address of a publisher you trust to install and update plugins here.',
       add: 'Add catalog',
       address: 'Catalog address',
       addressHint:

@@ -29,7 +29,7 @@ npx lunar-plugin pack --key lunar-signing-key.pem      # adds signature.json
 npx lunar-plugin catalog dist/*.lunar-plugin --out site --key lunar-signing-key.pem --name "My plugins"
 ```
 
-Serve the `site` directory from any HTTPS host. Users add the URL of `site/index.json` under **Plugins → ⋯ → Plugin catalogs**, or open `lunar://add-catalog?url=<index URL>`. Signatures are pure Ed25519 (RFC 8032) over `integrity.json`; the public key is published as a JWK (RFC 8037) and identified by its RFC 7638 thumbprint, which `keygen` prints and `publisherKeyId` in `manifest.json` may pin. Later versions of an installed plugin must be signed with the same key.
+Serve the `site` directory from any HTTPS host. Users add the URL of `site/index.json` under **Settings → Plugin settings → Plugin catalogs**, or open `lunar://add-catalog?url=<index URL>`. Signatures are pure Ed25519 (RFC 8032) over `integrity.json`; the public key is published as a JWK (RFC 8037) and identified by its RFC 7638 thumbprint, which `keygen` prints and `publisherKeyId` in `manifest.json` may pin. Later versions of an installed plugin must be signed with the same key.
 
 ## A plugin
 

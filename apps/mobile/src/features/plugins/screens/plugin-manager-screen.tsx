@@ -29,7 +29,6 @@ import { usePluginInstall } from '../hooks/use-plugin-install';
 
 const PLUGIN_SETTINGS_ROUTE = '/settings/plugins' as Href;
 const CATALOG_ROUTE = '/plugins/catalog' as Href;
-const CATALOGS_ROUTE = '/plugins/catalogs' as Href;
 
 export function PluginManagerScreen() {
   const { t } = useTranslation();
@@ -116,9 +115,6 @@ export function PluginManagerScreen() {
           <Menu.Portal>
             <Menu.Overlay />
             <Menu.Content align="end" placement="bottom" presentation="popover" width={240}>
-              <Menu.Item onPress={() => router.push(CATALOGS_ROUTE)}>
-                <Menu.ItemTitle>{t('plugins.catalog.manage')}</Menu.ItemTitle>
-              </Menu.Item>
               <Menu.Item onPress={() => void pickPackage()}>
                 <Menu.ItemTitle>{t('plugins.installFromFile')}</Menu.ItemTitle>
               </Menu.Item>

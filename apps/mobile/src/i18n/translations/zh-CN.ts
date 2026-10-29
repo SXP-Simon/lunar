@@ -359,7 +359,6 @@ export const zhCN = {
       title: '获取插件',
       manage: '插件仓库',
       empty: '尚未添加插件仓库',
-      emptyBody: 'Lunar 不内置任何插件仓库。添加你信任的发布者提供的仓库地址后，可以在这里安装和更新插件。',
       add: '添加插件仓库',
       address: '仓库地址',
       addressHint: '填写发布者提供的 HTTPS 地址，通常以 index.json 结尾。添加前会显示仓库的签名密钥。',

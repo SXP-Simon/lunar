@@ -229,16 +229,16 @@ describe('plugin catalogs', () => {
 });
 
 describe('catalog links', () => {
-  it('routes add-catalog links to the catalog list with the address', () => {
+  it('routes add-catalog links to plugin settings with the address', () => {
     const target = 'https://example.com/lunar/index.json';
     for (const path of [
       `lunar://add-catalog?url=${encodeURIComponent(target)}`,
       `lunar-dev://add-catalog/?url=${encodeURIComponent(target)}`,
       `/add-catalog?url=${encodeURIComponent(target)}`,
     ]) {
-      expect(redirectCatalogLink({ path }), path).toBe(`/plugins/catalogs?add=${encodeURIComponent(target)}`);
+      expect(redirectCatalogLink({ path }), path).toBe(`/settings/plugins?add=${encodeURIComponent(target)}`);
     }
-    expect(redirectCatalogLink({ path: 'lunar://add-catalog' })).toBe('/plugins/catalogs');
+    expect(redirectCatalogLink({ path: 'lunar://add-catalog' })).toBe('/settings/plugins');
     expect(redirectCatalogLink({ path: '/library' })).toBeUndefined();
   });
 });

@@ -21,7 +21,8 @@ import { localizeCatalogEntry, resolveCatalogUrl, type CatalogOffer } from '../s
 const Image = withUniwind(ExpoImage);
 
 const PLUGINS_TAB = '/(tabs)/plugins' as Href;
-const CATALOGS_ROUTE = '/plugins/catalogs' as Href;
+// Catalogs are added and removed in plugin settings.
+const CATALOGS_ROUTE = '/settings/plugins' as Href;
 const STATE_ORDER: Record<CatalogOffer['state'], number> = { update: 0, install: 1, installed: 2, incompatible: 3 };
 
 const offerKey = (offer: CatalogOffer) => `${offer.catalogUrl}\u0000${offer.entry.id}`;
@@ -71,7 +72,7 @@ export function PluginCatalogScreen() {
             variant="ghost"
             onPress={() => router.push(CATALOGS_ROUTE)}>
             <SymbolView
-              name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }}
+              name={{ ios: 'gearshape', android: 'settings', web: 'settings' }}
               size={22}
               tintColor={foreground}
             />
@@ -94,7 +95,6 @@ export function PluginCatalogScreen() {
                 <SymbolView name={pluginSymbolName(undefined)} size={30} tintColor={foreground} />
               </View>
               <Text className="text-base font-semibold text-foreground">{t('plugins.catalog.empty')}</Text>
-              <Text className="text-center text-sm leading-5 text-muted">{t('plugins.catalog.emptyBody')}</Text>
               <Button variant="primary" onPress={() => router.push(CATALOGS_ROUTE)}>
                 {t('plugins.catalog.add')}
               </Button>
