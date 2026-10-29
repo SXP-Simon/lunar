@@ -18,6 +18,7 @@ import { usePluginStore } from '@/stores';
 import type { PluginStatus } from '../domain/installed-plugin';
 import { pluginErrorMessage } from '../domain/plugin-error';
 import { pluginSymbolName } from '../domain/plugin-icons';
+import { pluginEntryRoutes } from '../domain/plugin-pages';
 import { pickPluginPackage } from '../infrastructure/expo-plugin-files';
 import { takeExternalPluginPackage } from '../services/external-plugin-install';
 import type { PluginInstallPreview } from '../services/plugin-installer';
@@ -182,26 +183,40 @@ export function PluginManagerScreen() {
             </View>
           ) : (
             <View className="gap-1">
-              {statuses.map((status) => (
-                <PluginRow
-                  key={status.plugin.id}
-                  status={status}
-                  title={runtime.host.localize(status.plugin.id, status.plugin.manifest.name)}
-                  description={
-                    status.plugin.manifest.description
-                      ? runtime.host.localize(status.plugin.id, status.plugin.manifest.description)
-                      : undefined
-                  }
-                  safeMode={safeMode}
-                  onToggle={(enabled) => setEnabled(status.plugin.id, enabled)}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/plugins/[pluginId]',
-                      params: { pluginId: status.plugin.id },
-                    } as unknown as Href)
-                  }
-                />
-              ))}
+              {statuses.map((status) => {
+                const openDetail = () =>
+                  router.push({
+                    pathname: '/plugins/[pluginId]',
+                    params: { pluginId: status.plugin.id },
+                  } as unknown as Href);
+                // Plugins with pages open their first entry page; the rest open their information screen.
+                const page = status.enabled ? pluginEntryRoutes(status.plugin.manifest)[0] : undefined;
+                return (
+                  <PluginRow
+                    key={status.plugin.id}
+                    status={status}
+                    title={runtime.host.localize(status.plugin.id, status.plugin.manifest.name)}
+                    description={
+                      status.plugin.manifest.description
+                        ? runtime.host.localize(status.plugin.id, status.plugin.manifest.description)
+                        : undefined
+                    }
+                    safeMode={safeMode}
+                    onToggle={(enabled) => setEnabled(status.plugin.id, enabled)}
+                    opensPage={page !== undefined}
+                    onPress={
+                      page
+                        ? () =>
+                            router.push({
+                              pathname: '/plugin/[pluginId]/[pageId]',
+                              params: { pluginId: status.plugin.id, pageId: page.id },
+                            } as unknown as Href)
+                        : openDetail
+                    }
+                    onLongPress={openDetail}
+                  />
+                );
+              })}
             </View>
           )}
         </View>
@@ -223,14 +238,18 @@ function PluginRow({
   description,
   safeMode,
   onToggle,
+  opensPage,
   onPress,
+  onLongPress,
 }: {
   readonly status: PluginStatus;
   readonly title: string;
   readonly description?: string;
   readonly safeMode: boolean;
   readonly onToggle: (enabled: boolean) => void;
+  readonly opensPage: boolean;
   readonly onPress: () => void;
+  readonly onLongPress: () => void;
 }) {
   const { t } = useTranslation();
   const development = status.plugin.source === 'development';
@@ -250,8 +269,14 @@ function PluginRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={title}
-        accessibilityHint={detail}
+        accessibilityHint={opensPage ? `${detail}. ${t('plugins.longPressForInfo')}` : detail}
+        accessibilityActions={[{ name: 'longpress', label: t('plugins.detailTitle') }]}
+        onAccessibilityAction={(event) => {
+          if (event.nativeEvent.actionName === 'longpress') onLongPress();
+        }}
         className="min-w-0 flex-1 flex-row items-center gap-4 rounded-3xl px-2 py-3 active:bg-surface"
+        delayLongPress={400}
+        onLongPress={onLongPress}
         onPress={onPress}>
         <PluginIcon plugin={status.plugin} size="md" />
         <View className="min-w-0 flex-1 gap-0.5">

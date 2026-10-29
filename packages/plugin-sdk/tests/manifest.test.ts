@@ -57,7 +57,7 @@ describe('plugin manifest', () => {
         { name: 'files.everything', reason: 'x' },
         { name: 'network:http://insecure.test', reason: 'x' },
       ],
-      contributes: { slots: { 'app.tab': [] } },
+      contributes: { slots: { 'library.bookActions': [] } },
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -65,7 +65,7 @@ describe('plugin manifest', () => {
       expect.arrayContaining([
         'permissions.0.name: unknown permission',
         'permissions.1.name: unknown permission',
-        'contributes.slots: Unrecognized key: "app.tab"',
+        'contributes.slots: Unrecognized key: "library.bookActions"',
         '(root): Unrecognized key: "extra"',
       ]),
     );
@@ -106,6 +106,45 @@ describe('plugin manifest', () => {
       'contributes.settings.0.default: must be one of the options',
       'contributes.settings.1.default: must be within min and max',
     ]);
+  });
+
+  it('accepts an app tab that opens an entry route', () => {
+    const result = parsePluginManifest({
+      ...valid,
+      contributes: {
+        slots: {
+          'app.route': [
+            { id: 'home', title: 'Home', icon: 'book' },
+            { id: 'detail', title: 'Detail', hidden: true },
+          ],
+          'app.tab': [{ id: 'main', route: 'home', icon: 'star' }],
+        },
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.manifest.contributes.slots['app.tab']).toEqual([{ id: 'main', route: 'home', icon: 'star' }]);
+  });
+
+  it('rejects app tabs that open undeclared or hidden routes', () => {
+    const routes = [{ id: 'detail', title: 'Detail', hidden: true }];
+    const result = parsePluginManifest({
+      ...valid,
+      contributes: {
+        slots: {
+          'app.route': routes,
+          'app.tab': [{ id: 'main', route: 'missing' }],
+        },
+      },
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues).toEqual(['contributes.slots.app.tab.0.route: refers to an undeclared route']);
+    const hidden = parsePluginManifest({
+      ...valid,
+      contributes: { slots: { 'app.route': routes, 'app.tab': [{ id: 'main', route: 'detail' }] } },
+    });
+    expect(hidden.ok || hidden.issues).toEqual(['contributes.slots.app.tab.0.route: refers to a hidden route']);
   });
 
   it('rejects ids that are not reverse-domain names and invalid sdk ranges', () => {

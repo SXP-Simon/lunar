@@ -2,7 +2,7 @@
 // runtime relative imports: Node runs the CLI from TypeScript source directly.
 import { z } from 'zod';
 
-export const SDK_VERSION = '0.1.0';
+export const SDK_VERSION = '0.1.1';
 export const MANIFEST_FILE = 'manifest.json';
 export const MANIFEST_VERSION = 1;
 
@@ -11,11 +11,12 @@ export const PLUGIN_SLOTS = [
   'reader.panel',
   'reader.overlay',
   'app.route',
+  'app.tab',
   'settings.plugin',
 ] as const;
 export type PluginSlot = (typeof PLUGIN_SLOTS)[number];
 /** Slots whose entries are React components registered by plugin code. */
-export type PluginComponentSlot = Exclude<PluginSlot, 'reader.toolbar' | 'app.route'>;
+export type PluginComponentSlot = Exclude<PluginSlot, 'reader.toolbar' | 'app.route' | 'app.tab'>;
 
 export const PLUGIN_PERMISSIONS = [
   'reader.events',
@@ -105,8 +106,18 @@ const toolbarItem = z.strictObject({
 });
 const panel = z.strictObject({ id: localId, title: text, icon: iconSpec });
 const componentEntry = z.strictObject({ id: localId, title: text.optional() });
-/** `hidden` keeps nested routes such as a detail page out of the plugin's entry list. */
-const route = z.strictObject({ id: localId, title: text, hidden: z.boolean().default(false) });
+/**
+ * `hidden` keeps nested routes such as a detail page out of the plugin's entry list and page tabs.
+ * `icon` labels the route in the page tab bar shown when a plugin has several entry routes.
+ */
+const route = z.strictObject({
+  id: localId,
+  title: text,
+  icon: iconSpec.optional(),
+  hidden: z.boolean().default(false),
+});
+/** An entry in the app's bottom navigation that opens one of the plugin's entry routes. */
+const tab = z.strictObject({ id: localId, route: localId, title: text.optional(), icon: iconSpec.optional() });
 
 const settingBase = { key: z.string().regex(SETTING_KEY), title: text, description: z.string().max(300).optional() };
 const setting = z.discriminatedUnion('type', [
@@ -169,6 +180,7 @@ export const pluginManifestSchema = z
             'reader.panel': z.array(panel).max(4).default([]),
             'reader.overlay': z.array(componentEntry).max(4).default([]),
             'app.route': z.array(route).max(16).default([]),
+            'app.tab': z.array(tab).max(1).default([]),
             'settings.plugin': z.array(componentEntry).max(1).default([]),
           })
           .prefault({}),
@@ -195,6 +207,11 @@ export const pluginManifestSchema = z
       if (!commandIds.has(item.command)) {
         issue(['contributes', 'slots', 'reader.toolbar', index, 'command'], 'refers to an undeclared command');
       }
+    });
+    slots['app.tab'].forEach((item, index) => {
+      const route = slots['app.route'].find((candidate) => candidate.id === item.route);
+      if (!route) issue(['contributes', 'slots', 'app.tab', index, 'route'], 'refers to an undeclared route');
+      else if (route.hidden) issue(['contributes', 'slots', 'app.tab', index, 'route'], 'refers to a hidden route');
     });
     const keys = new Set<string>();
     settings.forEach((item, index) => {
@@ -230,6 +247,7 @@ export type PluginSettingContribution = PluginManifest['contributes']['settings'
 export type PluginPanelContribution = PluginManifest['contributes']['slots']['reader.panel'][number];
 export type PluginToolbarContribution = PluginManifest['contributes']['slots']['reader.toolbar'][number];
 export type PluginRouteContribution = PluginManifest['contributes']['slots']['app.route'][number];
+export type PluginTabContribution = PluginManifest['contributes']['slots']['app.tab'][number];
 
 export type ManifestParseResult =
   { readonly ok: true; readonly manifest: PluginManifest } | { readonly ok: false; readonly issues: readonly string[] };

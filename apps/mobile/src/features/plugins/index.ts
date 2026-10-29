@@ -4,4 +4,6 @@ export { PluginDetailScreen } from './screens/plugin-detail-screen';
 export { PluginLogsScreen } from './screens/plugin-logs-screen';
 export { PluginSettingsScreen } from './screens/plugin-settings-screen';
 export { PluginRouteScreen } from './screens/plugin-route-screen';
+export { PluginTabScreen } from './screens/plugin-tab-screen';
+export { usePluginAppTabs } from './hooks/use-plugin-app-tabs';
 export { redirectExternalPluginPackage } from './services/external-plugin-install';

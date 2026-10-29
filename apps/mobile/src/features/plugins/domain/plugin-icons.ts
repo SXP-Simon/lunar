@@ -30,7 +30,14 @@ const Icons: Record<IconName, { readonly ios: string; readonly android: string }
  * Packaged images fall back to the generic plugin symbol.
  */
 export function pluginSymbolName(icon: IconSpec | PluginIcon | undefined): SymbolName {
-  const resolved =
-    icon === undefined || isPackageIcon(icon) ? Icons.extension : typeof icon === 'string' ? Icons[icon] : icon;
+  const resolved = pluginSymbols(icon);
   return { ios: resolved.ios, android: resolved.android, web: resolved.android } as SymbolName;
+}
+
+/** Platform symbol names for a manifest icon, falling back to the generic plugin symbol. */
+export function pluginSymbols(icon: IconSpec | PluginIcon | undefined): {
+  readonly ios: string;
+  readonly android: string;
+} {
+  return icon === undefined || isPackageIcon(icon) ? Icons.extension : typeof icon === 'string' ? Icons[icon] : icon;
 }
