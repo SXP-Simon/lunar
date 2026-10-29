@@ -2,7 +2,7 @@
 // runtime relative imports: Node runs the CLI from TypeScript source directly.
 import { z } from 'zod';
 
-export const SDK_VERSION = '0.1.1';
+export const SDK_VERSION = '0.1.2';
 export const MANIFEST_FILE = 'manifest.json';
 export const MANIFEST_VERSION = 1;
 
@@ -24,14 +24,11 @@ export const PLUGIN_PERMISSIONS = [
   'reader.content.read',
   'reader.navigate',
   'reader.decorations',
-  'reader.annotations',
-  'library.metadata.read',
   'library.import',
-  'audio.speech',
-  'audio.playback',
-  'credentials.use',
+  /** HTTPS requests and images from any public host through `ctx.network` and `Image`. */
+  'network',
 ] as const;
-export type PluginPermissionName = (typeof PLUGIN_PERMISSIONS)[number] | `network:${string}`;
+export type PluginPermissionName = (typeof PLUGIN_PERMISSIONS)[number];
 
 /** Eager activation triggers. Using any contributed entry activates its plugin implicitly. */
 export const PLUGIN_ACTIVATION_EVENTS = ['onStartup', 'onReaderOpen'] as const;
@@ -73,7 +70,11 @@ export function isPackageIcon(icon: PluginIcon | undefined): icon is PackageIcon
 const PLUGIN_ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$/;
 const LOCAL_ID = /^[a-z][a-z0-9]*(?:[-.][a-z0-9]+)*$/;
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?$/;
-const NETWORK_PERMISSION = /^network:https:\/\/[a-z0-9.-]+(?::\d{1,5})?$/;
+/**
+ * Per-origin network permissions from SDK 0.1.1 and earlier. Installed manifests keep loading and
+ * count as `network`; the CLI no longer builds them.
+ */
+export const LEGACY_NETWORK_PERMISSION = /^network:https:\/\/[a-z0-9.-]+(?::\d{1,5})?$/;
 const SETTING_KEY = /^[a-zA-Z][a-zA-Z0-9_.-]{0,63}$/;
 
 const localId = z.string().regex(LOCAL_ID, 'must be lowercase letters, digits, "-" or "."').max(64);
@@ -91,7 +92,7 @@ const permission = z.strictObject({
   name: z
     .string()
     .refine(
-      (name) => (PLUGIN_PERMISSIONS as readonly string[]).includes(name) || NETWORK_PERMISSION.test(name),
+      (name) => (PLUGIN_PERMISSIONS as readonly string[]).includes(name) || LEGACY_NETWORK_PERMISSION.test(name),
       'unknown permission',
     ),
   reason: z.string().min(1).max(200),
@@ -265,11 +266,9 @@ export function hasPermission(manifest: PluginManifest, name: PluginPermissionNa
   return manifest.permissions.some((item) => item.name === name);
 }
 
-/** Origins such as `https://api.example.com` granted through `network:` permissions. */
-export function networkOrigins(manifest: PluginManifest): readonly string[] {
-  return manifest.permissions.flatMap((item) =>
-    item.name.startsWith('network:') ? [item.name.slice('network:'.length)] : [],
-  );
+/** Whether the plugin may use the network, through `network` or a legacy per-origin permission. */
+export function hasNetworkAccess(manifest: PluginManifest): boolean {
+  return manifest.permissions.some((item) => item.name === 'network' || LEGACY_NETWORK_PERMISSION.test(item.name));
 }
 
 /** Resolves `%key%` manifest text against a locale table, keeping the text when the key is missing. */

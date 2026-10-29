@@ -235,13 +235,11 @@ describe('plugin reader bridge', () => {
 });
 
 describe('plugin network policy', () => {
-  const origins = ['https://api.example.com'];
-
-  it('accepts granted HTTPS origins only', () => {
-    expect(assertRequestAllowed({ url: 'https://api.example.com/v1' }, origins).pathname).toBe('/v1');
-    expect(() => assertRequestAllowed({ url: 'http://api.example.com/' }, origins)).toThrow('Only HTTPS');
-    expect(() => assertRequestAllowed({ url: 'https://evil.example.com/' }, origins)).toThrow('not among');
-    expect(() => assertRequestAllowed({ url: 'https://user:pass@api.example.com/' }, origins)).toThrow('credentials');
+  it('accepts any public HTTPS host', () => {
+    expect(assertRequestAllowed({ url: 'https://api.example.com/v1' }).pathname).toBe('/v1');
+    expect(assertRequestAllowed({ url: 'https://cdn.other.example/a.jpg' }).hostname).toBe('cdn.other.example');
+    expect(() => assertRequestAllowed({ url: 'http://api.example.com/' })).toThrow('Only HTTPS');
+    expect(() => assertRequestAllowed({ url: 'https://user:pass@api.example.com/' })).toThrow('credentials');
   });
 
   it.each([
@@ -251,7 +249,7 @@ describe('plugin network policy', () => {
     'https://[::1]/',
     'https://printer.local/',
   ])('refuses the local address %s', (url) => {
-    expect(() => assertRequestAllowed({ url }, [new URL(url).origin])).toThrow('Local network');
+    expect(() => assertRequestAllowed({ url })).toThrow('Local network');
   });
 });
 

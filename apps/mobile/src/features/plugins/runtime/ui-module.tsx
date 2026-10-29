@@ -16,7 +16,7 @@ import { Pressable as NativePressable, ScrollView, Text as NativeText, View } fr
 import Svg, { Circle } from 'react-native-svg';
 import { useCSSVariable, withUniwind } from 'uniwind';
 import type * as Ui from '@lunar/plugin-sdk/ui';
-import { networkOrigins } from '@lunar/plugin-sdk/manifest';
+import { hasNetworkAccess } from '@lunar/plugin-sdk/manifest';
 
 import { pluginSymbolName } from '../domain/plugin-icons';
 import { assertRequestAllowed } from '../services/plugin-network';
@@ -184,12 +184,12 @@ function Image({ source, accessibilityLabel, aspectRatio = 1, rounded = 'md', st
   );
 }
 
-/** Images follow the plugin's `network:` permissions, so covers cannot reach an undeclared origin. */
+/** Images need the `network` permission and follow the same public-HTTPS rules as `ctx.network`. */
 function permittedImageUri(scope: PluginScopeValue | undefined, uri: string): string | undefined {
   const manifest = scope && scope.host.getEntry(scope.pluginId)?.plugin.manifest;
-  if (!manifest) return undefined;
+  if (!manifest || !hasNetworkAccess(manifest)) return undefined;
   try {
-    return assertRequestAllowed({ url: uri }, networkOrigins(manifest)).href;
+    return assertRequestAllowed({ url: uri }).href;
   } catch {
     return undefined;
   }

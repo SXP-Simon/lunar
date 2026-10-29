@@ -12,8 +12,8 @@ import type {
   StorageAPI,
 } from '@lunar/plugin-sdk';
 import {
+  hasNetworkAccess,
   hasPermission,
-  networkOrigins,
   SDK_VERSION,
   type PluginComponentSlot,
   type PluginSettingContribution,
@@ -40,7 +40,7 @@ export const HOST_CAPABILITIES: Readonly<Record<string, number>> = Object.freeze
   'reader.decorations': 1,
   settings: 1,
   storage: 1,
-  network: 2,
+  network: 3,
   clipboard: 1,
   'library.import': 1,
 });
@@ -206,7 +206,10 @@ export function createPluginContext(host: PluginHost, entry: PluginEntry, genera
     network: {
       async request(request) {
         live();
-        return host.deps.network(plugin.id, networkOrigins(manifest), request, generation.abort.signal);
+        if (!hasNetworkAccess(manifest)) {
+          throw new LunarPluginError('PERMISSION_DENIED', 'The manifest does not declare the network permission');
+        }
+        return host.deps.network(plugin.id, request, generation.abort.signal);
       },
     },
 

@@ -11,7 +11,6 @@ describe('plugin network responses', () => {
     const request = createPluginNetwork(fetchImpl);
     const response = await request(
       'org.example.test',
-      ['https://example.com'],
       { url: 'https://example.com/book' },
       new AbortController().signal,
     );
@@ -23,12 +22,7 @@ describe('plugin network responses', () => {
     const bytes = new Uint8Array(NETWORK_LIMITS.responseBytes + 1);
     const request = createPluginNetwork(async () => new Response(bytes));
     await expect(
-      request(
-        'org.example.test',
-        ['https://example.com'],
-        { url: 'https://example.com/large' },
-        new AbortController().signal,
-      ),
+      request('org.example.test', { url: 'https://example.com/large' }, new AbortController().signal),
     ).rejects.toMatchObject({ code: 'QUOTA_EXCEEDED' });
   });
 
@@ -37,7 +31,6 @@ describe('plugin network responses', () => {
     const request = createPluginNetwork(async () => new Response(bytes));
     const response = await request(
       'org.example.test',
-      ['https://example.com'],
       { url: 'https://example.com/image', responseType: 'bytes' },
       new AbortController().signal,
     );
@@ -56,11 +49,29 @@ describe('plugin network responses', () => {
     await expect(
       request(
         'org.example.test',
-        ['https://example.com'],
         { url: 'https://example.com/large', responseType: 'bytes' },
         new AbortController().signal,
       ),
     ).rejects.toMatchObject({ code: 'QUOTA_EXCEEDED' });
     expect(arrayBuffer).not.toHaveBeenCalled();
+  });
+
+  it('follows redirects to other public HTTPS hosts but not to plain HTTP', async () => {
+    const redirected = (url: string) => {
+      const response = new Response('ok');
+      Object.defineProperty(response, 'url', { value: url });
+      return response;
+    };
+    const toCdn = createPluginNetwork(async () => redirected('https://cdn.example.net/a.jpg'));
+    const response = await toCdn(
+      'org.example.test',
+      { url: 'https://example.com/a.jpg' },
+      new AbortController().signal,
+    );
+    expect(response.body).toBe('ok');
+    const toHttp = createPluginNetwork(async () => redirected('http://cdn.example.net/a.jpg'));
+    await expect(
+      toHttp('org.example.test', { url: 'https://example.com/a.jpg' }, new AbortController().signal),
+    ).rejects.toMatchObject({ code: 'NETWORK_DENIED' });
   });
 });

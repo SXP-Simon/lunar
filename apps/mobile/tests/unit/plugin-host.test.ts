@@ -231,15 +231,12 @@ describe('plugin context services', () => {
     expect(ctx.host.capabilities['reader.chapterText']).toBeUndefined();
   });
 
-  it('limits network access to granted origins', async () => {
+  it('requires the network permission before requesting', async () => {
     const { ctx, deps } = await activated('');
-    await ctx.network.request({ url: 'https://example.com/' });
-    expect(deps.network).toHaveBeenCalledWith(
-      'org.example.test',
-      [],
-      { url: 'https://example.com/' },
-      expect.anything(),
-    );
+    await expect(ctx.network.request({ url: 'https://example.com/' })).rejects.toMatchObject({
+      code: 'PERMISSION_DENIED',
+    });
+    expect(deps.network).not.toHaveBeenCalled();
   });
 
   it('requires library.import before accepting EPUB bytes', async () => {

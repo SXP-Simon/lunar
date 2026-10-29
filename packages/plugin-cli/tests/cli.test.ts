@@ -80,6 +80,18 @@ describe('plugin build', () => {
   });
 });
 
+describe('plugin network permission', () => {
+  it('refuses to build per-origin network permissions', async () => {
+    const manifestPath = path.join(directory, 'manifest.json');
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, unknown>;
+    await writeFile(
+      manifestPath,
+      JSON.stringify({ ...manifest, permissions: [{ name: 'network:https://api.example.com', reason: 'Sync' }] }),
+    );
+    await expect(loadProject(directory)).rejects.toThrow('replaced by a single "network" permission');
+  });
+});
+
 describe('plugin pack', () => {
   it('writes a package whose integrity manifest covers every file', async () => {
     const result = await packPlugin(await loadProject(directory));

@@ -3,7 +3,7 @@ import {
   compareVersions,
   isPackageIcon,
   localizeManifestText,
-  networkOrigins,
+  hasNetworkAccess,
   parsePluginManifest,
   satisfiesVersionRange,
 } from '../src/manifest';
@@ -19,7 +19,7 @@ const valid = {
   activationEvents: ['onReaderOpen'],
   permissions: [
     { name: 'reader.events', reason: 'Track pages' },
-    { name: 'network:https://api.example.com', reason: 'Sync' },
+    { name: 'network', reason: 'Sync' },
   ],
   contributes: {
     commands: [{ id: 'open-stats', title: 'Open' }],
@@ -37,7 +37,7 @@ describe('plugin manifest', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.manifest.contributes.slots['reader.overlay']).toEqual([]);
-    expect(networkOrigins(result.manifest)).toEqual(['https://api.example.com']);
+    expect(hasNetworkAccess(result.manifest)).toBe(true);
   });
 
   it('defaults every optional section', () => {
@@ -47,6 +47,16 @@ describe('plugin manifest', () => {
     void contributes;
     const result = parsePluginManifest(minimal);
     expect(result.ok && result.manifest.contributes.commands).toEqual([]);
+  });
+
+  it('still loads per-origin network permissions as network access', () => {
+    const result = parsePluginManifest({
+      ...valid,
+      permissions: [{ name: 'network:https://api.example.com', reason: 'Sync' }],
+    });
+    expect(result.ok && hasNetworkAccess(result.manifest)).toBe(true);
+    const offline = parsePluginManifest({ ...valid, permissions: [{ name: 'reader.events', reason: 'x' }] });
+    expect(offline.ok && hasNetworkAccess(offline.manifest)).toBe(false);
   });
 
   it('rejects unknown fields, permissions and slots', () => {

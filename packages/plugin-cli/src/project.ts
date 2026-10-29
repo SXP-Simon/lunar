@@ -1,7 +1,13 @@
 import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { isPackageIcon, MANIFEST_FILE, parsePluginManifest, type PluginManifest } from '@lunar/plugin-sdk/manifest';
+import {
+  isPackageIcon,
+  LEGACY_NETWORK_PERMISSION,
+  MANIFEST_FILE,
+  parsePluginManifest,
+  type PluginManifest,
+} from '@lunar/plugin-sdk/manifest';
 import { LOCALES_DIRECTORY, validatePackageIcon } from '@lunar/plugin-sdk/package-format';
 
 export interface PluginProject {
@@ -41,6 +47,12 @@ export async function loadProject(directory: string): Promise<PluginProject> {
   }
   const parsed = parsePluginManifest(raw);
   if (!parsed.ok) throw new ProjectError(`${MANIFEST_FILE} is invalid`, parsed.issues);
+  const legacy = parsed.manifest.permissions.flatMap((item, index) =>
+    LEGACY_NETWORK_PERMISSION.test(item.name)
+      ? [`permissions.${index}.name: per-origin "${item.name}" was replaced by a single "network" permission`]
+      : [],
+  );
+  if (legacy.length > 0) throw new ProjectError(`${MANIFEST_FILE} is invalid`, legacy);
   if (parsed.manifest.trust !== 'full') {
     throw new ProjectError('Only "trust": "full" plugins can be built with SDK 0.1');
   }

@@ -24,11 +24,12 @@ const ForbiddenHeaders = new Set([
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
 /**
- * Checks a request against the plugin's granted HTTPS origins. Name resolution
- * happens in the platform network stack, so addresses are checked as written;
- * literal private and loopback hosts are refused.
+ * Checks that a request goes to a public HTTPS host. Name resolution happens in the platform
+ * network stack, so addresses are checked as written; literal private and loopback hosts are refused.
+ * Which hosts a plugin talks to is not restricted: a `full` plugin can reach the global `fetch`
+ * anyway, so the `network` permission states the purpose rather than drawing a boundary.
  */
-export function assertRequestAllowed(request: NetworkRequest, origins: readonly string[]): URL {
+export function assertRequestAllowed(request: NetworkRequest): URL {
   let url: URL;
   try {
     url = new URL(request.url);
@@ -38,9 +39,6 @@ export function assertRequestAllowed(request: NetworkRequest, origins: readonly 
   if (url.protocol !== 'https:') throw new LunarPluginError('NETWORK_DENIED', 'Only HTTPS requests are allowed');
   if (url.username || url.password) throw new LunarPluginError('NETWORK_DENIED', 'URLs must not embed credentials');
   if (isPrivateHost(url.hostname)) throw new LunarPluginError('NETWORK_DENIED', 'Local network hosts are not allowed');
-  if (!origins.includes(url.origin)) {
-    throw new LunarPluginError('NETWORK_DENIED', `${url.origin} is not among the plugin's network permissions`);
-  }
   return url;
 }
 
@@ -49,11 +47,10 @@ export function createPluginNetwork(fetchImpl: FetchLike) {
 
   return async function request(
     pluginId: string,
-    origins: readonly string[],
     request: NetworkRequest,
     lifetime: AbortSignal,
   ): Promise<NetworkResponse> {
-    const url = assertRequestAllowed(request, origins);
+    const url = assertRequestAllowed(request);
     const method = request.method ?? 'GET';
     if (!['GET', 'POST', 'PUT', 'DELETE'].includes(method)) {
       throw new LunarPluginError('INVALID_ARGUMENT', `Method ${String(method)} is not supported`);
@@ -93,10 +90,8 @@ export function createPluginNetwork(fetchImpl: FetchLike) {
         signal: controller.signal,
         credentials: 'omit',
       });
-      // React Native follows redirects itself; a response from another origin is withheld.
-      if (response.url && new URL(response.url).origin !== url.origin) {
-        throw new LunarPluginError('NETWORK_DENIED', 'The request was redirected to another origin');
-      }
+      // React Native follows redirects itself; a redirect to plain HTTP or a local host is withheld.
+      if (response.url && response.url !== url.href) assertRequestAllowed({ url: response.url });
       const bytes = await readResponseBytes(response, NETWORK_LIMITS.responseBytes);
       const body = responseType === 'bytes' ? '' : strFromU8(bytes);
       const responseHeaders: Record<string, string> = {};

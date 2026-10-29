@@ -118,6 +118,7 @@ export function PluginInstallDialog({ preview, isInstalling, onConfirm, onCancel
 }
 
 export function permissionLabel(name: string, t: (key: string, options?: Record<string, string>) => string): string {
-  if (name.startsWith('network:')) return t('plugins.permission.network', { origin: name.slice('network:'.length) });
+  // Per-origin names come from manifests installed before the single `network` permission.
+  if (name.startsWith('network:')) return t('plugins.permission.network');
   return t(`plugins.permission.${name}`);
 }
