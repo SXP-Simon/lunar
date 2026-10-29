@@ -68,9 +68,14 @@ export function PluginInstallDialog({ preview, isInstalling, onConfirm, onCancel
                   <Text className="text-sm font-semibold text-danger">{t('plugins.trustTitle')}</Text>
                   <Text className="text-sm leading-5 text-foreground">{t('plugins.trustBody')}</Text>
                 </View>
-                {!preview.package.signed ? (
-                  <Text className="text-sm leading-5 text-muted">{t('plugins.unsigned')}</Text>
-                ) : null}
+                <Text
+                  className={`text-sm leading-5 ${preview.trust.kind === 'verified' ? 'text-foreground' : 'text-muted'}`}>
+                  {preview.trust.kind === 'verified'
+                    ? t('plugins.catalog.verifiedBy', { name: preview.trust.catalogName })
+                    : preview.trust.kind === 'unknownKey'
+                      ? t('plugins.catalog.unknownKey', { key: preview.trust.keyId.slice(0, 12) })
+                      : t('plugins.unsigned')}
+                </Text>
                 {preview.current && preview.kind !== 'reinstall' ? (
                   <Text className="text-sm leading-5 text-muted">
                     {t(preview.kind === 'downgrade' ? 'plugins.downgradeWarning' : 'plugins.updateSafety', {

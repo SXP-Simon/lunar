@@ -6,7 +6,7 @@
 | 编写日期     | 2026-10-22                                                      |
 | 代码参考     | Lunar 0.3.0，提交 `f7edd5e`                                     |
 | 首期平台     | Android                                                         |
-| 主要分发方式 | GitHub Releases 发布 APK，官方插件目录与本地插件包安装          |
+| 主要分发方式 | GitHub Releases 发布 APK；插件经用户添加的插件仓库或本地包安装  |
 | SDK 目标     | TypeScript 与 TSX 开发接口，JavaScript 执行产物                 |
 | 前版关系     | 取代 2026-10-05 版本的“隔离脚本与声明式界面”首期方案，见第 2 节 |
 
@@ -87,7 +87,7 @@ Lunar 提供公开 SDK，使用户能够以代码扩展阅读器：向阅读界�
 
 | 保证       | 实现方式                                           |
 | ---------- | -------------------------------------------------- |
-| 来源可识别 | 包签名、发布身份连续性、官方目录可信索引           |
+| 来源可识别 | 包签名、发布身份连续性、用户添加的仓库签名密钥     |
 | 知情同意   | 安装界面展示执行层级、权限声明和网络来源           |
 | 接口闸门   | SDK 接口按插件身份检查权限与资源预算               |
 | 故障隔离   | 插槽错误边界、钩子异常捕获与超时、连续崩溃自动停用 |
@@ -95,13 +95,15 @@ Lunar 提供公开 SDK，使用户能够以代码扩展阅读器：向阅读界�
 
 [MUST] `full` 插件的安装与首次启用界面必须明确说明该插件以应用同等权限运行，权限声明用于说明用途，无法限制恶意行为。
 
-[MUST] 宿主文案、权限界面与官方目录不得将 `full` 层级描述为沙箱或隔离环境。
+[MUST] 宿主文案、权限界面与插件仓库不得将 `full` 层级描述为沙箱或隔离环境。
 
 [SHOULD] 社区插件默认以“开发来源”或“第三方来源”标识，用户可以随时查看其签名指纹与来源地址。
 
 ### 3.3 官方插件与社区插件
 
-官方插件由项目发布密钥签名，并收录于官方目录的可信索引。社区插件由作者密钥签名，首次安装时由用户确认信任该发布身份。
+Lunar 不内置任何插件仓库，也不预置受信任的发布密钥。所有插件仓库由用户自行添加，添加仓库即确认信任该仓库的签名密钥；由项目维护者发布的插件同样通过用户添加的仓库分发，宿主不区分官方与社区来源的信任等级。
+
+[MUST] 应用不得内置默认插件仓库或默认受信任密钥，也不得在用户未确认的情况下添加仓库。
 
 [MUST] 官方插件只使用公开 SDK 与宿主模块注册表。官方插件所需的新能力必须先成为公开契约，社区插件以相同条件获得该能力。
 
@@ -276,7 +278,7 @@ reading-helper.lunar-plugin
   "trust": "full",
   "platforms": ["android"],
   "main": "main.js",
-  "publisherKeyId": "ed25519:example-key",
+  "publisherKeyId": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k",
   "dataVersion": 1,
   "activationEvents": ["onReaderOpen"],
   "permissions": [
@@ -311,17 +313,69 @@ reading-helper.lunar-plugin
 
 ### 6.3 校验与签名
 
-`integrity.json` 保存清单、源码和资源的 SHA-256。签名覆盖规范化的完整哈希清单；哈希清单覆盖包内所有业务文件，并排除自身与签名文件，防止自引用。
+`integrity.json` 保存清单、源码和资源的 SHA-256。签名覆盖 `integrity.json` 的原始字节；哈希清单覆盖包内所有业务文件，并排除自身与签名文件，防止自引用。哈希清单的规范化字节编码由 CLI 与宿主共享 `@lunar/plugin-sdk/package-format` 的实现。
 
-发布格式采用 Ed25519 签名。哈希清单包含签名格式版本、文件名、字节数与小写十六进制摘要，文件名先统一为包内相对形式再排序。规范化字节编码必须由 CLI 与宿主共享实现，并提供固定测试向量；签名格式版本确定后保持字节级兼容。
+签名与密钥只采用标准格式，不定义私有变体：
 
-[MUST] 同一插件标识的更新须由受信任的原发布密钥签署。密钥轮换需要旧密钥签署新密钥声明，或由用户在宿主界面确认身份变更。
+| 对象       | 格式                                                                |
+| ---------- | ------------------------------------------------------------------- |
+| 签名算法   | 纯 Ed25519（RFC 8032），宿主按严格规则验证，不接受 ZIP-215 宽松编码 |
+| 私钥文件   | PKCS#8 PEM（RFC 5958、RFC 8410），只由发布者保管                    |
+| 公钥       | JSON Web Key，`kty: "OKP"`、`crv: "Ed25519"`（RFC 8037）            |
+| 密钥标识   | JWK SHA-256 指纹（RFC 7638），即 `publisherKeyId` 与 `keyId` 的取值 |
+| 二进制字段 | 无填充 base64url（RFC 4648 第 5 节）                                |
 
-首次安装展示作者声明、来源、指纹、执行层级和请求权限。签名证明包的完整性及发布身份连续性，无法证明插件行为安全。
+`signature.json` 包含 `format: 1`、`algorithm: "Ed25519"`、签名密钥的 `keyId` 与 64 字节签名。CLI 使用 Node.js 内置加密模块签名，宿主使用 `@noble/curves` 验证；两端以 RFC 8037 附录 A 的测试向量互相校验。
 
-开发构建允许本地未签名插件，并在管理界面标记开发来源。正式版本的本地安装要求包签名，首次信任由用户确认。
+[MUST] 只有密钥属于用户已添加仓库的签名才视为已验证；签名密钥未知时按未签名包处理。签名声明的 `keyId` 属于已添加仓库但验证失败时，安装器拒绝该包。
 
-[MUST] 签名验证实现之前，本地插件包只能在开发者模式下安装，所有本地包按第三方来源处理，安装界面说明包未经签名验证。
+[MUST] 安装器记录通过验证的签名密钥。同一插件标识的后续版本必须由该密钥签署；需要更换发布者时，用户先卸载插件再安装新包。
+
+[MUST] 清单声明 `publisherKeyId` 时，包必须带有该密钥标识的签名。
+
+首次安装展示作者声明、来源、签名验证结果、执行层级和请求权限。签名证明包的完整性及发布身份连续性，无法证明插件行为安全。
+
+[MUST] 未经已添加仓库密钥验证的插件包只能在开发者模式下安装，安装界面说明发布者无法验证。
+
+### 6.4 插件仓库
+
+插件仓库是一份可从任意 HTTPS 静态站点访问的索引文件，通常命名为 `index.json`，与插件包、图标一起发布。`lunar-plugin keygen` 生成签名私钥，`lunar-plugin pack --key` 生成签名包，`lunar-plugin catalog` 校验每个包均由仓库密钥签署后写出索引、`packages/` 与 `icons/`。
+
+```json
+{
+  "format": 1,
+  "name": "示例仓库",
+  "badge": "EX",
+  "website": "https://example.com",
+  "signingKey": { "kty": "OKP", "crv": "Ed25519", "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo" },
+  "plugins": [
+    {
+      "id": "org.example.reading-helper",
+      "name": "阅读助手",
+      "version": "0.1.0",
+      "sdk": "^0.1.0",
+      "package": "packages/org.example.reading-helper-0.1.0.lunar-plugin",
+      "icon": "icons/org.example.reading-helper.png",
+      "sha256": "…",
+      "size": 18342,
+      "permissions": ["reader.content.read"],
+      "locales": { "en": { "name": "Reading helper" } }
+    }
+  ]
+}
+```
+
+包与图标地址相对索引地址解析，也可以是绝对 HTTPS 地址。宿主忽略索引中未知的字段，以便仓库格式向后兼容地扩展。
+
+用户在“插件仓库”中输入索引地址，或打开 `lunar://add-catalog?url=<索引地址>` 链接添加仓库。添加前宿主读取索引并展示仓库名称、地址、插件数量与签名密钥标识，由用户确认信任。
+
+[MUST] 仓库只通过 HTTPS 访问。下载的插件包须与索引声明的字节数和 SHA-256 一致，再经过完整的包校验与签名验证。
+
+[MUST] 添加仓库时固定其签名密钥。之后读取到的索引声明其他密钥时，宿主停止使用该仓库并提示用户；用户确认变更后移除并重新添加仓库。
+
+[MUST] 宿主按 SDK 兼容范围标记不兼容的插件，按版本号比较提示可用更新。已安装插件只接受与其安装时签名密钥相同的仓库提供的更新。
+
+[SHOULD] 移除仓库不卸载已安装插件；在重新添加仓库前，这些插件无法通过仓库更新。
 
 ## 7. SDK 基础契约
 
@@ -609,15 +663,15 @@ interface UIAPI {
 
 `@lunar/plugin-sdk/ui` 提供宿主实现的界面组件。组件内部使用 HeroUI Native 与宿主主题，对插件公开稳定的属性集合。
 
-| 类别 | 组件                                                          |
-| ---- | ------------------------------------------------------------- |
-| 布局 | `Stack`、`Row`、`Surface`、`Divider`、`ScrollArea`            |
-| 文本 | `Text`、`Heading`、`Markdown`                                 |
-| 操作 | `Button`、`IconButton`、`Pressable`、`Chip`、`Menu`          |
-| 输入 | `TextField`、`Switch`、`Slider`、`Select`、`SegmentedControl` |
+| 类别 | 组件                                                                |
+| ---- | ------------------------------------------------------------------- |
+| 布局 | `Stack`、`Row`、`Surface`、`Divider`、`ScrollArea`                  |
+| 文本 | `Text`、`Heading`、`Markdown`                                       |
+| 操作 | `Button`、`IconButton`、`Pressable`、`Chip`、`Menu`                 |
+| 输入 | `TextField`、`Switch`、`Slider`、`Select`、`SegmentedControl`       |
 | 反馈 | `Spinner`、`ProgressCircle`、`Progress`、`EmptyState`、`ErrorState` |
-| 容器 | `PanelHeader`、`List`、`ListItem`、`Sheet`                    |
-| 媒体 | `Image`（按插件网络权限加载的 HTTPS 地址）、`Icon`            |
+| 容器 | `PanelHeader`、`List`、`ListItem`、`Sheet`                          |
+| 媒体 | `Image`（按插件网络权限加载的 HTTPS 地址）、`Icon`                  |
 
 [MUST] 界面组件只接受语义颜色、语义间距与语义字号，宿主统一处理浅色与深色主题、字体缩放、触控区域和无障碍角色。
 

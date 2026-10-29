@@ -3,12 +3,20 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { unzipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { parseIntegrityManifest, verifyPackageIntegrity } from '@lunar/plugin-sdk/package-format';
+import { parsePluginCatalog } from '@lunar/plugin-sdk/manifest';
+import {
+  parseIntegrityManifest,
+  parsePackageSignature,
+  verifyPackageIntegrity,
+  verifyPackageSignature,
+} from '@lunar/plugin-sdk/package-format';
 import { buildPlugin, BuildError } from '../src/build.ts';
+import { buildCatalog, CatalogError } from '../src/catalog.ts';
 import { startDevServer } from '../src/dev-server.ts';
 import { initProject } from '../src/init.ts';
 import { packPlugin, sha256 } from '../src/pack.ts';
 import { loadProject, ProjectError } from '../src/project.ts';
+import { generateSigningKey, loadSigningKey, SigningError, verifyEd25519 } from '../src/sign.ts';
 
 let directory: string;
 
@@ -95,6 +103,71 @@ describe('plugin pack', () => {
     const first = await packPlugin(await loadProject(directory));
     const second = await packPlugin(await loadProject(directory));
     expect(second.sha256).toBe(first.sha256);
+  });
+});
+
+describe('plugin signing and catalogs', () => {
+  it('stores keys as PKCS#8 PEM and refuses to overwrite them', async () => {
+    const file = path.join(directory, 'key.pem');
+    const key = await generateSigningKey(file);
+    expect(await readFile(file, 'utf8')).toMatch(/^-----BEGIN PRIVATE KEY-----\r?\n/);
+    expect((await loadSigningKey(file)).keyId).toBe(key.keyId);
+    await expect(generateSigningKey(file)).rejects.toBeInstanceOf(SigningError);
+  });
+
+  it('signs integrity.json so a standard Ed25519 verifier accepts it', async () => {
+    const key = await generateSigningKey(path.join(directory, 'key.pem'));
+    const result = await packPlugin(await loadProject(directory), key);
+    expect(result.keyId).toBe(key.keyId);
+    const files = unzipSync(new Uint8Array(await readFile(result.file)));
+    const signature = parsePackageSignature(new TextDecoder().decode(files['signature.json']));
+    expect(signature?.keyId).toBe(key.keyId);
+    expect(
+      await verifyPackageSignature(files['integrity.json']!, signature!, key.publicJwk, sha256, verifyEd25519),
+    ).toBeUndefined();
+  });
+
+  it('requires the key named by publisherKeyId', async () => {
+    const key = await generateSigningKey(path.join(directory, 'key.pem'));
+    const other = await generateSigningKey(path.join(directory, 'other.pem'));
+    const manifestPath = path.join(directory, 'manifest.json');
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, unknown>;
+    await writeFile(manifestPath, JSON.stringify({ ...manifest, publisherKeyId: key.keyId }));
+    const project = await loadProject(directory);
+    await expect(packPlugin(project)).rejects.toThrow('pass --key');
+    await expect(packPlugin(project, other)).rejects.toThrow('does not match publisherKeyId');
+    expect((await packPlugin(project, key)).keyId).toBe(key.keyId);
+  });
+
+  it('writes a catalog of packages signed with its key', async () => {
+    const key = await generateSigningKey(path.join(directory, 'key.pem'));
+    const packed = await packPlugin(await loadProject(directory), key);
+    const outDir = path.join(directory, 'catalog');
+    const { catalog } = await buildCatalog({ outDir, name: 'Example', key, packages: [packed.file] });
+
+    const written = parsePluginCatalog(JSON.parse(await readFile(path.join(outDir, 'index.json'), 'utf8')));
+    expect(written.ok && written.catalog).toEqual(catalog);
+    expect(catalog.signingKey).toEqual(key.publicJwk);
+    const [entry] = catalog.plugins;
+    expect(entry).toMatchObject({
+      id: 'org.example.hello',
+      name: '你好',
+      version: '0.1.0',
+      package: 'packages/org.example.hello-0.1.0.lunar-plugin',
+      sha256: packed.sha256,
+      size: packed.bytes,
+    });
+    expect(entry!.locales?.['zh-CN']?.name).toBe('你好');
+    expect(sha256(new Uint8Array(await readFile(path.join(outDir, entry!.package))))).toBe(packed.sha256);
+
+    const other = await generateSigningKey(path.join(directory, 'other.pem'));
+    await expect(buildCatalog({ outDir, name: 'Example', key: other, packages: [packed.file] })).rejects.toThrow(
+      'not signed by the catalog key',
+    );
+    const unsigned = await packPlugin(await loadProject(directory));
+    await expect(buildCatalog({ outDir, name: 'Example', key, packages: [unsigned.file] })).rejects.toBeInstanceOf(
+      CatalogError,
+    );
   });
 });
 

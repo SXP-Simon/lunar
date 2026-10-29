@@ -178,4 +178,10 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       )`,
     ],
   },
+  {
+    version: 12,
+    name: 'plugin_signers',
+    // The verified signing key of an installed package; updates must carry the same key.
+    statements: ['ALTER TABLE plugins ADD COLUMN signer_key_id TEXT'],
+  },
 ];

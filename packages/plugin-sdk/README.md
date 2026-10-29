@@ -17,7 +17,19 @@ npx lunar-plugin dev
 
 In Lunar, open **Settings → Plugin settings**, turn on **Developer mode**, and enter one of the addresses that `lunar-plugin dev` prints. Saving a source file rebuilds the plugin and reloads it in the app, and the plugin's `ctx.log` output appears in the terminal. With the phone on USB, run `adb reverse tcp:5757 tcp:5757` and use the `127.0.0.1` address.
 
-`npx lunar-plugin pack` writes `dist/<id>-<version>.lunar-plugin`, which can be installed from the same screen.
+`npx lunar-plugin pack` writes `dist/<id>-<version>.lunar-plugin`. Unsigned packages can only be installed in developer mode.
+
+## Publishing a catalog
+
+Lunar ships with no plugin catalog. Users add the catalogs of publishers they trust, and packages signed with a catalog's key install without developer mode.
+
+```sh
+npx lunar-plugin keygen lunar-signing-key.pem          # Ed25519, PKCS#8 PEM; keep it secret
+npx lunar-plugin pack --key lunar-signing-key.pem      # adds signature.json
+npx lunar-plugin catalog dist/*.lunar-plugin --out site --key lunar-signing-key.pem --name "My plugins"
+```
+
+Serve the `site` directory from any HTTPS host. Users add the URL of `site/index.json` under **Plugins → ⋯ → Plugin catalogs**, or open `lunar://add-catalog?url=<index URL>`. Signatures are pure Ed25519 (RFC 8032) over `integrity.json`; the public key is published as a JWK (RFC 8037) and identified by its RFC 7638 thumbprint, which `keygen` prints and `publisherKeyId` in `manifest.json` may pin. Later versions of an installed plugin must be signed with the same key.
 
 ## A plugin
 

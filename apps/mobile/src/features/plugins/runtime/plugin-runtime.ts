@@ -23,6 +23,7 @@ import { PluginDevSession, type DevSessionStatus } from '../services/plugin-dev-
 import { PluginHost, type PluginUiBridge } from '../services/plugin-host';
 import { PluginInstaller, type PluginInstallPreview } from '../services/plugin-installer';
 import { createPluginNetwork } from '../services/plugin-network';
+import { verifyEd25519 } from '../services/plugin-signature';
 import { createHostModules } from './host-modules';
 
 export interface PluginRuntime {
@@ -80,6 +81,12 @@ function createPluginRuntime(): PluginRuntime {
         records,
         storage,
         sha256: sha256Hex,
+        // Adding a catalog is what makes its key trusted.
+        trustedKeys: () =>
+          store
+            .getState()
+            .catalogs.map((catalog) => ({ keyId: catalog.keyId, key: catalog.key, catalogName: catalog.name })),
+        verify: verifyEd25519,
         files: { write: writePluginFiles, remove: deletePluginFiles },
       }),
   );

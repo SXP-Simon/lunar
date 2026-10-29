@@ -1,7 +1,15 @@
-import { createHash } from 'node:crypto';
+import { createHash, createPublicKey, generateKeyPairSync, sign, type KeyObject } from 'node:crypto';
 import { zipSync } from 'fflate';
 import { parsePluginManifest, type PluginManifest, type PluginManifestInput } from '@lunar/plugin-sdk/manifest';
-import { createIntegrityManifest, serializeIntegrityManifest } from '@lunar/plugin-sdk/package-format';
+import {
+  base64UrlEncode,
+  createIntegrityManifest,
+  jwkThumbprint,
+  parseEd25519PublicJwk,
+  serializeIntegrityManifest,
+  serializePackageSignature,
+  type Ed25519PublicJwk,
+} from '@lunar/plugin-sdk/package-format';
 import { vi } from 'vitest';
 
 import type { InstalledPlugin } from '../../src/features/plugins/domain/installed-plugin';
@@ -155,9 +163,27 @@ export function createTestHost(patch: Partial<PluginHostDependencies> = {}) {
 }
 
 /** Builds a `.lunar-plugin` archive the way the CLI does. */
+export interface TestSigningKey {
+  readonly privateKey: KeyObject;
+  readonly jwk: Ed25519PublicJwk;
+  readonly keyId: string;
+}
+
+/** An Ed25519 key made with Node.js, the way the plugin CLI makes them. */
+export async function createSigningKey(): Promise<TestSigningKey> {
+  const { privateKey } = generateKeyPairSync('ed25519');
+  const jwk = parseEd25519PublicJwk(createPublicKey(privateKey).export({ format: 'jwk' }))!;
+  return { privateKey, jwk, keyId: await jwkThumbprint(jwk, sha256) };
+}
+
 export async function packArchive(
   files: Record<string, string | Uint8Array>,
-  options: { readonly integrity?: boolean } = {},
+  options: {
+    readonly integrity?: boolean;
+    /** Signs integrity.json; `keyId` overrides the key id the signature names. */
+    readonly signWith?: TestSigningKey;
+    readonly keyId?: string;
+  } = {},
 ): Promise<Uint8Array> {
   const bytes = new Map(
     Object.entries(files).map(([path, value]) => [path, typeof value === 'string' ? encoder.encode(value) : value]),
@@ -168,6 +194,20 @@ export async function packArchive(
       sha256,
     );
     bytes.set('integrity.json', encoder.encode(serializeIntegrityManifest(integrity)));
+  }
+  if (options.signWith) {
+    const signature = sign(null, bytes.get('integrity.json')!, options.signWith.privateKey);
+    bytes.set(
+      'signature.json',
+      encoder.encode(
+        serializePackageSignature({
+          format: 1,
+          algorithm: 'Ed25519',
+          keyId: options.keyId ?? options.signWith.keyId,
+          signature: base64UrlEncode(new Uint8Array(signature)),
+        }),
+      ),
+    );
   }
   return zipSync(Object.fromEntries(bytes));
 }

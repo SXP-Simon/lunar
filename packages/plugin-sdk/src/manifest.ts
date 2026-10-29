@@ -278,6 +278,74 @@ export function localizeManifestText(value: string, messages: Readonly<Record<st
   return match ? (messages?.[match[1]] ?? match[1]) : value;
 }
 
+// Catalogs
+//
+// A catalog is a static index of signed packages published by one signing key. Lunar ships with no
+// catalog; users add catalog URLs themselves. Unknown fields are ignored so catalogs can grow.
+
+export const CATALOG_FORMAT = 1;
+/** Conventional file name of a catalog index; any HTTPS URL to the index works. */
+export const CATALOG_FILE = 'index.json';
+
+/** 32 bytes as unpadded base64url: 42 free characters and a last one whose two spare bits are zero. */
+const BASE64URL_32 = /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/;
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+const LOCALE = /^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})*$/;
+
+const catalogUrl = z.string().min(1).max(2000);
+const catalogLocale = z.object({ name: text.optional(), description: z.string().max(500).optional() });
+const catalogPlugin = z.object({
+  id: z.string().regex(PLUGIN_ID).max(128),
+  name: text,
+  version: z.string().regex(SEMVER),
+  sdk: z.string().refine((range) => parseVersionRange(range) !== undefined, 'must be a version range'),
+  description: z.string().max(500).optional(),
+  author: z.string().max(120).optional(),
+  /** Package and icon locations, relative to the index URL or absolute HTTPS URLs. */
+  package: catalogUrl,
+  icon: catalogUrl.optional(),
+  sha256: z.string().regex(SHA256_HEX),
+  size: z.number().int().positive(),
+  permissions: z.array(z.string().max(200)).max(32).default([]),
+  /** Name and description per locale, used before the package's own locale files are available. */
+  locales: z.record(z.string().regex(LOCALE), catalogLocale).optional(),
+});
+
+export const pluginCatalogSchema = z
+  .object({
+    format: z.literal(CATALOG_FORMAT),
+    name: text,
+    /** Short label shown next to plugins from this catalog. */
+    badge: z.string().min(1).max(16).optional(),
+    website: z.url({ protocol: /^https$/ }).optional(),
+    /** The Ed25519 public key (RFC 8037 JWK) that signs every package in the catalog. */
+    signingKey: z.object({ kty: z.literal('OKP'), crv: z.literal('Ed25519'), x: z.string().regex(BASE64URL_32) }),
+    plugins: z.array(catalogPlugin).max(500),
+  })
+  .superRefine((catalog, context) => {
+    const seen = new Set<string>();
+    catalog.plugins.forEach((plugin, index) => {
+      if (seen.has(plugin.id))
+        context.addIssue({ code: 'custom', path: ['plugins', index, 'id'], message: 'duplicate plugin id' });
+      seen.add(plugin.id);
+    });
+  });
+
+export type PluginCatalog = z.output<typeof pluginCatalogSchema>;
+export type PluginCatalogEntry = PluginCatalog['plugins'][number];
+
+export type CatalogParseResult =
+  { readonly ok: true; readonly catalog: PluginCatalog } | { readonly ok: false; readonly issues: readonly string[] };
+
+export function parsePluginCatalog(input: unknown): CatalogParseResult {
+  const result = pluginCatalogSchema.safeParse(input);
+  if (result.success) return { ok: true, catalog: result.data };
+  return {
+    ok: false,
+    issues: result.error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`),
+  };
+}
+
 interface Version {
   readonly major: number;
   readonly minor: number;

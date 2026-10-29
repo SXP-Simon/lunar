@@ -2,6 +2,7 @@ import { useRouter, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
+import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
 import { useTranslation } from '@/i18n';
@@ -12,9 +13,11 @@ interface PluginScreenHeaderProps {
   readonly fallback?: Href;
   /** Opens the plugin's information and settings screen. */
   readonly settingsPluginId?: string;
+  /** Further actions after the title. */
+  readonly trailing?: ReactNode;
 }
 
-export function PluginScreenHeader({ title, fallback, settingsPluginId }: PluginScreenHeaderProps) {
+export function PluginScreenHeader({ title, fallback, settingsPluginId, trailing }: PluginScreenHeaderProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const foreground = useThemeColor('foreground');
@@ -63,6 +66,7 @@ export function PluginScreenHeader({ title, fallback, settingsPluginId }: Plugin
           />
         </Button>
       ) : null}
+      {trailing}
     </View>
   );
 }

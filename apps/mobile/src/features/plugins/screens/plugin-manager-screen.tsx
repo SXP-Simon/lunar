@@ -7,7 +7,7 @@ import { Menu } from 'heroui-native/menu';
 import { Spinner } from 'heroui-native/spinner';
 import { Switch } from 'heroui-native/switch';
 import { useToast } from 'heroui-native/toast';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,12 +21,15 @@ import { pluginSymbolName } from '../domain/plugin-icons';
 import { pluginEntryRoutes } from '../domain/plugin-pages';
 import { pickPluginPackage } from '../infrastructure/expo-plugin-files';
 import { takeExternalPluginPackage } from '../services/external-plugin-install';
-import type { PluginInstallPreview } from '../services/plugin-installer';
 import { PluginIcon } from '../components/plugin-icon';
 import { PluginInstallDialog } from '../components/plugin-install-dialog';
 import { usePluginRuntime } from '../components/plugin-runtime-provider';
+import { usePluginCatalogs } from '../hooks/use-plugin-catalogs';
+import { usePluginInstall } from '../hooks/use-plugin-install';
 
 const PLUGIN_SETTINGS_ROUTE = '/settings/plugins' as Href;
+const CATALOG_ROUTE = '/plugins/catalog' as Href;
+const CATALOGS_ROUTE = '/plugins/catalogs' as Href;
 
 export function PluginManagerScreen() {
   const { t } = useTranslation();
@@ -37,28 +40,26 @@ export function PluginManagerScreen() {
   useMarkInitialContentReady(true);
   const runtime = usePluginRuntime();
   const statuses = useSyncExternalStore(runtime.host.subscribe, runtime.host.getStatuses);
-  const developerMode = usePluginStore((state) => state.developerMode);
   const setEnabled = usePluginStore((state) => state.setEnabled);
   const setSafeModeRequested = usePluginStore((state) => state.setSafeModeRequested);
   const [safeMode, setSafeMode] = useState(runtime.isSafeMode());
-  const [preview, setPreview] = useState<PluginInstallPreview>();
   const [isPicking, setIsPicking] = useState(false);
-  const [isInstalling, setIsInstalling] = useState(false);
   const iconColor = useThemeColor('foreground');
-
-  const fail = (error: unknown) => toast.show({ variant: 'danger', label: pluginErrorMessage(error) });
+  const { inspect, dialogProps } = usePluginInstall();
+  const { offers } = usePluginCatalogs();
+  const updates = useMemo(
+    () =>
+      new Map(offers.filter((offer) => offer.state === 'update').map((offer) => [offer.entry.id, offer.entry.version])),
+    [offers],
+  );
 
   const pickPackage = async () => {
-    if (!developerMode) {
-      toast.show({ variant: 'default', label: t('plugins.installNeedsDeveloperMode') });
-      return;
-    }
     setIsPicking(true);
     try {
       const picked = await pickPluginPackage();
-      if (picked) setPreview(await runtime.inspectPackage(picked.bytes));
+      if (picked) await inspect(picked.bytes);
     } catch (error) {
-      fail(error);
+      toast.show({ variant: 'danger', label: pluginErrorMessage(error) });
     } finally {
       setIsPicking(false);
     }
@@ -70,32 +71,8 @@ export function PluginManagerScreen() {
     router.setParams({ install: undefined });
     const opened = takeExternalPluginPackage(installRequest);
     if (!opened) return;
-    if (!developerMode) {
-      toast.show({ variant: 'default', label: t('plugins.installNeedsDeveloperMode') });
-      return;
-    }
-    void opened
-      .then((picked) => runtime.inspectPackage(picked.bytes))
-      .then(setPreview)
-      .catch((error: unknown) => toast.show({ variant: 'danger', label: pluginErrorMessage(error) }));
-  }, [developerMode, installRequest, router, runtime, t, toast]);
-
-  const install = async () => {
-    if (!preview) return;
-    setIsInstalling(true);
-    try {
-      const result = await runtime.installPackage(preview, true);
-      toast.show({
-        variant: 'success',
-        label: t(result === 'pending' ? 'plugins.installedAfterRestart' : 'plugins.installed'),
-      });
-      setPreview(undefined);
-    } catch (error) {
-      fail(error);
-    } finally {
-      setIsInstalling(false);
-    }
-  };
+    void inspect(opened.then((picked) => picked.bytes));
+  }, [inspect, installRequest, router]);
 
   return (
     <View
@@ -106,12 +83,12 @@ export function PluginManagerScreen() {
           {t('plugins.title')}
         </Text>
         <Button
-          accessibilityLabel={t('plugins.installFromFile')}
+          accessibilityLabel={t('plugins.catalog.browse')}
           className="h-9 rounded-full"
           hitSlop={4}
           isDisabled={isPicking}
           isIconOnly
-          onPress={() => void pickPackage()}
+          onPress={() => router.push(CATALOG_ROUTE)}
           size="sm"
           variant="secondary">
           {isPicking ? (
@@ -139,6 +116,12 @@ export function PluginManagerScreen() {
           <Menu.Portal>
             <Menu.Overlay />
             <Menu.Content align="end" placement="bottom" presentation="popover" width={240}>
+              <Menu.Item onPress={() => router.push(CATALOGS_ROUTE)}>
+                <Menu.ItemTitle>{t('plugins.catalog.manage')}</Menu.ItemTitle>
+              </Menu.Item>
+              <Menu.Item onPress={() => void pickPackage()}>
+                <Menu.ItemTitle>{t('plugins.installFromFile')}</Menu.ItemTitle>
+              </Menu.Item>
               <Menu.Item onPress={() => router.push(PLUGIN_SETTINGS_ROUTE)}>
                 <Menu.ItemTitle>{t('plugins.settingsTitle')}</Menu.ItemTitle>
               </Menu.Item>
@@ -202,6 +185,7 @@ export function PluginManagerScreen() {
                         : undefined
                     }
                     safeMode={safeMode}
+                    updateVersion={updates.get(status.plugin.id)}
                     onToggle={(enabled) => setEnabled(status.plugin.id, enabled)}
                     opensPage={page !== undefined}
                     onPress={
@@ -222,12 +206,7 @@ export function PluginManagerScreen() {
         </View>
       </ScrollView>
 
-      <PluginInstallDialog
-        preview={preview}
-        isInstalling={isInstalling}
-        onConfirm={() => void install()}
-        onCancel={() => setPreview(undefined)}
-      />
+      <PluginInstallDialog {...dialogProps} />
     </View>
   );
 }
@@ -237,6 +216,7 @@ function PluginRow({
   title,
   description,
   safeMode,
+  updateVersion,
   onToggle,
   opensPage,
   onPress,
@@ -246,6 +226,8 @@ function PluginRow({
   readonly title: string;
   readonly description?: string;
   readonly safeMode: boolean;
+  /** A newer compatible version that an added catalog offers. */
+  readonly updateVersion?: string;
   readonly onToggle: (enabled: boolean) => void;
   readonly opensPage: boolean;
   readonly onPress: () => void;
@@ -256,6 +238,7 @@ function PluginRow({
   const hasProblem = status.state === 'failed' || status.notice !== undefined;
   const detail = [
     status.plugin.version,
+    updateVersion ? t('plugins.catalog.updateAvailable', { version: updateVersion }) : undefined,
     t(`plugins.source.${status.plugin.source}`),
     status.pendingVersion ? t('plugins.pendingVersion', { version: status.pendingVersion }) : undefined,
     status.state === 'failed' ? t('plugins.failed') : undefined,

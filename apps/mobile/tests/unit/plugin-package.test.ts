@@ -40,7 +40,7 @@ describe('plugin package', () => {
     expect(result.locales['zh-CN'].name).toBe('测试');
     expect(result.packageSha256).toBe(sha256(archive));
     expect(result.entrySha256).toBe(sha256(new TextEncoder().encode(entry)));
-    expect(result.signed).toBe(false);
+    expect(result.signature).toBeUndefined();
   });
 
   it('rejects a file changed after packing', async () => {

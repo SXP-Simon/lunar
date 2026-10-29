@@ -7,6 +7,20 @@ import { mmkvStateStorage } from './mmkv-state-storage';
 export type PluginSettingValue =
   string | number | boolean | null | PluginSettingValue[] | { [key: string]: PluginSettingValue };
 
+/** A plugin catalog the user added, with the signing key pinned when it was added. */
+export interface PluginCatalogSubscription {
+  /** HTTPS URL of the catalog index. */
+  readonly url: string;
+  readonly name: string;
+  readonly badge?: string;
+  readonly website?: string;
+  /** JWK thumbprint (RFC 7638) of `key`. */
+  readonly keyId: string;
+  /** Ed25519 public key as a JSON Web Key (RFC 8037). */
+  readonly key: { readonly kty: 'OKP'; readonly crv: 'Ed25519'; readonly x: string };
+  readonly addedAt: number;
+}
+
 /** How many plugin entries the app's bottom navigation holds next to the built-in tabs. */
 export const MAX_PLUGIN_TABS = 2;
 
@@ -17,6 +31,8 @@ interface PluginStoreState {
   readonly order: readonly string[];
   /** Plugins the user pinned to the bottom navigation, in tab order. */
   readonly tabs: readonly string[];
+  /** Catalogs the user added, in the order they were added. Lunar ships with none. */
+  readonly catalogs: readonly PluginCatalogSubscription[];
   readonly settings: Readonly<Record<string, Readonly<Record<string, PluginSettingValue>>>>;
   readonly developerMode: boolean;
   /**
@@ -30,6 +46,11 @@ interface PluginStoreState {
   setSetting(pluginId: string, key: string, value: PluginSettingValue): void;
   /** Pinning past `MAX_PLUGIN_TABS` is ignored. */
   setTabPinned(pluginId: string, pinned: boolean): void;
+  /** Adds the catalog, replacing an entry with the same URL. */
+  addCatalog(catalog: PluginCatalogSubscription): void;
+  /** Refreshes the descriptive fields; the URL and key stay as they were added. */
+  updateCatalog(url: string, details: Pick<PluginCatalogSubscription, 'name' | 'badge' | 'website'>): void;
+  removeCatalog(url: string): void;
   setDeveloperMode(enabled: boolean): void;
   setActivatingPlugin(pluginId: string | undefined): void;
   setSafeModeRequested(requested: boolean): void;
@@ -39,11 +60,35 @@ interface PluginStoreState {
 
 type PersistedPluginPreferences = Pick<
   PluginStoreState,
-  'enabled' | 'order' | 'tabs' | 'settings' | 'developerMode' | 'activatingPluginId' | 'safeModeRequested'
+  'enabled' | 'order' | 'tabs' | 'catalogs' | 'settings' | 'developerMode' | 'activatingPluginId' | 'safeModeRequested'
 >;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeCatalog(value: unknown): PluginCatalogSubscription | undefined {
+  if (!isRecord(value) || !isRecord(value.key)) return undefined;
+  const { url, name, badge, website, keyId, key, addedAt } = value;
+  if (
+    typeof url !== 'string' ||
+    typeof name !== 'string' ||
+    typeof keyId !== 'string' ||
+    key.kty !== 'OKP' ||
+    key.crv !== 'Ed25519' ||
+    typeof key.x !== 'string'
+  ) {
+    return undefined;
+  }
+  return {
+    url,
+    name,
+    badge: typeof badge === 'string' ? badge : undefined,
+    website: typeof website === 'string' ? website : undefined,
+    keyId,
+    key: { kty: 'OKP', crv: 'Ed25519', x: key.x },
+    addedAt: typeof addedAt === 'number' ? addedAt : 0,
+  };
 }
 
 function normalizePersisted(value: unknown): Partial<PersistedPluginPreferences> {
@@ -57,6 +102,7 @@ function normalizePersisted(value: unknown): Partial<PersistedPluginPreferences>
   const tabs = Array.isArray(value.tabs)
     ? [...new Set(value.tabs.filter((item): item is string => typeof item === 'string'))].slice(0, MAX_PLUGIN_TABS)
     : [];
+  const catalogs = Array.isArray(value.catalogs) ? value.catalogs.flatMap((item) => normalizeCatalog(item) ?? []) : [];
   const settings = isRecord(value.settings)
     ? (Object.fromEntries(Object.entries(value.settings).filter(([, item]) => isRecord(item))) as Record<
         string,
@@ -67,6 +113,7 @@ function normalizePersisted(value: unknown): Partial<PersistedPluginPreferences>
     enabled: enabled as Record<string, boolean>,
     order,
     tabs,
+    catalogs: catalogs.filter((item, index) => catalogs.findIndex((other) => other.url === item.url) === index),
     settings,
     developerMode: value.developerMode === true,
     activatingPluginId: typeof value.activatingPluginId === 'string' ? value.activatingPluginId : undefined,
@@ -80,6 +127,7 @@ export const usePluginStore = create<PluginStoreState>()(
       enabled: {},
       order: [],
       tabs: [],
+      catalogs: [],
       settings: {},
       developerMode: false,
       safeModeRequested: false,
@@ -103,6 +151,15 @@ export const usePluginStore = create<PluginStoreState>()(
           if (pinned === included || (pinned && state.tabs.length >= MAX_PLUGIN_TABS)) return state;
           return { tabs: pinned ? [...state.tabs, pluginId] : state.tabs.filter((item) => item !== pluginId) };
         }),
+      addCatalog: (catalog) =>
+        set((state) => ({ catalogs: [...state.catalogs.filter((item) => item.url !== catalog.url), catalog] })),
+      updateCatalog: (url, details) =>
+        set((state) => ({
+          catalogs: state.catalogs.map((item) =>
+            item.url === url ? { ...item, name: details.name, badge: details.badge, website: details.website } : item,
+          ),
+        })),
+      removeCatalog: (url) => set((state) => ({ catalogs: state.catalogs.filter((item) => item.url !== url) })),
       setDeveloperMode: (developerMode) => set({ developerMode }),
       setActivatingPlugin: (activatingPluginId) => set({ activatingPluginId }),
       setSafeModeRequested: (safeModeRequested) => set({ safeModeRequested }),
@@ -123,10 +180,20 @@ export const usePluginStore = create<PluginStoreState>()(
     {
       name: 'settings.plugins',
       storage: createJSONStorage(() => mmkvStateStorage),
-      partialize: ({ enabled, order, tabs, settings, developerMode, activatingPluginId, safeModeRequested }) => ({
+      partialize: ({
         enabled,
         order,
         tabs,
+        catalogs,
+        settings,
+        developerMode,
+        activatingPluginId,
+        safeModeRequested,
+      }) => ({
+        enabled,
+        order,
+        tabs,
+        catalogs,
         settings,
         developerMode,
         activatingPluginId,

@@ -16,6 +16,11 @@ export interface InstalledPlugin {
   readonly directoryUri?: string;
   readonly packageSha256?: string;
   readonly entrySha256?: string;
+  /**
+   * JWK thumbprint of the key whose signature was verified at installation. Later versions must be
+   * signed by the same key.
+   */
+  readonly signerKeyId?: string;
   /** Development builds keep their entry in memory instead of on disk. */
   readonly inlineEntry?: string;
   /**

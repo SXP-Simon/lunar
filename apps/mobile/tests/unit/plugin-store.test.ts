@@ -18,7 +18,7 @@ vi.mock('react-native-mmkv', () => ({
 const PLUGIN_SETTINGS_KEY = 'settings.plugins';
 
 afterEach(() => {
-  usePluginStore.setState({ enabled: {}, order: [], tabs: [], settings: {} });
+  usePluginStore.setState({ enabled: {}, order: [], tabs: [], catalogs: [], settings: {} });
   mmkvStateStorage.removeItem(PLUGIN_SETTINGS_KEY);
 });
 
@@ -57,5 +57,41 @@ describe('plugin tab pins', () => {
     mmkvStateStorage.setItem(PLUGIN_SETTINGS_KEY, JSON.stringify({ state: { enabled: {} }, version: 0 }));
     await usePluginStore.persist.rehydrate();
     expect(usePluginStore.getState().tabs).toEqual([]);
+  });
+});
+
+describe('plugin catalogs', () => {
+  const key = { kty: 'OKP', crv: 'Ed25519', x: '11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo' } as const;
+  const catalog = {
+    url: 'https://example.com/index.json',
+    name: 'Example',
+    keyId: 'kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k',
+    key,
+    addedAt: 1,
+  };
+
+  it('starts without catalogs and keeps the pinned key when details change', () => {
+    expect(usePluginStore.getState().catalogs).toEqual([]);
+    usePluginStore.getState().addCatalog(catalog);
+    usePluginStore.getState().updateCatalog(catalog.url, { name: 'Renamed', badge: 'EX', website: undefined });
+    expect(usePluginStore.getState().catalogs).toEqual([
+      { ...catalog, name: 'Renamed', badge: 'EX', website: undefined },
+    ]);
+    usePluginStore.getState().removeCatalog(catalog.url);
+    expect(usePluginStore.getState().catalogs).toEqual([]);
+  });
+
+  it('restores well-formed catalogs only, once per address', async () => {
+    mmkvStateStorage.setItem(
+      PLUGIN_SETTINGS_KEY,
+      JSON.stringify({
+        state: {
+          catalogs: [catalog, { ...catalog, name: 'Duplicate' }, { ...catalog, url: 'x', key: { kty: 'RSA' } }],
+        },
+        version: 0,
+      }),
+    );
+    await usePluginStore.persist.rehydrate();
+    expect(usePluginStore.getState().catalogs).toEqual([{ ...catalog, badge: undefined, website: undefined }]);
   });
 });
